@@ -1,0 +1,138 @@
+[
+  {
+    "id": 4504,
+    "author": "INEMA",
+    "date": "2025-03-31T22:49:40+00:00",
+    "text": "Aqui está um passo a passo completo com os motivos (porquês) de cada etapa para melhorar a memória do seu agente de IA no n8n usando PostgreSQL e Supabase:\n\n\nPasso 1: Remover a memória padrão do n8n\nO que fazer:\nNo seu fluxo n8n, delete o nó de memória padrão que vinha com o agente.\n\nPor quê:\nA memória padrão do n8n é temporária e se perde após certo tempo ou reinício. Isso limita a continuidade da conversa com seu agente.\n\n\nPasso 2: Adicionar memória com Memory PO ChatM\nO que fazer:\nAdicione um novo nó de memória com o tipo Memory PO ChatM e configure o parâmetro k=50.\n\nPor quê:\nIsso define que o agente lembrará das últimas 50 mensagens, melhorando a consistência das respostas e evitando repetições.\n\n\nPasso 3: Criar um projeto no Supabase\nO que fazer:\nAcesse o Supabase, clique em New Project, escolha uma organização, dê um nome e defina uma senha para o banco.\n\nPor quê:\nO Supabase fornece um banco PostgreSQL gerenciado na nuvem, que será usado para guardar o histórico de conversas do seu agente.\n\n\nPasso 4: Copiar as credenciais de conexão\nO que fazer:\nNo projeto criado, vá em Project Settings > Database > Connection Info e copie:\n\n\n\nhost\n\n\nport (5432)\n\n\ndatabase name\n\n\nuser\n\n\nsenha\n\n\nPor quê:\nVocê precisa dessas informações para conectar o n8n ao banco e armazenar os dados de forma segura e estruturada.\n\n\nPasso 5: Criar uma credencial no n8n\nO que fazer:\nNo n8n, vá até as credenciais, crie uma nova do tipo PostgreSQL, e cole as informações obtidas do Supabase.\n\nPor quê:\nSem essa conexão, o n8n não conseguirá enviar nem ler os dados no banco de dados.\n\n\nPasso 6: Rodar o script SQL para criar a tabela de memória\nO que fazer:\nVá no Supabase em SQL Editor, cole este script da documentação (abaixo) e execute:\n\n```create table if not exists n8n_chat_histories (\n  session_id text,\n  message_id uuid default uuid_generate_v4 (),\n  role text,\n  content text,\n  timestamp timestamp with time zone default timezone('utc'::text, now())\n);\n\n```\nPor quê:\nIsso cria a tabela n8n_chat_histories que será usada para guardar cada mensagem, com data, papel (usuário ou IA), conteúdo e ID da sessão.\n\n\nPasso 7: Testar a integração com Telegram (ou outro canal)\nO que fazer:\nEnvie uma mensagem para o agente (ex: “Oi”) e veja se aparece no banco.\n\nPor quê:\nVocê precisa garantir que o fluxo está funcionando e que o ID de sessão está sendo atribuído corretamente.\n\n\nPasso 8: Ajustar o Session ID com o ID do usuário\nO que fazer:\nNo nó de memória ou mapeamento do fluxo, pegue o ID do usuário do Telegram e use como session_id.\n\nPor quê:\nCada pessoa precisa ter sua própria memória separada. O session_id serve para identificar de quem é cada conversa.\n\n\nPasso 9: Verificar os dados no Supabase\nO que fazer:\nVá até o Table Editor > n8n_chat_histories e veja se as mensagens estão sendo salvas corretamente.\n\nPor quê:\nAssim você garante que o histórico está sendo registrado e poderá ser recuperado em qualquer momento futuro.\n\n\nPasso 10: Pronto! Memória persistente ativada\nResultado final:\nSeu agente de IA agora tem memória persistente, capaz de lembrar de conversas anteriores, mesmo que a automação reinicie, o n8n caia ou a conversa continue outro dia.\n\n\nSe quiser, posso criar um fluxograma visual, uma versão para impressão (PDF) ou até um template do fluxo no n8n. Deseja algum desses?",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 4503,
+    "author": "INEMA",
+    "date": "2025-03-31T22:49:31+00:00",
+    "text": "==========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 4502,
+    "author": "INEMA",
+    "date": "2025-03-31T22:48:48+00:00",
+    "text": "Resumo completo do vídeo **\"Melhore a Memória do Seu Agente de IA no n8n Usando PostgreSQL e Supabase\"**:\n\nO vídeo mostra como **melhorar a memória de um agente de IA (via MCP)** usando **Supabase como banco de dados PostgreSQL** integrado ao **n8n**, em vez da memória padrão da ferramenta, que é mais limitada. A melhoria permite que o agente **recupere e mantenha o histórico das conversas**, mesmo após reiniciar ou mudar de sessão.\n\n### Etapas explicadas no vídeo com exemplos:\n\n1. **Remover a memória atual do agente**\n   - Exclui a memória anterior do agente no n8n.\n\n2. **Inserir nova memória usando **`Memory PO ChatM`\n   - Altera o parâmetro para recuperar as últimas 50 mensagens (melhora a continuidade da conversa).\n\n3. **Criar projeto no Supabase**\n   - Acessa o Supabase, cria um novo projeto e define uma senha para o banco.\n\n4. **Obter dados de conexão do banco**\n   - Vai em “Connect > Session Pooler” no Supabase e copia os dados: `host`, `database`, `user`, `password`, e `port (5432)`.\n\n5. **Criar credencial no n8n**\n   - Usa os dados copiados do Supabase para configurar o nó `Postgres`.\n\n6. **Criar a estrutura de memória no banco**\n   - Abre o `SQL Editor` no Supabase e cola um script SQL copiado da documentação do `Supabase Vector Store`.\n\n7. **Executar o script SQL**\n   - Cria automaticamente a tabela `n8n_chat_histories` no Supabase para armazenar o histórico das conversas.\n\n8. **Testar a integração com o Telegram**\n   - Envia mensagens para o bot do Telegram, verifica erros no n8n e ajusta o `session_id` usando o ID do usuário do Telegram.\n\n9. **Salvar e verificar resultados**\n   - Após corrigir o erro de chave da sessão, envia nova mensagem e valida que a conversa está sendo armazenada no banco.\n\n10. **Conferir no Supabase**\n    - Acessa o `Table Editor` e vê que as mensagens “Oi” e “Boa noite” foram armazenadas com seus respectivos `session_id`.\n\n### Benefícios demonstrados:\n\n- **Persistência de memória**: histórico de conversa é salvo mesmo após o fluxo ser reiniciado.\n- **Flexibilidade**: é possível mudar o nome da tabela e criar várias por agente.\n- **Eficiência**: respostas mais rápidas pois a consulta ao histórico é feita diretamente no banco.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 4501,
+    "author": "INEMA",
+    "date": "2025-03-31T22:46:44+00:00",
+    "text": "https://www.youtube.com/watch?v=l0_lCTVBo4w",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 4497,
+    "author": "INEMA",
+    "date": "2025-03-31T22:45:00+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 4496,
+    "author": "INEMA",
+    "date": "2025-03-31T22:44:59+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 4495,
+    "author": "INEMA",
+    "date": "2025-03-31T22:44:59+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 4494,
+    "author": "INEMA",
+    "date": "2025-03-31T22:44:52+00:00",
+    "text": "c1  -  Memoria PostgreSQL e Supabase",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 4493,
+    "author": "INEMA",
+    "date": "2025-03-31T22:44:50+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 4492,
+    "author": "INEMA",
+    "date": "2025-03-31T22:44:49+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 4491,
+    "author": "INEMA",
+    "date": "2025-03-31T22:44:49+00:00",
+    "text": "....",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 4490,
+    "author": "INEMA",
+    "date": "2025-03-31T22:44:49+00:00",
+    "text": "...",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 4489,
+    "author": "INEMA",
+    "date": "2025-03-31T22:44:49+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 4488,
+    "author": "INEMA",
+    "date": "2025-03-31T22:44:48+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 4487,
+    "author": "INEMA",
+    "date": "2025-03-31T22:44:48+00:00",
+    "text": "https://chatgpt.com/c/67eb1b6e-6400-8009-9ed2-b926ef5984f8",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 4486,
+    "author": "INEMA",
+    "date": "2025-03-31T22:44:48+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 4485,
+    "author": "INEMA",
+    "date": "2025-03-31T22:44:39+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

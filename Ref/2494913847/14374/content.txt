@@ -1,0 +1,284 @@
+TOPICO 14374
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-09-19 17:43:28+00:00
+
+Total de mensagens: 16
+Midias baixadas: 3
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-09-19T17:54:09+00:00
+Texto:
+= true no body da requisição; ajuste o system prompt para instruir o agente a devolver: nome do documento, página e quote. Teste copiando o quote e fazendo Ctrl+F no PDF para validar.
+
+3. Como reduzir custo de tokens?
+
+* Use modelos menores no lado do assistant quando aceitável; prefira Pinecone Assistant em protótipos porque costuma consumir menos tokens que enviar muitos chunks para um LLM; limite contextos retornados; faça post-processamento local para resumir antes de chamar o modelo.
+
+4. E se o assistant retornar uma resposta errada ou sem fonte?
+
+* Verifique o payload de retorno do Pinecone (campos de metadata/pages/highlights). Se não houver highlights, habilite include\_highlights. Se a resposta estiver incorreta, refine o system prompt e forçe verificação (ex: "Se não achar citação exata, responda 'não encontrado'").
+
+5. Posso automatizar upload de PDFs?
+
+* Sim. Use o endpoint de upload do Pinecone Assistant (API) para enviar arquivos programaticamente e depois chame o endpoint de chat; também crie um webhook em n8n para confirmar quando o documento é indexado.
+
+6. Quais cuidados de segurança?
+
+* Não exponha a chave em código. Use credenciais protegidas no n8n. Limite quem acessa o assistant (roles/permissions). Se documentos contém dados sensíveis, avalie criptografia em repouso e políticas de retenção.
+
+7. Quanto custa um assistant ativo?
+
+* No vídeo dizem US\$0,05 por hora por assistant ativo; confirme no painel Pinecone pois preços podem mudar. (Dica: ative/desative assistentes em testes para não acumular custo.)
+
+# Checklist rápido para deploy em minutos
+
+* [ ] Criar Pinecone Assistant e fazer upload dos PDFs
+* [ ] Criar API key e guardar em n8n Credentials
+* [ ] Em n8n: criar nó HTTP Request → Import curl do Pinecone
+* [ ] Substituir query estática por expressão dinâmica (search\_query)
+* [ ] Adicionar system prompt que exige citações e páginas
+* [ ] Ativar include\_highlights no body do request
+* [ ] Testar com perguntas simples e validar via Ctrl+F nos PDFs
+* [ ] Monitorar tokens/custos e ajustar modelo se necessário
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-09-19T17:54:09+00:00
+Texto:
+# Hacks práticos (rápido e aplicável)
+
+1. Use Pinecone Assistant em vez do fluxo de vetores bruto quando quiser prototipar rápido
+
+   * Por que: ingestion, chunking e indexação são feitos automaticamente.
+   * Exemplo: arraste PDFs direto no painel do Pinecone Assistant e teste perguntas no playground.
+
+2. Conecte no n8n via um nó HTTP importando o curl do playground do Pinecone
+
+   * Por que: o curl já monta cabeçalho, body e endpoint; evita erro de formatação.
+   * Exemplo: em n8n → HTTP Request → Import curl → cole o curl gerado pelo Pinecone.
+
+3. Gere e mantenha chaves de API temporárias com cuidado (backup seguro)
+
+   * Por que: Pinecone mostra a chave uma vez. Se perder, crie nova.
+   * Dica: armazene em n8n Credentials ou em .env protegido.
+
+4. Faça a query dinâmica: deixe o corpo da requisição buscar a variável de query do agente
+
+   * Por que: o agente decide quantas buscas e o texto da busca.
+   * Exemplo de expressão (pseudocódigo n8n): {"query": {{\$json\["search\_query"]}}}
+
+5. Ative include\_highlights (ou equivalente) para obter citação textual exata
+
+   * Por que: o campo padrão costuma retornar resumo, não citação literal.
+   * Exemplo de payload: "include\_highlights": true
+
+6. Use um system prompt para forçar citações com fonte, página e trecho exato
+
+   * Por que: o agente pode chamar o Pinecone, mas precisa ser instruído a apresentar fontes.
+   * Exemplo de instrução: seja analítico, cite: nome do documento, número da página e quote exato.
+
+7. Teste com queries comparativas (duas buscas) quando precisar comparar períodos/anos
+
+   * Por que: o agente pode disparar múltiplas buscas e agregar resultados automaticamente.
+   * Dica: peça explicitamente comparações no prompt.
+
+8. Monitore tokens e custo: compare respostas de Assistant vs Vector Store
+
+   * Por que: Assistant pode ser muito mais barato (menos tokens) para respostas encadeadas.
+   * Como medir: logue token\_count de cada requisição e custos por modelo.
+
+9. Caso a citação não bata, use include\_highlights + extração direta do campo content
+
+   * Por que: alguns endpoints retornam resumo no campo principal e a citação exata em outro campo.
+
+10. Ajuste o modelo do Assistant via payload (model param) para balancear custo/qualidade
+
+    * Por que: modelos menores são mais baratos; modelos maiores podem gerar melhores instruções de extração.
+
+11. Automatize ingestão de documentos no Pinecone Assistant via API para evitar trabalho manual
+
+    * Por que: para escalabilidade, envie PDFs por upload de arquivo via API e faça webhooks para confirmar ingestão.
+
+12. Crie um template n8n exportável / shareable para replicar a solução rapidamente em clientes
+
+    * Por que: facilita demos e entrega de proof-of-concept; inclua passos: credenciais, nó HTTP, system prompt, testes.
+
+# Exemplos concretos (trechos e payloads úteis)
+
+1. Import curl → HTTP Request (n8n)
+
+* Cole o curl do Pinecone Assistant no import do HTTP Request do n8n; ele gera headers e body automaticamente.
+
+2. Exemplo de JSON para chat com highlights (simplificado)
+
+```{
+  "model": "assistant-chat-1",
+  "input": "How many vehicles did Tesla deliver in Q2 2025?",
+  "include_highlights": true
+}```
+
+3. Exemplo de system prompt (texto que coloca no agente)
+   Você é um agente especializado em relatórios financeiros. Use a ferramenta Pinecone para buscar informações em PDFs e, ao responder, sempre inclua:
+
+* nome do documento
+* número da página
+* trecho textual exato (entre aspas)
+* pequena linha indicando confiança (ex: "Citação encontrada em página X").
+
+4. Expressão dinâmica no corpo (n8n expression)
+   `{{ $json["ai_function"]["search_query"] }}`
+   (use conforme estrutura do seu nó que gera a query)
+
+# Perguntas prováveis — respostas diretas
+
+1. Como conectar Pinecone Assistant ao n8n?
+
+* Crie um assistant no painel Pinecone → vá em "connect" / "API" e copie o curl do endpoint de chat → em n8n adicione HTTP Request → Import curl → cole → substitua a API key por referência segura (credential ou variável).
+
+2. Como garantir citações exatas (não só resumo)?
+
+* Ative include\_highlights
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-09-19T17:53:41+00:00
+Texto:
+================
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-09-19T17:53:08+00:00
+Texto:
+Aqui está o resumo do vídeo:
+
+### Resumo
+
+O vídeo mostra como criar agentes RAG em poucos minutos usando o **Pinecone Assistant** integrado ao **n8n**, sem necessidade de pipelines de pré-processamento, chunking manual ou fluxos de embedding personalizados.
+
+O criador demonstra:
+
+* Como carregar documentos (ex.: relatórios de Tesla, Nvidia e Nike) diretamente no Pinecone Assistant.
+* Como o agente retorna respostas corretas, com citações no nível da página e trechos exatos do PDF, aumentando a confiabilidade.
+* A configuração passo a passo no n8n, usando requisições HTTP para se conectar ao Pinecone Assistant via API.
+* Ajustes no system prompt para garantir que o agente cite corretamente documentos, páginas e trechos originais.
+* Como habilitar a opção *include highlights* na API para trazer citações textuais exatas em vez de resumos.
+* Comparação com Pinecone Vector Store e Supabase Vector Store: o Pinecone Assistant gera respostas mais rápidas, corretas e baratas em tokens, enquanto as abordagens tradicionais exigem mais trabalho e custam mais processamento.
+
+### Principais pontos
+
+1. **Velocidade e simplicidade**: basta arrastar documentos, sem pré-processamento.
+2. **Citações confiáveis**: páginas e trechos exatos dos documentos originais.
+3. **Integração n8n**: feita por HTTP request, usando a API do Pinecone Assistant.
+4. **Customização**: uso de system prompt e parâmetros da API (como highlights e modelo).
+5. **Comparação de custos**: Pinecone Assistant se mostra mais barato e eficiente do que vetores tradicionais.
+6. **Custo fixo**: US\$ 0,05 por hora por assistente ativo no Pinecone.
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-09-19T17:48:18+00:00
+Texto:
+https://www.youtube.com/watch?v=QojPKL96Dx4
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-09-19T17:47:05+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Pinecone Assistant.json
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-09-19T17:47:01+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14387_007.jpg
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-09-19T17:43:35+00:00
+Texto:
+ap63 - RAG Agente - Pinecone Assistente
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-09-19T17:43:34+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-09-19T17:43:34+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-09-19T17:43:34+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-09-19T17:43:33+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-09-19T17:43:33+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-09-19T17:43:33+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-09-19T17:43:32+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 16
+Autor: INEMA
+Data: 2025-09-19T17:43:28+00:00
+Texto: [Sem texto]
+
+------------------------------
+

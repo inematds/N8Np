@@ -1,0 +1,255 @@
+[
+  {
+    "id": 14912,
+    "author": "INEMA",
+    "date": "2025-10-08T03:51:38+00:00",
+    "text": "=================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14911,
+    "author": "INEMA",
+    "date": "2025-10-08T03:50:49+00:00",
+    "text": "===================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14910,
+    "author": "INEMA",
+    "date": "2025-10-08T03:50:44+00:00",
+    "text": "### 11. Resultado final\n\n* Você manda uma mensagem no Telegram:\n  “Gere uma fatura para\nMaria no valor de 350€, com IVA.”\n* Em menos de 30 segundos:\n\n  1. O Gemini interpreta o pedido.\n  2. O N8N gera o HTML.\n  3. O PDF é criado e enviado por e-mail.\n  4. A fatura é salva no Drive.\n  5. Os dados são registrados.\n\n---\n\n### 12. Bônus \n\n* O criador mostra que o mesmo fluxo gera também **relatórios automáticos mensais** com análise de entradas e saídas.\n* Tudo é feito **sem gastar tokens**, **sem API externa** e **100% com código local e prompts bem estruturados**.\n* Ele enfatiza:\n  “O segredo não é o nó, é **como você pede para a IA**. Se você der o papel certo, ela entende e entrega o resultado perfeito.”",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14909,
+    "author": "INEMA",
+    "date": "2025-10-08T03:50:44+00:00",
+    "text": "Abaixo está o **passo a passo explicado **, com a lógica, a fala prática e a sequência real da automação funcionando dentro do N8N, usando Telegram, Gemini e PDF.co — exatamente como o criador mostrou.\n\n---\n\n### 1. Criar o bot do Telegram\n\n* Abre o **Telegram** e procura o **@BotFather**.\n* Digita o comando `/newbot`.\n* Escolhe o nome do bot (exemplo: `faturador_inema_bot`).\n* Depois cria o **username** (exemplo: `faturador_inema_bot`).\n* O BotFather vai te devolver o **token de API**, que é o que vamos colar no N8N.\n\n---\n\n### 2. Conectar o bot no N8N\n\n* No N8N, cria um **novo workflow**.\n* Adiciona o nó **Telegram Trigger**.\n* Coloca o token que o BotFather deu.\n* Esse nó é o que vai **escutar as mensagens** que chegam no Telegram (tanto texto quanto áudio).\n* Salva e ativa o gatilho para testar.\n\n---\n\n### 3. Receber mensagens e normalizar o input\n\n* Adiciona um **nó Switch** para detectar o tipo da mensagem.\n* Se for **texto**, o fluxo segue direto.\n* Se for **áudio**, usa o nó de **Transcrição** (pode ser o Whisper ou outro) para transformar o áudio em texto.\n* Depois, tudo é unificado em uma variável única chamada **text**, assim tudo funciona igual.\n  Exemplo:\n\n  `  text = \"Gerar fatura para João da Silva, valor 500€, sem IVA\"\n  `\n\n---\n\n### 4. Interpretar o texto com nó de código (sem usar API externa)\n\n* Adiciona um **nó de código** (Node Function).\n* Dentro dele, pede ao Gemini (via prompt local) para **estruturar os dados** da mensagem.\n* O criador chama isso de “dar um papel à IA”:\n  Ele diz — *“Gemini, imagina que você é um forno. Eu te dou uma pizza fria (os dados crus) e quero que você me devolva uma pizza quente (os dados formatados)”*.\n* Isso faz o modelo devolver os dados limpos e organizados, prontos para gerar o HTML.\n* A saída desse nó deve conter algo como:\n\n  ```  {\n    \"cliente\": \"João da Silva\",\n    \"valor\": \"500\",\n    \"iva\": \"0\",\n    \"descricao\": \"Serviço de suporte técnico\",\n    \"data\": \"2025-10-08\"\n  }\n  ```\n\n---\n\n### 5. Gerar o HTML da fatura\n\n* Adiciona outro **nó de código**.\n* Pede ao Gemini para gerar o **HTML completo da fatura** com base nos dados anteriores.\n* Ele cria dois modelos: um **com IVA** e outro **sem IVA**.\n* É aqui que entra o design: você pode personalizar com seu logotipo, cores e layout.\n* Atenção: todas as imagens devem ser **URLs públicas**, nada de arquivos locais.\n\n---\n\n### 6. Converter HTML em PDF\n\n* Adiciona o **nó ****PDF.co**.\n* Seleciona a ação **HTML to PDF**.\n* Cola o HTML vindo do Gemini e gera o arquivo PDF profissional.\n* Dá um nome dinâmico, por exemplo:\n\n  `  Fatura_{{cliente}}_{{data}}.pdf\n  `\n\n---\n\n### 7. Enviar o PDF por e-mail\n\n* Adiciona o **nó Email Send**.\n* No corpo do e-mail, coloca um **HTML bonito**, gerado pelo Gemini também.\n* Anexa o PDF gerado.\n* Exemplo de corpo do e-mail:\n\n  `  Olá {{cliente}},\n  Segue em anexo a sua fatura de {{data}} no valor de {{valor}}€.\n  Obrigado pela preferência.\n  `\n* Observação:\n  Desative nas opções do N8N a mensagem “enviado via N8N”, que aparece no rodapé.\n\n---\n\n### 8. Salvar no Google Drive\n\n* Adiciona o **nó Google Drive**.\n* Define a pasta destino, por exemplo:\n  `/Faturas/2025/Outubro/`\n* O arquivo é salvo automaticamente com o nome da fatura.\n* Assim tudo fica organizado por **ano e mês**.\n\n---\n\n### 9. Registrar no banco de dados\n\n* Adiciona um **nó Supabase ou Google Sheets**.\n* Cria uma tabela com as colunas: cliente, data, valor, IVA, link da fatura.\n* Cada nova fatura é adicionada automaticamente.\n\n---\n\n### 10. Criar relatório financeiro mensal\n\n* Adiciona um **nó Cron** para rodar no **dia 1º de cada mês**.\n* Ele executa uma **consulta SQL** (PostgreSQL ou Supabase) filtrando os dados do mês anterior.\n* Passa os resultados para o Gemini, que gera um **HTML analítico** com gráficos e totais.\n* O HTML pode ser convertido para PDF e enviado por e-mail ou salvo no Drive.\n* Exemplo:\n  “Relatório financeiro de setembro: total faturado 14.300€, IVA 1.500€, despesas 2.000€, lucro líquido 12.300€”\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14908,
+    "author": "INEMA",
+    "date": "2025-10-08T03:49:54+00:00",
+    "text": "=====================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14907,
+    "author": "INEMA",
+    "date": "2025-10-08T03:49:51+00:00",
+    "text": "Passo a passo direto da automação de faturas e relatórios financeiros\n\n1. Criar o bot no Telegram\n\n* Buscar no Telegram: **BotFather**\n* Enviar o comando: **/newbot**\n* Dar um nome e criar o **token de API**\n* Copiar o token para usar no N8N\n\n2. Configurar o N8N\n\n* Criar um novo workflow\n* Adicionar o **nó Telegram Trigger**\n* Colar o token do bot para conectar\n* O fluxo será iniciado sempre que o bot receber mensagem (texto ou áudio)\n\n3. Normalizar o input\n\n* Adicionar um **nó Switch** para detectar se a mensagem é texto ou áudio\n* Converter áudio em texto (se necessário)\n* Unificar ambos em uma variável chamada **text**\n\n4. Interpretar os dados da fatura\n\n* Adicionar um **nó de código**\n* Pedir ao Gemini (por prompt interno) para transformar o texto em dados estruturados:\n\n  * Nome do cliente\n  * Endereço\n  * Valor\n  * Descrição\n  * IVA (sim/não)\n\n5. Gerar HTML da fatura\n\n* Adicionar outro **nó de código**\n* Criar o HTML profissional da fatura usando Gemini\n* Definir dois templates: com e sem IVA\n\n6. Converter HTML em PDF\n\n* Adicionar o **nó ****PDF.co**\n* Selecionar a opção **HTML to PDF**\n* Gerar o PDF da fatura\n\n7. Enviar e-mail ao cliente\n\n* Adicionar o **nó Email Send**\n* Corpo do e-mail em HTML\n* Anexar o PDF gerado\n\n8. Salvar no Google Drive\n\n* Adicionar o **nó Google Drive**\n* Criar estrutura automática:\n  `/Faturas/2025/Outubro/`\n* Fazer upload do PDF com nome do cliente e data\n\n9. Registrar dados\n\n* Adicionar o **nó Supabase ou Google Sheets**\n* Inserir as informações da fatura (cliente, valor, data, IVA)\n\n10. Gerar relatório financeiro mensal\n\n* Adicionar um **nó Cron** (agendado para todo dia 1º de cada mês)\n* Buscar dados do mês anterior via SQL (no Supabase ou Sheets)\n* Usar um **nó de código com Gemini** para gerar o HTML analítico do relatório\n* Converter para PDF (opcional) e enviar por e-mail ou salvar no Drive\n\n11. Dicas finais\n\n* Usar apenas **URLs públicas** para imagens no HTML\n* Desativar a mensagem “enviado via N8N” nas opções avançadas\n* Manter variáveis padronizadas (ex: “text”) para evitar erros\n* Definir papéis metafóricos no prompt (ex: “você é um forno que transforma pizza fria em quente”) para melhorar a resposta do Gemini\n\nResultado\nEm menos de 30 segundos o sistema:\n• Recebe o pedido via Telegram\n• Cria a fatura\n• Envia por e-mail\n• Salva no Drive\n• Atualiza a base de dados\n• E gera o relatório mensal automaticamente.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14906,
+    "author": "INEMA",
+    "date": "2025-10-08T03:49:44+00:00",
+    "text": "Passo a Passo - Visão Geral",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14905,
+    "author": "INEMA",
+    "date": "2025-10-08T03:48:43+00:00",
+    "text": "======================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14904,
+    "author": "INEMA",
+    "date": "2025-10-08T03:48:40+00:00",
+    "text": "Resumo completo e estruturado \n\nTema central\nCriação de uma automação completa para geração de faturas e relatórios financeiros usando Telegram, N8N e Gemini, sem depender de APIs externas nem consumir tokens de IA. O foco é ajudar empresas a automatizar faturamento, reduzir custos e gerar relatórios mensais de forma profissional.\n\n1. Objetivo da automação\n   • Permitir que qualquer pessoa envie uma mensagem (texto ou áudio) pelo Telegram solicitando uma fatura.\n   • O sistema gera automaticamente uma fatura profissional (com ou sem IVA), converte para PDF e a envia por e-mail.\n   • A fatura também é armazenada automaticamente no Google Drive, organizada por mês e ano.\n   • Os dados podem ser salvos em Supabase ou Google Sheets para histórico e relatórios financeiros mensais.\n\n2. Estrutura técnica do fluxo\n   • Entrada no Telegram: o usuário envia um comando de voz ou texto.\n   • Normalização: o fluxo identifica o tipo de mensagem e converte tudo em texto padronizado.\n   • Interpretação: em vez de usar uma API de IA, um nó de código transforma o texto em dados estruturados.\n   • Geração de HTML: Gemini cria o layout visual da fatura (com design e estrutura definidos).\n   • Conversão para PDF: feita com PDF.co, sem marcas d’água.\n   • Envio por e-mail: o sistema envia automaticamente o PDF com corpo HTML profissional.\n   • Armazenamento: o arquivo é salvo no Google Drive e os dados vão para Supabase/Sheets.\n   • Relatórios financeiros: mensalmente, um trigger coleta as faturas do mês anterior, faz uma consulta SQL, agrega os dados e gera um relatório HTML analítico.\n\n3. Principais ferramentas usadas\n   • N8N como orquestrador do fluxo.\n   • Bot do Telegram para entrada do usuário.\n   • Gemini para gerar HTML e estrutura de fatura.\n   • PDF.co para converter HTML em PDF.\n   • Google Drive para armazenamento.\n   • Supabase ou Google Sheets para banco de dados.\n\n4. Estratégias e boas práticas\n   • Dar “funções metafóricas” à IA (como “você é um forno”) melhora os resultados.\n   • Manter nomes de variáveis consistentes (“text”) evita erros entre caminhos diferentes.\n   • Usar apenas imagens com URLs públicas no HTML.\n   • Desativar a mensagem “enviado via N8N” no Telegram.\n   • Pedir com clareza à IA o que se espera de cada parte do processo, definindo o papel e o formato do output.\n\n5. Parte avançada: geração de relatório financeiro\n   • O sistema roda no início de cada mês, pega os movimentos do mês anterior e gera um relatório completo.\n   • Usa SQL para buscar e filtrar dados automaticamente.\n   • Gemini gera o HTML do relatório, que pode ser exibido diretamente ou convertido em PDF.\n   • O relatório inclui análise automática dos cinco principais indicadores e resumo visual das receitas e despesas.\n\n6. Conclusão e aprendizado\n   • A automação mostra que é possível criar fluxos potentes sem depender de APIs caras.\n   • Tudo funciona com prompts bem estruturados e nós de código dentro do N8N.\n   • O segredo é aprender a pedir corretamente à IA o resultado desejado.\n   • A execução total de uma fatura leva cerca de 10 a 15 segundos, oferecendo grande economia de tempo para empresas.\n\nExemplo de uso prático\nUm cliente envia no Telegram:\n“Gere uma fatura para João da Silva no valor de 500€, sem IVA.”\nEm segundos, o sistema gera o PDF, envia por e-mail, salva no Google Drive e registra no banco de dados.\n\nResultado\nUma automação empresarial completa, eficiente e sem custo recorrente de APIs, capaz de gerar faturas e relatórios financeiros em segundos, 100% integrada com Telegram, N8N, Gemini e Google Drive.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14903,
+    "author": "INEMA",
+    "date": "2025-10-08T03:48:16+00:00",
+    "text": "==================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14902,
+    "author": "INEMA",
+    "date": "2025-10-08T03:48:00+00:00",
+    "text": "======================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14901,
+    "author": "INEMA",
+    "date": "2025-10-08T03:47:56+00:00",
+    "text": "e51 - Faturas e relatório financeiro em 1 clique\n\nVocê vai aprender a montar uma automação completa que permite gerar e enviar faturas profissionais a partir de mensagens no Telegram (texto ou áudio), sem depender de agentes de IA externos nem consumir APIs. Essa solução é extremamente útil para qualquer empresa que trabalhe com faturamento recorrente, permitindo economizar tempo, reduzir erros e oferecer uma experiência mais profissional aos clientes.\n\n🛠️ O que conseguimos com essa automação\n• Gerar faturas automaticamente a partir do Telegram, por voz ou texto.\n• Criar PDFs profissionais em segundos sem consumir APIs.\n• Enviar a fatura por e-mail com design HTML personalizado.\n• Salvar automaticamente as faturas no Google Drive, organizadas por mês e ano.\n• Adaptar facilmente o fluxo para faturas com ou sem IVA.\n• Reduzir custos a longo prazo ao não usar agentes de IA externos.\n• Aplicar o mesmo conceito a relatórios financeiros pessoais ou empresariais.\n\n🧩 Estrutura do fluxo automatizado\n**Entrada via Telegram**\nO usuário envia uma mensagem (voz ou texto) ao bot solicitando a geração de uma fatura com os dados relevantes.\n\n**Recepção e normalização da entrada**\nDetecta-se se a mensagem é de voz ou texto. Ambos os tipos são normalizados para serem processados da mesma forma.\n\n**Interpretação da mensagem (sem API)**\nEm vez de usar um agente de IA, utiliza-se um nó de código que transforma a entrada em uma estrutura de dados limpa.\n\n**Geração de HTML personalizado**\nCom ajuda do Gemini, é criado um HTML profissional para a fatura, adaptado com design visual.\n\n**Conversão para PDF**\nO HTML é convertido em PDF usando o PDF.co, sem marcas d’água nem limitações rígidas.\n\n**Envio da fatura**\nO sistema envia automaticamente o e-mail ao cliente, com corpo em HTML visual e o PDF anexado.\n\n**Armazenamento no Drive**\nO arquivo PDF é enviado para a pasta correspondente (exemplo: /Faturas/2025/Outubro).\n\n**Geração de relatórios financeiros (opcional)**\nMensalmente, são extraídos os movimentos do mês anterior e criado um relatório visual e analítico.\n\n🧰 Ferramentas utilizadas\n• N8N\n• Bot do Telegram\n• Gemini (para prompts estruturados)\n• PDF.co\n• Google Drive\n• Supabase / Google Sheets (opcional para base de dados)\n\n🧠 Dicas importantes que aprendemos\n• Nem sempre é necessário consumir APIs: com um bom prompt, o Gemini pode gerar diretamente o HTML ou a estrutura desejada.\n• Atribuir papéis metafóricos à IA (exemplo: “você é um forno”) melhora a resposta do modelo.\n• Normalizar variáveis e nomes nos nós (como “text”) evita erros entre ramificações.\n• O design HTML da fatura ou do e-mail deve conter apenas imagens públicas (URLs), nunca arquivos locais.\n• Desative a atribuição do N8N para que o Telegram não exiba a mensagem “enviado via N8N”.\n\nRecursos\n• Geração de faturas\n• Geração de relatórios",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14900,
+    "author": "INEMA",
+    "date": "2025-10-08T03:47:12+00:00",
+    "text": "=========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14899,
+    "author": "INEMA",
+    "date": "2025-10-08T03:47:10+00:00",
+    "text": "O SISTEMA",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14898,
+    "author": "INEMA",
+    "date": "2025-10-08T03:47:01+00:00",
+    "text": "============================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14897,
+    "author": "INEMA",
+    "date": "2025-10-08T03:46:23+00:00",
+    "text": "Faturas e Finanças no piloto automático 🧾🔥\n\n\nApresento uma automação que, sinceramente, pode ser vendida para qualquer empresa que emita faturas. E não só isso… também cria relatórios financeiros mensais totalmente automáticos.\n\nImagina um cliente te mandar uma mensagem no Telegram dizendo:\n– \"Gera uma fatura para X no valor de 500€\"\n– e em menos de 30 segundos receber o PDF profissional, arquivado e enviado por e-mail?\n\nPois é, foi exatamente isso que foi montamos. E  foi além:\n\n🔥 O que essa automação faz exatamente?\n✅ Recebe mensagens no Telegram (texto ou áudio) para criar faturas.\n✅ Interpreta o conteúdo com IA sem usar APIs externas.\n✅ Gera HTMLs profissionais para as faturas (com ou sem IVA).\n✅ Converte o HTML em PDF com design de alto nível.\n✅ Envia o PDF por e-mail com corpo em HTML visual + arquivo anexo.\n✅ Salva automaticamente a fatura no Google Drive (organizada por mês e ano).\n✅ Insere os dados no Supabase ou Google Sheets, se quiser manter histórico.\n✅ E o melhor… cria um relatório financeiro mensal visual e analítico em HTML, sem precisar mover um dedo.\n\n💡 O mais impressionante de tudo:\nNão usa agentes externos.\nNão consome tokens da OpenAI.\nNão há custos ocultos.\nTUDO é feito por meio de nós de código bem estruturados, e 100% do poder vem do prompt dado ao Gemini para estruturar e gerar o HTML.\n\nVocê pode vender isso como serviço se for:\n🚀 Agência que gerencia faturamento de clientes.\n📦 SaaS ou consultoria com pagamentos recorrentes.\n🧠 Profissional independente que precisa de relatórios mensais.\n💼 Qualquer negócio que queira deixar para trás as planilhas de Excel.\n\nSegue um exemplo da fatura e do relatório para você ver como isso está incrível!",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14896,
+    "author": "INEMA",
+    "date": "2025-10-08T03:44:36+00:00",
+    "text": "==========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14895,
+    "author": "INEMA",
+    "date": "2025-10-08T03:43:37+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "generar_facturas_(3).json"
+  },
+  {
+    "id": 14894,
+    "author": "INEMA",
+    "date": "2025-10-08T03:43:37+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "informes_mesuales_(1).json"
+  },
+  {
+    "id": 14893,
+    "author": "INEMA",
+    "date": "2025-10-08T03:43:26+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14893_020.jpg"
+  },
+  {
+    "id": 14892,
+    "author": "INEMA",
+    "date": "2025-10-08T03:42:15+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14892_021.jpg"
+  },
+  {
+    "id": 14891,
+    "author": "INEMA",
+    "date": "2025-10-08T03:41:29+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14891_022.jpg"
+  },
+  {
+    "id": 14890,
+    "author": "INEMA",
+    "date": "2025-10-08T03:40:47+00:00",
+    "text": "e51 - Faturas e Relatório Financeiro em 1 Clique",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14889,
+    "author": "INEMA",
+    "date": "2025-10-08T03:40:44+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14888,
+    "author": "INEMA",
+    "date": "2025-10-08T03:40:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14887,
+    "author": "INEMA",
+    "date": "2025-10-08T03:40:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14886,
+    "author": "INEMA",
+    "date": "2025-10-08T03:40:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14885,
+    "author": "INEMA",
+    "date": "2025-10-08T03:40:42+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14884,
+    "author": "INEMA",
+    "date": "2025-10-08T03:40:42+00:00",
+    "text": "https://chatgpt.com/c/68e5dcb8-20a0-832e-8663-363e62dba239",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14883,
+    "author": "INEMA",
+    "date": "2025-10-08T03:40:41+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14882,
+    "author": "INEMA",
+    "date": "2025-10-08T03:40:37+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

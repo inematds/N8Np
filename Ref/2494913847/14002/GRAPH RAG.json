@@ -1,0 +1,522 @@
+{
+  "name": "GRAPH RAG",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 2
+            }
+          ]
+        }
+      },
+      "id": "f0528394-0998-4a14-ac33-d5695d3e5849",
+      "name": "Data Ingestion Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1312,
+        952
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.example.com/knowledge/documents",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer <YOUR_API_KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "7a2acdf7-53be-497d-a2cd-9706e24f3ad6",
+      "name": "Fetch Knowledge Documents",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -760,
+        952
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Extract Entities & Relations from documents using NLP\n// This code processes text to identify key concepts, people, places, and their connections\n\nconst item = $input.item.json;\nconst text = item.content || item.text || item.body || '';\n\n// Simple entity extraction patterns\nconst entityPatterns = {\n  person: /\\b[A-Z][a-z]+ [A-Z][a-z]+\\b/g, // Simple name pattern\n  organization: /\\b(?:Inc|Corp|LLC|Ltd|Company|Organization|University|Institute)\\b/gi,\n  location: /\\b(?:New York|London|Paris|Tokyo|California|Texas|USA|UK|Canada)\\b/gi,\n  date: /\\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\\s+\\d{1,2},?\\s+\\d{4}|\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}\\b/gi,\n  technology: /\\b(?:AI|artificial intelligence|machine learning|blockchain|cloud computing|API|database|software|algorithm)\\b/gi\n};\n\n// Extract entities\nconst entities = [];\nlet entityId = 1;\n\nfor (const [type, pattern] of Object.entries(entityPatterns)) {\n  const matches = text.match(pattern) || [];\n  for (const match of matches) {\n    entities.push({\n      id: `entity_${entityId++}`,\n      text: match.trim(),\n      type: type,\n      confidence: 0.8\n    });\n  }\n}\n\n// Simple relationship extraction based on proximity and common patterns\nconst relations = [];\nlet relationId = 1;\n\n// Look for relationships between entities\nfor (let i = 0; i < entities.length; i++) {\n  for (let j = i + 1; j < entities.length; j++) {\n    const entity1 = entities[i];\n    const entity2 = entities[j];\n    \n    // Check if entities appear close to each other in text\n    const entity1Index = text.indexOf(entity1.text);\n    const entity2Index = text.indexOf(entity2.text);\n    \n    if (Math.abs(entity1Index - entity2Index) < 100) { // Within 100 characters\n      let relationType = 'related_to';\n      \n      // Determine relationship type based on entity types\n      if (entity1.type === 'person' && entity2.type === 'organization') {\n        relationType = 'works_for';\n      } else if (entity1.type === 'person' && entity2.type === 'location') {\n        relationType = 'located_in';\n      } else if (entity1.type === 'organization' && entity2.type === 'location') {\n        relationType = 'based_in';\n      } else if (entity1.type === 'person' && entity2.type === 'person') {\n        relationType = 'knows';\n      }\n      \n      relations.push({\n        id: `relation_${relationId++}`,\n        source: entity1.id,\n        target: entity2.id,\n        type: relationType,\n        confidence: 0.7\n      });\n    }\n  }\n}\n\n// Remove duplicate entities\nconst uniqueEntities = entities.filter((entity, index, self) => \n  index === self.findIndex(e => e.text.toLowerCase() === entity.text.toLowerCase() && e.type === entity.type)\n);\n\n// Return structured data\nreturn {\n  json: {\n    document_id: item.id || `doc_${Date.now()}`,\n    original_text: text,\n    entities: uniqueEntities,\n    relations: relations,\n    extraction_timestamp: new Date().toISOString(),\n    entity_count: uniqueEntities.length,\n    relation_count: relations.length\n  }\n};"
+      },
+      "id": "9afb9e6f-7b45-49cc-8b8d-dab58b9c6b8d",
+      "name": "Extract Entities & Relations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        952
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build Knowledge Graph from extracted entities and relations\nconst items = $input.all();\n\n// Initialize graph structure\nconst graph = {\n  nodes: new Map(),\n  edges: [],\n  metadata: {\n    totalNodes: 0,\n    totalEdges: 0,\n    createdAt: new Date().toISOString()\n  }\n};\n\n// Process each document's entities and relations\nfor (const item of items) {\n  const { entities = [], relations = [], document = {} } = item.json;\n  \n  // Add entities as nodes\n  entities.forEach(entity => {\n    const nodeId = `${entity.type}_${entity.text.toLowerCase().replace(/\\s+/g, '_')}`;\n    \n    if (!graph.nodes.has(nodeId)) {\n      graph.nodes.set(nodeId, {\n        id: nodeId,\n        label: entity.text,\n        type: entity.type,\n        confidence: entity.confidence || 1.0,\n        properties: {\n          frequency: 1,\n          documents: [document.id || document.title || 'unknown']\n        }\n      });\n    } else {\n      // Update existing node\n      const node = graph.nodes.get(nodeId);\n      node.properties.frequency += 1;\n      if (!node.properties.documents.includes(document.id || document.title)) {\n        node.properties.documents.push(document.id || document.title || 'unknown');\n      }\n    }\n  });\n  \n  // Add relations as edges\n  relations.forEach(relation => {\n    const sourceId = `${relation.source.type}_${relation.source.text.toLowerCase().replace(/\\s+/g, '_')}`;\n    const targetId = `${relation.target.type}_${relation.target.text.toLowerCase().replace(/\\s+/g, '_')}`;\n    \n    graph.edges.push({\n      id: `${sourceId}_${relation.type}_${targetId}`,\n      source: sourceId,\n      target: targetId,\n      type: relation.type,\n      confidence: relation.confidence || 1.0,\n      properties: {\n        document: document.id || document.title || 'unknown'\n      }\n    });\n  });\n}\n\n// Convert nodes Map to array\nconst nodesArray = Array.from(graph.nodes.values());\ngraph.nodes = nodesArray;\ngraph.metadata.totalNodes = nodesArray.length;\ngraph.metadata.totalEdges = graph.edges.length;\n\n// Graph traversal and query capabilities\nconst graphUtils = {\n  // Find nodes by type\n  findNodesByType: (nodeType) => {\n    return graph.nodes.filter(node => node.type === nodeType);\n  },\n  \n  // Find connected nodes\n  findConnectedNodes: (nodeId) => {\n    const connectedEdges = graph.edges.filter(edge => \n      edge.source === nodeId || edge.target === nodeId\n    );\n    \n    const connectedNodeIds = new Set();\n    connectedEdges.forEach(edge => {\n      if (edge.source !== nodeId) connectedNodeIds.add(edge.source);\n      if (edge.target !== nodeId) connectedNodeIds.add(edge.target);\n    });\n    \n    return graph.nodes.filter(node => connectedNodeIds.has(node.id));\n  },\n  \n  // Find shortest path between two nodes\n  findShortestPath: (startId, endId) => {\n    const visited = new Set();\n    const queue = [{ nodeId: startId, path: [startId] }];\n    \n    while (queue.length > 0) {\n      const { nodeId, path } = queue.shift();\n      \n      if (nodeId === endId) {\n        return path;\n      }\n      \n      if (visited.has(nodeId)) continue;\n      visited.add(nodeId);\n      \n      const connectedEdges = graph.edges.filter(edge => \n        edge.source === nodeId || edge.target === nodeId\n      );\n      \n      connectedEdges.forEach(edge => {\n        const nextNodeId = edge.source === nodeId ? edge.target : edge.source;\n        if (!visited.has(nextNodeId)) {\n          queue.push({ nodeId: nextNodeId, path: [...path, nextNodeId] });\n        }\n      });\n    }\n    \n    return null; // No path found\n  },\n  \n  // Query nodes by properties\n  queryNodes: (queryFn) => {\n    return graph.nodes.filter(queryFn);\n  }\n};\n\n// Enrich original documents with graph metadata\nconst enrichedDocuments = items.map(item => {\n  const { entities = [], relations = [], document = {} } = item.json;\n  \n  // Find related nodes in the graph\n  const relatedNodes = [];\n  entities.forEach(entity => {\n    const nodeId = `${entity.type}_${entity.text.toLowerCase().replace(/\\s+/g, '_')}`;\n    const node = graph.nodes.find(n => n.id === nodeId);\n    if (node) {\n      relatedNodes.push(node);\n    }\n  });\n  \n  // Calculate document centrality (how connected it is in the graph)\n  const documentCentrality = relatedNodes.reduce((sum, node) => {\n    const connections = graph.edges.filter(edge => \n      edge.source === node.id || edge.target === node.id\n    ).length;\n    return sum + connections;\n  }, 0);\n  \n  return {\n    ...item.json,\n    graphMetadata: {\n      relatedNodes: relatedNodes.map(node => ({\n        id: node.id,\n        label: node.label,\n        type: node.type,\n        frequency: node.properties.frequency\n      })),\n      centrality: documentCentrality,\n      entityCount: entities.length,\n      relationCount: relations.length\n    }\n  };\n});\n\n// Return the complete knowledge graph and enriched documents\nreturn [\n  {\n    json: {\n      knowledgeGraph: graph,\n      graphUtils: {\n        findNodesByType: 'function',\n        findConnectedNodes: 'function',\n        findShortestPath: 'function',\n        queryNodes: 'function'\n      },\n      enrichedDocuments: enrichedDocuments,\n      summary: {\n        totalDocuments: items.length,\n        totalNodes: graph.metadata.totalNodes,\n        totalEdges: graph.metadata.totalEdges,\n        avgEntitiesPerDoc: entities.length / items.length,\n        avgRelationsPerDoc: relations.length / items.length\n      }\n    }\n  }\n];"
+      },
+      "id": "598771dc-cd11-4812-addf-e6e60ec4dd8e",
+      "name": "Build Knowledge Graph",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16,
+        952
+      ]
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "id": "3c083a66-adf4-4333-9f04-549a4c5a4786",
+      "name": "Recursive Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        448,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "id": "504a9be9-d43e-40ec-b587-3384d8325dac",
+      "name": "Document Processor",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        368,
+        768
+      ]
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "id": "ab49ed52-fef3-4068-a2ef-f354f3b47dec",
+      "name": "OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        768
+      ]
+    },
+    {
+      "parameters": {
+        "description": "Query knowledge graph for entity relationships",
+        "jsCode": "// Graph Query Tool - Query knowledge graph structure and discover relationships\n// Input: query string containing entity names or relationship types to search for\n\n// Parse the query to extract entities and relationship types\nconst queryLower = query.toLowerCase();\nconst entities = [];\nconst relationshipTypes = [];\n\n// Extract potential entities (capitalized words or quoted phrases)\nconst entityMatches = query.match(/[A-Z][a-z]+|\"[^\"]+\"/g);\nif (entityMatches) {\n  entities.push(...entityMatches.map(e => e.replace(/\"/g, '')));\n}\n\n// Extract relationship keywords\nconst relationshipKeywords = ['related to', 'connected to', 'part of', 'causes', 'leads to', 'influences', 'depends on'];\nrelationshipKeywords.forEach(keyword => {\n  if (queryLower.includes(keyword)) {\n    relationshipTypes.push(keyword);\n  }\n});\n\n// Mock knowledge graph structure (in real implementation, this would query actual graph database)\nconst knowledgeGraph = {\n  nodes: [\n    { id: 'entity1', label: 'Climate Change', type: 'concept' },\n    { id: 'entity2', label: 'Carbon Emissions', type: 'factor' },\n    { id: 'entity3', label: 'Renewable Energy', type: 'solution' },\n    { id: 'entity4', label: 'Global Temperature', type: 'metric' },\n    { id: 'entity5', label: 'Solar Power', type: 'technology' }\n  ],\n  edges: [\n    { source: 'entity2', target: 'entity1', relationship: 'causes', weight: 0.9 },\n    { source: 'entity3', target: 'entity2', relationship: 'reduces', weight: 0.8 },\n    { source: 'entity1', target: 'entity4', relationship: 'affects', weight: 0.95 },\n    { source: 'entity5', target: 'entity3', relationship: 'part of', weight: 0.7 }\n  ]\n};\n\n// Graph traversal function to find paths between entities\nfunction findPaths(startEntity, endEntity, maxDepth = 3) {\n  const paths = [];\n  const visited = new Set();\n  \n  function dfs(currentNode, targetNode, currentPath, depth) {\n    if (depth > maxDepth) return;\n    if (currentNode === targetNode && currentPath.length > 0) {\n      paths.push([...currentPath]);\n      return;\n    }\n    \n    visited.add(currentNode);\n    \n    // Find outgoing edges from current node\n    const outgoingEdges = knowledgeGraph.edges.filter(edge => edge.source === currentNode);\n    \n    for (const edge of outgoingEdges) {\n      if (!visited.has(edge.target)) {\n        currentPath.push({\n          from: currentNode,\n          to: edge.target,\n          relationship: edge.relationship,\n          weight: edge.weight\n        });\n        dfs(edge.target, targetNode, currentPath, depth + 1);\n        currentPath.pop();\n      }\n    }\n    \n    visited.delete(currentNode);\n  }\n  \n  const startNode = knowledgeGraph.nodes.find(n => n.label.toLowerCase().includes(startEntity.toLowerCase()));\n  const endNode = knowledgeGraph.nodes.find(n => n.label.toLowerCase().includes(endEntity.toLowerCase()));\n  \n  if (startNode && endNode) {\n    dfs(startNode.id, endNode.id, [], 0);\n  }\n  \n  return paths;\n}\n\n// Find connected entities for a given entity\nfunction findConnectedEntities(entityName) {\n  const entity = knowledgeGraph.nodes.find(n => \n    n.label.toLowerCase().includes(entityName.toLowerCase())\n  );\n  \n  if (!entity) return [];\n  \n  const connections = [];\n  \n  // Find outgoing connections\n  knowledgeGraph.edges.forEach(edge => {\n    if (edge.source === entity.id) {\n      const targetNode = knowledgeGraph.nodes.find(n => n.id === edge.target);\n      if (targetNode) {\n        connections.push({\n          entity: targetNode.label,\n          relationship: edge.relationship,\n          direction: 'outgoing',\n          weight: edge.weight,\n          type: targetNode.type\n        });\n      }\n    }\n    \n    // Find incoming connections\n    if (edge.target === entity.id) {\n      const sourceNode = knowledgeGraph.nodes.find(n => n.id === edge.source);\n      if (sourceNode) {\n        connections.push({\n          entity: sourceNode.label,\n          relationship: edge.relationship,\n          direction: 'incoming',\n          weight: edge.weight,\n          type: sourceNode.type\n        });\n      }\n    }\n  });\n  \n  return connections.sort((a, b) => b.weight - a.weight);\n}\n\n// Main query processing\nlet result = {\n  query: query,\n  entities_found: [],\n  relationships: [],\n  paths: [],\n  connected_entities: []\n};\n\n// Process each identified entity\nentities.forEach(entity => {\n  const matchingNode = knowledgeGraph.nodes.find(n => \n    n.label.toLowerCase().includes(entity.toLowerCase())\n  );\n  \n  if (matchingNode) {\n    result.entities_found.push({\n      name: matchingNode.label,\n      type: matchingNode.type,\n      id: matchingNode.id\n    });\n    \n    // Find connected entities\n    const connections = findConnectedEntities(entity);\n    result.connected_entities.push({\n      entity: matchingNode.label,\n      connections: connections\n    });\n  }\n});\n\n// Find paths between entities if multiple entities are specified\nif (entities.length >= 2) {\n  for (let i = 0; i < entities.length - 1; i++) {\n    for (let j = i + 1; j < entities.length; j++) {\n      const paths = findPaths(entities[i], entities[j]);\n      if (paths.length > 0) {\n        result.paths.push({\n          from: entities[i],\n          to: entities[j],\n          paths: paths\n        });\n      }\n    }\n  }\n}\n\n// If no specific entities found, return general graph statistics\nif (result.entities_found.length === 0) {\n  result.graph_summary = {\n    total_nodes: knowledgeGraph.nodes.length,\n    total_edges: knowledgeGraph.edges.length,\n    node_types: [...new Set(knowledgeGraph.nodes.map(n => n.type))],\n    relationship_types: [...new Set(knowledgeGraph.edges.map(e => e.relationship))]\n  };\n}\n\n// Format the response as a readable string\nlet response = `Graph Query Results for: \"${query}\"\\n\\n`;\n\nif (result.entities_found.length > 0) {\n  response += `Found Entities:\\n`;\n  result.entities_found.forEach(entity => {\n    response += `- ${entity.name} (${entity.type})\\n`;\n  });\n  response += `\\n`;\n}\n\nif (result.connected_entities.length > 0) {\n  response += `Entity Relationships:\\n`;\n  result.connected_entities.forEach(item => {\n    response += `\\n${item.entity}:\\n`;\n    item.connections.forEach(conn => {\n      response += `  ${conn.direction === 'outgoing' ? '→' : '←'} ${conn.relationship} ${conn.entity} (${conn.type}, weight: ${conn.weight})\\n`;\n    });\n  });\n  response += `\\n`;\n}\n\nif (result.paths.length > 0) {\n  response += `Relationship Paths:\\n`;\n  result.paths.forEach(pathGroup => {\n    response += `\\nPaths from ${pathGroup.from} to ${pathGroup.to}:\\n`;\n    pathGroup.paths.forEach((path, index) => {\n      response += `  Path ${index + 1}: `;\n      path.forEach((step, stepIndex) => {\n        if (stepIndex > 0) response += ` → `;\n        response += `${step.from} --[${step.relationship}]--> ${step.to}`;\n      });\n      response += `\\n`;\n    });\n  });\n}\n\nif (result.graph_summary) {\n  response += `Graph Overview:\\n`;\n  response += `- Total Nodes: ${result.graph_summary.total_nodes}\\n`;\n  response += `- Total Edges: ${result.graph_summary.total_edges}\\n`;\n  response += `- Node Types: ${result.graph_summary.node_types.join(', ')}\\n`;\n  response += `- Relationship Types: ${result.graph_summary.relationship_types.join(', ')}\\n`;\n}\n\nreturn response;"
+      },
+      "id": "e4b5c349-791a-4c71-9895-baf3c1cb40a7",
+      "name": "Graph Query Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        -960,
+        1472
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $fromAI.url }}",
+        "options": {}
+      },
+      "id": "22ac65ab-bffa-4789-ad43-69749074e035",
+      "name": "External Knowledge API Tool",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -832,
+        1472
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4-turbo"
+        },
+        "options": {
+          "maxTokens": "[REMOVED]",
+          "temperature": 0.1
+        }
+      },
+      "id": "80d96dac-bd23-407d-86cc-2a4e2c906ef4",
+      "name": "OpenAI GPT-4",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1088,
+        1472
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are an expert knowledge assistant that combines vector search with graph reasoning. Use the graph_query tool to explore entity relationships and the vector retrieval to find relevant context. Provide comprehensive answers that leverage both structured knowledge graphs and semantic similarity.",
+          "maxIterations": 10,
+          "returnIntermediateSteps": false,
+          "passthroughBinaryImages": true,
+          "enableStreaming": true
+        }
+      },
+      "id": "e95dcdaf-435a-4c6d-9dc3-48e09602c8fd",
+      "name": "Graph RAG Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -904,
+        1248
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/graph-rag-query",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "331cce90-36c5-4d45-88a2-2104cbf329e7",
+      "name": "Query Interface",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1312,
+        1248
+      ],
+      "webhookId": "b1b5c56d-6495-470b-8576-4cb8f9d94bd3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "response",
+              "value": "={{ $('Graph RAG Agent').item.json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "timestamp",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "query_type",
+              "value": "graph_rag",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "confidence_score",
+              "value": 0.85,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2c5d960f-85ca-4149-b398-86572262245d",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -208,
+        1248
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "id": "dd40b4ad-4c92-46f5-a401-e2c98d03afbc",
+      "name": "Supabase Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        272,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "tableName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "documents"
+        },
+        "topK": 10,
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "id": "97a4b062-8781-4b9f-a420-2b112d48daa9",
+      "name": "Supabase Vector Retriever",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -704,
+        1472
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "knowledge_graphs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "nodes",
+              "fieldValue": "={{ $('Build Knowledge Graph').item.json.knowledgeGraph.nodes }}"
+            },
+            {
+              "fieldId": "edges",
+              "fieldValue": "={{ $('Build Knowledge Graph').item.json.knowledgeGraph.edges }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ $('Build Knowledge Graph').item.json.knowledgeGraph.metadata }}"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "d896eb72-61c7-4313-b1e4-e4eb629cbd53",
+      "name": "Store Knowledge Graph",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        376,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "knowledge_graph",
+        "filters": {
+          "conditions": []
+        }
+      },
+      "id": "2a05eb2d-05b4-4307-96a3-fa874f1b14d4",
+      "name": "Graph Database Tool",
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        1472
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Data Ingestion Schedule": {
+      "main": [
+        [
+          {
+            "node": "Fetch Knowledge Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Knowledge Documents": {
+      "main": [
+        [
+          {
+            "node": "Extract Entities & Relations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Entities & Relations": {
+      "main": [
+        [
+          {
+            "node": "Build Knowledge Graph",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Knowledge Graph": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Store Knowledge Graph",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Document Processor",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document Processor": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Supabase Vector Retriever",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Graph Query Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Graph RAG Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "External Knowledge API Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Graph RAG Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Graph RAG Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Interface": {
+      "main": [
+        [
+          {
+            "node": "Graph RAG Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Graph RAG Agent": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Retriever": {
+      "ai_tool": [
+        [
+          {
+            "node": "Graph RAG Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Graph Database Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Graph RAG Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6a57a2ee-2052-44c6-b50a-223e7e4b681c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aaadb797535f05587ee95b776c942a7c3f7a46fd7aa0c9b6a9d64e1e595f8af1"
+  },
+  "id": "tfBYDVOGtBe4YIbo",
+  "tags": []
+}

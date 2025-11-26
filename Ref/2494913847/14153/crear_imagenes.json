@@ -1,0 +1,408 @@
+{
+  "name": "crear_imagenes",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "imageTitle"
+            },
+            {
+              "name": "imagePrompt"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        48,
+        64
+      ],
+      "id": "4b07fee2-c2b3-4413-9138-272cca532e0e",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/jobs/createTask",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"google/nano-banana\",\n  \"callBackUrl\": \"{{$execution.resumeUrl}}\",\n  \"input\": {\n    \"prompt\": \"{{ $json.message.content }}\",\n    \"output_format\": \"png\",\n    \"image_size\": \"9:16\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        64
+      ],
+      "id": "55c8483d-209b-469c-ab47-b6abc52aebc8",
+      "name": "Create Image",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/jobs/recordInfo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $('Create Image').first().json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1104,
+        64
+      ],
+      "id": "70679384-2f65-4e6b-9911-a7acaf513b5d",
+      "name": "Get Result",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "Response",
+              "value": "=La imagen fue creada y se nombró \"{{ $json.name }}\". \n\nAquí tienes el enlace a la imagen en Google Drive: {{ $json.webViewLink }}\n\nEl tipo_documento es \"foto\"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1792,
+        48
+      ],
+      "id": "e3b9fb0d-cde7-4fda-91da-88a3e9c5e622",
+      "name": "Result"
+    },
+    {
+      "parameters": {
+        "url": "={{ JSON.parse($json.data.resultJson).resultUrls[0] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1504,
+        48
+      ],
+      "id": "c4d3e5f6-a86b-4589-80c7-923914ab3e38",
+      "name": "Download Image"
+    },
+    {
+      "parameters": {
+        "name": "={{ $('When Executed by Another Workflow').first().json.imageTitle }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1sJqM61k7jvXd7Y3_tdXhExH2EJWQdKZw",
+          "mode": "list",
+          "cachedResultName": "Pruebas",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1sJqM61k7jvXd7Y3_tdXhExH2EJWQdKZw"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1648,
+        48
+      ],
+      "id": "4dd3f55e-b1de-475b-abaa-1028f0484ad4",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive Angel"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Entrada",
+        "height": 224,
+        "width": 176,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6c610e91-b548-47e5-bb42-6bf3790829dd",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Crear imagen con IA",
+        "height": 224,
+        "width": 736,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        688,
+        0
+      ],
+      "id": "bd5f32ec-21d7-4095-a07e-e5d98c8f3161",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Salida",
+        "height": 224,
+        "width": 464,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        0
+      ],
+      "id": "17432b55-0b11-4396-9dbf-be0cf9b65442",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Requerimiento: {{ $('When Executed by Another Workflow').item.json.imagePrompt }}"
+            },
+            {
+              "content": "=Rol y objetivo\nEres un Ingeniero de Prompts senior para el modelo de imágenes nano-banana (Gemini 2.5 Flash Image) que se usa vía fal.ai. Convierte el título y la descripción del usuario en un solo prompt claro, específico y ejecutable por nano-banana, usando lenguaje descriptivo (no una lista de tags). Tu salida se usará directamente en el campo prompt de la API de fal.ai.  \n\nFormato de salida (obligatorio)\nDevuelve solo el prompt final, en una sola línea, sin comillas, sin saltos de línea, sin markdown.  \n\nEl prompt final debe estar siempre en inglés, aunque la indicación original esté en otro idioma.  \n\nSi hay texto a renderizar en la imagen, escribe: texto a renderizar: … (sin comillas).  \n\nMejores prácticas\n- Narra la escena, no listes keywords: subject → action/expression → environment/era → lighting (type/direction) → atmosphere (mood) → composition/framing → camera (shot/angle/lens) → style (aesthetic/materials) → palette (colors) → details/textures → purpose (e.g., cover, e-commerce, thumbnail).  \n- Controla cámara y composición con términos fotográficos/cinematográficos (shot type, angle, 24 mm/85 mm, macro, low-angle, bokeh, rule of thirds).  \n- Texto en imagen: especifica la frase exacta, tipografía/estilo, ubicación y jerarquía visual.  \n- Usa descripciones positivas para exclusiones (ej: “empty street, no cars or cables visible”).  \n- Evita vaguedad: reemplaza adjetivos genéricos con descriptores concretos y medibles (ej. “soft golden hour light”, “diffuse side lighting”).  \n- Relación de aspecto: si se indica, especifícala; si no, deja abierta.  \n\nPlantilla interna obligatoria (única, siempre T2I):  \nillustration/photograph of [subject] [action/expression], in [environment/era], lighting [type/direction], atmosphere [mood], composition [rules/framing], camera [shot/angle/lens], style [aesthetic/materials], palette [colors], detail [textures/key features], purpose [use], aspect ratio [desired AR if specified], avoid [unwanted elements described semantically]  \n\nNormalización antes de devolver\n- Quita repeticiones, tecnicismos innecesarios y cualquier comilla.  \n- Devuelve una sola línea (usa comas y punto y coma para separar ideas).  \n- El prompt final debe estar siempre en inglés.  \n\nSalida única que debes devolver:\n<PROMPT_ENGLISH_NANO_BANANA_SINGLE_LINE>\n",
+              "role": "system"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        336,
+        64
+      ],
+      "id": "68c44008-aa03-4189-bb6c-0967b254eef0",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Creador especializado de prompt",
+        "height": 224,
+        "width": 448
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        224,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "ab7463a4-d23d-410b-867c-a68626de2f98",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        64
+      ],
+      "id": "5452dedd-7c0e-4dc1-a196-4ef0accbb242",
+      "name": "5 Segundos",
+      "webhookId": "64cd3204-7c75-49bc-9364-a4f983b0fc6f"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.data.state }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        80
+      ],
+      "id": "059e7b85-cd1c-4ad3-ab92-9839b017a443",
+      "name": "If"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Create Image": {
+      "main": [
+        [
+          {
+            "node": "5 Segundos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Result": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Create Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5 Segundos": {
+      "main": [
+        [
+          {
+            "node": "Get Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "5 Segundos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "54ab06d4-c1ff-45b0-81d4-647c5561f10a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "67CcMdxPaOtMEWEv",
+  "tags": []
+}

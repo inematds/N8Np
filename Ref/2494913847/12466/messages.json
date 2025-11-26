@@ -1,0 +1,140 @@
+[
+  {
+    "id": 12482,
+    "author": "INEMA",
+    "date": "2025-08-10T03:39:37+00:00",
+    "text": "notes\n\n17. Trello \\[Move Card]\n\n* idList = nova lista pelo new\\_stage\n\n18. Slack \\[Send Message]\n\n* Canal: o mesmo da entrada\n* Texto de confirmação do que foi feito\n\n19. Error Trigger (workflow separado) ou caminhos de erro\n\n* Enviar mensagem no Slack com detalhes da falha\n* Registrar contexto mínimo (sem dados sensíveis)\n\n4. Expressões úteis\n\n* Pegar transcript final:\n  {{ \\$json.transcript || \\$node\\[\"HTTP Request Transcrição OpenAI\"].json.text }}\n* Montar horário de término 60 min após o início:\n  {{ \\$json.event\\_start\\_rfc3339\\_end\\_mais\\_60 || \\$jmespath(\\$json, \"event.start\") }}\n  (alternativa: usar Date & Time para adicionar 60 minutos)\n\n5. Convenções de listas no Trello\n\n* New Lead\n* Discovery Call\n* Proposal Review\n* Won\n* Lost\n  Mantenha esses nomes idênticos ao que o agente usa.\n\n6. Mensagens de teste no Slack\n\n* Voz/texto 1: Agende reunião com Mark, amanhã às 10h EST. Me lembre de levar a apresentação.\n  Resultado: Evento criado 10:00 EST com descrição incluindo lembrete.\n* Voz/texto 2: Contato com o lead Steve Johnson. Discovery call marcada para 2 de agosto de 2025. Ele é Head of Operations em empresa média.\n  Resultado: Card criado/movido para Discovery Call + notas no card + opcionalmente evento no calendário.\n* Voz/texto 3: Tive reunião com Steve Johnson; ele recebeu a proposta e vai revisar. Atualize para Proposal Review.\n  Resultado: Card movido para Proposal Review com nota.\n\n7. Boas práticas e erros comuns\n\n* Timezone: sempre normalize tudo para America/New\\_York antes de criar o evento.\n* Deduplicação de leads: se houver mais de um card com o mesmo nome, adicionar um sufixo único ou verificar email/telefone no texto.\n* Falhas de download de áudio Slack: use header Authorization: Bearer xoxb-... na url\\_private\\_download.\n* LLM sempre em JSON: se o modelo sair do JSON, envolva em um Code node que aplique regex para extrair o primeiro bloco JSON válido e, se falhar, notifique no Slack.\n\n8. Segurança e conformidade\n\n* Guardar tokens nas credenciais do n8n.\n* Limitar o canal de entrada a um canal específico.\n* Sanitizar PII em logs.\n* Definir limites: tamanho máximo de áudio e duração.\n\n9. Expansões rápidas\n\n* WhatsApp via Evolution API ou Telegram: substituir o Slack Trigger por esses conectores.\n* CRM real (HubSpot/Pipedrive): trocar nós do Trello por nós do CRM.\n* Confirmar com o usuário no Slack antes de ações críticas: adicionar um passo opcional de aprovação.\n\nPerguntas e exemplos prontos\n\n* Como envio um comando?\n  Fale ou digite no canal do Slack configurado, por exemplo: Agende call com Ana amanhã às 15h, inclua link do Zoom e lembrete de 30 min.\n* O que acontece se eu não informar horário?\n  O agente aplica defaults (ex.: 10:00 no fuso America/New\\_York) e marca defaults\\_applied=true.\n* Como mover um lead de etapa?\n  Exemplo: Mova o Steve Johnson para Proposal Review e adicione nota que a proposta foi enviada hoje.\n* Posso usar Telegram em vez de Slack?\n  Sim. Troque o nó de entrada e mantenha o restante do fluxo.\n* E se o LLM não devolver JSON válido?\n  O fluxo envia aviso no Slack, registra a transcrição e tenta novamente com um prompt de fallback que força o formato.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12481,
+    "author": "INEMA",
+    "date": "2025-08-10T03:39:37+00:00",
+    "text": "Resumo rápido\nAgente de Ação Inteligente no n8n que capta voz/texto pelo Slack, transcreve (OpenAI), interpreta a intenção com LLM e executa automaticamente: criar eventos no Google Calendar e criar/atualizar/mover leads no Trello. Tudo sem sair do Slack.\n\nPasso a passo prático no n8n\n\n1. Preparar credenciais e permissões\n\n* Slack\n\n  * Crie um app no Slack e instale no workspace.\n  * Escopos sugeridos: channels\\:history, channels\\:read, chat\\:write, files\\:read, users\\:read, im\\:history.\n  * Obtenha o Bot User OAuth Token (xoxb-...).\n* OpenAI\n\n  * Gere a API key.\n* Google Calendar\n\n  * OAuth com escopo [https://www.googleapis.com/auth/calendar](https://www.googleapis.com/auth/calendar).\n* Trello\n\n  * Obtenha key e token da sua conta.\n* Defina o fuso padrão do agente: America/New\\_York.\n\n2. Estrutura do workflow\n\n* Entrada: Slack Trigger (mensagem com texto ou áudio).\n* Se houver áudio: baixar o arquivo e transcrever com OpenAI.\n* Se houver só texto: usar diretamente como transcrição.\n* Agente LLM: transformar a transcrição em um JSON de ação.\n* Roteamento por intenção:\n\n  * create\\_event → Google Calendar: Create Event.\n  * add\\_lead → Trello: Create Card na lista apropriada.\n  * update\\_lead/move\\_lead → Trello: localizar card e atualizar/mover.\n* Retorno: mensagem de confirmação no Slack.\n* Log/erros: enviar aviso no Slack em caso de falha.\n\n3. Nós sugeridos (em ordem)\n\n1) Slack Trigger\n\n   * Eventos: mensagem em canal específico.\n2) IF (tem áudio?)\n\n   * Condição: existe url privada de download ou anexo de áudio.\n3) HTTP Request \\[Slack download] (só quando tem áudio)\n\n   * GET na url\\_private\\_download do arquivo.\n   * Header Authorization: Bearer xoxb-...\n   * Output binário (ex.: audio).\n4) HTTP Request \\[Transcrição OpenAI] (só quando tem áudio)\n\n   * POST [https://api.openai.com/v1/audio/transcriptions](https://api.openai.com/v1/audio/transcriptions)\n   * Form-data: file = binário do passo anterior; model = whisper-1\n   * Retorna texto transcrito.\n5) Set \\[Texto de entrada]\n\n   * Campo transcript = texto do Slack OU da transcrição.\n   * Campo channel\\_id, user\\_id, timezone\\_default = America/New\\_York.\n6) Chat OpenAI \\[Agente de Ação]\n\n   * System prompt: exigir JSON único e válido.\n   * Input: {{ \\$json.transcript }}.\n   * Saída: JSON com intenção e campos normalizados.\n   * Exemplo de system prompt:\n     Você é um parser de ações. Responda somente com um JSON válido, sem explicações.\n     Schema:\n     {\n     \"intent\": \"create\\_event\" | \"add\\_lead\" | \"update\\_lead\" | \"move\\_lead\",\n     \"event\": {\n     \"title\": string,\n     \"date\": \"YYYY-MM-DD\" | null,\n     \"time\": \"HH\\:MM\" | null,\n     \"timezone\": string | null,\n     \"description\": string | null,\n     \"defaults\\_applied\": boolean\n     },\n     \"lead\": {\n     \"name\": string | null,\n     \"stage\": \"New Lead\" | \"Discovery Call\" | \"Proposal Review\" | \"Won\" | \"Lost\" | null,\n     \"action\": \"create\" | \"update\" | \"move\" | null,\n     \"notes\": string | null,\n     \"new\\_stage\": string | null\n     },\n     \"confidence\": 0.0-1.0\n     }\n     Regras:\n\n     * Se for agendamento sem data/hora, inferir do contexto; caso ausente, sinalizar defaults\\_applied=true e usar timezone \"America/New\\_York\".\n     * Se mencionar “discovery call” em data X, defina stage=\"Discovery Call\".\n     * Nunca faça perguntas de acompanhamento. Sempre preencha o melhor possível.\n7) IF \\[intent == create\\_event]\n8) Date & Time \\[normalizar data/hora]\n\n   * Converter para RFC3339 no tz America/New\\_York.\n9) Google Calendar \\[Create Event]\n\n   * Summary = event.title\n   * Description = event.description\n   * Start/End com horário convertido (ex.: 30–60 min).\n10) IF \\[intent == add\\_lead]\n11) Trello \\[Get Boards] ou Set (id do board fixo)\n12) Trello \\[Get Lists]\n\n* Localizar lista pelo nome de stage (ex.: New Lead).\n\n13. Trello \\[Create Card]\n\n* Name = lead.name\n* Desc = lead.notes\n* idList = lista encontrada\n\n14. IF \\[intent == update\\_lead ou move\\_lead]\n15. Trello \\[Search Cards] ou \\[Get Cards in Lists]\n\n* Filtrar por nome do card = lead.name\n\n16. Trello \\[Update Card]\n\n* Atualizar descrição com",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12480,
+    "author": "INEMA",
+    "date": "2025-08-10T03:38:35+00:00",
+    "text": "Smart Action Agent, um agente de IA que executa tarefas a partir de comandos de voz enviados pelo Slack (ou outros canais como WhatsApp ou Telegram). Ele está integrado ao Google Calendar e ao Trello para automatizar agendamentos e gestão de leads.\n\nO agente interpreta mensagens de voz e realiza ações como:\n\n* Criar reuniões no Google Calendar com título, horário e lembretes personalizados.\n* Adicionar ou atualizar leads no Trello, movendo-os entre etapas do funil de vendas com base no contexto da conversa.\n* Inserir anotações relevantes para que outros membros da equipe tenham contexto sobre o cliente ou lead.\n\nO sistema reconhece estágios automaticamente (ex.: “discovery call” → etapa correta no Trello) e pode, ao mesmo tempo, criar compromissos no calendário relacionados ao lead.\n\nPropósito:\nPermitir que qualquer profissional gerencie agenda e pipeline de vendas de forma totalmente prática e rápida, usando apenas comandos de voz, sem precisar acessar manualmente múltiplas plataformas.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12479,
+    "author": "INEMA",
+    "date": "2025-08-10T03:38:16+00:00",
+    "text": "=============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12478,
+    "author": "INEMA",
+    "date": "2025-08-10T03:36:35+00:00",
+    "text": "Agente de Ação Inteligente\n\nWorkflow acionado pelo Slack: Escuta qualquer nova mensagem (incluindo arquivos de áudio) em um canal específico do Slack.\n\nManipulação de áudio: Faz o download do arquivo de áudio anexado via API do Slack.\n\nTranscrição: Envia o áudio para o endpoint de reconhecimento de fala da OpenAI para gerar uma transcrição em texto.\n\nInterpretação inteligente de ações: Envia a transcrição para um “Agente de Ação Inteligente” baseado em GPT, que interpreta a intenção do usuário e mapeia para as ferramentas disponíveis — sem perguntas de acompanhamento.\n\nAutomação de calendário: Se o usuário solicitar uma reunião ou evento, o agente extrai data, hora, resumo e descrição (preenchendo parâmetros ausentes automaticamente) e aciona a ferramenta do Google Calendar para criar o evento.\n\nGerenciamento de leads no Trello:\n\nAdicionar novos leads: Recupera os IDs das listas do pipeline de leads no Trello e cria um novo cartão na etapa “Novo Lead” (ou outra especificada) com o nome e os detalhes extraídos.\n\nAtualizar leads existentes: Busca todas as listas e cartões do pipeline, localiza o cartão do lead especificado e atualiza sua descrição ou move para uma nova etapa conforme instruído.\n\nCaso de Uso / Aplicação\n\nNome da solução: Agente de Ação Inteligente\nOferta principal: Um assistente de IA conversacional integrado ao Slack que executa agendamentos e atualizações no CRM em nome dos usuários, transformando mensagens de voz ou texto em eventos de calendário ou ações no pipeline do Trello.\n\nPrincipais benefícios\n\nFluxo de trabalho contínuo: Usuários não precisam sair do Slack para agendar reuniões ou atualizar leads, reduzindo trocas de contexto.\n\nProdutividade mãos-livres: Comandos de áudio permitem que profissionais ocupados façam múltiplas tarefas — por exemplo, agendar um retorno de chamada enquanto dirigem ou atualizar o status de um prospecto em movimento.\n\nConsistência e conformidade: Parâmetros padrão e prompts estruturados garantem que cada evento e cartão de lead sigam os padrões organizacionais.\n\nIndústrias e compradores ideais\n\nVendas e Desenvolvimento de Negócios (B2B SaaS, Serviços Profissionais): Captura e qualifica leads rapidamente durante chamadas ou reuniões, agendando automaticamente apresentações ou acompanhamentos.\n\nRecrutamento e Seleção: Recrutadores podem transcrever entrevistas de triagem de candidatos e atualizar instantaneamente o pipeline de candidatos sem entrada manual de dados.\n\nConsultoria e Agências: Consultores podem registrar reuniões de início de projeto e cadastrar novos leads de clientes usando notas de voz simples no Slack.\n\nImobiliário: Corretores podem gravar notas de visitas a imóveis no Slack e fazer com que o sistema atualize o CRM ou agende ligações com clientes.\n\nAssistentes Executivos / Equipes Administrativas: Assistentes podem usar breves mensagens de áudio para construir agendas executivas e manter pipelines de contatos com esforço mínimo.\n\nAo empacotar isso como uma integração low-code no n8n ou um aplicativo gerenciado no Slack, você pode oferecer aos clientes um assistente “voz-para-ação” plug-and-play que aumenta a produtividade, acelera o tempo de resposta e reforça a consistência dos processos em qualquer equipe que utilize Slack, Google Calendar e Trello.\n\nRecursos\nSmart Action Agent.json",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12477,
+    "author": "INEMA",
+    "date": "2025-08-10T03:35:51+00:00",
+    "text": "O Smart Action Agent é um assistente de IA integrado ao Slack que transforma mensagens de voz ou texto em ações automáticas, como criar eventos no Google Calendar ou atualizar pipelines de leads no Trello, sem sair do Slack.\n\nPropósito:\nFacilitar agendamentos e gestão de leads de forma rápida, prática e padronizada, aumentando a produtividade e reduzindo o esforço manual.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12476,
+    "author": "INEMA",
+    "date": "2025-08-10T03:35:22+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "6__Smart_Action_Agent.json"
+  },
+  {
+    "id": 12475,
+    "author": "INEMA",
+    "date": "2025-08-10T03:35:16+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_12475_008.jpg"
+  },
+  {
+    "id": 12474,
+    "author": "INEMA",
+    "date": "2025-08-10T03:33:56+00:00",
+    "text": "m26 - Agente de Ação Inteligente",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12473,
+    "author": "INEMA",
+    "date": "2025-08-10T03:33:55+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12472,
+    "author": "INEMA",
+    "date": "2025-08-10T03:33:53+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12471,
+    "author": "INEMA",
+    "date": "2025-08-10T03:33:52+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12470,
+    "author": "INEMA",
+    "date": "2025-08-10T03:33:51+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12469,
+    "author": "INEMA",
+    "date": "2025-08-10T03:33:50+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12468,
+    "author": "INEMA",
+    "date": "2025-08-10T03:33:48+00:00",
+    "text": "https://chatgpt.com/c/689812ea-f8d0-8327-ae03-42a9f3e0c31a",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 12467,
+    "author": "INEMA",
+    "date": "2025-08-10T03:33:47+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12466,
+    "author": "INEMA",
+    "date": "2025-08-10T03:33:38+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

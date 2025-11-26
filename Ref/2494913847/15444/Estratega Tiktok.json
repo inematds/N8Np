@@ -1,0 +1,947 @@
+{
+  "name": "Estratega Tiktok",
+  "nodes": [
+    {
+      "parameters": {
+        "fieldToSplitOut": "palabras_clave",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        768,
+        944
+      ],
+      "id": "63e25fe9-3d91-41a1-8fd3-4e322b6d6039",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "operation": "Run actor and get dataset",
+        "actorId": {
+          "__rl": true,
+          "value": "GdWCkxBtKWOsKjdch",
+          "mode": "list",
+          "cachedResultName": "TikTok Scraper (clockworks/tiktok-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/GdWCkxBtKWOsKjdch/input"
+        },
+        "customBody": "={\n    \"excludePinnedPosts\": true,\n    \"oldestPostDateUnified\": \"7 days\",\n    \"profileSorting\": \"popular\",\n    \"proxyCountryCode\": \"None\",\n    \"resultsPerPage\": 20,\n    \"scrapeRelatedVideos\": false,\n    \"searchQueries\": [\n        \"{{ $json.palabras_clave }}\"\n    ],\n    \"shouldDownloadAvatars\": false,\n    \"shouldDownloadCovers\": true,\n    \"shouldDownloadMusicCovers\": false,\n    \"shouldDownloadSlideshowImages\": true,\n    \"shouldDownloadSubtitles\": true,\n    \"shouldDownloadVideos\": true\n}"
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        992,
+        944
+      ],
+      "id": "e3446223-7bda-4388-a769-868c67bd137e",
+      "name": "Run an Actor and get dataset",
+      "credentials": {
+        "apifyApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "=Eres un analista creativo senior especializado en crecimiento orgánico en TikTok, Reels e Shorts. Tu trabajo es desmenuzar por qué un vídeo concreto se ha vuelto viral y documentarlo con el máximo de detalle táctico posible para después poder replicarlo.\n\nAnaliza el vídeo que te paso a nivel VISUAL, AUDIO, RITMO y ESTRUCTURA NARRATIVA. No te limites al texto hablado. Quiero un análisis completo del formato.\n\nENTREGABLE:\nResponde en español de España con la siguiente estructura fija (mantén los encabezados tal cual):\n\n1. Datos básicos del vídeo\n   - Nicho / temática principal\n   - Público objetivo al que claramente está hablando el vídeo\n   - Contexto del creador (experto, víctima de un problema, autoridad, amigo cercano, etc.)\n   - Señal de promesa central (qué gran resultado / miedo / deseo vende este vídeo)\n\n2. Hook inicial (segundo 0 al segundo 3)\n   - Frase exacta o muy aproximada del hook verbal (si la hay)\n   - Acción visual del primer plano (qué se ve justo al empezar: cara a cámara, pantalla partida, captura de pantalla, texto en pantalla, etc.)\n   - Emotion hook: ¿qué emoción dispara el inicio? (urgencia, miedo, enfado, morbo, curiosidad, aspiracional…)\n   - Motivo de retención: por qué alguien no hace scroll en los primeros 3 segundos\n\n3. Storyline paso a paso\n   - Divide el vídeo en bloques cronológicos (Bloque 1, Bloque 2, Bloque 3…)\n   - Para cada bloque indica:\n     - Marca de tiempo aproximada (ej: 0s-3s, 4s-8s…)\n     - Qué se dice (resumen del guión hablado)\n     - Qué se ve en pantalla (persona hablando, pantalla partida, capturas, texto sobreimpreso, gestos con manos, zoom agresivo, props físicos, etc.)\n     - Qué emoción intenta provocar en el espectador en ese bloque\n     - Micro-objetivo de ese bloque (ej: generar autoridad, generar miedo, enseñar prueba, prometer solución, CTA suave…)\n\n4. Recursos visuales y edición\n   - Formato de plano predominante (primer plano cara, busto, pantalla partida, POV, texto + voiceover, b-roll dinámico…)\n   - Uso de texto en pantalla (sí/no). Si sí:\n     - Estilo del texto (subtítulos karaoke, titulares en mayúsculas, emojis grandes tipo meme, listas numeradas gigantes…)\n     - Ritmo del texto (cada palabra, cada frase, solo titulares clave…)\n   - Transiciones y cortes:\n     - Velocidad de corte (ej: cada 1-2s / cada 3-4s / apenas hay cortes)\n     - Tipos de transición (jump cuts, zoom in/out rápido, wipe lateral, corte a captura de pantalla, cambio de cámara frontal a trasera, etc.)\n   - Elementos de patrón visual que rompen monotonía (cambios bruscos de encuadre, aparición de gráficos, pantallazos de resultados, comentarios de otras personas, etc.)\n   - ¿Pantalla partida o dueto? Descríbelo (qué hay a la izquierda y qué hay a la derecha, y por qué eso aporta autoridad o curiosidad)\n   - Uso de pruebas sociales (pantallazos de ganancias, dashboard, DMs de clientes, testimonios, titulares de noticias, etc.)\n   - Uso de humor o acting dramático (gestos exagerados, insultos suaves, cara de sorpresa, susurros, gritos controlados…)\n\n5. Gatillos psicológicos usados\n   Para cada uno, dime si aparece y cómo:\n   - Curiosidad / cliffhanger (“te voy a enseñar X pero primero…”)\n   - Miedo a perder (“si no haces esto hoy, pierdes dinero / te cierran la cuenta / etc.”)\n   - Aspiracional / estatus (“esto es lo que hacemos los que estamos ganando dinero / los que estamos por encima…”)\n   - Dolor compartido (“nadie te cuenta esto”, “estás haciendo esto mal y por eso no vendes”)\n   - Autoridad / prueba (“mira esta captura”, “ayer con un cliente…”)\n   - Simplicidad (“solo tienes que hacer esto”)\n   - Velocidad (“en 2 minutos”, “sin saber nada técnico”, “con cero inversión”)\n\n6. CTA final (call to action)\n   - ¿Hay CTA? (sí/no)\n   - Tipo de CTA:\n     - Directo a venta / lead (“link en bio”, “descárgate esto”, “mándame la palabra…”)\n     - Follow / engagement (“guárdate este vídeo”, “sígueme para la parte 2”)\n     - Curiosidad (“en el siguiente vídeo te enseño exactamente cómo configurarlo”)\n   - Cómo se formula exactamente (si hay frase literal, escríbela aproximada)\n   - Cómo se muestra visualmente en el final (mira a cámara serio, texto gigante, flechas, silencio dramático…)\n\n7. Razones de viralidad (muy importante)\n   Dame un análisis estratégico en viñetas claras:\n   - ¿Por qué este vídeo retiene?\n   - ¿Por qué este vídeo convierte (likes, shares, comentarios, leads…)?\n   - ¿Por qué TikTok/IG/YouTube Shorts querría empujarlo en algoritmo? (piensa en watch time, rewatch, saves, comentarios tipo “Mándame la palabra…”)\n   - ¿Qué hace diferente este vídeo frente al contenido genérico del mismo nicho?\n\n8. Checklist replicable\n   Resume en bullets accionables QUÉ TENEMOS QUE COPIAR si queremos replicar este vídeo con otra temática:\n   - Formato visual que hay que repetir\n   - Estructura narrativa que hay que repetir\n   - Tonos emocionales que hay que repetir\n   - Ritmo de edición que hay que repetir\n   - Tipo de CTA que hay que repetir\n\nREGLAS:\n- No inventes datos que no aparezcan en el vídeo.\n- Si algo no se aprecia claramente, dilo como “No se aprecia” en vez de alucinar.\n- Sé específico: “usa subtítulos blancos con borde negro y emojis de fuego al principio” es útil; “usa subtítulos llamativos” no lo es.\n- Siempre responde con TODOS los apartados del 1 al 8, aunque algún apartado esté vacío.\n-Responde directamente con al analisis, no añadas texto de entrada.",
+        "videoUrls": "={{ $json['Link video descargable'] }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        544,
+        1280
+      ],
+      "id": "7fb3cf95-7647-4493-adda-faff5cf20096",
+      "name": "Analyze video",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=ANALISIS DE REFERENCIA:\n{{ $json.content.parts[0].text }}",
+        "options": {
+          "systemMessage": "=Eres un guionista creativo experto en contenido corto (TikTok, Reels, Shorts) especializado en convertir frameworks virales existentes en versiones nuevas, éticas y adaptadas al posicionamiento de una marca.\n\nTu trabajo es crear un guion para un nuevo vídeo vertical a partir del ANÁLISIS DE REFERENCIA que voy a darte. Ese análisis describe estructura, ritmo emocional, estilo visual, recursos de edición y CTA de un vídeo que ha funcionado muy bien.\n\nOBJETIVO DEL NUEVO VÍDEO:\n- Mismo tipo de impacto emocional.\n- Misma arquitectura narrativa (hook → miedo/aspiración → prueba → solución → CTA).\n- Misma ingeniería visual (planos, zooms, subtítulos, pruebas en pantalla, etc.).\n- PERO: mensaje adaptado 100% a {{ $('Temas1').item.json.nicho_oferta_publico }}.\n- Nada de copiar frases literales largas. Nada de claims ilegales o mentira.\n\nENTREGABLE:\nResponde en español de España con la siguiente estructura fija:\n\nA. Guion listo para grabar (con marcas de tiempo). Adaptalo a la duración del video original que son {{ $('Get row(s) in sheet1').item.json['Duración del video'] }} segundos.\n   - Hook (0s-3s)\n   - Bloque 1 (ej: 3s-8s)\n   - Bloque 2 (ej: 8s-15s)\n   - Bloque 3 (ej: 15s-25s)\n   - Cierre + CTA (últimos 3-5s)\n\nEn cada bloque debes dar:\n   - TEXTO QUE YO DEBO DECIR literalmente, en primera persona.\n   - INSTRUCCIONES VISUALES en mayúsculas entre corchetes [ASÍ]:\n        [PLANO MUY CERCANO A CARA, TONO URGENTE]\n        [MOSTRAR EN PANTALLA CAPTURA DE XXX]\n        [ZOOM RÁPIDO CUANDO DIGO “ESTO”]\n        [SUBTÍTULO EN MAYÚSCULAS CON EMOJI DE ALERTA]\n\nB. Lista de assets visuales que debo preparar\n   - Pantallazos que necesito enseñar (ej: dashboard, WhatsApp cliente, etc.)\n   - Textos sobreimpresos clave (titulares grandes tipo meme)\n   - Gestos o acting emocional (señalar con dedo, sonrisa irónica, hablar en susurro 1 segundo, etc.)\n   - Elementos de escenografía si aplica (portátil delante, micro de podcast, fondo con estantería, etc.)\n   - Ritmo de edición recomendado (corte cada X segundos, zoom cada Y segundos, insertar DUETO en el segundo Z, etc.)\n\nC. CTA final adaptada a mi funnel\n   - Redacta la frase exacta que diré al final (máximo 2 frases cortas).\n   - Define si la CTA es de LEAD (capturar contacto), FOLLOW (sígueme/guarda) o VENTA DIRECTA.\n   - Explica en una frase por qué esta CTA encaja con el tipo de vídeo (ej: “este vídeo genera miedo, así que CTA = dame la solución ahora”).\n\nD. Razón estratégica\n   - En bullets, dime por qué este guion debería generar:\n     - retención alta,\n     - guardados / compartidos,\n     - comentarios (gente pidiendo más),\n     - y/o leads.\n\nREGLAS IMPORTANTES:\n1. Mantén el mismo FRAMEWORK emocional del vídeo original (miedo / autoridad / “te lo digo sin filtros” / etc.) pero con MI mensaje.\n2. Usa tono directo, coloquial y con fricción sana si aplica. Ejemplo válido: “Esto te lo tiene que decir alguien ya.”\n3. Habla siempre en primera persona singular (“yo”, “te lo voy a enseñar ahora mismo”), excepto si te pido lo contrario explícitamente.\n4. No inventes resultados financieros concretos si no me los has dado. Si el original enseña dinero y yo no te he pasado cifras reales, usa autoridad distinta (ej: proceso, experiencia, número de clientes atendidos, etc.).\n5. Si el vídeo original usa un “truco rápido en 3 pasos”, mantén el formato de pasos, pero cámbialo al contenido real de mi sector.\n6. Ajusta la CTA al funnel real que te indique. Si no te doy funnel, usa CTA tipo LEAD MAGNET WHATSAPP: “Envíame la palabra AGENTE y te doy el guion completo por WhatsApp.”\n\nFORMATO DE RESPUESTA:\n-Siempre dame las secciones A, B, C y D completas, aunque alguna parte sea breve.\n-Formato Markdown\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        768,
+        1280
+      ],
+      "id": "93fbe113-1a38-4ad3-bf72-36e0603c0fa9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-sonnet-4",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        720,
+        1504
+      ],
+      "id": "28555560-9b52-441a-9fe8-94e4d17150cb",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🧩 Función para limpiar el Markdown y dejar el texto plano y legible\nfunction limpiarMarkdown(texto) {\n  return texto\n    // elimina símbolos comunes de Markdown\n    .replace(/[*_#`>]/g, \"\")\n    // elimina formato de enlaces [texto](url)\n    .replace(/\\[(.*?)\\]\\(.*?\\)/g, \"$1\")\n    // elimina separadores \"---\"\n    .replace(/-{3,}/g, \"\")\n    // colapsa saltos de línea múltiples\n    .replace(/\\n{2,}/g, \"\\n\\n\")\n    // limpia espacios múltiples\n    .replace(/\\s{2,}/g, \" \")\n    // recorta espacios al inicio y final\n    .trim();\n}\n\n// 🧩 Asegura que los saltos de línea sean reales para que Google Sheets los reconozca\nfunction normalizarSaltos(texto) {\n  return texto.replace(/\\\\n/g, \"\\n\");\n}\n\n// 🧩 Extrae el contenido de cada sección (A, B, C, D)\nfunction extraerSeccion(texto, letra) {\n  const regex = new RegExp(`# ${letra}\\\\. (.*?)(?=\\\\n# [A-D]\\\\. |$)`, \"s\");\n  const match = texto.match(regex);\n  return match ? normalizarSaltos(limpiarMarkdown(match[0])) : \"\";\n}\n\n// 🧩 Procesa todos los items de entrada (cada item es un JSON con campo \"output\")\nreturn items.map(item => {\n  const texto = item.json.output;\n\n  const seccionA = extraerSeccion(texto, \"A\");\n  const seccionB = extraerSeccion(texto, \"B\");\n  const seccionC = extraerSeccion(texto, \"C\");\n  const seccionD = extraerSeccion(texto, \"D\");\n\n  // 🧩 Resultado final: listo para insertar en Google Sheets\n  return {\n    json: {\n      seccion_A: seccionA,\n      seccion_B: seccionB,\n      seccion_C: seccionC,\n      seccion_D: seccionD\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        1280
+      ],
+      "id": "a663b381-933f-47e1-94f8-336f9274abde",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "12FBUroRYZntSGMk6lWMaWQBnKWCuA9V8rCpIdHcSfQs",
+          "mode": "list",
+          "cachedResultName": "Analisis Tiktok",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/12FBUroRYZntSGMk6lWMaWQBnKWCuA9V8rCpIdHcSfQs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1157594251,
+          "mode": "list",
+          "cachedResultName": "Tiktok 2.0",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/12FBUroRYZntSGMk6lWMaWQBnKWCuA9V8rCpIdHcSfQs/edit#gid=1157594251"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        96,
+        944
+      ],
+      "id": "746aa1d8-8783-4e6c-af0c-506d524236ed",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Make Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- 1. Obtener los enlaces existentes de Google Sheets ---\n\n// ¡CAMBIO AQUÍ! Leemos la propiedad correcta que ahora genera el nodo 'Aggregate'\nconst existingLinksArray = $('Aggregate').first().json['Link al vídeo tiktok'];\n\n// Creamos un 'Set' con los enlaces existentes.\n// Añadimos (existingLinksArray || []) para evitar un error si la hoja está vacía\nconst existingLinksSet = new Set(existingLinksArray || []);\n\n\n// --- 2. Filtrar los nuevos vídeos de Apify ---\n\nconst uniqueNewVideos = [];\n\n// Recorremos los ítems que llegan desde Apify\nfor (const item of items) {\n  \n  // Usamos la propiedad \"webVideoUrl\"\n  const newVideoUrl = item.json.webVideoUrl; \n  \n  // Comprobamos si el enlace existe y si NO está en el Set de enlaces existentes.\n  if (newVideoUrl && !existingLinksSet.has(newVideoUrl)) {\n    // Si es nuevo, lo añadimos a nuestra lista de resultados.\n    uniqueNewVideos.push(item);\n  }\n}\n\n\n// --- 3. Ordenar por 'playCount' y devolverlos TODOS ---\n\n// Ordenamos de MAYOR a MENOR por 'playCount'\nconst sortedVideos = uniqueNewVideos.sort((a, b) => b.json.playCount - a.json.playCount);\n\n// Devolvemos el array completo y ordenado.\nreturn sortedVideos;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1216,
+        944
+      ],
+      "id": "17268cb9-56c6-40ef-bcfa-b4b0430f9e8f",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "Link al vídeo tiktok"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        320,
+        944
+      ],
+      "id": "7f10b14c-4f06-4ab5-aded-aff5e7ad39a9",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -128,
+        944
+      ],
+      "id": "f55aa9d8-6a6b-49e4-801c-9c2dc4eee5fb",
+      "name": "Semanal"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "palabras_clave",
+              "value": "[\"N8N\", \"automation\"]",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        944
+      ],
+      "id": "e449e6b2-96dc-4e15-b0de-3866811c8d1b",
+      "name": "Temas"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "12FBUroRYZntSGMk6lWMaWQBnKWCuA9V8rCpIdHcSfQs",
+          "mode": "list",
+          "cachedResultName": "Analisis Tiktok",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/12FBUroRYZntSGMk6lWMaWQBnKWCuA9V8rCpIdHcSfQs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1157594251,
+          "mode": "list",
+          "cachedResultName": "Tiktok 2.0",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/12FBUroRYZntSGMk6lWMaWQBnKWCuA9V8rCpIdHcSfQs/edit#gid=1157594251"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Creador de contenido": "={{ $('Run an Actor and get dataset').item.json.authorMeta.name }}",
+            "Descripción detallada del video": "=",
+            "Duración del video": "={{ $('Run an Actor and get dataset').item.json.videoMeta.duration }}",
+            "Fecha de creación": "={{ $('Run an Actor and get dataset').item.json.createTimeISO.toDateTime().format('dd-MM-yyyy') }}",
+            "Reproducciones": "={{ $('Run an Actor and get dataset').item.json.playCount }}",
+            "Me gustas": "={{ $('Run an Actor and get dataset').item.json.diggCount }}",
+            "Compartidos": "={{ $('Run an Actor and get dataset').item.json.shareCount }}",
+            "Favoritos": "={{ $('Run an Actor and get dataset').item.json.collectCount }}",
+            "Comentarios": "={{ $('Run an Actor and get dataset').item.json.commentCount }}",
+            "Guión completo": "=",
+            "Assets visuales": "=",
+            "CTA final": "=",
+            "Estrategia": "=",
+            "Crea analisis y guion viral": "No",
+            "Link al vídeo tiktok": "={{ $json.webVideoUrl }}",
+            "Link video descargable": "={{ $json.mediaUrls[0] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "Creador de contenido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Link al vídeo tiktok",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Link video descargable",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Duración del video",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Fecha de creación",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Reproducciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Me gustas",
+              "displayName": "Me gustas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Compartidos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Favoritos",
+              "displayName": "Favoritos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Comentarios",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Crea analisis y guion viral",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Descripción detallada del video",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Guión completo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Assets visuales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "CTA final",
+              "displayName": "CTA final",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Estrategia",
+              "displayName": "Estrategia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1440,
+        944
+      ],
+      "id": "d03cfa21-a718-4e41-a21b-9531eaaeae76",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Make Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "12FBUroRYZntSGMk6lWMaWQBnKWCuA9V8rCpIdHcSfQs",
+          "mode": "list",
+          "cachedResultName": "Analisis Tiktok",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/12FBUroRYZntSGMk6lWMaWQBnKWCuA9V8rCpIdHcSfQs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1157594251,
+          "mode": "list",
+          "cachedResultName": "Tiktok 2.0",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/12FBUroRYZntSGMk6lWMaWQBnKWCuA9V8rCpIdHcSfQs/edit#gid=1157594251"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Crea analisis y guion viral",
+              "lookupValue": "Si"
+            },
+            {
+              "lookupColumn": "Guión completo",
+              "lookupValue": "={{ \"\" }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        320,
+        1280
+      ],
+      "id": "9e8e7ead-d717-44ae-ae99-646aee98e976",
+      "name": "Get row(s) in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Make Personal"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        1280
+      ],
+      "id": "f7e69c63-f5e8-4ff9-8678-531260a4974e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "12FBUroRYZntSGMk6lWMaWQBnKWCuA9V8rCpIdHcSfQs",
+          "mode": "list",
+          "cachedResultName": "Analisis Tiktok",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/12FBUroRYZntSGMk6lWMaWQBnKWCuA9V8rCpIdHcSfQs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1157594251,
+          "mode": "list",
+          "cachedResultName": "Tiktok 2.0",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/12FBUroRYZntSGMk6lWMaWQBnKWCuA9V8rCpIdHcSfQs/edit#gid=1157594251"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Descripción detallada del video": "={{ $('Analyze video').item.json.content.parts[0].text }}",
+            "Guión completo": "={{ $json.seccion_A }}",
+            "Assets visuales": "={{ $json.seccion_B }}",
+            "CTA final": "={{ $json.seccion_C }}",
+            "Estrategia": "={{ $json.seccion_D }}",
+            "row_number": 0,
+            "Link al vídeo tiktok": "={{ $('Get row(s) in sheet1').item.json['Link al vídeo tiktok'] }}"
+          },
+          "matchingColumns": [
+            "Link al vídeo tiktok"
+          ],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "Creador de contenido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Link al vídeo tiktok",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Link video descargable",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Duración del video",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Fecha de creación",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Reproducciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Me gustas",
+              "displayName": "Me gustas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Compartidos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Favoritos",
+              "displayName": "Favoritos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Comentarios",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Crea analisis y guion viral",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Descripción detallada del video",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Guión completo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Assets visuales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "CTA final",
+              "displayName": "CTA final",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Estrategia",
+              "displayName": "Estrategia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1344,
+        1280
+      ],
+      "id": "abee7b2e-204d-4410-899f-08d895358286",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Make Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "=nicho_oferta_publico",
+              "value": "Una agencia / consultora que se llama SolutechIA que se especializa en la creación de automatizaciones para otras empresas. El publico objetivo suelen ser empresas medianas y pequeñas que quieren automatizar sus procesos manuales para optimizar tiempo y recursos.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        96,
+        1280
+      ],
+      "id": "f8a0a3a2-f7a3-44af-8f3e-9b682429f7c0",
+      "name": "Temas1"
+    }
+  ],
+  "pinData": {
+    "Semanal": [
+      {
+        "json": {
+          "timestamp": "2025-10-30T18:49:08.055-05:00",
+          "Readable date": "October 30th 2025, 6:49:08 pm",
+          "Readable time": "6:49:08 pm",
+          "Day of week": "Thursday",
+          "Year": "2025",
+          "Month": "October",
+          "Day of month": "30",
+          "Hour": "18",
+          "Minute": "49",
+          "Second": "08",
+          "Timezone": "America/Bogota (UTC-05:00)"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Run an Actor and get dataset",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run an Actor and get dataset": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze video": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Temas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Semanal": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Temas": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Analyze video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Temas1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "Temas1": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "36dcf765-92aa-465a-a2af-fc8c0b23e8c6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "rZy7CO4F9wlZ1nbT",
+  "tags": []
+}

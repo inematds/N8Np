@@ -1,0 +1,388 @@
+{
+  "name": "N8N Backup Github",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "201b202f-05c8-4d33-959e-675dd629a158",
+      "name": "Execute workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        384,
+        944
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "list",
+        "owner": {
+          "__rl": true,
+          "value": "angelapaia",
+          "mode": "list",
+          "cachedResultName": "angelapaia",
+          "cachedResultUrl": "https://github.com/angelapaia"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "N8N_backup",
+          "mode": "list",
+          "cachedResultName": "N8N_backup",
+          "cachedResultUrl": "https://github.com/angelapaia/N8N_backup"
+        },
+        "filePath": "="
+      },
+      "id": "504d64fd-0bde-4731-9043-7eda7d6b45aa",
+      "name": "Listar archivos del repositorio [GITHUB]",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        608,
+        1088
+      ],
+      "alwaysOutputData": true,
+      "webhookId": "b1b57005-3513-4ee3-9a5e-5fcde4607f75",
+      "credentials": {
+        "githubApi": {
+          "id": "[REMOVED]",
+          "name": "GitHub account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "aggregateItems",
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "name"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ad2f5f69-dc50-4606-abe4-1c92b8322f4b",
+      "name": "Combinar nombres de archivo [GITHUB]",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 2.1,
+      "position": [
+        832,
+        1088
+      ]
+    },
+    {
+      "parameters": {
+        "filters": {},
+        "requestOptions": {}
+      },
+      "id": "6b4a1f8d-666a-429d-adce-b09fffcc90b7",
+      "name": "Obtener flujos de trabajo [N8N]",
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        1088
+      ],
+      "credentials": {
+        "n8nApi": {
+          "id": "[REMOVED]",
+          "name": "n8n account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "jsonToBinary",
+        "options": {
+          "fileName": "={{ $json.name.replace(/\\s+/g, '-').toLowerCase() }}-{{ $json.id }}.json"
+        }
+      },
+      "id": "dd47b661-3c37-4820-98b2-41578e8ba9fe",
+      "name": "Mover JSON a binario",
+      "type": "n8n-nodes-base.moveBinaryData",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        1088
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Combinar nombres de archivo [GITHUB]').item.json.name }}",
+              "operation": "contains",
+              "value2": "={{ $binary.data.fileName }}"
+            }
+          ]
+        }
+      },
+      "id": "ba01230f-11cc-4f86-8328-33d1d97795a7",
+      "name": "Verificar si el archivo existe en el repositorio",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "angelapaia",
+          "mode": "list",
+          "cachedResultName": "angelapaia",
+          "cachedResultUrl": "https://github.com/angelapaia"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "N8N_backup",
+          "mode": "list",
+          "cachedResultName": "N8N_backup",
+          "cachedResultUrl": "https://github.com/angelapaia/N8N_backup"
+        },
+        "filePath": "={{ $binary.data.fileName }}",
+        "binaryData": true,
+        "commitMessage": "=backup-{{ $now.format('MM-dd-yyyy/HH:mm') }}"
+      },
+      "id": "fd0eeebe-f8f5-48de-b838-4778da74d115",
+      "name": "Actualizar archivo [GITHUB]",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        1968,
+        816
+      ],
+      "webhookId": "7962a5ef-773c-4aaa-ac7e-e1305dab2ce1",
+      "credentials": {
+        "githubApi": {
+          "id": "[REMOVED]",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "owner": {
+          "__rl": true,
+          "value": "angelapaia",
+          "mode": "list",
+          "cachedResultName": "angelapaia",
+          "cachedResultUrl": "https://github.com/angelapaia"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "N8N_backup",
+          "mode": "list",
+          "cachedResultName": "N8N_backup",
+          "cachedResultUrl": "https://github.com/angelapaia/N8N_backup"
+        },
+        "filePath": "={{ $binary.data.fileName }}",
+        "binaryData": true,
+        "commitMessage": "=backup- {{ $now.format('MM-dd-yyyy/HH:mm') }}"
+      },
+      "id": "278f7fdf-33d2-4e07-96e2-186bc9a042d5",
+      "name": "Cargar archivo [GITHUB]",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        1952,
+        1136
+      ],
+      "webhookId": "d0a2b8f3-2abd-477c-bc4c-01d60fedb356",
+      "credentials": {
+        "githubApi": {
+          "id": "[REMOVED]",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1504,
+        1088
+      ],
+      "id": "e6b15e3f-7430-4ec3-afe4-b93f5cbd8364",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        384,
+        1136
+      ],
+      "id": "e47b32b4-fe04-40c5-8502-5bc17ba913bb",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {
+    "Schedule Trigger": [
+      {
+        "json": {
+          "timestamp": "2025-08-04T18:02:18.642-05:00",
+          "Readable date": "August 4th 2025, 6:02:18 pm",
+          "Readable time": "6:02:18 pm",
+          "Day of week": "Monday",
+          "Year": "2025",
+          "Month": "August",
+          "Day of month": "04",
+          "Hour": "18",
+          "Minute": "02",
+          "Second": "18",
+          "Timezone": "America/Bogota (UTC-05:00)"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Execute workflow": {
+      "main": [
+        [
+          {
+            "node": "Listar archivos del repositorio [GITHUB]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Listar archivos del repositorio [GITHUB]": {
+      "main": [
+        [
+          {
+            "node": "Combinar nombres de archivo [GITHUB]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener flujos de trabajo [N8N]": {
+      "main": [
+        [
+          {
+            "node": "Mover JSON a binario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combinar nombres de archivo [GITHUB]": {
+      "main": [
+        [
+          {
+            "node": "Obtener flujos de trabajo [N8N]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar si el archivo existe en el repositorio": {
+      "main": [
+        [
+          {
+            "node": "Actualizar archivo [GITHUB]",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cargar archivo [GITHUB]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar archivo [GITHUB]": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cargar archivo [GITHUB]": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mover JSON a binario": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Verificar si el archivo existe en el repositorio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Listar archivos del repositorio [GITHUB]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "2a869ab3-d7a9-4fac-8a82-96c555c901e8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "fMFRmD2PrUtBm612",
+  "tags": []
+}

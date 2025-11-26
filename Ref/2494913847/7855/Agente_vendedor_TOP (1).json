@@ -1,0 +1,2160 @@
+{
+  "name": "Agente vendedor TOP",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "6e7bfe0b-4e53-49d1-bf5e-25d9a16c838b",
+        "formTitle": "¡Cotiza tu servicio mecánico por WhatsApp!",
+        "formDescription": "<p>Déjanos tus datos y te contactaremos al instante por WhatsApp con toda la info que necesitas.</p>",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Tu nombre",
+              "placeholder": "Ej. Juan Pérez",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "placeholder": "juanperez@gmail.com",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Modelo/Marca/Año",
+              "placeholder": "Ej. Ford Focus 2023",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "¿Qué servicio necesitas?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "película de protección de pintura (PPF)"
+                  },
+                  {
+                    "option": "recubrimiento cerámico"
+                  },
+                  {
+                    "option": "polarizado de vidrios"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Placa",
+              "placeholder": "Ej. ABC123",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Numero de Whatsapp",
+              "placeholder": "Ej. 3001234567",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Formulario",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 1,
+      "position": [
+        -580,
+        -500
+      ],
+      "id": "7a191443-86cc-4af5-ba9d-85f0ecf4a3a5",
+      "webhookId": "6e7bfe0b-4e53-49d1-bf5e-25d9a16c838b",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM contactos WHERE phone = $1",
+        "options": {
+          "queryReplacement": "={{ $json['Numero de Whatsapp'] }}"
+        }
+      },
+      "name": "Buscar Cliente",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        -340,
+        -500
+      ],
+      "id": "1235af2d-16c7-4799-8d2d-c45146dc9cf5",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.id }}",
+              "operation": "isEmpty"
+            }
+          ]
+        }
+      },
+      "name": "Si Existe",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        -500
+      ],
+      "id": "67f13e5e-a141-4878-b184-e58935ddf2e7"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO contactos (name, phone, email, interactions, custom_id)\nVALUES ($1, $2, $3, $4, $5)\nON CONFLICT (phone) DO NOTHING;\n",
+        "options": {
+          "queryReplacement": "={{ $('Formulario').item.json['Tu nombre'] }},\n{{ $('Formulario').item.json['Numero de Whatsapp'] }},\n{{ $('Formulario').item.json.Email }},\n{{ $('Formulario').item.json['¿Qué servicio necesitas?'] }},\n{{ $('Formulario').item.json.Placa }}"
+        }
+      },
+      "name": "Crear Cliente",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        120,
+        -620
+      ],
+      "id": "4c9f19eb-1c9a-4ca8-8cd5-95a8d5e8535c",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO oportunidades (\n    opportunity_name,\n    status,\n    priority,\n    estimated_value,\n    phone,\n    interactions,\n    expected_close_date,\n    modelo_marca_ano,\n    email\n)\nVALUES (\n    $1,                -- nombre de oportunidad\n    'Qualification',   -- status inicial\n    'Medium',          -- prioridad por defecto\n    NULL,              -- valor estimado\n    $2,                -- teléfono del contacto\n    $3,                -- servicio solicitado\n    CURRENT_DATE + INTERVAL '3 days',\n    $4,                 -- modelo/marca/año\n    $5                -- email\n);\n",
+        "options": {
+          "queryReplacement": "=[\n  \"Servicio solicitado por {{ $('Formulario').item.json['Tu nombre'] }}\",\n  \"{{ $('Formulario').item.json['Numero de Whatsapp'] }}\",\n  \"{{ $('Formulario').item.json['¿Qué servicio necesitas?'] }}\",\n  \"{{ $('Formulario').item.json['Modelo/Marca/Año'] }}\",\n\"{{ $('Formulario').item.json.Email }}\"\n]"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        360,
+        -480
+      ],
+      "id": "268006b2-26c0-42ad-962d-e4ebb041464d",
+      "name": "Crear Oportunidad",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Prueba",
+        "remoteJid": "=34{{ $('Formulario').item.json['Numero de Whatsapp'] }}@s.whatsapp.net",
+        "messageText": "=👋 ¡Hola {{ $('Formulario').item.json['Tu nombre'] }}! Gracias por completar el formulario de nuestro taller 🛠️🚗  \n\n📄 Recibimos tu solicitud para el vehículo: *{{ $('Formulario').item.json['Modelo/Marca/Año'] }}*   \n🔢 Placa: *{{ $('Formulario').item.json.Placa }}*   \n🧰 Servicio requerido: *{{ $('Formulario').item.json['¿Qué servicio necesitas?'] }}*  \n\n¿Te gustaría que te enviemos más información o una cotización por este medio? 💬📲",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        580,
+        -480
+      ],
+      "id": "e7e47968-5513-418f-8052-02a46efb1ecf",
+      "name": "Evolution API",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "=define",
+        "text": "=Mensaje del usuario:\n{{ $json.texto }}\n\nInformación del cliente potencial:\n{{ $json.extraPrompt }}\n\nDisparador desde el canal:\n{{ $json.trigger }}",
+        "options": {
+          "systemMessage": "=## 1. Identidad principal y objetivo  \nEres un asistente de ventas amigable y eficiente, especializado en **Película de Protección de Pintura (PPF), Recubrimiento Cerámico y Polarizado de Vidrios**. Tu objetivo es interactuar con los clientes por mensajería, proporcionar información sobre los servicios (usando la base de conocimientos), calificar el interés, recolectar datos de contacto, **registrar interacciones en el CRM (`Agente CRM`)**, y **agendar consultas (`Agente Calendario`)**.\n\n---\n\n## 2. Fuente de conocimiento (CRÍTICO)\n- **Usa SOLO `technical_and_sales_knowledge`** para detalles de servicios, beneficios, comparaciones y manejo de preguntas sobre precios (enfócate en el valor, no en precios específicos).\n- **NO uses conocimiento externo.** Si falta información, haz preguntas aclaratorias o sugiere agendar una consulta. Nunca digas \"No lo sé\".\n\n---\n\n## 3. Reglas de comunicación (CRÍTICO)\n- **Conciso y conversacional:** menos de 160 caracteres por mensaje (como un SMS). Tono amigable y humano.\n- **Información en partes pequeñas:** Divide la información y haz una pregunta a la vez.\n- **SIN listas:** Evita numeraciones o viñetas.\n- **Sin lenguaje de transferencia o derivación.**\n- **Usa emojis en las respuestas** para hacerlas más amigables y visuales, especialmente al hablar de beneficios o confirmar acciones (ej. 🚗✨📅✅💬).\n\n---\n\n## 4. Flujo de conversación y acciones\n\n### Estado: INICIAL\n- **Objetivo:** Saludar al usuario.\n- **Acción:** Siempre empieza saludando y preguntando cómo podemos ayudar. Di algo como: \"¡Hola! ¿En qué te podemos ayudar?\". NUNCA hables de servicios específicos en el primer mensaje, a menos que el cliente lo mencione.\n- **Transición:** Pasar a CALIFICACIÓN cuando se demuestre interés.\n\n### Estado: CALIFICACIÓN\n- **Objetivo:** Entender las necesidades, educar sobre los servicios (usando `technical_and_sales_knowledge`), confirmar interés en una consulta.\n- **Acción:** Hablar sobre los servicios, responder preguntas, evaluar objetivos (protección vs. apariencia).\n- **Transición:** Pasar a RECOLECCIÓN DE CONTACTO *solo* con una confirmación clara (\"Sí, agendemos\", \"¿Qué sigue?\", \"¿Cómo agendo?\").\n\n### Estado: RECOLECCIÓN DE CONTACTO\n- **IMPORTANTE:** NO recolectes información de contacto si el disparador fue WhatsApp, ya que eso significa que ya tienes todos los datos para continuar con la reserva. Solo haz esto si el disparador fue otro.\n- **Objetivo:** Recolectar Nombre, Correo electrónico y Telefono de Whatsapp para continuar.\n- **Secuencia de acciones:**\n  1. Pedir educadamente el **nombre**.\n  2. Una vez recibido, pedir educadamente el **correo electrónico** y el **telefono de whatsapp**.\n  3. Guardar nombre, correo y telefono en memoria.\n  4. **Usar INMEDIATAMENTE `Agente CRM`:** Registrar el nombre, correo y servicio de interés para crear o actualizar el contacto.\n- **Transición:** Pasar a AGENDAMIENTO después de confirmación de uso de `Agente CRM` (o asumir éxito si no hay error).\n\n### Estado: AGENDAMIENTO\n- **Objetivo:** Agendar la consulta usando `Agente Calendario`.\n- **Requisitos previos:** Nombre y **correo electrónico** deben estar recolectados y registrados en el CRM.\n- **REGLA CRÍTICA:** Aunque se haya recogido el nombre, **nunca intentes agendar una consulta si no se ha capturado el correo electrónico**. Si falta, solicita amablemente el email antes de continuar.\n- **Secuencia de acciones:**\n  1. Preguntar por fechas y horas preferidas.\n  2. Una vez que se reciba una **preferencia específica**, usar `Agente Calendario`. **Requiere:** Correo electrónico y hora preferida del usuario.\n  3. **Después de que `Agente Calendario` confirme éxito:** Usa `Agente CRM` para actualizar el estado de la oportunidad a \"Consulta Agendada\".\n- **Transición:** Pasa a SEGUIMIENTO tras confirmación de actualización (o asume éxito).\n\n### Estado: SEGUIMIENTO\n- **Objetivo:** Confirmar los detalles de la reserva en el chat.\n- **Acción:** Indicar la fecha y hora confirmadas. Mencionar que se enviará una invitación de calendario al correo. Finalizar de forma amable.\n\n---\n\n## 5. Ejemplos de respuesta (ilustrativos)\n\n- **(Calificación → Recolección de contacto):** \"Ok, el recubrimiento cerámico te vendría perfecto. Para agendar la consulta, ¿podrías darme tu nombre?\"\n- **(Recolección - después del correo):** \"Gracias, [Nombre]. Ya tengo tu correo. *(Uso implícito de `Agente CRM`)* Ahora, busquemos un horario para tu consulta. ¿Qué días u horas te quedan mejor la próxima semana?\"\n- **(Agendamiento - después de agendar):** \"¡Genial! Quedaste agendado para el martes a las 2 PM. *(Uso implícito de `Agente CRM`)* Deberías recibir una invitación al calendario en [Correo] pronto. ¡Hablamos entonces!\"\n\n---\n\n## 6. Verificaciones finales\n\n- Cumple con el flujo de estados.\n- **Usa `Agente CRM` inmediatamente después de recolectar los datos de contacto y después de una reserva exitosa.**\n- Usa `Agente Calendario` solo en el estado AGENDAMIENTO con los requisitos cumplidos.\n- Respeta estrictamente las reglas de comunicación y las fuentes de conocimiento definidas.\n\n**IMPORTANTE:** Fecha y hora actual: {{ $now }}  \n**IMPORTANTE:** Disparador: {{ $json.trigger }}\n\n---\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1200,
+        880
+      ],
+      "id": "35fa1ddc-e9f5-4dce-9afe-9d7b001393d7",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $('Intermediario').item.json.trigger }}",
+                    "rightValue": "whatsapp",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "whatsapp"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $('Intermediario').item.json.trigger }}",
+                    "rightValue": "facebook",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "facebook"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $('Intermediario').item.json.trigger }}",
+                    "rightValue": "instagram",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "instagram"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1660,
+        1040
+      ],
+      "id": "63f6b541-f965-4dd0-a06c-60f424e9d216",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "content": "## Instagram",
+        "height": 380,
+        "width": 400,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2020,
+        1480
+      ],
+      "id": "cd77064a-3e6a-417f-a9f8-e3a13f0470d5",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## Messenger",
+        "height": 480,
+        "width": 400,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2020,
+        940
+      ],
+      "id": "bb5c5b1b-2d05-4d5e-9604-9d22df5d8e37",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "# AGENTE",
+        "height": 580,
+        "width": 1040,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        840,
+        800
+      ],
+      "id": "0db9c2b2-7e2f-490f-92ba-943567c4c0de",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        1200,
+        1180
+      ],
+      "id": "92780ae6-6fcb-41b4-85fe-0343563d1e96",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "trigger",
+              "value": "whatsapp",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "texto",
+              "value": "={{ $('Webhook').item.json.body.data.message.conversation }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "sessionId",
+              "value": "={{ $('Postgres').item.json.whatsapp }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "extraPrompt",
+              "value": "=Esta es la informacion del lead:\nNombre: {{ $json.nombre_oportunidad }}\nVehículo: {{ $json.modelo_marca_ano }}\nInteresado en: {{ $json.servicio }}\nEmail: {{ $json.email }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        280,
+        400
+      ],
+      "id": "0ff208d7-1fe2-4385-a482-1a6f0acbeadd",
+      "name": "Edit Fields - chat1"
+    },
+    {
+      "parameters": {
+        "content": "# Whatsapp",
+        "height": 560,
+        "width": 1800,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1360,
+        340
+      ],
+      "id": "e33f92fd-ca56-41d3-8243-fdfdf2c8a2e9",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "content": "## Whatsapp",
+        "height": 540,
+        "width": 400,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2020,
+        360
+      ],
+      "id": "6827751c-0420-4909-8570-60eb7fe6de32",
+      "name": "Sticky Note12"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1040,
+        1180
+      ],
+      "id": "3a480b08-9a7e-4868-b98c-2c3b7a3b0167",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v21.0",
+        "node": "me",
+        "edge": "messages",
+        "options": {
+          "queryParametersJson": "={\n  \"recipient\":{\n    \"id\":\"{{ $('Intermediario').item.json.sessionId }}\"\n  },\n  \"messaging_type\": \"RESPONSE\",\n  \"message\":{\n    \"text\":{{ JSON.stringify($json.output.substring(0,1000)) }}\n  }\n}"
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        2140,
+        1120
+      ],
+      "id": "a339b89c-78c5-4058-abc4-fd7a5f582a58",
+      "name": "Facebook Graph API - Sales Agent Demo",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "[REMOVED]",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "prueba",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1340,
+        620
+      ],
+      "id": "0af3f24e-70fc-4e73-819a-c46a3b1b2afc",
+      "name": "Webhook",
+      "webhookId": "1257b62a-7fe3-453a-808a-3fd6ea8bbfc6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.body.event }}",
+              "rightValue": "messages.upsert",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.body.data.key.fromMe }}",
+              "rightValue": "false",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1160,
+        620
+      ],
+      "id": "78b27b0e-af14-4c6b-8421-ef3d3630b23c",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "Whatsapp_number",
+              "value": "={{ $json.body.data.key.remoteJid }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Whastapp_name",
+              "value": "={{ $json.body.data.pushName }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "message_id",
+              "value": "={{ $json.body.data.key.id }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "message_type",
+              "value": "={{ !!$json.body.data.message.conversation && 'Texto' ||\n   !!$json.body.data.message.audioMessage && 'audio' ||\n   !!$json.body.data.message.imageMessage && 'image' ||\n   !!$json.body.data.message.stickerMessage && 'sticker' }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "message_receivedDate",
+              "value": "={{ DateTime.fromSeconds($json.body.data.messageTimestamp).toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "apikey",
+              "value": "={{ $json.body.apikey }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "instancia",
+              "value": "={{ $json.body.instance }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -940,
+        600
+      ],
+      "id": "ad97c8d9-0979-4a68-9c80-2379eef62edf",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Edit Fields').item.json.message_type }}",
+                    "rightValue": "Texto",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "[REMOVED]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Texto"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $('Edit Fields').item.json.message_type }}",
+                    "rightValue": "audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $('Edit Fields').item.json.message_type }}",
+                    "rightValue": "image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $('Edit Fields').item.json.message_type }}",
+                    "rightValue": "sticker",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Sticker"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -500,
+        560
+      ],
+      "id": "a321d58f-4c2e-4612-ab65-747d42bbe832",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        120,
+        620
+      ],
+      "id": "db435e62-1529-4dd1-b3ec-8322e0b36437",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "audio64",
+              "value": "={{ $('Webhook').item.json.body.data.message.base64 }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -220,
+        620
+      ],
+      "id": "7e23bae6-0fa5-4f91-920b-2d3c2e0e67ed",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "audio64",
+        "options": {
+          "fileName": "=file-{{ $now.format('yyyy-MM-dd:dd_HHMMSS') }}.ogg"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -40,
+        620
+      ],
+      "id": "46f778af-855f-42bd-91bf-ba2a689dfef5",
+      "name": "Convert to File1"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Prueba",
+        "remoteJid": "=34{{ $('Intermediario').item.json.sessionId }}@s.whatsapp.net",
+        "messageText": "={{ $json.output }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        2160,
+        560
+      ],
+      "id": "cb1ad7f8-045a-4b40-9a92-6e6597eeb281",
+      "name": "Evolution API1",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "POST",
+          "GET"
+        ],
+        "path": "agente-vendedor",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -620,
+        1080
+      ],
+      "id": "41ffaabe-e9c7-4f7d-be75-99c92fc9889c",
+      "name": "Disparador Facebook",
+      "webhookId": "b7e461f0-9a0d-4e27-9e86-f74a3e684e3a"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "trigger",
+              "value": "facebook",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "texto",
+              "value": "={{ $json.body.entry[0].messaging[0].message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "sessionId",
+              "value": "={{ $json.body.entry[0].messaging[0].sender.id }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "extraPrompt",
+              "value": "Esta conversación tuvo lugar en Facebook Messenger. Si el usuario muestra interés en nuestros servicios, envía el formulario de contacto y solicita que lo complete. Tu respuesta debe tener menos de 300 caracteres.",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "channelId",
+              "value": "={{ $json.body.entry[0].id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        1140
+      ],
+      "id": "b64695ed-404e-4be0-b77a-34b4369f8654",
+      "name": "Editar campos – Facebook"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "\"EVENT_RECEIVED\"",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -340,
+        1000
+      ],
+      "id": "1a139b4c-75c7-457a-96bf-db10376d0898",
+      "name": "Responder webhook – Facebook (POST)"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -340,
+        1180
+      ],
+      "id": "7404779e-219f-4a48-a01a-ce62a72bca62",
+      "name": "Responder webhook – Facebook (GET)"
+    },
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "POST",
+          "GET"
+        ],
+        "path": "meta-agente-ventas",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        1600
+      ],
+      "id": "5f4feec9-1178-48c4-ac9d-78edaa7ca0eb",
+      "name": "Disparador Instagram",
+      "webhookId": "cc6546da-6f16-4546-ada3-e2c83b208997"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -340,
+        1700
+      ],
+      "id": "24013a2e-f5f8-424c-9d26-72bad7030386",
+      "name": "Responder webhook – Instagram (GET)"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "\"EVENT_RECEIVED\"",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -340,
+        1520
+      ],
+      "id": "598e0fa8-4799-47cd-8d71-1a018c47a110",
+      "name": "Responder webhook – Instagram (POST)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "trigger",
+              "value": "instagram",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "texto",
+              "value": "={{ $json.body.entry[0].messaging[0].message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "extraPrompt",
+              "value": "Esta conversación se realiza en Instagram. Mantén tu respuesta en menos de 500 caracteres, sé claro y cercano.",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "channelId",
+              "value": "={{ $json.body.entry[0].id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        1500
+      ],
+      "id": "3e7dd9c5-49fc-4937-b31b-875f2073ceca",
+      "name": "Editar campos – Instagram"
+    },
+    {
+      "parameters": {
+        "content": "# Página de Facebook\n",
+        "height": 480,
+        "width": 1180,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -760,
+        920
+      ],
+      "id": "8addeeb3-9c75-48e2-b04d-03a0500c83bb",
+      "name": "Nota Facebook"
+    },
+    {
+      "parameters": {
+        "content": "# Instagram",
+        "height": 380,
+        "width": 1180,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -760,
+        1460
+      ],
+      "id": "35fddbef-43f6-49a2-b893-21934c0c8e57",
+      "name": "Nota Instagram"
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v21.0",
+        "node": "me",
+        "edge": "messages",
+        "options": {
+          "queryParametersJson": "={\n  \"recipient\":{\n    \"id\":\"{{ $json.body.entry[0].messaging[0].sender.id }}\"\n  },\n  \"sender_action\":\"typing_on\"\n}"
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        220,
+        980
+      ],
+      "id": "388b540e-0378-4b5b-9943-ff38d265f4a4",
+      "name": "Demostración agente ventas – typing_on",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "[REMOVED]",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        600,
+        1040
+      ],
+      "id": "559a151f-bd32-47d5-b208-70bfddfb0a75",
+      "name": "Intermediario"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.body.entry[0].messaging[0].message?.is_echo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -80,
+        1000
+      ],
+      "id": "88f830f5-1f98-47d4-a11d-8bc6646ec477",
+      "name": "Si no es echo – Facebook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.body.entry[0].messaging[0].message?.is_echo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -120,
+        1520
+      ],
+      "id": "5e0d622f-5c1a-45be-b8d3-db5985553592",
+      "name": "Si no es echo – Instagram"
+    },
+    {
+      "parameters": {
+        "content": "# Formulario con SQL",
+        "height": 440,
+        "width": 1480,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        -680
+      ],
+      "id": "0876d0b1-8b7b-43e0-aaf4-becdccb84e8d",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.instagram.com/v22.0/me/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"recipient\":{\n    \"id\":\"{{ $('Intermediario').item.json.sessionId }}\"\n  },\n  \"message\":{\n    \"text\":{{ JSON.stringify($json.output.substring(0,1000)) }}\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        1620
+      ],
+      "id": "e0e1de75-01e6-4151-9407-35574b6074de",
+      "name": "Instagram Graph API",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Agente Ventas Instagram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "crmAgent",
+        "description": "Call this tool to take any action from CRM",
+        "workflowId": {
+          "__rl": true,
+          "value": "fTYqfpH3eoEWsKJq",
+          "mode": "list",
+          "cachedResultName": "Sub-Agente CRM"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}",
+            "phone": "={{ $('Intermediario').item.json.sessionId }}"
+          },
+          "matchingColumns": [
+            "query"
+          ],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        1180
+      ],
+      "id": "e2a1e7cf-1622-4968-95ef-a6b5e6dcd2ee",
+      "name": "CRM Agente"
+    },
+    {
+      "parameters": {
+        "name": "calendarAgent",
+        "description": "Use this tool to schedule a consultation appointment in the calendar. You must provide the attendee's email address and the proposed start time in ISO 8601 format. You can optionally provide the attendee's name and a summary.\n\n",
+        "workflowId": {
+          "__rl": true,
+          "value": "b95gCMx3edDWSqr2",
+          "mode": "list",
+          "cachedResultName": "Sub-Agente Calendario"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "query"
+          ],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        1180
+      ],
+      "id": "dc26b6fb-0bf5-485b-a321-3c25de22c2a2",
+      "name": "Agente Calendario"
+    },
+    {
+      "parameters": {
+        "path": "46033e15-94e9-4733-a8da-5a248bff9b66",
+        "formTitle": "¡Cotiza tu servicio mecánico por WhatsApp!",
+        "formDescription": "<p>Déjanos tus datos y te contactaremos al instante por WhatsApp con toda la info que necesitas.</p>",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Tu nombre",
+              "placeholder": "Ej. Juan Pérez",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "placeholder": "juanperez@gmail.com",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Modelo/Marca/Año",
+              "placeholder": "Ej. Ford Focus 2023",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "¿Qué servicio necesitas?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "película de protección de pintura (PPF)"
+                  },
+                  {
+                    "option": "recubrimiento cerámico"
+                  },
+                  {
+                    "option": "polarizado de vidrios"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Placa",
+              "placeholder": "Ej. ABC123",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Numero de Whatsapp",
+              "placeholder": "Ej. 3001234567",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Formulario1",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 1,
+      "position": [
+        -580,
+        20
+      ],
+      "id": "44d2edcb-065d-4043-9a61-7aca5367fcba",
+      "webhookId": "46033e15-94e9-4733-a8da-5a248bff9b66"
+    },
+    {
+      "parameters": {
+        "content": "# Formulario con modulos",
+        "height": 440,
+        "width": 1100,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -660,
+        -140
+      ],
+      "id": "0fbfb75d-0299-4634-9342-1cd5176e20df",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "contactos",
+          "mode": "list",
+          "cachedResultName": "contactos"
+        },
+        "dataMode": "defineBelow",
+        "columnToMatchOn": "whatsapp",
+        "valueToMatchOn": "={{ $json['Numero de Whatsapp'] }}",
+        "valuesToSend": {
+          "values": [
+            {
+              "column": "nombre",
+              "value": "={{ $json['Tu nombre'] }}"
+            },
+            {
+              "column": "email",
+              "value": "={{ $json.Email }}"
+            },
+            {
+              "column": "servicio",
+              "value": "={{ $json['¿Qué servicio necesitas?'] }}"
+            },
+            {
+              "column": "id_coche",
+              "value": "={{ $json.Placa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Crea o actualizar",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        20
+      ],
+      "id": "9602619d-f9b8-4143-a613-8dcc695c49a4",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "oportunidades",
+          "mode": "list",
+          "cachedResultName": "oportunidades"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre_oportunidad": "={{ $('Formulario1').item.json['Tu nombre'] }}",
+            "estado": "Calificación",
+            "servicio": "={{ $('Formulario1').item.json['¿Qué servicio necesitas?'] }}",
+            "fecha_cierre": "={{ $now.plus(7, 'days') }}",
+            "modelo_marca_ano": "={{ $('Formulario1').item.json['Modelo/Marca/Año'] }}",
+            "email": "={{ $('Formulario1').item.json.Email }}",
+            "whatsapp": "={{ $('Formulario1').item.json['Numero de Whatsapp'] }}",
+            "id": 0
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "nombre_oportunidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "servicio",
+              "displayName": "servicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "proposal",
+              "displayName": "proposal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "fecha_cierre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "modelo_marca_ano",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -20,
+        20
+      ],
+      "id": "5c8b1298-bee7-4b14-82ae-8228a8b11732",
+      "name": "Crea Oportunidad",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Prueba",
+        "remoteJid": "=34{{ $('Formulario1').item.json['Numero de Whatsapp'] }}@s.whatsapp.net",
+        "messageText": "=👋 ¡Hola {{ $('Formulario1').item.json['Tu nombre'] }}! Gracias por completar el formulario de nuestro taller 🛠️🚗  \n\n📄 Recibimos tu solicitud para el vehículo: *{{ $('Formulario1').item.json['Modelo/Marca/Año'] }}*   \n🔢 Placa: *{{ $('Formulario1').item.json.Placa }}*   \n🧰 Servicio requerido: *{{ $('Formulario1').item.json['¿Qué servicio necesitas?'] }}*  \n\n¿Te gustaría que te enviemos más información o una cotización por este medio? 💬📲",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        220,
+        20
+      ],
+      "id": "08617b35-b6d8-47be-bcee-8e4ff6889415",
+      "name": "Enviar Whatsapp",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "oportunidades",
+          "mode": "list",
+          "cachedResultName": "oportunidades"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "whatsapp",
+              "value": "={{ $json.Whatsapp_number.replace(34,\"\").replace(\"@s.whatsapp.net\",\"\") }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -720,
+        600
+      ],
+      "id": "9bc9ae64-7b50-49e3-8550-a1c44e0e7969",
+      "name": "Postgres",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "trigger",
+              "value": "whatsapp",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "texto",
+              "value": "=transcripcion",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "sessionId",
+              "value": "={{ $('Postgres').item.json.whatsapp }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "extraPrompt",
+              "value": "=Esta es la informacion del lead:\nNombre: {{ $json.nombre_oportunidad }}\nVehículo: {{ $json.modelo_marca_ano }}\nInteresado en: {{ $json.servicio }}\nEmail: {{ $json.email }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        300,
+        620
+      ],
+      "id": "5cf48be3-281d-48b8-b449-74b421b28b82",
+      "name": "Edit Fields - chat"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "test",
+        "toolDescription": "tesrt",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        1200
+      ],
+      "id": "4a0aafb7-99e0-426b-9011-c384bbe1c3d6",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        1400
+      ],
+      "id": "c30523a2-2106-425e-8863-27ed8559ee69",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Formulario": [
+      {
+        "json": {
+          "Tu nombre": "Angel Aparicio",
+          "Email": "angel.aparicio92@gmail.com",
+          "Modelo/Marca/Año": "Seat Tarraco 2021 2.0",
+          "¿Qué servicio necesitas?": "polarizado de vidrios",
+          "Placa": "6574TFH",
+          "Numero de Whatsapp": "722418242",
+          "submittedAt": "2025-05-14T18:49:11.092Z",
+          "formMode": "production"
+        }
+      }
+    ],
+    "Formulario1": [
+      {
+        "json": {
+          "Tu nombre": "Angel Aparicio",
+          "Email": "angel.aparicio92@gmail.com",
+          "Modelo/Marca/Año": "Seat Tarraco 2021 2.0",
+          "¿Qué servicio necesitas?": "polarizado de vidrios",
+          "Placa": "6574TFH",
+          "Numero de Whatsapp": "722418242",
+          "submittedAt": "2025-05-14T18:49:11.092Z",
+          "formMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Formulario": {
+      "main": [
+        [
+          {
+            "node": "Buscar Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Cliente": {
+      "main": [
+        [
+          {
+            "node": "Si Existe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Si Existe": {
+      "main": [
+        [
+          {
+            "node": "Crear Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Crear Oportunidad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Cliente": {
+      "main": [
+        [
+          {
+            "node": "Crear Oportunidad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Oportunidad": {
+      "main": [
+        [
+          {
+            "node": "Evolution API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Evolution API1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Facebook Graph API - Sales Agent Demo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Instagram Graph API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields - chat1": {
+      "main": [
+        [
+          {
+            "node": "Intermediario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields - chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File1": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields - chat1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disparador Facebook": {
+      "main": [
+        [
+          {
+            "node": "Responder webhook – Facebook (POST)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder webhook – Facebook (GET)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder webhook – Facebook (POST)": {
+      "main": [
+        [
+          {
+            "node": "Si no es echo – Facebook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disparador Instagram": {
+      "main": [
+        [
+          {
+            "node": "Responder webhook – Instagram (POST)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder webhook – Instagram (GET)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder webhook – Instagram (POST)": {
+      "main": [
+        [
+          {
+            "node": "Si no es echo – Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Editar campos – Facebook": {
+      "main": [
+        [
+          {
+            "node": "Intermediario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Editar campos – Instagram": {
+      "main": [
+        [
+          {
+            "node": "Intermediario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intermediario": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Si no es echo – Facebook": {
+      "main": [
+        [
+          {
+            "node": "Editar campos – Facebook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Demostración agente ventas – typing_on",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Si no es echo – Instagram": {
+      "main": [
+        [
+          {
+            "node": "Editar campos – Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM Agente": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Calendario": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formulario1": {
+      "main": [
+        [
+          {
+            "node": "Crea o actualizar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crea o actualizar": {
+      "main": [
+        [
+          {
+            "node": "Crea Oportunidad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crea Oportunidad": {
+      "main": [
+        [
+          {
+            "node": "Enviar Whatsapp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields - chat": {
+      "main": [
+        [
+          {
+            "node": "Intermediario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "f4b10807-431e-43bb-96a4-89ca248b9626",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "J8phePvFxe6lOx1J",
+  "tags": []
+}

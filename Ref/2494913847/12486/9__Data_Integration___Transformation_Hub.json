@@ -1,0 +1,412 @@
+{
+  "name": "9. Data Integration & Transformation Hub",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        -140
+      ],
+      "id": "d7c0f28d-efc9-48ee-8cd8-843cec5a9b17",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "node": "ads",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        440,
+        -240
+      ],
+      "id": "8383882b-c30b-4a5a-af79-50926f68b28e",
+      "name": "Facebook Graph API"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1ZlzUDgPsmidNnwv-uTWgSyOxyDbZKsg6G652vyK68Q8",
+          "mode": "list",
+          "cachedResultName": "Lead Campaign Pipeline",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ZlzUDgPsmidNnwv-uTWgSyOxyDbZKsg6G652vyK68Q8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ZlzUDgPsmidNnwv-uTWgSyOxyDbZKsg6G652vyK68Q8/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        220,
+        -40
+      ],
+      "id": "811207a2-ae3b-49f5-8011-f03f32427299",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Maaz Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "lead",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        440,
+        -40
+      ],
+      "id": "8d548d7a-7569-4624-8cc1-7b89b5763d59",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        660,
+        -140
+      ],
+      "id": "2f49ea10-17e8-49df-b88d-a6797d99844d",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Ad and Lead Campaign Data: {{ $json.data.toJsonString() }}",
+        "options": {
+          "systemMessage": "You are a data analyst working at a digital marketing agency. You are given a list of daily campaign data for a single client across multiple Facebook ad campaigns. Each item includes:\n\t•\tdate\n\t•\tcampaign_name\n\t•\tbudget_allocated\n\t•\tspend (from Facebook API)\n\t•\timpressions\n\t•\tclicks\n\t•\tleads (mapped from “lead” actions)\n\t•\tpurchases (mapped from “purchase” actions)\n\t•\tawareness, interest, decision (from manual funnel tracking)\n\t•\tnotes (if present)\n\nUsing this data, generate a weekly performance summary report. Include the following:\n\t1.\tTotal Spend vs Total Budget Allocated\n\t2.\tCost per Click (CPC) = Spend / Clicks (for each campaign and overall)\n\t3.\tCost per Lead = Spend / Leads\n\t4.\tCost per Purchase = Spend / Purchases\n\t5.\tClick-Through Rate (CTR) = Clicks / Impressions × 100\n\t6.\tFunnel Conversion Rates (from Awareness → Purchase)\n\t7.\tTop-Performing Campaign (based on lowest Cost per Purchase)\n\t8.\tAny Campaigns Over/Under Budget\n\t9.\tKey Notes or Anomalies (from the notes field)\n\t10.\tRecommendations to optimize performance for the next week (e.g., increase budget on best campaign, pause poor performers, tweak creatives, etc.)\n\nFormat the response in a clear, structured way using:\n\t•\tHeadings for each section\n\t•\tBullet points or numbered lists for clarity\n\t•\tA short summary at the beginning with key takeaways\n\n\nTo store the generated report, first create a google doc with the month title in the monthly report and the call the other tool to insert the content to the report"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        -140
+      ],
+      "id": "f5566624-9477-4f61-865a-8555d27700bc",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "o3",
+          "mode": "list",
+          "cachedResultName": "o3"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        140
+      ],
+      "id": "46553288-9538-4ee9-b4db-7629778ee827",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "Mark PromptAdviser API 06/10/25"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Doc_ID_or_URL', `Use the Doc ID you just created`, 'string') }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('actionFields0_Text', ``, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        140
+      ],
+      "id": "4724fc28-b67a-4420-a756-5ea35da30556",
+      "name": "Insert Report Data",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Maaz Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "folderId": "1HxOLPa-Ug37sXbKKe9UDhwD1TZ00CK9n",
+        "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Title', `Make it \"Campaign Report for {Month}\"`, 'string') }}"
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        160
+      ],
+      "id": "d9c497b7-a4fb-46c5-aadc-9c5023ffb854",
+      "name": "Create Report Doc",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Maaz Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        880,
+        -140
+      ],
+      "id": "1c7521aa-ecb4-4e1b-944d-b6c25cb96836",
+      "name": "Aggregate1"
+    }
+  ],
+  "pinData": {
+    "Facebook Graph API": [
+      {
+        "json": {
+          "data": [
+            {
+              "name": "Summer Promo",
+              "status": "ACTIVE",
+              "insights": {
+                "data": [
+                  {
+                    "date_start": "2025-06-01",
+                    "date_stop": "2025-06-01",
+                    "spend": "980.00",
+                    "impressions": "25000",
+                    "clicks": "1300",
+                    "actions": [
+                      {
+                        "action_type": "lead",
+                        "value": "300"
+                      },
+                      {
+                        "action_type": "purchase",
+                        "value": "100"
+                      }
+                    ]
+                  },
+                  {
+                    "date_start": "2025-06-02",
+                    "date_stop": "2025-06-02",
+                    "spend": "1000.00",
+                    "impressions": "28000",
+                    "clicks": "1450",
+                    "actions": [
+                      {
+                        "action_type": "lead",
+                        "value": "350"
+                      },
+                      {
+                        "action_type": "purchase",
+                        "value": "120"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "Retargeting Burst",
+              "status": "ACTIVE",
+              "insights": {
+                "data": [
+                  {
+                    "date_start": "2025-06-01",
+                    "date_stop": "2025-06-01",
+                    "spend": "495.00",
+                    "impressions": "10000",
+                    "clicks": "600",
+                    "actions": [
+                      {
+                        "action_type": "lead",
+                        "value": "200"
+                      },
+                      {
+                        "action_type": "purchase",
+                        "value": "80"
+                      }
+                    ]
+                  },
+                  {
+                    "date_start": "2025-06-02",
+                    "date_stop": "2025-06-02",
+                    "spend": "510.00",
+                    "impressions": "11000",
+                    "clicks": "700",
+                    "actions": [
+                      {
+                        "action_type": "lead",
+                        "value": "250"
+                      },
+                      {
+                        "action_type": "purchase",
+                        "value": "100"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Facebook Graph API",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facebook Graph API": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Report Data": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Report Doc": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8cba202f-158f-42da-b9cb-deb9c974ab9e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aaadb797535f05587ee95b776c942a7c3f7a46fd7aa0c9b6a9d64e1e595f8af1"
+  },
+  "id": "0d8ZKCu3H05V4sev",
+  "tags": []
+}

@@ -1,0 +1,680 @@
+{
+  "name": "Gemini Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are an intelligent AI assistant powered by Google Gemini with access to image and video generation tools. When users request visual content creation, automatically use the appropriate tool:\n\n🎨 For IMAGE requests (photos, illustrations, artwork, logos, etc.):\n- Use the Generate Image tool with detailed, descriptive prompts\n- Include style, composition, lighting, colors, and artistic details\n- Example: \"A photorealistic sunset over mountains with golden lighting and dramatic clouds\"\n\n🎬 For VIDEO requests (animations, clips, scenes, etc.):\n- Use the Generate Video tool with cinematic descriptions\n- Include camera movements, scene transitions, and visual storytelling elements\n- Example: \"A slow-motion shot of raindrops falling on leaves, camera panning upward to reveal a forest canopy\"\n\nFor regular conversations, respond normally with helpful information and assistance. Always create rich, detailed prompts when generating visual content to ensure high-quality results."
+        }
+      },
+      "id": "355d5a9e-c5fb-444f-8dde-0cb76f5f8e36",
+      "name": "Gemini AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        1376,
+        4944
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "id": "d4bd72b7-a911-44dd-a6a2-67877fc32d4b",
+      "name": "Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        5168
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Prompt Advisers Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "AI File Analyzer - Upload or URL",
+        "formDescription": "Upload a file from your device OR paste a URL to any online file (images, videos, documents, audio). The AI will automatically detect the file type and analyze it.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Upload File",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".jpg, .jpeg, .png, .gif, .bmp, .webp, .pdf, .doc, .docx, .txt, .mp3, .wav, .m4a, .mp4, .avi, .mov, .mkv"
+            },
+            {
+              "fieldLabel": "Or Enter File URL",
+              "placeholder": "Paste URL for online images, videos, documents, or audio files"
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": true,
+          "buttonLabel": "Analyze File",
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "Your file is being analyzed! Please wait while our AI processes your request."
+            }
+          },
+          "ignoreBots": false,
+          "useWorkflowTimezone": true
+        }
+      },
+      "id": "28e52162-7a08-434c-91e7-4cdb06caaf21",
+      "name": "File Upload Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        1056,
+        4320
+      ],
+      "webhookId": "d820ed1c-6a50-4a21-b435-934477a2d3eb"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "124ec58e-75c4-4fa4-8f19-51566aa623f2",
+      "name": "Chat Interface",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        1056,
+        4944
+      ],
+      "webhookId": "64ac6ef3-cdff-45ae-b705-4a022ab18331"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json['Upload File'] ? $json['Upload File'].mimetype : '' }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-1"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-2"
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "PDF Document"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json['Upload File'] ? $json['Upload File'].mimetype : '' }}",
+                    "rightValue": "image/",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    },
+                    "id": "id-3"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".jpg",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-4"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".png",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-5"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".jpeg",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-6"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".gif",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-7"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".bmp",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-16"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".webp",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-17"
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "Image File"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json['Upload File'] ? $json['Upload File'].mimetype : '' }}",
+                    "rightValue": "video/",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    },
+                    "id": "id-8"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".mp4",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-9"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".avi",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-10"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".mov",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-11"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".mkv",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-18"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": "youtube.com",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-19"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": "youtu.be",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-20"
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "Video File"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json['Upload File'] ? $json['Upload File'].mimetype : '' }}",
+                    "rightValue": "audio/",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    },
+                    "id": "id-12"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".mp3",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-13"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".wav",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-14"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".m4a",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-15"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".aac",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-21"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".ogg",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-22"
+                  },
+                  {
+                    "leftValue": "={{ $json['Or Enter File URL'] ? $json['Or Enter File URL'].toLowerCase() : '' }}",
+                    "rightValue": ".flac",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-23"
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio File"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none",
+          "ignoreCase": true,
+          "allMatchingOutputs": false
+        }
+      },
+      "id": "628e2b18-25ae-40f7-b499-ae1fc2fb3160",
+      "name": "File Type Detector",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1280,
+        4288
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "document",
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "models/gemini-2.5-pro"
+        },
+        "inputType": "binary",
+        "binaryPropertyName": "Upload_File",
+        "options": {
+          "maxOutputTokens": "[REMOVED]"
+        }
+      },
+      "id": "5a41c37d-a078-4d81-ae49-491730f4d687",
+      "name": "PDF Document Processor",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1504,
+        4032
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Prompt Advisers Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "models/gemini-2.5-pro"
+        },
+        "inputType": "binary",
+        "binaryPropertyName": "Upload_File",
+        "options": {
+          "maxOutputTokens": "[REMOVED]"
+        }
+      },
+      "id": "84444f9f-3891-4e92-8d5e-bfa3c1daba87",
+      "name": "Image Analyzer",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1504,
+        4224
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Prompt Advisers Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "models/gemini-2.5-pro"
+        },
+        "inputType": "binary",
+        "binaryPropertyName": "Upload_File",
+        "options": {
+          "maxOutputTokens": "[REMOVED]"
+        }
+      },
+      "id": "eea71d65-781f-42a0-83c9-1653699393a1",
+      "name": "Video Analyzer",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1504,
+        4416
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Prompt Advisers Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "models/gemini-2.5-pro"
+        },
+        "inputType": "binary",
+        "binaryPropertyName": "Upload_File",
+        "options": {}
+      },
+      "id": "c837a486-fb8c-4ec9-a8a3-fb03e232ab51",
+      "name": "Audio Transcriber",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1504,
+        4608
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Prompt Advisers Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1408,
+        5168
+      ],
+      "id": "ae503698-9eba-407e-87c2-70d14b0c456b",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-pro",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-pro"
+        },
+        "prompt": "={{ $json.chatInput }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGeminiTool",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        5168
+      ],
+      "id": "a22159ab-1c9f-4952-b55d-b92bd46c064a",
+      "name": "Generate Image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Prompt Advisers Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "modelId": {
+          "__rl": true,
+          "value": "models/veo-3.0-generate-preview",
+          "mode": "list",
+          "cachedResultName": "models/veo-3.0-generate-preview"
+        },
+        "prompt": "={{ $json.chatInput }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGeminiTool",
+      "typeVersion": 1,
+      "position": [
+        1664,
+        5168
+      ],
+      "id": "2c0b2fce-6014-4e7f-892e-ecedaab84855",
+      "name": "Generate Video",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Prompt Advisers Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Gemini AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File Upload Form": {
+      "main": [
+        [
+          {
+            "node": "File Type Detector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Interface": {
+      "main": [
+        [
+          {
+            "node": "Gemini AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File Type Detector": {
+      "main": [
+        [
+          {
+            "node": "PDF Document Processor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Image Analyzer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Video Analyzer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Audio Transcriber",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Gemini AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image": {
+      "ai_tool": [
+        [
+          {
+            "node": "Gemini AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video": {
+      "ai_tool": [
+        [
+          {
+            "node": "Gemini AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini AI Agent": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4667787d-c4bf-4092-97a5-5d031ba204ea",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aaadb797535f05587ee95b776c942a7c3f7a46fd7aa0c9b6a9d64e1e595f8af1"
+  },
+  "id": "DkJFpZlChRgFFfOu",
+  "tags": []
+}

@@ -1,0 +1,1594 @@
+{
+  "name": "Blog SEO personalizado",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "tema_noticias",
+              "value": "automatización de procesos en empresas",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "fechaHoy",
+              "value": "={{ $now.format('dd/MM/yyyy') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "fechaHace3Dias",
+              "value": "={{ $now.minus(3,'days').format('dd/MM/yyyy') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Autor",
+              "value": "Angel Aparicio",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Tema",
+              "value": "Automatización de empresas",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Publico_objetivo",
+              "value": "=Empresas grandes y pymes que deberian de automatizar sus negocios para poder ser mas competitivos, aumentar beneficios y reducir gastos.",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Region",
+              "value": "España",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Keywords_principales",
+              "value": "automatización, optimización, escalabilidad",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Keywords_secundarias",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Enlace_interno",
+              "value": "www.solutechia.es",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Enlace_externo",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "=Cargo_autor",
+              "value": "Experto en automatizaciones",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -5568,
+        3744
+      ],
+      "id": "bb0a9417-9ef0-4aaa-8abf-753b1d08bb1a",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "=631826419",
+        "message": "={{\n  // Construimos el texto plano\n  (\n    \"Hola! Te envío un resumen de las 3 tendencias sobre \" + $('Edit Fields1').first().json.tema_noticias + \":\\n\\n\" +\n    \"Tendencia 1: \" + $json[\"Tendencia 1\"] + \"\\n\\n\" +\n    \"Tendencia 2: \" + $json[\"Tendencia 2\"] + \"\\n\\n\" +\n    \"Tendencia 3: \" + $json[\"Tendencia 3\"]\n  )\n  // Eliminamos cualquier carácter que pueda romper Markdown o HTML\n  .replace(/[*_~`>#+=|{}[\\]()\\\\]/g, \"\")\n  // Eliminamos los corchetes de referencias [1][5]\n  .replace(/\\[\\d+\\]/g, \"\")\n}}\n",
+        "responseType": "customForm",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "¿Sobre que tendencia te gustaría crear un blog?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "1️⃣"
+                  },
+                  {
+                    "option": "2️⃣"
+                  },
+                  {
+                    "option": "3️⃣"
+                  },
+                  {
+                    "option": "=Dame otras tendencias sobre {{ $('Edit Fields1').first().json.tema_noticias }}"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "limitWaitTime": {
+            "values": {
+              "resumeAmount": 8
+            }
+          },
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -4896,
+        3568
+      ],
+      "id": "cb1083dc-d780-44cd-bd3a-02e6cbc87f2c",
+      "name": "Send a text message10",
+      "webhookId": "9b2d9457-6b3a-46bb-a7ac-3d0474217f83",
+      "alwaysOutputData": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_AA_personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "sonar-pro",
+        "messages": {
+          "message": [
+            {
+              "content": "=Eres un analista experto en tendencias de noticias de internet. Recibirás un tema principal y un rango de fechas. Tu única tarea es identificar las 3 tendencias más importantes y discutidas sobre ese tema dentro de ese rango de fechas.\n\nRestricciones estrictas:\n\n1. No proporciones URLs, enlaces, ni fuentes.\n\n2. No incluyas texto introductorio, saludos o resúmenes. Tu respuesta debe comenzar directamente con la primera tendencia.\n\n3. El formato de salida debe ser exactamente el siguiente, usando \"Tendencia_X:\" como clave para cada línea:\n\n- Tendencia_1: [Descripción de la primera tendencia] \n- Tendencia_2: [Descripción de la segunda tendencia] \n- Tendencia_3: [Descripción de la tercera tendencia]",
+              "role": "system"
+            },
+            {
+              "content": "=Tema de las noticias: {{ $json.tema_noticias }}\nPublicadas como minimo el: {{ $json.fechaHace3Dias }}\n\nHasta el dia de hoy: {{ $json.fechaHoy }}"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.perplexity",
+      "typeVersion": 1,
+      "position": [
+        -5344,
+        3744
+      ],
+      "id": "4201a46e-758d-4237-bb0a-f064c730b7d0",
+      "name": "tendencias1",
+      "credentials": {
+        "perplexityApi": {
+          "id": "[REMOVED]",
+          "name": "Perplexity account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtenemos el texto de salida del nodo de Perplexity\nconst inputText = items[0].json.choices?.[0]?.message?.content || \"\";\n\n// Expresión regular flexible para capturar las tres tendencias\n// Soporta saltos de línea y espacios variables\nconst regex = /-?\\s*Tendencia_1:\\s*(.*?)\\s*-?\\s*Tendencia_2:\\s*(.*?)\\s*-?\\s*Tendencia_3:\\s*(.*)/s;\n\nconst match = inputText.match(regex);\n\nif (!match) {\n  // En caso de error, devolvemos el contenido original para depurar\n  return [\n    {\n      json: {\n        error: \"No se encontraron las tres tendencias en el formato esperado.\",\n        contenido_original: inputText\n      }\n    }\n  ];\n}\n\n// Devolvemos un solo ítem con tres campos\nreturn [\n  {\n    json: {\n      \"Tendencia 1\": match[1].trim(),\n      \"Tendencia 2\": match[2].trim(),\n      \"Tendencia 3\": match[3].trim()\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5120,
+        3744
+      ],
+      "id": "f50f813d-a4a6-4056-b420-a69135506eb8",
+      "name": "Code in JavaScript",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -5792,
+        3840
+      ],
+      "id": "3df7f73d-bfdc-4f1f-8deb-4d9f884ca02e",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "model": "sonar-pro",
+        "messages": {
+          "message": [
+            {
+              "content": "=Eres un analista experto en regeneración de tendencias de noticias.\n> Tu única tarea es generar **tres nuevas tendencia** para reemplazar tendencias que no han gustado al usuario.\n\n\nEn el input del usuario, recibirás las tendencias creadas anteriormente para que no las vuelvas a repetir.\n\nRestricciones estrictas:\n> 1.  Tus nuevas tendencia debe estar relacionada con el mismo tema general que las tendencias provistas.\n> 2.  Tus nuevas tendencia **no puede ser** igual ni una variación de *ninguna* de las tendencias listadas en `Tendencias creadas previamente`.\n> 3.  Tus respuestas debe ser *únicamente* las nuevas tendencias, sin saludos, explicaciones, o texto introductorio.\n> 4.  Tus respuestas debe usar la misma clave que la tendencia rechazada.\n\n> Formato de salida exacto:\n- Tendencia_1: [Descripción de la primera tendencia] \n- Tendencia_2: [Descripción de la segunda tendencia] \n- Tendencia_3: [Descripción de la tercera tendencia]",
+              "role": "system"
+            },
+            {
+              "content": "=Tendencias creadas previamente: {{ $json.tendencia }}"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.perplexity",
+      "typeVersion": 1,
+      "position": [
+        -4224,
+        3936
+      ],
+      "id": "a76bde54-91ed-4ce8-8c6a-6c72061e5d76",
+      "name": "Message a model3",
+      "credentials": {
+        "perplexityApi": {
+          "id": "[REMOVED]",
+          "name": "Perplexity account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -5792,
+        3648
+      ],
+      "id": "b0ac371c-77af-4626-b9df-15265faf4020",
+      "name": "Telegram Trigger",
+      "webhookId": "03b1b222-d377-400f-88b0-1680af347274",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_AA_personal"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data['¿Sobre que tendencia te gustaría crear un blog?'] }}",
+                    "rightValue": "1️⃣",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "[REMOVED]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "1"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.data['¿Sobre que tendencia te gustaría crear un blog?'] }}",
+                    "rightValue": "2️⃣",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "2"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.data['¿Sobre que tendencia te gustaría crear un blog?'] }}",
+                    "rightValue": "3️⃣",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "3"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.data['¿Sobre que tendencia te gustaría crear un blog?'] }}",
+                    "rightValue": "Dame otras tendencias",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Otras tendencias"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -4672,
+        3552
+      ],
+      "id": "85d0a097-cf2c-4623-beb8-9291d488fa7f",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "tendencia",
+              "value": "={{ $('Code in JavaScript').item.json['Tendencia 1'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4448,
+        3296
+      ],
+      "id": "d9b7ee0a-b1d3-482a-9902-dc393de79e3c",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "tendencia",
+              "value": "={{ $('Code in JavaScript').first().json['Tendencia 2'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4448,
+        3488
+      ],
+      "id": "89f69cf1-9a57-476f-a25d-b207041eee42",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "tendencia",
+              "value": "={{ $('Code in JavaScript').first().json['Tendencia 3'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4448,
+        3680
+      ],
+      "id": "95313c87-7f78-43d5-b8b7-bb311e261098",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "tendencia",
+              "value": "=Dame otras tendecias sobre {{ $('Edit Fields1').item.json.tema_noticias }}. No quiero que vuelvas a repetir estas 3 tendencias:\n\n1. {{ $('Code in JavaScript').item.json['Tendencia 1'] }}\n\n2. {{ $('Code in JavaScript').item.json['Tendencia 2'] }}\n\n3. {{ $('Code in JavaScript').item.json['Tendencia 3'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4448,
+        3872
+      ],
+      "id": "997036fb-68ff-4ce3-8b26-83a831cab9a0",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "content": "## Preguntas sobre el artículo",
+        "height": 336,
+        "width": 1088,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -5936,
+        4128
+      ],
+      "id": "47693f05-59c7-419c-85f7-55e9bd2f95f5",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "html": "{{ $json.output }}"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        -2640,
+        4032
+      ],
+      "id": "7a40c75c-bdc0-46be-9be0-459e3763d78c",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.wordpress",
+      "typeVersion": 1,
+      "position": [
+        -2192,
+        4032
+      ],
+      "id": "bf8e8ae8-1155-4046-9a73-a17a029ca5de",
+      "name": "Create a post",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=# ROL\nEres mi redactor fantasma. Escribes como YO ({{ $('Edit Fields1').first().json.Autor }}), en español de España, con una voz **cercana y visionaria**, grado de opinión **media**, enérgica y, cuando encaje, con un punto **sarcástico**. Nada de tono robótico.\n\n# MISIÓN\nFundir 3 entradas —Resumen (hechos), 5 Temas guía (derivados de preguntas), Respuesta del Experto— en un **artículo de blog informativo pero de opinión en primera persona**, de **2000+ palabras**, con narrativa humana, ritmo y claridad. Entrega **solo Markdown**.\n\n# INPUTS\n- Texto de la noticia: # Base factual ampliada\n- Preguntas sobre la noticia : # 5 preguntas que convertirás en H2 declarativos\n- Respuesta del usuario: # Respuesta que engloba las 5 preguntas\n- Autor := {{ $('Edit Fields1').first().json.Autor }}\n- Cargo_autor := {{ $('Edit Fields1').first().json.Cargo_autor }}\n- Tema := {{ $('Edit Fields1').first().json.Tema }}\n- Publico_objetivo := {{ $('Edit Fields1').first().json.Publico_objetivo }}\n- Region := {{ $('Edit Fields1').first().json.Region }}\n- KW_principal := {{ $('Edit Fields1').first().json.Keywords_principales }}\n- KW_secundarias := {{ $('Edit Fields1').first().json.Keywords_secundarias }}\n- Enlace_interno := {{ $('Edit Fields1').first().json.Enlace_interno }}\n- Enlace_externo := {{ $('Edit Fields1').first().json.Enlace_externo }}\n- fecha_hoy := {{ $('Edit Fields1').first().json.fechaHoy }}\n\n# ESTILO (voz y ritmo)\n- **Primera persona** constante (“yo”). Comienza con **contexto/opinión clara** y después apoya con **datos fuertes** del resumen.\n- Frases de longitud variada, conectores naturales: “A partir de aquí”, “Ahora bien”, “Ojo”, “En la práctica”.\n- Usa **pocas** preguntas retóricas para remarcar puntos clave.\n- **Tecnismos**: evita salvo que sean **muy relevantes** y los expliques en una línea.\n- Permite expresiones marca Ángel cuando cuadren: “esto es la ostia”, “brutal”, “espectacular”, “no me jodas…”. Úsalas con **mesura**.\n- Tono: cercano, visionario, **opinión media** (argumentada), **energía** y un toque **sarcástico** si procede.\n\n# SEO (implícito, sin que huela a SEO)\n1) **Title tag** (~50–60c) con KW_principal si fluye (no obliga al inicio).\n2) **Meta description** (150–160c) con beneficio claro; **sin CTA** comercial.\n3) **H1** humano (puede diferir del Title).\n4) Integra variaciones de KW_secundarias con naturalidad (nada de stuffing).\n5) Enlazado: añade **1–2 internos** si Enlace_interno existe; **externos** de autoridad solo si aportan (Enlace_externo).\n\n# TRANSFORMACIÓN DE PREGUNTAS → H2 DECLARATIVOS\n- Convierte cada entrada de temas_guia[] en un **titular afirmativo o “cómo + verbo”**, sin signo de interrogación, manteniendo su sentido.\n- Ej.: “¿Cómo impacta X?” → “Cómo X está reescribiendo Y en el día a día”.\n\n# ESTRUCTURA DEL ARTÍCULO (Markdown)\n1) **Título SEO** (solo el texto del título).\n2) Comentario HTML bajo el título con meta:\n   <!-- meta-description: ... -->\n3) **H1** visible.\n4) **Apertura (mi postura primero)**:\n   - Párrafo 1–2: mi tesis/opinión inicial con voz clara (por qué esto es importante **ahora** para {{ $('Edit Fields1').first().json.Publico_objetivo }}). Puedes incluir una micro-anécdota breve si aporta.\n   - Párrafos 3–4: **datos fuertes** del resumen que sostienen la tesis (sin lista; narrativa fluida).\n5) **Contexto útil** (1–3 párrafos): lo esencial del resumen en pirámide invertida (lo crítico primero), sin tecnicismos innecesarios.\n6) **Cinco H2 declarativos** (derivados de temas_guia[]). En cada H2:\n   - Explica combinando **hechos del resumen** con mi **experiencia propia** (“lo que me funcionó fue…”, “en clientes vimos…” **sin nombres**).\n   - Inserta **1–2 citas literales** del experto cuando refuercen la idea:\n     > “frase breve y memorable del experto…”\n     — {{ $('Edit Fields1').first().json.Autor }}, {{ $('Edit Fields1').first().json.Cargo_autor }}\n   - Opcional: **pull-quote** (1 línea potente que resuma el take).\n   - Si aporta, usa **lista breve** o **tabla corta** (no rellenes por rellenar).\n7) **H2: Lo que puede salir mal** (contraargumentos y riesgos):\n   - Enumera 3–5 riesgos/limitaciones reales y cómo mitigarlos (breve, honesto).\n   - Mantén el tono: realista pero propositivo; si encaja, un toque de sarcasmo sutil.\n   - Habla en **primera persona** (“Lo que voy a hacer es…”). \n8) **Cierre épico (sin CTA comercial)**:\n   - 1–2 párrafos que cierren el arco y dejen una imagen/idea potente. Nada de vender; **editorial**.\n\n# “QUOTES” DEL EXPERTO (uso responsable)\n- Extrae **1–2 citas clave** de respuesta_experto. No alteres su sentido.\n- Colócalas donde aporten contraste con mi opinión o refuercen datos del resumen.\n- Añade **pull-quotes** en una línea cuando tenga punch. Máx. 2–3 en todo el artículo.\n\n# PROHIBIDOS / EVITA\n- H2 en formato de **pregunta**.\n- Tonos genéricos tipo “como modelo de IA…”.\n- Relleno SEO, muletillas de IA y peroratas sin valor.\n- Tecnicismos si no son imprescindibles o sin explicación humana de 1 línea.\n\n# VALIDACIONES ANTES DE ENTREGAR\n- 2000+ palabras; voz en **1.ª persona** consistente.\n- Apertura: **opinión** → luego **datos fuertes**.\n- 5 H2 **declarativos** (no preguntas) + “Lo que puede salir mal” + “Qué haré…”.\n- ≥1 lista útil y (si encaja) ≥1 tabla corta.\n- ≥1 pull-quote y 1–2 citas del experto.\n- Title (~50–60c) y meta (150–160c) correctos.\n- JSON-LD `Article` correcto al final (bloque ```json). \n- **Sin FAQ** y **sin CTA** comercial.\n\n# SALIDA\nDevuelve **solo** el artículo final en **Markdown** completo, sin comentarios adicionales.\n\n# DATOS (para el modelo, no imprimir):\n- resumen, temas_guia[], respuesta_experto y resto de variables arriba.\n",
+              "role": "system"
+            },
+            {
+              "content": "=# DATOS DISPONIBLES (para el modelo, no imprimir):\nTexto de la noticia: {{ $('Code in JavaScript1').first().json.resumenExtendidoCompleto }} \n\nPreguntas sobre la noticia: \n1. {{ $('Code in JavaScript1').first().json.preguntas[0] }} \n2. {{ $('Code in JavaScript1').first().json.preguntas[1] }} \n3. {{ $('Code in JavaScript1').first().json.preguntas[2] }} \n4. {{ $('Code in JavaScript1').first().json.preguntas[3] }} \n5. {{ $('Code in JavaScript1').first().json.preguntas[4] }} \n\nRespuesta del usuario: {{ $json.data.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -4784,
+        4240
+      ],
+      "id": "36bd9481-e773-4f9d-8bd5-15f384857858",
+      "name": "Copywriter1",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "sendTo": "angel.aparicio92@gmail.com",
+        "subject": "Propuesta de noticia",
+        "message": "={{ $('Copywriter1').item.json.message.content }}",
+        "responseType": "customForm",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "¿Te gusta el blog?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Si"
+                  },
+                  {
+                    "option": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "¿En caso de que no, que te gustaria mejorar / cambiar?"
+            }
+          ]
+        },
+        "options": {
+          "messageButtonLabel": "Elige",
+          "responseFormTitle": "PROPUESTA DE NOTICIA",
+          "responseFormDescription": "Elige si te ha gustado o no",
+          "responseFormButtonLabel": "Enviar",
+          "responseFormCustomCss": ":root {\n\t/* === Tipografía \"Tecnológica con alma\" === */\n\t--font-family: 'Inter', 'Merriweather', sans-serif;\n\t--font-weight-normal: 400;\n\t--font-weight-bold: 700;\n\t--font-size-body: 13px;\n\t--font-size-header: 22px;\n\t--font-size-paragraph: 14px;\n\t--font-size-html-h1: 30px;\n\t--font-size-html-h2: 22px;\n\t--font-size-html-h3: 18px;\n\n\t/* === Paleta “Neón Estratégico Camaleón” === */\n\n\t/* Fondo base (modo claro, limpio, cálido) */\n\t--color-background: #f9f7fc; /* Blanco con tinte lila suave */\n\t--color-card-bg: #ffffff;\n\t--color-card-border: #ebe4f4; /* Borde con matiz violeta sutil */\n\t--color-card-shadow: rgba(96, 71, 236, 0.08); /* Sombra violeta suave */\n\n\t/* Texto */\n\t--color-header: #2b214b; /* Morado oscuro, profundo y profesional */\n\t--color-html-text: #3b3652; /* Texto base gris-violeta legible */\n\t--color-header-subtext: #7a6e9c;\n\t--color-label: #5f5278;\n\t--color-input-text: #4e4465;\n\n\t/* Acentos (marca SolutechIA / Camaleones) */\n\t--color-submit-btn-bg: #7c5dfa; /* Lila neón */\n\t--color-submit-btn-text: #ffffff;\n\t--color-link: #b48cff;\n\t--color-html-link: #a46df9;\n\t--color-focus-border: #cbb8ff;\n\t--color-highlight: #f0e8ff; /* fondo suave para resaltar bloques */\n\n\t/* Estados */\n\t--color-error: #e54e4e;\n\t--color-required: #e54e4e;\n\t--color-test-notice-bg: #f8f3ff;\n\t--color-test-notice-border: #d9c9ff;\n\t--color-test-notice-text: #6d54b3;\n\n\t/* Bordes y sombras */\n\t--color-input-border: #dcd1f2;\n\t--color-clear-button-bg: #c5b6ef;\n\n\t/* Radio y espaciado: fluidez y modernidad */\n\t--border-radius-card: 16px;\n\t--border-radius-input: 10px;\n\t--border-radius-clear-btn: 50%;\n\t--box-shadow-card: 0px 6px 18px 0px var(--color-card-shadow);\n\n\t--padding-container-top: 28px;\n\t--padding-card: 28px;\n\t--padding-form-input: 14px;\n\t--margin-bottom-card: 18px;\n\t--container-width: 460px;\n\n\t/* Detalle de animación sutil (para botones o foco) */\n\t--transition-speed: 0.25s ease;\n}",
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -3968,
+        4256
+      ],
+      "id": "8d4beb57-9aa5-400a-b92d-159f486bfc60",
+      "name": "Send a message",
+      "webhookId": "38073987-a9ec-4ea5-962d-12bebc5175a6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "SolutechIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "model": "gpt-image-1",
+        "prompt": "=Crea una imagen hiperrealista y cinematográfica para ser la portada principal de un artículo de blog informativo. Debe transmitir visualmente la esencia del siguiente texto, como si fuera la fotografía editorial de portada de un medio como Wired, El País Retina o Fast Company. Nada de texto, títulos ni logos.  \nLa escena debe ser natural, profesional y emocionalmente potente: iluminación realista, profundidad de campo, textura auténtica, color coherente con el tono del tema y un punto de atención claro (persona, objeto o símbolo).  \nEvita literalidades aburridas (no robots genéricos ni iconos evidentes). Busca metáforas visuales elegantes y humanas que representen la idea central del texto.  \nSi el tema es optimista, usa luz cálida o amanecer; si es disruptivo o tecnológico, luz fría o futurista; si es social o humano, tonos neutros y expresivos.  \nComposición profesional estilo fotografía de portada, enfoque editorial contemporáneo, alta calidad, 16:9.  \nNo incluyas texto en la imagen.  \n\nTexto base (resumen del artículo): {{ $('Edit Fields10').first().json.tendencia }}\n",
+        "options": {
+          "quality": "high",
+          "size": "1536x1024"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        -3440,
+        4032
+      ],
+      "id": "527b3b46-3ac4-4701-978d-3aabd3cb60fe",
+      "name": "Generate an image",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "=631826419",
+        "text": "Revisa tu correo para la propuesta de Noticia",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -4432,
+        4240
+      ],
+      "id": "f7fc5ea8-137b-4cc0-93be-56643bb5a215",
+      "name": "Send a text message2",
+      "webhookId": "33a72883-b836-4ffe-98b8-e5bad1aaea96",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_AA_personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.data['¿Te gusta el blog?'] }}",
+              "rightValue": "Si",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3744,
+        4240
+      ],
+      "id": "87398944-2232-4320-8430-ab671487d335",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "respuesta_agente",
+              "value": "={{ $('Copywriter1').first().json.message.content }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "cambio_modificacion_usuario",
+              "value": "={{ $('Send a message').item.json.data['¿En caso de que no, que te gustaria mejorar / cambiar?'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3456,
+        4432
+      ],
+      "id": "22162f25-1f92-4fba-86e0-59f4889249ce",
+      "name": "Edit Fields7"
+    },
+    {
+      "parameters": {
+        "content": "## Elección de la mejor tendencia",
+        "height": 912,
+        "width": 1888,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -5952,
+        3184
+      ],
+      "id": "0dbba2a6-a80e-411b-862c-f3e636fdb231",
+      "name": "Sticky Note13"
+    },
+    {
+      "parameters": {
+        "content": "Redacción de contenido",
+        "height": 336,
+        "width": 768,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -4832,
+        4128
+      ],
+      "id": "74ee8231-af38-46c5-80b8-4638c6ed0b01",
+      "name": "Sticky Note14"
+    },
+    {
+      "parameters": {
+        "content": "## No nos convence y hacemos otro copy",
+        "height": 336,
+        "width": 1216,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3504,
+        4368
+      ],
+      "id": "f3d7d353-670d-46d3-82d5-a8b64cd332d5",
+      "name": "Sticky Note16"
+    },
+    {
+      "parameters": {
+        "chatId": "=631826419",
+        "text": "Perfecto, enseguida te envio un correo con los cambios",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2816,
+        4432
+      ],
+      "id": "45af4e4f-8754-4d7b-9efe-52c0a1a0d109",
+      "name": "Send a text message",
+      "webhookId": "868c9591-0a15-47ee-aa1c-bf6cfb28f5ea",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_AA_personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "tendencia",
+              "value": "={{ $json.tendencia }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4224,
+        3472
+      ],
+      "id": "7e0ca8b5-ffce-4576-ba6f-503d941272a9",
+      "name": "Edit Fields10"
+    },
+    {
+      "parameters": {
+        "sendTo": "angel.aparicio92@gmail.com",
+        "subject": "Propuesta de Blog",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "Angel Aparicio"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -2416,
+        4032
+      ],
+      "id": "9014cc07-cecd-4d6c-8472-93e253c689ea",
+      "name": "Send a message1",
+      "webhookId": "38073987-a9ec-4ea5-962d-12bebc5175a6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "SolutechIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "sonar-pro",
+        "messages": {
+          "message": [
+            {
+              "content": "=ROL Y OBJETIVO\nEres un Analista de Investigación Senior y Estratega de Contenido.  \nRecibirás una “Tendencia” y, usando las capacidades de búsqueda/navegación de Perplexity, debes:\n1) investigar a fondo qué está ocurriendo (noticias, informes, análisis, contexto y actores),\n2) sintetizarlo en un **resumen extendido** claro, profundo y útil,\n3) formular **exactamente 5 preguntas de reflexión personal** basadas en ese resumen,\n4) devolver un **JSON estricto** para su posterior parseo.\n\n---\n\nENTRADA\nTendencia: Tendencia seleccionada por el usuario\nIdioma principal: Español (España).  \nVentana de frescura recomendada: últimos 90 días (puedes extender si la tendencia es estructural o regulatoria, pero indícalo en la nota final).\n\n---\n\nPOLÍTICA DE CALIDAD DE FUENTES\n- Prioriza fuentes **primarias** (documentos oficiales, comunicados, informes, papers).\n- Incluye también **secundarias** (medios especializados, consultoras, analistas).\n- Evita fuentes sin autor claro, blogs genéricos o contenido promocional sin respaldo.\n- Mínimo 6 y máximo 12 fuentes únicas. Incluye fecha ISO (AAAA-MM-DD) y dominio o título.\n- Marca contradicciones o especulaciones con claridad.\n\n---\n\nNORMALIZACIÓN Y EVIDENCIA\n- Cada dato debe tener {fuente, url, fecha, tipo}.  \n- Usa ISO 8601 para fechas.  \n- Marca cada afirmación como “hecho”, “opinión” o “proyección”, con `confidence` (0–1).\n\n---\n\nPROCESO PASO A PASO\n1) **Desambiguar**: Si la tendencia es ambigua, explica qué interpretación has usado.  \n2) **Buscar en profundidad**: combina 5–8 queries que abarquen actualidad, impacto, métricas, riesgos, actores, regulación y futuro.  \n3) **Contrastar**: valida la coherencia entre fuentes, marca inconsistencias y sesgos.  \n4) **Sintetizar el resumen** con esta estructura y subtítulos en negrita:\n\n   - **Qué está pasando**  \n   - **Contexto**  \n   - **Actores y movimientos clave** (empresas, gobiernos, reguladores)  \n   - **Datos y métricas verificadas** (cifras, fuentes, periodos)  \n   - **Riesgos, limitaciones y controversias**  \n   - **Impacto para negocio/operaciones** (producto, ventas, marketing, legal)  \n   - **Oportunidades tácticas y aprendizajes clave** (3–6 bullets)  \n\n---\n\nPREGUNTAS PARA EL EXPERTO (ENFOQUE DE OPINIÓN)\nGenera **exactamente 5 preguntas abiertas** que no requieran investigación, sino **reflexión y experiencia personal** del lector sobre lo expuesto.  \nCada pregunta debe cumplir:\n- Basarse directamente en el contenido del resumen.  \n- Invitar a dar una opinión, reflexión o ejemplo personal (“¿Cómo percibes…?”, “¿Qué opinas sobre…?”, “En tu experiencia…?”, “¿Crees que…?”, “¿Qué implicaciones ves…?”).  \n- No pedir datos ni hechos externos (evita “¿cuánto…?”, “¿quién…?”, “¿cuándo…?”).  \n- Ser diversas: técnica, estratégica, ética, operativa y humana.  \n\nEjemplos de estilo:\n- “¿Cómo crees que esta tendencia puede transformar tu forma de trabajar?”  \n- “¿Qué desafíos personales o profesionales te genera este cambio?”  \n- “¿Has vivido algo similar en tu sector?”  \n- “¿Qué te parecería la reacción del mercado ante este tipo de innovación?”  \n- “¿Qué señales te indicarían que esta tendencia se consolidará o se desinflará?”\n\n---\n\nSALIDA (JSON ESTRICTO — SIN TEXTO FUERA)\nDevuelve únicamente este objeto JSON:\n\n{\n  \"resumenExtendido\": \"<texto_con_subtítulos_y_listas>\",\n  \"pregunta1\": \"<pregunta_de_opinión_1>\",\n  \"pregunta2\": \"<pregunta_de_opinión_2>\",\n  \"pregunta3\": \"<pregunta_de_opinión_3>\",\n  \"pregunta4\": \"<pregunta_de_opinión_4>\",\n  \"pregunta5\": \"<pregunta_de_opinión_5>\",\n  \"hipotesisATestear\": [\n    {\"hipotesis\": \"<enunciado>\", \"como_validarla\": \"<métrica o señal>\", \"horizonte_dias\": 30},\n    {\"hipotesis\": \"<enunciado>\", \"como_validarla\": \"<métrica o señal>\", \"horizonte_dias\": 90}\n  ],\n  \"kpisYMetricasClave\": [\n    {\"nombre\": \"<KPI>\", \"definicion\": \"<qué mide>\", \"unidad\": \"<%/€/MAU/...>\", \"fuente\": \"<url>\", \"fecha\": \"AAAA-MM-DD\", \"confidence\": 0.0}\n  ],\n  \"fuentes\": [\n    {\"titulo\": \"<título o dominio>\", \"url\": \"https://...\", \"fecha\": \"AAAA-MM-DD\", \"tipo\": \"primaria|secundaria|terciaria\"}\n  ],\n  \"fechaCorteInvestigacion\": \"AAAA-MM-DD\",\n  \"notaDeCobertura\": \"Rangos temporales cubiertos, ambigüedades y lagunas detectadas.\"\n}\n\n---\n\nVALIDACIONES\n- Si la evidencia es insuficiente, explica esa limitación en el resumen y formula al menos 3 preguntas útiles de opinión.  \n- Longitud obligatoria: resumen entre 700 y 1.100 palabras.  \n- No incluyas texto fuera del JSON. No uses formato Markdown dentro del JSON.\n\n---\n\n",
+              "role": "system"
+            },
+            {
+              "content": "=Tendencia elegida por el usuario:\n{{ $json.tendencia }}"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.perplexity",
+      "typeVersion": 1,
+      "position": [
+        -5904,
+        4224
+      ],
+      "id": "f6c53d2f-4bd5-4e90-ada5-66ebebf157a7",
+      "name": "Message a model",
+      "credentials": {
+        "perplexityApi": {
+          "id": "[REMOVED]",
+          "name": "Perplexity account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * n8n Function node: Parse salida Perplexity (con división de resumen > 4000 chars)\n * Lee la salida del nodo Perplexity con estructura:\n * [\n *   {\n *     \"id\": \"...\",\n *     \"citations\": [...],\n *     \"message\": \"{...JSON...}\"\n *   }\n * ]\n */\n\nfunction limpiarTexto(texto) {\n  return texto\n    .replace(/^```(?:json)?/gi, \"\")\n    .replace(/```$/g, \"\")\n    .replace(/[“”]/g, '\"')\n    .replace(/[‘’]/g, \"'\")\n    .replace(/,\\s*([}\\]])/g, \"$1\")\n    .trim();\n}\n\nfunction mdToHtml(md) {\n  if (!md) return \"\";\n  let html = md.replace(/\\*\\*(.+?)\\*\\*/g, \"<strong>$1</strong>\");\n  html = html.replace(/(?:^|\\n)- (.*)/g, \"<li>$1</li>\");\n  html = html.replace(/(<li>[\\s\\S]*?<\\/li>)/g, \"<ul>$1</ul>\");\n  html = html.replace(/\\n{2,}/g, \"</p><p>\");\n  html = `<p>${html}</p>`;\n  html = html.replace(/<p>\\s*(<ul>[\\s\\S]*?<\\/ul>)\\s*<\\/p>/g, \"$1\");\n  return html;\n}\n\n/**\n * Divide un texto largo en partes de <= maxChars buscando cortes naturales.\n * Prioriza saltos de párrafo o secciones (“**” o \"\\n\\n\").\n */\nfunction dividirTexto(texto, maxChars = 4000) {\n  if (texto.length <= maxChars) return [texto];\n\n  const partes = [];\n  let resto = texto;\n\n  while (resto.length > maxChars) {\n    // Busca un punto lógico de corte antes del límite\n    let corte = resto.lastIndexOf(\"\\n\\n\", maxChars);\n    if (corte === -1) corte = resto.lastIndexOf(\"**\", maxChars);\n    if (corte === -1) corte = resto.lastIndexOf(\". \", maxChars);\n    if (corte === -1) corte = maxChars; // último recurso\n\n    const parte = resto.slice(0, corte).trim();\n    partes.push(parte);\n    resto = resto.slice(corte).trim();\n  }\n\n  if (resto.length > 0) partes.push(resto);\n  return partes;\n}\n\n// --- PARSEO PRINCIPAL ---\nconst entrada = items[0].json;\nif (!entrada.message) throw new Error(\"No se encontró el campo 'message' en la entrada del nodo.\");\n\nlet data;\ntry {\n  data = JSON.parse(entrada.message);\n} catch {\n  const limpio = limpiarTexto(entrada.message);\n  data = JSON.parse(limpio);\n}\n\n// Validar campos clave\nconst campos = [\"resumenExtendido\", \"pregunta1\", \"pregunta2\", \"pregunta3\", \"pregunta4\", \"pregunta5\", \"fuentes\"];\nfor (const c of campos) {\n  if (!(c in data)) throw new Error(`Falta el campo obligatorio: ${c}`);\n}\n\n// --- Convertir markdown a HTML ---\nconst resumenExtendido = data.resumenExtendido.trim();\nconst resumenHTML = mdToHtml(resumenExtendido);\n\n// --- Dividir resumen si excede 4000 caracteres ---\nconst partesResumen = dividirTexto(resumenExtendido, 4000);\n\n// --- Normalizar fuentes ---\nconst fuentesNormalizadas = (data.fuentes || []).map(f => ({\n  titulo: f.titulo?.trim() || \"\",\n  url: f.url?.trim() || \"\",\n  fecha: f.fecha?.trim() || \"\",\n}));\n\n// --- Estructura final ---\nconst salida = {\n  resumenExtendidoParte1: partesResumen[0] || \"\",\n  resumenExtendidoParte2: partesResumen[1] || \"\",\n  resumenExtendidoCompleto: resumenExtendido,\n  resumenHTML,\n  preguntas: [\n    data.pregunta1.trim(),\n    data.pregunta2.trim(),\n    data.pregunta3.trim(),\n    data.pregunta4.trim(),\n    data.pregunta5.trim()\n  ],\n  fuentes: fuentesNormalizadas,\n  fechaCorteInvestigacion: data.fechaCorteInvestigacion || null,\n  notaDeCobertura: data.notaDeCobertura || \"\",\n  citations: entrada.citations || [],\n  caracteresTotales: resumenExtendido.length,\n  partes: partesResumen.length\n};\n\n// --- Salida ---\nreturn [{ json: salida }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5680,
+        4224
+      ],
+      "id": "dc58b48b-b45e-4acd-a29b-bc51c5e7b39b",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "chatId": "=631826419",
+        "text": "={{ $json.resumenExtendidoParte1 }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -5456,
+        4240
+      ],
+      "id": "d9e628e2-6132-4a0d-8847-0cb309d5b1c3",
+      "name": "Send a text message3",
+      "webhookId": "6988ed0c-24cc-48b4-aca0-2a3854a02a81",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_AA_personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "=631826419",
+        "text": "={{ $('Code in JavaScript1').item.json.resumenExtendidoParte2 }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -5232,
+        4240
+      ],
+      "id": "106343a1-0695-440c-aca8-67bd9c0045a5",
+      "name": "Send a text message4",
+      "webhookId": "6988ed0c-24cc-48b4-aca0-2a3854a02a81",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_AA_personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.imgbb.com/1/upload",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "a2f41c2f02df3cd5f0b2c5cb1c8cb4e3"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "image",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -3216,
+        4032
+      ],
+      "id": "4e20a992-903e-48e9-ad23-de1f978fc325",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -2928,
+        4256
+      ],
+      "id": "3e08f115-8eb1-40ee-8949-7089cce14313",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=# ROL\nEres mi **Editor de Revisión**. Tu función es reescribir un artículo de blog existente **a partir del feedback del usuario**, manteniendo la voz en primera persona (es-ES), mejorando claridad, ritmo, SEO y estructura sin convertirlo en un Q&A.\n\n# INPUTS\n- blog_anterior (Markdown)\n- feedback_usuario (texto libre)\n\n# OBJETIVO\nEntregar un **nuevo artículo en Markdown** listo para publicar que:\n1) Incorpore **todas** las instrucciones válidas del feedback.\n2) Mantenga o mejore la **narrativa en primera persona** (humana, cercana).\n3) Respete buenas prácticas **SEO** (title/meta/H1/H2 declarativos, semántica natural, enlazado si existía).\n4) No introduzca **datos nuevos no contenidos** en el blog anterior ni pedidos explícitamente en el feedback.\n\n# POLÍTICA DE CAMBIOS (aplícalas en este orden)\n1) **Obediencia al feedback**: aplica cada punto si no contradice hechos ya asentados. \n2) **Coherencia**: si el feedback pide algo incompatible (p. ej., tono contradictorio en distintas secciones), prioriza la coherencia global y explica en el changelog (interno) cómo lo resolviste.\n3) **No alucinar**: no inventes cifras, nombres propios o afirmaciones nuevas. Si el feedback exige añadir un dato no presente, reescríbelo de forma **neutral** (genérica) o deja un marcador `<!-- TODO: dato solicitado en feedback no proporcionado -->`.\n4) **Voz del autor**: primera persona sostenida; frases naturales; ritmo variado; conectores coloquiales (“A partir de aquí”, “En la práctica”, “Ojo con…”).\n5) **Estructura**: conserva la arquitectura previa si es sana; puedes **reordenar** para mejorar flujo (lede + nut graf, H2 declarativos –no preguntas–, párrafos cortos, listas cuando sumen, pull-quotes si existen).\n6) **SEO sin forzar**: \n   - Title ≈ 50–60 caracteres, natural y con la palabra clave si fluye.\n   - Meta ≈ 150–160 caracteres (beneficio + expectativa).\n   - H1 claro. H2 **declarativos** (no interrogativos).\n   - Mantén enlaces y JSON-LD si existían; actualízalos si el feedback lo pide.\n7) **Estilo y legibilidad**:\n   - Párrafos cortos, evitar muletillas de IA.\n   - Evita “keyword stuffing”; usa sinónimos y semántica natural.\n   - Si había citas `>`, mantenlas o mejora su ubicación.\n\n\n# REGLAS DE EDICIÓN\n- **No** incluyas explicaciones fuera del Markdown\n- **No** conviertas el artículo en Q&A.\n- **No** añadas datos no presentes en el blog anterior ni explícitamente requeridos por el feedback.\n- Si el feedback pide **recortes de longitud**, prioriza claridad y elimina redundancias.\n- Si el feedback pide **más ejemplos**, usa **ejemplos genéricos** compatibles con el texto existente o añade el marcador `<!-- TODO ejemplo específico -->`.\n\n# VALIDACIONES FINALES\n- Title (≈50–60c) y meta (≈150–160c).\n- H1 coherente con el title (puede diferir).\n- H2 declarativos (sin “?”).\n- Primera persona mantenida.\n- Sin afirmaciones nuevas no respaldadas.",
+              "role": "system"
+            },
+            {
+              "content": "=Feedback_usuario:\n{{ $('Send a message').item.json.data['¿En caso de que no, que te gustaria mejorar / cambiar?'] }}\n\nBlog_anterior:\n{{ $('Copywriter1').item.json.message.content }}",
+              "role": "system"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -3232,
+        4432
+      ],
+      "id": "6105d587-593e-476c-a156-066b9733df36",
+      "name": "Copywriter revisor",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "contenido",
+              "value": "={{ $('Copywriter revisor').first().json.message.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2528,
+        4512
+      ],
+      "id": "7a208ee6-a9bb-4851-8a47-fe40272e4092",
+      "name": "Edit Fields6"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "contenido",
+              "value": "={{ $('Copywriter1').item.json.message.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4208,
+        4240
+      ],
+      "id": "bcbc0a3c-3f62-42d8-80dc-b8aebc1b720e",
+      "name": "Edit Fields8"
+    },
+    {
+      "parameters": {
+        "content": "Validación",
+        "height": 336,
+        "width": 464,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -4048,
+        4144
+      ],
+      "id": "90e6c593-3839-4d8b-a7c6-82490741b6ed",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "Edición visual y publicación",
+        "height": 336,
+        "width": 1520,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3504,
+        3936
+      ],
+      "id": "03757f5f-d46b-4c24-a1a5-5e54c2b97a4e",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "=631826419",
+        "message": "=Fuentes:\n{{ $('Message a model').item.json.citations.map(c => `• ${c}`).join('\\n') }}\n\n\n\nPreguntas:\n\n1. {{ $('Code in JavaScript1').first().json.preguntas[0] }}\n2. {{ $('Code in JavaScript1').first().json.preguntas[1] }}\n3. {{ $('Code in JavaScript1').first().json.preguntas[2] }}\n4. {{ $('Code in JavaScript1').first().json.preguntas[3] }}\n5. {{ $('Code in JavaScript1').first().json.preguntas[4] }}",
+        "responseType": "freeText",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -5008,
+        4240
+      ],
+      "id": "8ae4de02-fd01-45b1-8c10-f432953a7de8",
+      "name": "Send a text message1",
+      "webhookId": "33a72883-b836-4ffe-98b8-e5bad1aaea96",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_AA_personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=url_imagen:\n{{ $json.data.url }}\n\nmarkdown:\n{{ $('Copywriter1').item.json.message.content }}",
+        "options": {
+          "systemMessage": "=Eres un Maquetador Web de Élite, un experto absoluto en HTML5 y CSS3. Tu única función es recibir una URL de imagen y un texto en formato Markdown, y convertirlos en un documento HTML5 completo, visualmente impecable, autónomo y semánticamente perfecto.\n\nREGLA DE ORO: TU RESPUESTA DEBE CONTENER ÚNICA Y EXCLUSIVAMENTE EL CÓDIGO HTML. No incluyas absolutamente nada de texto introductorio (como \"Aquí tienes tu HTML:\"), ni explicaciones, ni las etiquetas ```html. Tu respuesta debe empezar con <!DOCTYPE html> y terminar con </html>.\n\nLA TAREA:\nEl usuario te proporcionará una URL de imagen y un bloque de texto en Markdown.\nTu misión es:\n1.  Identificar la `url_imagen`.\n2.  Convertir el `markdown` en un cuerpo de artículo HTML semántico (<h1>, <h2>, <h3>, <p>, <ul>, <li>).\n3.  Ensamblar todo en un documento HTML completo.\n\nDIRECTRICES DE ESTILO (PALETA \"OLIMPO\"):\nDebes incrustar los siguientes estilos CSS exactos dentro de una etiqueta <style> en el <head> del HTML.\n\n<style>\n  :root {\n    --creamy-bg: #FAF0E6;      /* Fondo cremoso */\n    --warm-container: #FFF8DC; /* Contenedor maíz suave */\n    --warm-accent: #E6BF83;    /* Acento amarillo atardecer */\n    --dark-text: #4A3B2A;       /* Texto oscuro legible */\n    --header-font: 'Georgia', 'Times New Roman', serif;\n    --body-font: 'Helvetica', 'Arial', sans-serif;\n  }\n  \n  body {\n    font-family: var(--body-font);\n    background-color: var(--creamy-bg);\n    margin: 0;\n    padding: 2rem; /* Espacio para que el contenedor respire */\n    line-height: 1.7;\n    color: var(--dark-text);\n  }\n\n  .container {\n    max-width: 800px;\n    margin: 0 auto;\n    background-color: var(--warm-container);\n    border-radius: 8px;\n    box-shadow: 0 10px 30px rgba(74, 59, 42, 0.1);\n    overflow: hidden;\n  }\n\n  /* --- INICIO DE MODIFICACIÓN CSS --- */\n  .main-image {\n    max-width: 640px;   /* Máximo 640px (tamaño nuevo) */\n    width: 100%;        /* Responsiva, se encoge si es necesario */\n    height: auto;\n    display: block;\n    margin: 2rem auto 2.5rem auto; /* Centrada y con espacio vertical */\n    border-radius: 8px; /* Consistente con el contenedor */\n  }\n  /* --- FIN DE MODIFICACIÓN CSS --- */\n\n  .article-content {\n    /* La imagen ahora va dentro de este article, pero el padding es correcto */\n    padding: 1.5rem 3rem 3rem 3rem;\n  }\n\n  h1, h2, h3 {\n    font-family: var(--header-font);\n    margin-top: 1.5em;\n    margin-bottom: 0.5em;\n    padding-bottom: 0.3em;\n  }\n\n  h1 {\n    font-size: 2.5rem;\n    line-height: 1.2;\n    margin-top: 0.5em; /* Reducido para estar más cerca de la parte superior */\n    border-bottom: 2px solid var(--warm-accent);\n  }\n\n  h2 {\n    font-size: 2rem;\n    border-bottom: 1px solid var(--warm-accent);\n  }\n\n  h3 {\n    font-size: 1.6rem;\n    color: #7D6A55;\n  }\n\n  p {\n    font-size: 1.1rem;\n    text-align: justify;\n    margin-bottom: 1.25em;\n  }\n\n  ul {\n    list-style-type: '✨';\n    padding-left: 2rem;\n  }\n\n  li {\n    font-size: 1.1rem;\n    padding-left: 0.5rem;\n    margin-bottom: 0.5em;\n  }\n</style>\n\nREGLAS DE ESTRUCTURA Y SEMÁNTICA:\n1.  El documento debe ser un HTML5 completo (<!DOCTYPE html>, <html>, <head>, <body>).\n2.  El <head> debe incluir <meta charset=\"UTF-8\">, <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"> y la etiqueta <style> definida arriba.\n3.  El <body> debe tener un <div class=\"container\">.\n4.  El contenido del markdown debe renderizarse dentro de un <article class=\"article-content\">.\n5.  ***¡MODIFICACIÓN CLAVE!*** La estructura DENTRO de `<article>` debe ser:\n    * Primero, el título (`<h1>`).\n    * Segundo, la imagen (`<img class=\"main-image\" src=\"[URL_AQUI]\" alt=\"Imagen principal de la noticia\">`).\n    * Tercero, el resto del contenido (párrafos, `<h2>`, etc.).\n6.  Conversión de Markdown:\n    * `# Texto` -> `<h1>Texto</h1>` (SOLO EL TÍTULO PRINCIPAL)\n    * `## Texto` -> `<h2>Texto</h2>`\n    * `### Texto` -> `<h3>Texto</h3>`\n    * Listas con `*` o `-` -> `<ul><li>Item 1</li><li>Item 2</li></ul>`\n    * Párrafos -> `<p>Texto del párrafo...</p>`\n\nRecuerda la REGLA DE ORO: Solo el código HTML."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -2992,
+        4032
+      ],
+      "id": "82a623c5-46e8-4b17-ba46-d7289a612da2",
+      "name": "Agente Maquetador"
+    }
+  ],
+  "pinData": {
+    "Telegram Trigger": [
+      {
+        "json": {
+          "update_id": 583868427,
+          "message": {
+            "message_id": 72,
+            "from": {
+              "id": 631826419,
+              "is_bot": false,
+              "first_name": "Angel",
+              "last_name": "Aparicio",
+              "language_code": "es"
+            },
+            "chat": {
+              "id": 631826419,
+              "first_name": "Angel",
+              "last_name": "Aparicio",
+              "type": "private"
+            },
+            "date": 1762483519,
+            "text": "Hola"
+          }
+        }
+      }
+    ],
+    "Edit Fields3": [
+      {
+        "json": {
+          "tendencia": "Expansión de herramientas no-code/low-code para automatización, democratizando el acceso a la creación de flujos automatizados entre empleados no técnicos y facilitando la integración de RPA con sistemas ERP y CRM, lo que incrementa la productividad y reduce la dependencia de desarrolladores especializados."
+        }
+      }
+    ],
+    "HTML": [
+      {
+        "json": {
+          "html": "<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Automatización: cómo el no-code/low-code está cambiando las empresas</title>\n    <meta name=\"description\" content=\"La automatización mediante no-code y low-code está democratizando la creación de soluciones y acelerando operaciones. Analizo riesgos, estrategias prácticas y señales para saber si ha venido para quedarse.\">\n    <style>\n        :root {\n            --creamy-bg: #FAF0E6;      /* Fondo cremoso */\n            --warm-container: #FFF8DC; /* Contenedor maíz suave */\n            --warm-accent: #E6BF83;    /* Acento amarillo atardecer */\n            --dark-text: #4A3B2A;       /* Texto oscuro legible */\n            --header-font: 'Georgia', 'Times New Roman', serif;\n            --body-font: 'Helvetica', 'Arial', sans-serif;\n        }\n        \n        body {\n            font-family: var(--body-font);\n            background-color: var(--creamy-bg);\n            margin: 0;\n            padding: 2rem; /* Espacio para que el contenedor respire */\n            line-height: 1.7;\n            color: var(--dark-text);\n        }\n\n        .container {\n            max-width: 800px;\n            margin: 0 auto;\n            background-color: var(--warm-container);\n            border-radius: 8px;\n            box-shadow: 0 10px 30px rgba(74, 59, 42, 0.1);\n            overflow: hidden;\n        }\n\n        /* --- INICIO DE MODIFICACIÓN CSS --- */\n        .main-image {\n            max-width: 640px;   /* Máximo 640px (tamaño nuevo) */\n            width: 100%;        /* Responsiva, se encoge si es necesario */\n            height: auto;\n            display: block;\n            margin: 2rem auto 2.5rem auto; /* Centrada y con espacio vertical */\n            border-radius: 8px; /* Consistente con el contenedor */\n        }\n        /* --- FIN DE MODIFICACIÓN CSS --- */\n\n        .article-content {\n            /* La imagen ahora va dentro de este article, pero el padding es correcto */\n            padding: 1.5rem 3rem 3rem 3rem;\n        }\n\n        h1, h2, h3 {\n            font-family: var(--header-font);\n            margin-top: 1.5em;\n            margin-bottom: 0.5em;\n            padding-bottom: 0.3em;\n        }\n\n        h1 {\n            font-size: 2.5rem;\n            line-height: 1.2;\n            margin-top: 0.5em; /* Reducido para estar más cerca de la parte superior */\n            border-bottom: 2px solid var(--warm-accent);\n        }\n\n        h2 {\n            font-size: 2rem;\n            border-bottom: 1px solid var(--warm-accent);\n        }\n\n        h3 {\n            font-size: 1.6rem;\n            color: #7D6A55;\n        }\n\n        p {\n            font-size: 1.1rem;\n            text-align: justify;\n            margin-bottom: 1.25em;\n        }\n\n        ul {\n            list-style-type: '✨';\n            padding-left: 2rem;\n        }\n\n        li {\n            font-size: 1.1rem;\n            padding-left: 0.5rem;\n            margin-bottom: 0.5em;\n        }\n\n        /* Estilos adicionales para mejorar la estética */\n        blockquote {\n            background-color: #F8F8F0; /* Ligeramente diferente para destacar */\n            border-left: 4px solid var(--warm-accent);\n            margin: 2em 0;\n            padding: 1em 1.5em;\n            font-style: italic;\n            color: #5A4C3C;\n        }\n        blockquote p {\n            margin: 0;\n            text-align: left; /* Blockquotes typically left-aligned */\n        }\n\n        table {\n            width: 100%;\n            border-collapse: collapse;\n            margin: 2em 0;\n            font-size: 1rem;\n        }\n        th, td {\n            border: 1px solid #D5C9B8;\n            padding: 0.8em 1.2em;\n            text-align: left;\n        }\n        th {\n            background-color: var(--warm-accent);\n            color: var(--dark-text);\n            font-family: var(--header-font);\n            font-weight: bold;\n        }\n        tbody tr:nth-child(even) {\n            background-color: #FBFBF3;\n        }\n        ol {\n            padding-left: 2rem;\n            font-size: 1.1rem;\n        }\n        ol li {\n            padding-left: 0.5rem;\n            margin-bottom: 0.5em;\n        }\n        a {\n            color: var(--warm-accent);\n            text-decoration: none;\n            font-weight: bold;\n        }\n        a:hover {\n            text-decoration: underline;\n        }\n    </style>\n    <script type=\"application/ld+json\">\n        {\n          \"@context\": \"https://schema.org\",\n          \"@type\": \"Article\",\n          \"headline\": \"Automatización: cómo el no-code está cambiando las empresas\",\n          \"author\": {\n            \"@type\": \"Person\",\n            \"name\": \"Angel Aparicio\",\n            \"jobTitle\": \"Experto en automatizaciones\"\n          },\n          \"datePublished\": \"2025-11-06\",\n          \"description\": \"La automatización mediante no-code y low-code está democratizando la creación de soluciones y acelerando operaciones. Analizo riesgos, estrategias prácticas y señales para saber si ha venido para quedarse.\",\n          \"publisher\": {\n            \"@type\": \"Organization\",\n            \"name\": \"Solutechia\",\n            \"url\": \"https://www.solutechia.es\"\n          },\n          \"mainEntityOfPage\": \"https://www.solutechia.es\",\n          \"inLanguage\": \"es-ES\"\n        }\n    </script>\n</head>\n<body>\n    <div class=\"container\">\n        <article class=\"article-content\">\n            <h1>Por qué la automatización no-code/low-code es la nueva ventaja competitiva</h1>\n            <img class=\"main-image\" src=\"https://i.ibb.co/fYp6H7sQ/data.png\" alt=\"Imagen principal de la noticia\">\n            <p>Lo digo sin rodeos: la automatización ya no es solo cosa del equipo de IT. Yo creo —y he visto— que estamos ante una redistribución real del poder operativo dentro de las empresas: el no-code y el low-code están devolviendo agilidad a los equipos de negocio y, con ello, redefiniendo quién decide, quién ejecuta y con qué velocidad. Esto no es una moda pasajera: es una respuesta concreta a tres presiones simultáneas que llevan años acumulándose: la digitalización forzada por el mercado, la escasez de talento técnico y la necesidad desesperada de reducir tiempos y costes sin perder calidad.</p>\n            <p>A partir de aquí, poner datos sobre la mesa no es un capricho: el mercado del low-code superó los 28.000 millones de dólares en 2024 y se proyecta que alcanzará los 37.000 millones en 2025. Además, se estima que en 2025 el 70% de las nuevas aplicaciones empresariales se desarrollarán con estas tecnologías; y hoy el 84% de las compañías recurre a plataformas no-code/low-code para reducir cuellos de botella en TI. Ojo: esos números no reflejan entusiasmo pasajero, reflejan adopción masiva. En la práctica, plataformas como Make, Power Automate, Zapier, n8n o Airtable ya están integrándose con ERP y CRM y soportando automatizaciones que hace cinco años solo un equipo de programadores hubiera tocado.</p>\n            <p>En mi experiencia trabajando con empresas grandes y pymes, el resultado es consistente: reducciones de tiempo en procesos repetitivos, mayor capacidad de experimentación por parte de negocio y prototipos que pasan a producción en semanas en lugar de meses. Pero no me malinterpretes: esto viene con responsabilidades —gobernanza, seguridad y una nueva forma de colaboración entre perfiles— que hay que gestionar.</p>\n            <h3>Contexto útil: lo esencial en una mirada rápida</h3>\n            <ul>\n                <li>¿Por qué ahora? Porque la presión por velocidad y ahorro coincide con herramientas más potentes y accesibles, y con la integración cada vez más precisa de IA dentro de estas plataformas.</li>\n                <li>¿Quién adopta? Startups, pymes y grandes corporaciones (especialmente en banca, retail y manufactura) están usando estas plataformas para acelerar operaciones y experimentación.</li>\n                <li>¿Qué problemas resuelven? Desde automatizar procesos de ventas en CRM hasta orquestar integraciones entre aplicaciones SaaS y ERP, reduciendo errores humanos y tiempos muertos.</li>\n                <li>¿Qué no solucionan automáticamente? La complejidad de sistemas legacy, requisitos regulatorios muy estrictos y proyectos que demandan escalabilidad arquitectónica profunda.</li>\n            </ul>\n            <p>Voy a desarrollar cinco ideas clave (transformadas en titulares), cada una con lo práctico que he visto funcionar, citas directas para subrayar y medidas concretas que puedes aplicar desde ya.</p>\n\n            <h2>Cómo la democratización del no-code/low-code está cambiando la autonomía y la toma de decisiones en equipos</h2>\n            <p>La democratización significa que las decisiones técnicas dejan de ser un cuello de botella. Lo que antes requería tickets, reuniones y espera ahora puede resolverse con un flujo visual o una integración lista para usar. En varios clientes he visto equipos de marketing, operaciones y logística lanzar automatizaciones que optimizan pedidos, alertas y reporting sin pasar por IT en cada iteración.</p>\n            <p>Esto tiene tres efectos directos:</p>\n            <ol>\n                <li>Mayor velocidad de ejecución: ciclos de feedback más cortos entre problema e hipótesis resuelta.</li>\n                <li>Más experimentación: menor coste por intento, por lo que probar nuevas formas de trabajar deja de ser un lujo.</li>\n                <li>Descentralización de la decisión: el poder de ejecutar se acerca al conocimiento del negocio.</li>\n            </ol>\n            <p>Mi experiencia práctica: cuando empoderas a un equipo con plantillas y límites claros, el número de iniciativas útiles se multiplica. Cuando das barra libre sin control, multiplicas también los errores. Por eso siempre estructuro estos despliegues con “zonas de autonomía” y “zonas centralizadas”. Ojo: autonomía no es anarquía.</p>\n            <blockquote>\n                <p>“las herramientas de Now Code y Low Code van a transformar mucho en cómo se trabaja en las empresas”<br>— Angel Aparicio, Experto en automatizaciones</p>\n            </blockquote>\n            <blockquote>\n                <p>Empoderar sin gobernar es regalar problemas al futuro.</p>\n            </blockquote>\n            <h3>Breve checklist para impulsar autonomía sin caos:</h3>\n            <ul>\n                <li>Define procesos claros que pueden ser automatizados por negocio (y cuáles no).</li>\n                <li>Provee plantillas reutilizables y aprobadas por arquitectura.</li>\n                <li>Forma a “campeones” internos que actúen como puente entre negocio e IT.</li>\n            </ul>\n\n            <h2>Desafíos éticos al permitir que empleados no técnicos manejen automatizaciones con datos sensibles</h2>\n            <p>Si democratizar el desarrollo es un regalo, abrir accesos a datos sensibles es una responsabilidad. No basta con decir “confío en mi equipo”. En temas que tocan datos personales, financieros o información regulada, los errores pueden ser caros —legales, reputacionales y operativos.</p>\n            <p>Los riesgos éticos más claros que veo:</p>\n            <ul>\n                <li>Acceso no autorizado: automatizaciones que exponen campos sensibles por error.</li>\n                <li>Uso indebido de datos: procesos que combinan datasets y crean perfiles sin consentimiento.</li>\n                <li>Falta de trazabilidad: no saber quién creó qué flujo y por qué.</li>\n            </ul>\n            <p>Cómo lo mitigo en la práctica:</p>\n            <ul>\n                <li>Implemento políticas de acceso basadas en roles y aprobaciones. No todo el mundo necesita exportar datos.</li>\n                <li>Registro obligatorio de cambios: cada flujo debe dejar rastro (qué, quién, cuándo).</li>\n                <li>Controles automatizados: pruebas automáticas que detectan exfiltración de datos o accesos fuera de horario.</li>\n            </ul>\n            <blockquote>\n                <p>“hay que tener bastante cuidado pero yo creo que más que desventajas va a tener muchos beneficios…”<br>— Angel Aparicio, Experto en automatizaciones</p>\n            </blockquote>\n            <h3>Tabla corta: Riesgo vs mitigación (rápida)</h3>\n            <table>\n                <thead>\n                    <tr>\n                        <th>Riesgo</th>\n                        <th>Mitigación rápida</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td>Exposición de datos sensibles</td>\n                        <td>Roles y etiquetas de campos, aprobaciones previas</td>\n                    </tr>\n                    <tr>\n                        <td>Automatizaciones fuera de control</td>\n                        <td>Revisión periódica y backups de flujos</td>\n                    </tr>\n                    <tr>\n                        <td>Uso indebido o sesgado</td>\n                        <td>Auditorías de datos y limitación de combinaciones de datasets</td>\n                    </tr>\n                </tbody>\n            </table>\n            <p>En definitiva: no es solo “qué puedes hacer”, sino “qué deberías dejar hacer”. Ser ético en automatización es aplicar el principio de menor privilegio igual que en seguridad.</p>\n\n            <h2>Cómo implantar plataformas no-code/low-code de forma segura y sin crear silos</h2>\n            <p>La adopción falla cuando se convierte en “islas de automatización”: equipos que crean soluciones divergentes, sin estándares ni mantenimiento claro. En mis proyectos he visto esa fragmentación: 20 soluciones distintas que hacen lo mismo y ninguna documentada.</p>\n            <h3>Estrategias que funcionan:</h3>\n            <ul>\n                <li>Gobernanza práctica antes que normativa infinita. No quiero 200 páginas de políticas; quiero 3 reglas operativas y un flujo de aprobación.</li>\n                <li>Centro de Excelencia (CoE) híbrido: un pequeño equipo —mixto entre IT y negocio— que establece estándares, plantillas y revisa casos críticos.</li>\n                <li>Onboarding técnico controlado: sesiones rápidas, plantillas y revisión inicial de los primeros 5 flujos de cada equipo.</li>\n                <li>Inventario centralizado de automatizaciones: un registro accesible que permite ver quién hizo qué.</li>\n            </ul>\n            <h3>Lista de actividades iniciales (para implementar en 30–60 días):</h3>\n            <ul>\n                <li>Auditoría de procesos candidatos a automatizar.</li>\n                <li>Selección de 2–3 herramientas estándar (por compatibilidad con ERP/CRM).</li>\n                <li>Formación de 10 “campeones” internos.</li>\n                <li>Definición de roles y aprobaciones.</li>\n            </ul>\n            <blockquote>\n                <p>Prefiero una gobernanza ágil que una burocracia brillante.</p>\n            </blockquote>\n            <p>Otra recomendación práctica: usar métricas claras para valorar el éxito (horas ahorradas, errores evitados, tiempo de despliegue) y cerrar el ciclo con revisiones trimestrales. Si una automatización no se mantiene, se retira; la disciplina importa.</p>\n\n            <h2>Cómo la integración de IA en flujos no-code/low-code redefine la competencia entre equipos técnicos y de negocio</h2>\n            <p>La IA es el catalizador que multiplica el impacto del no-code/low-code. Cuando la IA entra en un flujo (por ejemplo: clasificación automática de documentos, extracción de datos o generación de respuestas personalizadas), el valor que obtiene negocio es enorme: menos tareas manuales, decisiones más rápidas y mejores predicciones.</p>\n            <p>¿Significa eso que los equipos técnicos quedan fuera? No. Cambia la naturaleza de la competencia y la colaboración:</p>\n            <ul>\n                <li>Los equipos de negocio ganan autonomía estratégica: pueden desplegar modelos básicos de IA o usar plantillas.</li>\n                <li>Los equipos técnicos se vuelven imprescindibles en la gobernanza, la integración avanzada y la optimización de modelos a escala.</li>\n            </ul>\n            <p>En resumen, la IA no sustituye a la técnica; la pone en otra liga. El perfil ganador en una empresa será alguien que combina sentido del negocio con cultura tecnológica: “pro-code + citizen developers” trabajando juntos.</p>\n            <p>Ejemplo práctico: en un cliente del sector retail, combinar una automatización no-code con un modelo de clasificación de facturas redujo el tiempo de gestión a la mitad. ¿El mérito? Un equipo mixto que diseñó el flujo y otro que afinó la calidad del modelo.</p>\n            <h3>Consejos para evitar fricciones:</h3>\n            <ul>\n                <li>Define límites claros: qué decisiones puede automatizar IA y cuáles deben pasar por revisión humana.</li>\n                <li>Mantén transparencia sobre cómo la IA toma decisiones (reglas, datos de entrenamiento).</li>\n                <li>Involucra a IT desde el diseño, no solo al final del proyecto.</li>\n            </ul>\n\n            <h2>Señales que indican que el no-code/low-code es una tendencia sostenible, no una moda</h2>\n            <p>Estamos en 2025 y la pregunta razonable es: ¿esto viene para quedarse o es un hype más? Yo no creo que vuelva atrás. Pero hay señales que debes vigilar para distinguir adopción madura de “fiebre pasajera”:</p>\n            <h3>Señales positivas de madurez:</h3>\n            <ul>\n                <li>Integración profunda con sistemas core (ERP/CRM) y no solo con apps de marketing.</li>\n                <li>Existencia de modelos de gobernanza en varias empresas del sector.</li>\n                <li>Crecimiento sostenido del mercado y adopción en entornos regulados (banca, salud).</li>\n                <li>Aparición de roles híbridos y formación reglada (programas internos de \"programador ciudadano\").</li>\n            </ul>\n            <h3>Señales de burbuja/fallo:</h3>\n            <ul>\n                <li>Uso masivo solo para prototipos que nunca llegan a producción.</li>\n                <li>Fragmentación extrema: múltiples herramientas incompatibles en la misma compañía.</li>\n                <li>Costes recurrentes que crecen descontrolados por licencias sin racionalización.</li>\n                <li>Elevado porcentaje de automatizaciones retiradas por falta de mantenimiento.</li>\n            </ul>\n            <p>Mi criterio práctico: si veo que una solución no-code/low-code está integrada con ERP/CRM y pasa auditorías de seguridad, es que estamos ante algo sostenible. Si solo sirve para generar bonitos dashboards sin impacto operativo, cuidado: puede ser ruido.</p>\n            <h3>Tabla corta: Indicador rápido de sostenibilidad</h3>\n            <table>\n                <thead>\n                    <tr>\n                        <th>Indicador</th>\n                        <th>Sostenible</th>\n                        <th>Moda</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td>Integración con core (ERP/CRM)</td>\n                        <td>✓</td>\n                        <td></td>\n                    </tr>\n                    <tr>\n                        <td>Gobernanza establecida</td>\n                        <td>✓</td>\n                        <td></td>\n                    </tr>\n                    <tr>\n                        <td>Costes centralizados y previsibles</td>\n                        <td>✓</td>\n                        <td></td>\n                    </tr>\n                    <tr>\n                        <td>Proyectos en producción y mantenidos</td>\n                        <td>✓</td>\n                        <td></td>\n                    </tr>\n                    <tr>\n                        <td>Uso solo para prototipos</td>\n                        <td></td>\n                        <td>✓</td>\n                    </tr>\n                </tbody>\n            </table>\n\n            <h2>Lo que puede salir mal</h2>\n            <p>No me gusta ser alarmista, pero tampoco soy ingenuo. Hay tres grandes problemas reales y cómo los trato:</p>\n            <ol>\n                <li><strong>Seguridad y fuga de datos</strong>\n                    <ul>\n                        <li>Riesgo: automatizaciones que exponen información sensible.</li>\n                        <li>Cómo lo mitigo: controles de acceso basados en roles; revisión automática de flujos que manejan datos críticos; logging obligatorio.</li>\n                        <li>Lo que voy a hacer yo: auditar flujos críticos trimestralmente y bloquear permisos fuera de horario.</li>\n                    </ul>\n                </li>\n                <li><strong>Deuda técnica y pérdida de calidad</strong>\n                    <ul>\n                        <li>Riesgo: soluciones rápidas que acaban siendo deuda técnica difícil de refactorizar.</li>\n                        <li>Cómo lo mitigo: aplicar reglas de mantenimiento (documentación mínima, propietario asignado, pruebas automatizadas simples).</li>\n                        <li>Lo que voy a hacer yo: marcar un punto final a los proyectos “rápidos” que duren más de 6 meses sin revisión.</li>\n                    </ul>\n                </li>\n                <li><strong>Cultura de competencia destructiva entre equipos</strong>\n                    <ul>\n                        <li>Riesgo: fricciones entre IT y negocio que degeneran en bloqueo.</li>\n                        <li>Cómo lo mitigo: crear un CoE con representantes de ambas partes y métricas compartidas de valor.</li>\n                        <li>Lo que voy a hacer yo: forzar reuniones mensuales de retroalimentación entre IT y campeones de negocio.</li>\n                    </ul>\n                </li>\n                <li><strong>Costes ocultos y licencias descontroladas</strong>\n                    <ul>\n                        <li>Riesgo: cada equipo compra su herramienta y las facturas se disparan.</li>\n                        <li>Cómo lo mitigo: racionalización de plataformas aprobadas y compra centralizada.</li>\n                        <li>Lo que voy a hacer yo: centralizar la gestión de licencias y revisar facturas cada trimestre.</li>\n                    </ul>\n                </li>\n                <li><strong>Responsabilidad legal y ética</strong>\n                    <ul>\n                        <li>Riesgo: usos indebidos de datos que acaban en demandas o sanciones.</li>\n                        <li>Cómo lo mitigo: integrar a legal y cumplimiento desde el diseño, y aplicar limitaciones automatizadas.</li>\n                        <li>Lo que voy a hacer yo: exigir una evaluación de impacto para cualquier flujo que utilice datos personales.</li>\n                    </ul>\n                </li>\n            </ol>\n            <p>Un toque de realismo (y un punto sarcástico): no sirve de nada tener la herramienta más sexy del mercado si luego nadie la mantiene. Automatizar sin disciplina es como construir castillos de arena en la orilla: están bien hasta que llega la marea.</p>\n\n            <h2>Qué voy a hacer (mi plan práctico y replicable)</h2>\n            <p>No soy de hablar solo en abstracto. Aquí tienes el plan que voy a ejecutar y que recomiendo replicar en cualquier empresa que quiera pasar de curiosidad a impacto real:</p>\n            <h3>Primeros 60 días:</h3>\n            <ul>\n                <li>Auditoría de procesos candidatos y priorización por ROI.</li>\n                <li>Selección de 2 plataformas estándar (una para integraciones y otra para apps internas).</li>\n                <li>Formación intensiva para 8–12 campeones (sesiones prácticas y plantillas).</li>\n                <li>Creación de un inventario público de automatizaciones en la empresa (con enlaces, propietario y SLA).</li>\n            </ul>\n            <h3>60–180 días:</h3>\n            <ul>\n                <li>Lanzamiento del CoE y primeras revisiones de seguridad.</li>\n                <li>Pautas y plantillas aprobadas para ERP/CRM.</li>\n                <li>Mecanismo de control de costes y licencias.</li>\n            </ul>\n            <h3>A largo plazo:</h3>\n            <ul>\n                <li>Medir y reportar ahorros en horas y reducción de errores.</li>\n                <li>Evolucionar el rol de TI a orquestador y auditor.</li>\n                <li>Implantar revisiones trimestrales y roadmap de automatizaciones.</li>\n            </ul>\n            <h3>Lista de acciones concretas (rápida):</h3>\n            <ul>\n                <li>Nombrar 1 responsable de automatizaciones.</li>\n                <li>Documentar 10 procesos candidatos.</li>\n                <li>Establecer 3 reglas de seguridad obligatorias.</li>\n                <li>Crear 5 plantillas reutilizables para negocio.</li>\n            </ul>\n            <p>No es filosofía; son pasos operativos que he usado con clientes y que funcionan. Si alguien te promete resultados sin este tipo de disciplina, desconfía.</p>\n\n            <h2>Cierre épico</h2>\n            <p>La automatización mediante no-code/low-code no es sólo una herramienta productiva: es una redistribución del poder organizativo. Permite que quien conoce el problema —el equipo de negocio— actúe con inmediatez, mientras que los perfiles técnicos elevan su aportación hacia la arquitectura, la gobernanza y la estrategia. Para empresas grandes y pymes en España, esto significa sobrevivir y competir: la velocidad de ejecución ya es una ventaja estratégica.</p>\n            <p>¿Es arriesgado? Sí. ¿Es revolucionario? También. Pero, honestamente, vivir resignado a ciclos de desarrollo de seis meses cuando tu competencia experimenta y mejora en semanas es una mala apuesta. Si gestionas la seguridad, la gobernanza y la cultura, la automatización con no-code/low-code es la herramienta que separa a quien se adapta del que se queda mirando.</p>\n            <p>Al final, mi mantra es simple: empodera con responsabilidad. Si lo haces bien, el balance será brutal: procesos más rápidos, menos errores y equipos más enfocados en lo que de verdad añade valor.</p>\n            <p>Visita <a href=\"https://www.solutechia.es\">https://www.solutechia.es</a> para ver ejemplos prácticos y recursos sobre gobernanza y automatizaciones (inventario de plantillas y frameworks). Y recuerda: automatizar mal es peor que no automatizar; automatizar bien es la ostia.</p>\n        </article>\n    </div>\n</body>\n</html>"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "tendencias1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message10": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tendencias1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a text message10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Message a model3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copywriter1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Generate an image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields7": {
+      "main": [
+        [
+          {
+            "node": "Copywriter revisor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields10": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message1": {
+      "main": [
+        [
+          {
+            "node": "Create a post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message3": {
+      "main": [
+        [
+          {
+            "node": "Send a text message4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message4": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Agente Maquetador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Maquetador",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copywriter revisor": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields6": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields8": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        [
+          {
+            "node": "Copywriter1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Maquetador": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "953216ad-f225-40d5-b5e6-721a7423fddc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "deqQmLEetm7Bgngu",
+  "tags": []
+}

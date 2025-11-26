@@ -1,0 +1,114 @@
+[
+  {
+    "id": 5493,
+    "author": "INEMA",
+    "date": "2025-04-11T23:29:53+00:00",
+    "text": "Transcript'].split(' ');\nconst lines = [];\nlet currentLine = '';\nlet currentCharCount = 0;\n\nwords.forEach(word => {\n  const wordLength = word.length;\n  const potentialLength = currentCharCount + (currentLine ? 1 : 0) + wordLength;\n\n  if (potentialLength <= maxCharsPerLine) {\n    currentLine += `${currentLine ? ' ' : ''}${word}`;\n    currentCharCount = potentialLength;\n  } else {\n    lines.push(currentLine);\n    currentLine = word;\n    currentCharCount = wordLength;\n  }\n});\n\nif (currentLine) lines.push(currentLine);\n\nconst totalHeight = lines.length * fontSize * lineHeightMultiplier;\nconst lineHeight = fontSize * lineHeightMultiplier;\n\nconst drawText = lines.map((line, index) => {\n  const y = `(h/2)-${Math.ceil(totalHeight/2)}+${index * lineHeight}`;\n  return `drawtext=text='${line}':fontsize=${fontSize}:fontcolor=${fontColor}:x=(w-tw)/2:y=${y}:fontfile=${fontFile}`;\n}).join(',');\n\nreturn { json: { drawText } };\n```\n---\n\n### Como adicionar uma fonte personalizada (.ttf) no host local?\n- Docker > Containers > Files > Home > Node\n\n---\n\n### Gerar vídeo com FFmpeg:\n```bash\nffmpeg -i \"{{ $('Pick Video & Music In Random').item.json.video_path }}\" \\\n       -i \"{{ $('Pick Video & Music In Random').item.json.music_path }}\" \\\n       -filter_complex \"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[vid];\n                       color=black@0.3:size=1080x1920:d=10[bg];\n                       [vid][bg]overlay[bgvid];\n                       [bgvid]{{ $json.drawText }}[outv];\n                       [1:a]volume=0.8[aout]\" \\\n       -map \"[outv]\" -map \"[aout]\" -t 10 -aspect 9:16 \\\n       -c:v libx264 -c:a aac -shortest \\\n       \"./{{ $('Generate File Name2').item.json['File Name'] }}.mp4\" -y```\n\n---\n\n### Criar link para upload no YouTube\n\nU**RL:\n**h```ttps://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status&uploadType=resumable\n```\nCo**rpo:\n{**\n```  \"snippet\": {\n    \"title\": \"{{ $('Limit2').item.json['Video Title'] }}\",\n    \"description\": \"{{ $('Limit2').item.json['Video Transcript'] }}\",\n    \"defaultLanguage\": \"en\",\n    \"defaultAudioLanguage\": \"en\"\n  },\n  \"status\": {\n    \"privacyStatus\": \"public\",\n    \"license\": \"youtube\",\n    \"embeddable\": true,\n    \"publicStatsViewable\": true,\n    \"madeForKids\": false\n  }\n}\n\n```---\n\n### Remover Arquivo:\nrm``` ./{{ $('Generate File Name2').item.json['File Name'] }}.mp4\n\n```---\n\n### Bônus\n\nIn**icializar lista de geração de vídeos:\nc**o```nst executionList = new Array($input.first().json['Number of Video Generation']).fill(\"\")\nreturn { executionList };\n\n```Ge**rar texto do vídeo (prompt):\n\n**Prompt:\nGe```re uma transcrição e título de vídeo motivacional.\n\nTítulo: motivacional, com menos de 20 palavras  \nTranscrição: motivacional, concisa, menos de 20 palavras  \n***Não adicione pontuação ou emojis em nenhum dos dois\n\n```Exe**mplo de saída estruturada:\n{\n** ``` \"motivational_text\": \"rise above challenges believe in yourself keep pushing forward success comes to those who persist\",\n  \"video_title\": \"Rise Above Challenges - Believe Persist Succeed\"\n}```",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5492,
+    "author": "INEMA",
+    "date": "2025-04-11T23:29:53+00:00",
+    "text": "**07 - O truque de IA de $0 para produzir em massa mais de 1000 vídeos**\n\n### Como instalar Docker e n8n localmente\n1. Baixe o Docker em: https://www.docker.com/  \n2. Instale e abra o aplicativo Docker no desktop  \n3. Acesse o Docker Hub e pesquise por `n8n`  \n4. Escolha `n8nio/n8n` > clique em **Pull**  \n5. Vá em **Images** > clique em **Run** > expanda as configurações opcionais  \n6. Defina a porta no campo “host port”, por exemplo: `5678` > clique em **Run**\n\n---\n\n### Como instalar FFmpeg no seu Docker (para renderizar vídeos sem a API do andynocode)\n1. Vá para **Docker > Container**  \n2. Copie o ID do container (localizado abaixo do nome) e substitua `{{container id}}` no comando abaixo:  \n   \n   Exemplo de ID: `e2b38713d607627c6aa25a4ef61ddfee1630256e0a6c58ca75e2f23d7e2998aa`  \n   \n   Comando:\n   ```   docker exec -it -u root {{container id}} apk add --update python3 py3-pip gcc python3-dev musl-dev curl ffmpeg\n   ```\n   Exemplo:\n    ```  docker exec -it -u root e2b38713d607627c6aa25a4ef61ddfee1630256e0a6c58ca75e2f23d7e2998aa apk add --update python3 py3-pip gcc python3-dev musl-dev curl ffmpeg\n   \n```\nNo** Mac: **pressione Command+Espaço > procure por “Terminal” > cole e execute o comando com o ID correto\n\n---\n\n### Como instalar yt-dlp no seu Docker (para baixar vídeos do YouTube)\nMesma lógica: copie o ID do container e substitua:\n\nComando:\ndo```cker exec -it -u root {{container id}} apk add yt-dlp\nE```xemplo:\ndoc```ker exec -it -u root e2b38713d607627c6aa25a4ef61ddfee1630256e0a6c58ca75e2f23d7e2998aa apk add yt-dlp\n\n-```--\n\n### Importar o Template n8n para sua instância local\n- Template n8n:  \n  https://drive.google.com/file/d/1oKkyD-r-tZ4v-Gp-Ot1iYVhJfjiKDqfY/view?usp=sharing\n\n- Template do Google Sheets (NÃO usar formato .xlsx ou outros):  \n  https://docs.google.com/spreadsheets/d/1PXkCdruolQS_gw6ZH1DKL6vGpmZZFXr1/edit?gid=1543141306#gid=1543141306\n\n---\n\n### Console do Google Cloud: API do Google Sheets\nAcesse: https://console.cloud.google.com/  \nSelecione seu projeto.\n\n---\n\n### DeepSeek Prompts\n\nProm**pt:  \nG**ere 100 frases motivacionais curtas e também o título do vídeo. Forneça duas colunas:  \n1ª coluna = título do vídeo  \n2ª coluna = frase  \n*Não coloque números no início*\n\n---\n\n### Gerar string aleatória com 10 caracteres em uma linha de código (JavaScript)\nArra```y.from({ length: 10 }, () => Math.random().toString(36)[2]).join('')\n\n--```-\n\n### Criar 20 títulos e transcrições motivacionais totalmente diferentes, sem emojis ou pontuação.  \nFormato: tabela do Excel.\n\n---\n\n### Nós do n8n\n\nGera**r Nome do Arquivo:\n{{ **A```rray.from({ length: 10 }, () => Math.random().toString(36)[2]).join('') }}\n\nBa```ix**ar Vídeo:\nyt-**d```lp -o \"./{{ $('Generate File Name').item.json['Folder Name'] }}/{{ $('Generate File Name').item.json['File Name'] }}.mp4\" \"{{ $('Get Youtube Video').item.json['Video Path'] }}\" -f \"bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best\"\n\nAt```ua**lizar detalhes do vídeo:\n./{**{``` $('Generate File Name').item.json['Folder Name'] }}/{{ $('Generate File Name').item.json['File Name'] }}.mp4\n\nBa```ix**ar Música:\nyt-**d```lp -x --audio-format mp3 -o \"./{{ $('Generate File Name1').item.json['Folder Name'] }}/{{ $('Generate File Name1').item.json['File Name'] }}.mp3\" \"{{ $('Get Youtube Music').item.json['Music Path'] }}\"\n\nEs```co**lher vídeo e música aleatoriamente:\n\nMú**sica:\n{{ $```('Aggregate Music').item.json['Internal Path'][Math.floor(Math.random() * $('Aggregate Music').item.json['Internal Path'].length)] }}\n\nVí```deo:\n{{ $```('Aggregate Video').item.json['Internal Path'][Math.floor(Math.random() * $('Aggregate Video').item.json['Internal Path'].length)] }}\n\n--```-\n\n### Gerar texto sobreposto no vídeo (overlay):\n\n```js\nconst fontColor = \"white\";\nconst fontFile = \"NotoSerif_Condensed-BlackItalic.ttf\";\nconst fontSize = 80;\nconst lineHeightMultiplier = 1.1;\nconst videoWidth = 1080;\n\nconst avgCharWidth = fontSize * 0.6;\nconst maxCharsPerLine = Math.floor(videoWidth / avgCharWidth);\n    \nconst words = $('Get Video Quotes').item.json['Video",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 5491,
+    "author": "INEMA",
+    "date": "2025-04-11T23:29:27+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5490,
+    "author": "INEMA",
+    "date": "2025-04-11T23:29:26+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5489,
+    "author": "INEMA",
+    "date": "2025-04-11T23:29:25+00:00",
+    "text": "...",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5488,
+    "author": "INEMA",
+    "date": "2025-04-11T23:29:25+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5487,
+    "author": "INEMA",
+    "date": "2025-04-11T23:29:25+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5486,
+    "author": "INEMA",
+    "date": "2025-04-11T23:29:25+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5485,
+    "author": "INEMA",
+    "date": "2025-04-11T23:29:25+00:00",
+    "text": "...",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5484,
+    "author": "INEMA",
+    "date": "2025-04-11T23:29:25+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5483,
+    "author": "INEMA",
+    "date": "2025-04-11T23:29:24+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5482,
+    "author": "INEMA",
+    "date": "2025-04-11T23:29:24+00:00",
+    "text": "https://chatgpt.com/c/67f99f37-be4c-8009-8131-2817635ae753",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 5481,
+    "author": "INEMA",
+    "date": "2025-04-11T23:29:23+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5480,
+    "author": "INEMA",
+    "date": "2025-04-11T23:29:18+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

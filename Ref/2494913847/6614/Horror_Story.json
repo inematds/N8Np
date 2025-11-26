@@ -1,0 +1,388 @@
+{
+  "name": "Horror Story",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Horror Story Workflow",
+        "height": 360,
+        "width": 2240,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        300
+      ],
+      "id": "efe7d54c-5f92-4b33-9775-8c86625dc621",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://fastapi-app:8880/v1/audio/speech",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"kokoro\",\n  \"input\": \"{{ $json.text }}\",\n  \"voice\": \"af_heart\",\n  \"response_format\": \"mp3\",\n  \"download_format\": \"mp3\",\n  \"speed\": 1,\n  \"stream\": true,\n  \"return_download_link\": true,\n  \"normalization_options\": {\n    \"normalize\": true,\n    \"unit_normalization\": false,\n    \"url_normalization\": true,\n    \"email_normalization\": true,\n    \"optional_pluralization_normalization\": true,\n    \"phone_normalization\": true\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        360
+      ],
+      "id": "0f9741ba-ff05-4a08-95fc-510264729a68",
+      "name": "Kokoro Audio Create Voice"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        360
+      ],
+      "id": "faa17ef2-bbb0-4e9d-ac63-e6da0ba04e2e",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Create a 3 minutes horror story",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a horror story writing AI.  Your task is to write a complete horror story transcript based on a requested duration in minutes. The transcript should match the time by assuming an average speaking speed of 130 words per minute.\n\nRules:\n- Do not include a title, word count, or any formatting.\n- Only return the full story transcript as plain text.\n- Match the requested duration using approximate word count (duration_in_minutes * 130).\n- The story should be atmospheric, suspenseful, and unsettling, ending with a twist or open-ended fear.\n- Avoid excessive gore — focus on psychological horror and eerie description.\n\nWhen the user provides a topic or theme, use it to guide the setting or threat. If no theme is given, choose a classic horror setting (e.g., foggy woods, abandoned hospital, eerie mirror).\n\nOutput: Return only the story transcript. No quotes, labels, or explanations.\n"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        -60,
+        360
+      ],
+      "id": "f79094fc-cd3b-4158-9a8d-c70448ce98bc",
+      "name": "Generating Horror Video"
+    },
+    {
+      "parameters": {
+        "model": "meta-llama/llama-4-maverick:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        500
+      ],
+      "id": "7e886a34-8278-4432-a7b9-f68b5258eeda",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "meta-llama/llama-4-maverick:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        620,
+        500
+      ],
+      "id": "74ac8909-4aca-4950-bf71-cd358d0ac6a1",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "./horror_voice.mp3",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        440,
+        360
+      ],
+      "id": "bad2cd57-3c6b-415b-855a-e71c35cf76ac",
+      "name": "Write Voice"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Generating Horror Video').item.json.text }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an AI that turns horror story transcripts into a single cinematic image prompt suitable for use with an AI image generator like Flux.\n\nInstructions:\n1. Read the full horror story transcript provided by the user.\n2. Identify the most visually intense or climactic scene — the one that best represents the horror atmosphere.\n3. Write one descriptive image prompt that captures the scene’s horror atmosphere.\n4. Focus on mood, setting, lighting, and eerie visual elements.\n5. Do not include transcript text, quotes, or explanations.\n6. Return only the prompt string. No JSON. No labels. No extra words. Just the prompt.\n\nExample Output: A crumbling Victorian mansion bathed in moonlight, its shattered windows glowing faintly as a ghostly figure looms in the fog-covered garden."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        620,
+        360
+      ],
+      "id": "4fb20e59-98a5-4b45-a0a9-c7cf722b48e5",
+      "name": "Generating Image Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.together.xyz/v1/images/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"black-forest-labs/FLUX.1-schnell-Free\",\n  \"steps\": 4,\n  \"n\": 1,\n  \"height\": 1440,\n  \"width\": 1440,\n  \"guidance\": 3.5,\n  \"output_format\": \"jpeg\",\n  \"prompt\": \"{{ $json.text }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        940,
+        360
+      ],
+      "id": "bc4f9290-caf8-4ca1-b7c6-5f72022079b2",
+      "name": "Generate Flux Images",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Together account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data[0].url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        360
+      ],
+      "id": "e2ad6fe9-0263-405a-81b5-f2a6c05466e2",
+      "name": "Download Images"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "./horror_image.jpeg",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        360
+      ],
+      "id": "0f76ef29-b5ea-487c-8141-f74f401b48a2",
+      "name": "Write Image"
+    },
+    {
+      "parameters": {
+        "command": "=yt-dlp -x --audio-format mp3 -o \"./horror_bgm.mp3\" https://www.youtube.com/watch?v=1tGfDASXmds"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        360
+      ],
+      "id": "d5aea437-dfc4-42dd-a5d0-14352ba43bf5",
+      "name": "Youtube Download BGM"
+    },
+    {
+      "parameters": {
+        "command": "ffmpeg -loop 1 -i ./horror_image.jpeg \\\n-i ./horror_voice.mp3 -i ./horror_bgm.mp3 \\\n-filter_complex \"[2:a]volume=0.05[bgm]; [1:a][bgm]amix=inputs=2:duration=first[aout]\" \\\n-map 0:v -map \"[aout]\" \\\n-vf \"scale=1920:1920:force_original_aspect_ratio=increase,crop=1920:1080\" \\\n-shortest -pix_fmt yuv420p output.mp4 -y"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1620,
+        360
+      ],
+      "id": "1358a7ff-5744-4add-9342-0cc7bd46c986",
+      "name": "Create Video"
+    },
+    {
+      "parameters": {
+        "fileSelector": "./output.mp4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        360
+      ],
+      "id": "9ab8d0b0-7f34-448c-8ff3-2909573978d9",
+      "name": "Read/Write Files from Disk"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Kokoro Audio Create Voice": {
+      "main": [
+        [
+          {
+            "node": "Write Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Generating Horror Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generating Horror Video",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generating Horror Video": {
+      "main": [
+        [
+          {
+            "node": "Kokoro Audio Create Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generating Image Prompt",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Voice": {
+      "main": [
+        [
+          {
+            "node": "Generating Image Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Flux Images": {
+      "main": [
+        [
+          {
+            "node": "Download Images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generating Image Prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate Flux Images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Images": {
+      "main": [
+        [
+          {
+            "node": "Write Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Image": {
+      "main": [
+        [
+          {
+            "node": "Youtube Download BGM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Youtube Download BGM": {
+      "main": [
+        [
+          {
+            "node": "Create Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Video": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e4455599-33d0-4bc6-84e2-51bf4343ef45",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "625c32e6914efd4160b965b489e3381eb486bd9dcfe644ee182b2ec17b2826b1"
+  },
+  "id": "VG8wNaXFSj78ksoR",
+  "tags": []
+}

@@ -1,0 +1,592 @@
+{
+  "name": "linkedin_post",
+  "nodes": [
+    {
+      "parameters": {
+        "toolDescription": "Usa esta herramienta para buscar información actualizada, tendencias y datos relevantes que apoyen la creación de posts profesionales para LinkedIn. Ideal para obtener estadísticas recientes, casos de éxito, insights de industria y referencias que hagan el contenido más atractivo y creíble para audiencias profesionales.",
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"query\": \"{searchTerm}\",\n  \"topic\": \"general\",\n  \"search_depth\": \"advanced\",\n  \"chunks_per_source\": 3,\n  \"max_results\": 1,\n  \"time_range\": null,\n  \"days\": 7,\n  \"include_answer\": true,\n  \"include_raw_content\": false,\n  \"include_images\": false,\n  \"include_image_descriptions\": false,\n  \"include_domains\": [],\n  \"exclude_domains\": []\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "searchTerm",
+              "description": "What the user is searching for. "
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        -1380,
+        480
+      ],
+      "id": "6f94554a-ff7b-464c-b61d-a43a2560c113",
+      "name": "Tavily",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Apify"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4.1",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -1140,
+        500
+      ],
+      "id": "c8f35645-a76b-41e6-b3b1-f017957003ec",
+      "name": "GPT_4.1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "gpt-image-1"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.output.prompt.replace(/\"/g, '') }}"
+            },
+            {
+              "name": "size",
+              "value": "auto"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -420,
+        220
+      ],
+      "id": "212e3ee3-5b06-4e87-89bc-3a9efa6a7f28",
+      "name": "Generate Image",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Apify"
+        },
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data[0].b64_json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -60,
+        360
+      ],
+      "id": "fd7bc9ad-cbf9-4623-bcd0-42dacf84be2c",
+      "name": "Convert to Binary"
+    },
+    {
+      "parameters": {
+        "content": "# Generación de Contenido",
+        "height": 260,
+        "width": 500
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1480,
+        120
+      ],
+      "id": "b0d9350e-db4e-47c6-afcd-7d72469169b8",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# Generación Imagen\n",
+        "height": 260,
+        "width": 360,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -500,
+        120
+      ],
+      "id": "aef2dfaf-8680-4014-8b99-72ba9bd7b525",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# Prompt para Imagen\n",
+        "height": 260,
+        "width": 440,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        120
+      ],
+      "id": "ff9cf0bb-d189-4b05-875b-af0f3cddc508",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "Topico_post"
+            },
+            {
+              "name": "Audiencia_target"
+            },
+            {
+              "name": "chatID"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1680,
+        220
+      ],
+      "id": "cdd2ea31-c654-4311-a8fc-565c97f76383",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"title\": \"<Título creativo de 2-4 palabras para la imagen>\",\n  \"prompt\": \"<instrucción completa y detallada para la generación de imágenes>\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -680,
+        500
+      ],
+      "id": "168000de-4117-4fa5-be90-8f98596664e5",
+      "name": "Image & Title"
+    },
+    {
+      "parameters": {
+        "content": "# Trigger\n",
+        "height": 260,
+        "width": 260,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1760,
+        120
+      ],
+      "id": "3dab2d1f-f27e-4d7e-884c-a66e1e38c9fa",
+      "name": "Sticky Note5",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Agente Imagen Prompt').item.json.output.title }}.png",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1PitK2tzc92vOpraovKDaR4IilRVWhmNY",
+          "mode": "list",
+          "cachedResultName": "Imagenes generadas",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1PitK2tzc92vOpraovKDaR4IilRVWhmNY"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        120,
+        360
+      ],
+      "id": "dd762383-873b-4306-992e-f36bbcb12b33",
+      "name": "Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "marketing_team_log",
+          "mode": "list",
+          "cachedResultName": "marketing_team_log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "titulo": "={{ $('Agente Imagen Prompt').item.json.output.title }}",
+            "requerimiento": "={{ $('When Executed by Another Workflow').item.json.Topico_post }} para {{ $('When Executed by Another Workflow').item.json.Audiencia_target }}",
+            "file_id": "={{ $json.id }}",
+            "link": "={{ $json.webViewLink }}",
+            "tipo": "Post Linkedin Creada",
+            "post": "={{ $('Agente Linkedin Post ').item.json.output }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "requerimiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "file_id",
+              "displayName": "file_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "post",
+              "displayName": "post",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        260,
+        360
+      ],
+      "id": "e42c8c85-1915-4864-8ff2-2c7467f04d1e",
+      "name": "Postgres",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "operation": "send-image",
+        "instanceName": "Prueba",
+        "remoteJid": "={{ $('When Executed by Another Workflow').item.json.chatID }}",
+        "media": "={{ $json.data[0].b64_json }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        100,
+        100
+      ],
+      "id": "36410b15-b1c6-4e3a-bdae-c8af676e0782",
+      "name": "Evolution API",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Enviar Contenido",
+        "height": 240,
+        "width": 540,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -120,
+        20
+      ],
+      "id": "689b8c7e-55be-4fb9-8be2-f6afab250299",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "# Subir archivo & actualizar tabla",
+        "height": 240,
+        "width": 540,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -120,
+        280
+      ],
+      "id": "1c3e3fc0-549d-480a-a732-890e348b8844",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Topico del Post: {{ $json.Topico_post }}\n\nTarget de la Audiencia: {{ $json.Audiencia_target }}",
+        "options": {
+          "systemMessage": "=# Descripción General\nEres un agente de IA especializado en crear posts profesionales, educativos y atractivos para LinkedIn basados en cualquier tema proporcionado por el usuario.\n\n## Objetivos:\nSiempre comienza realizando una búsqueda en tiempo real usando la herramienta Tavily para recopilar la información más precisa y actualizada sobre el tema. El post debe estar dirigido a la audiencia objetivo proporcionada.\n\nBasándote en tu investigación, genera un post de LinkedIn bien estructurado que:\n- Comience con un gancho atractivo que capture la atención\n- Mantenga un tono profesional pero accesible\n- Sea claro, conciso y fácil de leer\n- Proporcione valor educativo e insights relevantes\n- Use emojis mínimos (solo cuando sean muy relevantes y con moderación)\n- Incluya atribución adecuada de fuentes (ej: \"según [fuente]\" o \"de acuerdo con [estudio]\")\n- Contenga hashtags relevantes para mejorar la visibilidad (máximo 5-7)\n- Termine con una llamada a la acción clara (ej: pidiendo opiniones, feedback o compartir experiencias)\n- Tenga una longitud apropiada para LinkedIn (150-300 palabras idealmente)\n\n## Estructura Recomendada:\n1. **Hook inicial** - Una pregunta, estadística sorprendente o declaración impactante\n2. **Contexto y valor** - Información clave respaldada por investigación\n3. **Insight o takeaway** - La lección principal o punto clave\n4. **Llamada a la acción** - Invitación al engagement\n5. **Hashtags relevantes** - Al final del post\n\n## Instrucciones de Salida:\n- Tu ÚNICA salida debe ser el texto final del post de LinkedIn\n- No incluyas explicaciones, notas o contenido adicional más allá del post\n- No menciones el proceso de investigación o herramientas utilizadas\n- Escribe directamente como si fueras un profesional compartiendo insights valiosos\n\n## Variables de Entrada:\n- Tema del post: \"{{ $json.Topico_post }}\"\n- Audiencia objetivo: \"{{ $json.Audiencia_target }}\"\n\n## Flujo de Trabajo de Ejemplo:\n1. Recibir tema: \"El ROI de la automatización de almacenes\"\n2. Usar Tavily para buscar información reciente, casos de estudio o estadísticas\n3. Crear un post de LinkedIn usando esa investigación\n4. Formatear con citas de fuentes, estructura limpia, hashtags opcionales y llamada a la acción"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        -1380,
+        220
+      ],
+      "id": "020e022d-8292-456b-a006-f0df548a3784",
+      "name": "Agente Linkedin Post "
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Blog Post: \n{{ $json.output }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=# Descripción General\nEres un agente de IA que transforma posts de LinkedIn en descripciones de prompts visuales para generar materiales gráficos de marketing. Estos visuales están diseñados para acompañar el post en LinkedIn, ayudando a comunicar el mensaje de manera visualmente atractiva y alineada con la marca.\n\n## Objetivo:\n- Lee y analiza el post de LinkedIn proporcionado\n- Identifica el mensaje principal, insight o conclusión clave del post\n- Crea un prompt gráfico claro y convincente que pueda usarse con un generador de texto-a-imagen\n- El resultado debe ser un gráfico estilo marketing — no una escena literal o foto hiperrealista — que:\n1) Apoye visualmente o ilustre la idea clave del post\n2) Se vea apropiado para usar en un feed profesional de LinkedIn\n3) Se sienta pulido, moderno y atractivo para audiencias profesionales\n\n## Instrucciones de Salida:\n- Genera únicamente el prompt de imagen final. No uses comillas\n- No repitas o reformules el post de LinkedIn\n- No agregues explicaciones o contenido extra — solo el prompt de imagen\n- Nunca dejes espacios en blanco como \"Área de encabezado reservada para texto personalizable\"\n- Incluye estadísticas numéricas cuando estén disponibles en el post original\n- El prompt debe ser descriptivo y específico para guiar efectivamente la generación de imagen\n\n## Guías de Estilo:\n- Piensa como un diseñador de marca o creativo de marketing para LinkedIn\n- Los visuales pueden incluir: texto integrado, gráficos profesionales, íconos corporativos, formas geométricas modernas, overlays elegantes, ilustraciones minimalistas, efectos de profundidad, elementos tipográficos bold (descritos, no renderizados), conceptos metafóricos profesionales\n- Puedes mencionar sugerencias de layout (ej: \"diseño de pantalla dividida,\" \"composición con título principal y elementos gráficos de apoyo,\" \"layout tipo infografía\")\n- Enfócate en estética profesional, colores corporativos, y elementos que resuenen con audiencias de negocios\n- Asume que la salida será generada usando herramientas de IA de imagen — tu prompt debe ser preciso y detallado\n\n## Consideraciones Específicas para LinkedIn:\n- Los gráficos deben verse profesionales y creíbles\n- Evita elementos demasiado coloridos o infantiles\n- Prioriza claridad visual y legibilidad\n- Incluye espacio para texto superpuesto si es relevante\n- Considera formatos cuadrados o rectangulares típicos de LinkedIn\n\n## Formato de Prompt de Ejemplo:\nUn gráfico corporativo moderno mostrando íconos de engranajes conectados a un cerebro digital, representando la automatización inteligente en industrias. Paleta de colores azul y gris profesional, diseño minimalista con espacio para estadísticas en la esquina superior derecha, fondo con gradiente sutil.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        -860,
+        220
+      ],
+      "id": "78794e1f-08e8-4ab6-acee-9b8c4bd86a3e",
+      "name": "Agente Imagen Prompt"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Tavily": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Linkedin Post ",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT_4.1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Linkedin Post ",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Agente Imagen Prompt",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image": {
+      "main": [
+        [
+          {
+            "node": "Convert to Binary",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Evolution API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to Binary": {
+      "main": [
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Agente Linkedin Post ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image & Title": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Agente Imagen Prompt",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evolution API": {
+      "main": [
+        []
+      ]
+    },
+    "Agente Linkedin Post ": {
+      "main": [
+        [
+          {
+            "node": "Agente Imagen Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Imagen Prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "48d0a82f-2426-43e7-b0a5-9eaa4351146f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "9Xi6G5S8uapXdycT",
+  "tags": []
+}

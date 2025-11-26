@@ -1,0 +1,183 @@
+{
+  "nodes": [
+    {
+      "name": "Webhook_Entrada_Leads",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "path": "lead-entry",
+        "responseMode": "lastNode"
+      }
+    },
+    {
+      "name": "Function_ValidaEntrada",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "items[0].json.nome = $json.nome?.trim() || 'Visitante';\nitems[0].json.phone = $json.phone?.replace(/[^0-9]/g, '');\nitems[0].json.email = $json.email?.trim() || '';\nitems[0].json.score = 0;\nreturn items;"
+      }
+    },
+    {
+      "name": "Clearbit_Enriquecimento",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "authentication": "basicAuth",
+        "url": "https://person.clearbit.com/v2/companies/find?email={{$json.email}}",
+        "method": "GET"
+      }
+    },
+    {
+      "name": "Google_Sheets_Registrar_Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "parameters": {
+        "sheetId": "INSERIR_ID_DA_PLANILHA",
+        "range": "Leads!A1:L",
+        "valueInputMode": "USER_ENTERED"
+      }
+    },
+    {
+      "name": "Function_Verificar_Retornante",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "const email = $json.email;\nconst phone = $json.phone;\nconst leads = $items('Google_Sheets_Registrar_Lead');\nconst existe = leads.some(lead => lead.json.email === email || lead.json.phone === phone);\nif(existe){ items[0].json.retorno = true; } else { items[0].json.retorno = false; }\nreturn items;"
+      }
+    },
+    {
+      "name": "Function_Incrementa_Score_Primeira_Msg",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "items[0].json.score = (items[0].json.score || 0) + 10; return items;"
+      }
+    },
+    {
+      "name": "WhatsApp_Boas_Vindas",
+      "type": "custom.whatsappApi",
+      "parameters": {
+        "authentication": "apiToken",
+        "from": "SEU_NUMERO",
+        "to": "={{$json[\"phone\"]}}",
+        "message": "Olá, {{ $json.nome }}! Aqui é o MentorIA...",
+        "mediaUrls": [
+          "https://exemplo.com/welcome-image.jpg"
+        ]
+      }
+    },
+    {
+      "name": "OpenAI_IA_Conversacional",
+      "type": "n8n-nodes-base.openai",
+      "parameters": {
+        "model": "gpt-4",
+        "prompt": "Usuário demonstrou interesse em {{$json.interest || 'Geral'}}..."
+      }
+    },
+    {
+      "name": "Decisão_Segmento",
+      "type": "n8n-nodes-base.if"
+    },
+    {
+      "name": "Function_Define_Plano_Valor",
+      "type": "n8n-nodes-base.function"
+    },
+    {
+      "name": "Criar_Link_Pagamento",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "URL_GERACAO_LINK_PAGAMENTO",
+        "method": "POST",
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "nome",
+              "value": "={{$json.nome}}"
+            },
+            {
+              "name": "plano",
+              "value": "={{$json.plano}}"
+            },
+            {
+              "name": "valor",
+              "value": "={{$json.valor}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Function_Incrementa_Score_Link",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "items[0].json.score += 20; return items;"
+      }
+    },
+    {
+      "name": "WhatsApp_Envia_Link",
+      "type": "custom.whatsappApi",
+      "parameters": {
+        "authentication": "apiToken",
+        "from": "SEU_NUMERO",
+        "to": "={{$json[\"phone\"]}}",
+        "message": "Pronto, {{ $json.nome }}! Aqui está seu link...",
+        "mediaUrls": [
+          "https://exemplo.com/planilha-de-curso.pdf"
+        ]
+      }
+    },
+    {
+      "name": "Delay_Repescagem",
+      "type": "n8n-nodes-base.wait",
+      "parameters": {
+        "interval": 72,
+        "unit": "hours"
+      }
+    },
+    {
+      "name": "WhatsApp_Repescagem_Educacao",
+      "type": "custom.whatsappApi",
+      "parameters": {
+        "message": "Sabia que IA está mudando a educação, {{ $json.nome }}? ..."
+      }
+    },
+    {
+      "name": "WhatsApp_Repescagem_Negocios",
+      "type": "custom.whatsappApi",
+      "parameters": {
+        "message": "Você, empreendedor, pode vender mais com IA, {{ $json.nome }}..."
+      }
+    },
+    {
+      "name": "WhatsApp_Repescagem_Desenvolvimento",
+      "type": "custom.whatsappApi",
+      "parameters": {
+        "message": "Desbloqueie seu potencial com IA, {{ $json.nome }}..."
+      }
+    },
+    {
+      "name": "Function_Decrementa_Score_Repescagem",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "items[0].json.score -= 10; return items;"
+      }
+    },
+    {
+      "name": "WhatsApp_Convite_Humano_Abandono",
+      "type": "custom.whatsappApi",
+      "parameters": {
+        "message": "Vejo que ainda está na dúvida, {{nome}}... Que tal falar com um especialista ou assistir esse vídeo rápido?"
+      }
+    },
+    {
+      "name": "Google_Sheets_Analytics",
+      "type": "n8n-nodes-base.googleSheets",
+      "parameters": {
+        "sheetId": "INSERIR_ID_DA_PLANILHA",
+        "range": "Analytics!A1:Z"
+      }
+    },
+    {
+      "name": "Erro_Logs",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "URL_DO_WEBHOOK_DE_LOGS",
+        "method": "POST"
+      }
+    }
+  ]
+}

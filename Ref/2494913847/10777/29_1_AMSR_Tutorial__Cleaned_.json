@@ -1,0 +1,656 @@
+{
+  "name": "29.1 AMSR Tutorial (Cleaned)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ceae5201-edf4-4d67-8a07-f7a683b9f6fb",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1jVl-dqdlcX9yblaJVgO0Cztfn6fZGG2GkKb9MpLQ6LA",
+          "mode": "list",
+          "cachedResultName": "n8n - ASMR AI Video System",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jVl-dqdlcX9yblaJVgO0Cztfn6fZGG2GkKb9MpLQ6LA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jVl-dqdlcX9yblaJVgO0Cztfn6fZGG2GkKb9MpLQ6LA/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Pending"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        220,
+        0
+      ],
+      "id": "cc2e2539-3c2b-4e24-97d1-5256bbbe6f40",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets (andylo@proxa.cc)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "model": "gpt-image-1",
+        "prompt": "={{ $json.prompt_img }}",
+        "options": {
+          "size": "1024x1536"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        660,
+        0
+      ],
+      "id": "57866cce-fcc1-4c4c-bfc1-303a4cddc4a1",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://gdrxrpfqehlcglamyemm.supabase.co/storage/v1/object/n8n-ai-asmr/{{ $now.format('yyyyMMddHHmmss') }}.png",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "id": "95151c7c-9ca1-46d6-b65c-bbd1e14eb5c4",
+      "name": "Store Image",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase account - andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "prompt_img",
+              "value": "=An {{ $json.Object }} with {{ $json.Texture }} texture and a man going to cut in half with a small knife but not started yet.",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "prompt_video",
+              "value": "=An {{ $json.Object }} with {{ $json.Texture }} texture and a man going to cut in half with a small knife.",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "prompt_sound",
+              "value": "=An ASMR sound effect of cutting {{ $json.Object }} with {{ $json.Texture }} texture",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        440,
+        0
+      ],
+      "id": "2082a3d0-0464-4fcb-9755-1e53345fd5e3",
+      "name": "Prepare Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://queue.fal.run/fal-ai/kling-video/v2.1/master/image-to-video",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ $('Prepare Prompt').item.json.prompt_video }}"
+            },
+            {
+              "name": "image_url",
+              "value": "=https://gdrxrpfqehlcglamyemm.supabase.co/storage/v1/object/public/{{ $json.Key }}"
+            },
+            {
+              "name": "duration",
+              "value": "5"
+            },
+            {
+              "name": "negative_prompt",
+              "value": "blur, distort and low quality"
+            },
+            {
+              "name": "cfg_scale",
+              "value": "0.5"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        320
+      ],
+      "id": "fdb59eb9-8042-4e5d-9fc2-af42f08e8fe9",
+      "name": "Kling 2.1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 300
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        160,
+        320
+      ],
+      "id": "10fba50c-edf3-43ca-8ee9-ad2ed0f69383",
+      "name": "Wait",
+      "webhookId": "3c489987-ce18-482d-94c4-4b218615cd34"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://queue.fal.run/fal-ai/elevenlabs/sound-effects",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $('Prepare Prompt').item.json.prompt_sound }}"
+            },
+            {
+              "name": "duration_seconds",
+              "value": "5"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        320
+      ],
+      "id": "d60e46ac-52b0-4dfe-9f5d-7ec62b976a7d",
+      "name": "Sound Effect",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        320
+      ],
+      "id": "1ab0c1e6-2f40-4e5d-bb8b-466737d73d4f",
+      "name": "Wait1",
+      "webhookId": "b19ed558-bd80-498d-ba53-5241ebfb6a8e"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.response_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        340,
+        320
+      ],
+      "id": "589ee7d9-a894-4e32-bc93-fedb3262ff96",
+      "name": "Get Video URL",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.response_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        320
+      ],
+      "id": "e213965c-5525-4bc7-b4b0-98fbe697a556",
+      "name": "Get Sound URL",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.creatomate.com/v1/renders",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"source\": {\n    \"output_format\": \"mp4\",\n    \"width\": 1080,\n    \"height\": 1920,\n    \"elements\": [\n      {\n        \"type\": \"video\",\n        \"track\": 1,\n        \"source\": \"{{ $('Get Video URL').item.json.video.url }}\"\n      },\n      {\n        \"type\": \"audio\",\n        \"track\": 2,\n        \"source\": \"{{ $json.audio.url }}\"\n      }\n    ]\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        620
+      ],
+      "id": "9dc336c0-4ec8-4857-8944-f8df02e12cff",
+      "name": "Creatomate API",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Creatomate - andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1jVl-dqdlcX9yblaJVgO0Cztfn6fZGG2GkKb9MpLQ6LA",
+          "mode": "list",
+          "cachedResultName": "n8n - ASMR AI Video System",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jVl-dqdlcX9yblaJVgO0Cztfn6fZGG2GkKb9MpLQ6LA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jVl-dqdlcX9yblaJVgO0Cztfn6fZGG2GkKb9MpLQ6LA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Google Sheets').item.json.row_number }}",
+            "Status": "Complete",
+            "Output": "={{ $json.url }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Object",
+              "displayName": "Object",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Texture",
+              "displayName": "Texture",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Output",
+              "displayName": "Output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        220,
+        620
+      ],
+      "id": "69c68956-2059-4d6f-b5b5-c402db65ee23",
+      "name": "Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets (andylo@proxa.cc)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Prompt Preparation\n",
+        "height": 300,
+        "width": 1100,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        -100
+      ],
+      "typeVersion": 1,
+      "id": "990b1a09-7f01-4241-922f-05b97184022a",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "# Generate Video and Sound Effect",
+        "height": 280,
+        "width": 1100,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        220
+      ],
+      "typeVersion": 1,
+      "id": "02e60409-569f-42da-b54b-f428c016a8ea",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# Combine and Save Video",
+        "height": 300,
+        "width": 1100,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        520
+      ],
+      "typeVersion": 1,
+      "id": "cccd6f5e-d841-408b-9917-2e63e61869ff",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "## Notes\n\n1. In Google Sheets, input \"Object\" and \"Texture\" when preparing three types of prompts in the \"Prepare Prompt\" node.\n\n2. We use OpenAI to generate an image first because the Kling text-to-video feature is not effective enough.\n\n3. We utilize Kling 2.1 to create the video without sound and then use ElevenLabs to generate sound effects.\n\n4. Finally, we combine everything using Creatomate. There is no need to create a template for this step.",
+        "height": 340,
+        "width": 520,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        180
+      ],
+      "id": "9e035a5b-5448-4f4a-908b-e1ee82b831da",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# 🅰🅽🅳🆈🅽🅾🅲🅾🅳🅴 𝔸𝕀 𝔸𝕔𝕒𝕕𝕖𝕞𝕪\n\n",
+        "height": 80,
+        "width": 600,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        180,
+        -240
+      ],
+      "id": "d3a59ecb-d3a1-46ca-9960-05eb3d18046b",
+      "name": "Sticky Note2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Prepare Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Store Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Image": {
+      "main": [
+        [
+          {
+            "node": "Kling 2.1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Prompt": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kling 2.1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Video URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sound Effect": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Get Sound URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video URL": {
+      "main": [
+        [
+          {
+            "node": "Sound Effect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Sound URL": {
+      "main": [
+        [
+          {
+            "node": "Creatomate API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creatomate API": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "da19474d-2ddc-4158-89e1-5a84d4ba78b5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1740c26791c747bf49d93178a26934eaaffaca5ab2d087ae7e06b06ed236dff6"
+  },
+  "id": "k53VXSMkCEJxl6I4",
+  "tags": []
+}

@@ -1,0 +1,260 @@
+{
+  "name": "Scraperrrr",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        0
+      ],
+      "id": "8713080f-8294-482a-844e-7fb0c68f9d4b",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/code_crafter~leads-finder/run-sync-get-dataset-items",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "Insert API key"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n    \"contact_city\": [\n        \"leeds\"\n    ],\n    \"contact_job_title\": [\n        \"CEO\"\n    ],\n    \"contact_location\": [\n        \"united kingdom\"\n    ],\n    \"email_status\": [\n        \"validated\"\n    ],\n    \"fetch_count\": 1000,\n    \"size\": [\n        \"21-50\"\n    ]\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -64,
+        0
+      ],
+      "id": "307c96a6-0b4e-4170-9692-481d0222d5e6",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Name: {{ $json.first_name }} {{ $json.last_name}}\n\nCompany Name: {{ $json.company_name }}\nCompany Website: {{ $json.company_website }}\nCountry: {{ $json.country }}\n{{ $json.company_linkedin }}",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are a sales intelligence researcher tasked with finding personalized information about prospects.\n\nYou have access to:\n- Tavily (internet research tool)\n- Web scraping tool (to scrape company websites)\n\nTARGET PROSPECT:\nName: {{ $json.first_name }} {{ $json.last_name }}\nCompany: {{ $json.company_name }}\nWebsite: {{ $json.company_website }}\nCountry: {{ $json.country }}\nLinkedIn: {{ $json.company_linkedin }}\n\nYOUR TASK:\nResearch this individual and their company to find 3-5 unique, interesting, and noteworthy facts that could be used for personalized outreach.\n\nRESEARCH STEPS:\n1. Use Tavily to search for recent news about {{ $json.first_name }} {{ $json.last_name }} (awards, promotions, speaking events, publications, achievements)\n2. Use Tavily to search for {{ $json.company_name }} news (funding, product launches, expansion, partnerships, awards)\n3. Use the web scraping tool on {{ $json.company_website }} to extract company information, recent blog posts, press releases, and unique details\n4. Look for trigger events from the last 6-12 months (funding rounds, new hires, office openings, product launches)\n5. Find unique background, causes, hobbies, or interesting details about the person or company\n\nOUTPUT FORMAT:\n\nProvide 3-5 interesting facts in this format:\n\n**Fact 1:** [Specific, detailed fact with dates/numbers/names]\n*Source:* [Where you found this - URL or description]\n\n**Fact 2:** [Specific, detailed fact with dates/numbers/names]\n*Source:* [Where you found this - URL or description]\n\n**Fact 3:** [Specific, detailed fact with dates/numbers/names]\n*Source:* [Where you found this - URL or description]\n\n[Continue for 4-5 facts if available]\n\nREQUIREMENTS:\n- Be specific (include dates, numbers, concrete details)\n- Prioritize recent information (last 6-12 months)\n- Focus on trigger events and newsworthy items\n- Avoid generic statements\n- If limited info on individual, focus on company\n- Always cite your source for each fact\n- If you cannot find enough information, state what you couldn't find\n\nBegin research now."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "f6ec8398-39a8-4951-84f0-80833517d6fe",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavilyTool",
+      "typeVersion": 1,
+      "position": [
+        672,
+        352
+      ],
+      "id": "cdc7d747-1785-4d30-9165-2258821665b4",
+      "name": "Search in Tavily",
+      "credentials": {
+        "tavilyApi": {
+          "id": "[REMOVED]",
+          "name": "Tavily account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -16,
+        320
+      ],
+      "id": "7e014be0-1495-4030-8ee5-10cd3315bb71",
+      "name": "ChatGPT",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "Use this API key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-20250514",
+          "cachedResultName": "Claude 4 Sonnet"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        144,
+        368
+      ],
+      "id": "0efb57ca-6147-4998-b3bb-e89c1141dcfc",
+      "name": "Claude",
+      "credentials": {
+        "anthropicApi": {
+          "id": "[REMOVED]",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Makes an HTTP request and returns the data from their website",
+        "url": "={{ $json.company_website }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        384
+      ],
+      "id": "8d63c861-01bf-4bd5-a982-7558ec732209",
+      "name": "Website Scrape"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"fact1\": \"Raised $15M Series A in March 2024\",\n  \"explanation1\": \"Source: TechCrunch article dated March 15, 2024\",\n  \"fact2\": \"CEO was previously VP at Salesforce for 8 years\",\n  \"explanation2\": \"Found on LinkedIn profile\",\n  \"fact3\": \"Expanded to UK with London office in January 2025\",\n  \"explanation3\": \"Company blog announcement\",\n  \"fact4\": \"Published Forbes article on AI automation\",\n  \"explanation4\": \"Forbes.com - February 2025\",\n  \"fact5\": \"Team grew from 45 to 120 employees in 6 months\",\n  \"explanation5\": \"Company careers page\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        496,
+        352
+      ],
+      "id": "52f4a30d-744b-48b3-a791-8c0e05beff1b",
+      "name": "Structured Output Parser"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search in Tavily": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ChatGPT": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Website Scrape": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "62cb6186-3b17-42ba-9ef7-fb548d14e18a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1ad5536c7c55ace0cd2d13b5ee509a9d5436e829bf5adf69ed3e58c359b43097"
+  },
+  "id": "iWMBdkKY4Zz37RrS",
+  "tags": []
+}

@@ -1,0 +1,1011 @@
+{
+  "name": "M8L2-💥 52) Automated YouTube Videos in ANY Language",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "df88ba8a-2874-43cd-ba51-998f02336134",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -420,
+        -70
+      ],
+      "id": "1f3c12f1-c36b-4b41-96ce-20a70fb600df",
+      "name": "Webhook",
+      "webhookId": "df88ba8a-2874-43cd-ba51-998f02336134",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "Email",
+              "value": "={{ $json.body.data[0].value }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Name",
+              "value": "={{ $json.body.data[1].value }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "YouTube video URL",
+              "value": "={{ $json.body.data[2].value }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Which language?",
+              "value": "={{ $json.body.data[3].value }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "How many videos per month?",
+              "value": "={{ $json.body.data[4].value }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "How many languages would you like?",
+              "value": "={{ $json.body.data[5].value }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -200,
+        -70
+      ],
+      "id": "14b95345-8ce2-4193-81f0-c7357c6726a3",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/dubbing",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "x"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source_url",
+              "value": "={{ $json['YouTube video URL'] }}"
+            },
+            {
+              "name": "source_lang",
+              "value": "en"
+            },
+            {
+              "name": "target_lang",
+              "value": "=es"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        20,
+        -70
+      ],
+      "id": "f1521c98-04fb-4187-ae32-5fdf4e5d2833",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.elevenlabs.io/v1/dubbing/{{ $('HTTP Request').item.json.dubbing_id }}/audio/{{ $('Edit Fields').item.json['Which language?'].toLowerCase() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "x"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        -70
+      ],
+      "id": "cc415ef5-2ad5-4726-b8d7-668973c044aa",
+      "name": "HTTP Request1",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        -70
+      ],
+      "id": "a8f246a1-a310-4e32-b2e1-b56cab391343",
+      "name": "Wait",
+      "webhookId": "3cf55b71-b0c3-42da-98bd-b22bc2a5b973"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        -20
+      ],
+      "id": "c1b69fac-8cb4-4b9d-bbc7-84f1e309bdf2",
+      "name": "Wait1",
+      "webhookId": "3cf55b71-b0c3-42da-98bd-b22bc2a5b973"
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Edit Fields').item.json.Name }}.mp4",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        680,
+        -220
+      ],
+      "id": "21df3ad3-5d3e-4fdc-983a-c91b104ce79b",
+      "name": "Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "kevinfar@gmail.com",
+        "subject": "={{ $('Edit Fields').item.json.Name.toTitleCase() }}'s Translation 🌎",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <title>Your YouTube Translation is Ready!</title>\n    <style>\n        body {\n            font-family: Arial, sans-serif;\n            background-color: #f4f4f4;\n            margin: 0;\n            padding: 0;\n        }\n        .email-container {\n            background-color: #ffffff;\n            width: 100%;\n            max-width: 600px;\n            margin: 50px auto;\n            border-radius: 8px;\n            overflow: hidden;\n            box-shadow: 0 4px 6px rgba(0,0,0,0.1);\n        }\n        .header {\n            background-color: #ff4b2b;\n            color: #ffffff;\n            padding: 20px;\n            text-align: center;\n        }\n        .content {\n            padding: 30px;\n            text-align: center;\n            color: #333333;\n        }\n        .button {\n            display: inline-block;\n            padding: 15px 25px;\n            margin-top: 20px;\n            font-size: 16px;\n            color: #ffffff;\n            background-color: #ff4b2b;\n            text-decoration: none;\n            border-radius: 5px;\n            transition: background-color 0.3s ease;\n        }\n        .button:hover {\n            background-color: #ff3a1a;\n        }\n        .footer {\n            background-color: #f4f4f4;\n            color: #777777;\n            padding: 15px;\n            text-align: center;\n            font-size: 12px;\n        }\n    </style>\n</head>\n<body>\n    <div class=\"email-container\">\n        <div class=\"header\">\n            <h1>Your YouTube Translation is Ready!</h1>\n        </div>\n        <div class=\"content\">\n            <p>Hi there,</p>\n            <p>We're excited to let you know that your YouTube translation is now complete and ready to go live.</p>\n            <a href=\"{{ $json.directDownloadLink }}\" class=\"button\">View Your Translation</a>\n            <p>If you have any questions or need further assistance, feel free to reach out.</p>\n        </div>\n        <div class=\"footer\">\n            <p>Best regards,<br>Jack</p>\n        </div>\n    </div>\n</body>\n</html>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1340,
+        -220
+      ],
+      "id": "44e9bba8-0be1-49cb-a0e8-0bf170bc9bf9",
+      "name": "Gmail",
+      "webhookId": "55949d61-493d-49da-9096-122f2c85aa05",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "writer",
+            "type": "anyone",
+            "allowFileDiscovery": true
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        900,
+        -220
+      ],
+      "id": "aba4d56b-aa5d-4d58-96d4-ea1798c86884",
+      "name": "Google Drive1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "directDownloadLink",
+              "value": "=https://drive.google.com/uc?export=download&id={{ $('Google Drive').item.json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1120,
+        -220
+      ],
+      "id": "ca6d01ec-5cdd-4bb1-9c2e-33781165dd80",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "content": "# Part 1",
+        "height": 820,
+        "width": 2300
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        -360
+      ],
+      "id": "289f0412-e58a-4c71-9254-b48a0c59fd69",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# Part 2",
+        "height": 820,
+        "width": 2440,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -540,
+        700
+      ],
+      "id": "9dda7a86-09a9-4d92-b4ca-f14a145b9ac7",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        960
+      ],
+      "id": "996f8b3a-651e-4245-b158-8709db20ae02",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "feedUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UCxVxcTULO9cFU6SB9qVaisQ"
+      },
+      "type": "n8n-nodes-base.rssFeedReadTrigger",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        800
+      ],
+      "id": "52d544b8-613f-4c9d-b694-872a93981888",
+      "name": "RSS Feed Trigger",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "=https://api.elevenlabs.io/v1/dubbing/{{ $('ES').item.json.dubbing_id }}/audio/es",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "x"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        760
+      ],
+      "id": "60725614-1cf4-47f6-b402-cc33d770637d",
+      "name": "HTTP Request3",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        260,
+        780
+      ],
+      "id": "a0688f99-80fb-4126-bafa-be524cf83514",
+      "name": "Wait2",
+      "webhookId": "3cf55b71-b0c3-42da-98bd-b22bc2a5b973"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        780,
+        900
+      ],
+      "id": "2dd15ecf-5ff4-4ce4-b00c-ddb6b48568d2",
+      "name": "Wait3",
+      "webhookId": "3cf55b71-b0c3-42da-98bd-b22bc2a5b973"
+    },
+    {
+      "parameters": {
+        "name": "=test.mp4",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1420,
+        960
+      ],
+      "id": "53c7e1d5-2834-4377-bb68-1a6b9bbfe289",
+      "name": "Google Drive2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/dubbing",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "x"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source_url",
+              "value": "={{ $json.link }}"
+            },
+            {
+              "name": "source_lang",
+              "value": "en"
+            },
+            {
+              "name": "target_lang",
+              "value": "=es"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        20,
+        780
+      ],
+      "id": "d8a4f797-a43a-4081-bd22-08b6c72026d4",
+      "name": "ES"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/dubbing",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "x"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source_url",
+              "value": "={{ $json.link }}"
+            },
+            {
+              "name": "source_lang",
+              "value": "en"
+            },
+            {
+              "name": "target_lang",
+              "value": "=it"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        1140
+      ],
+      "id": "e5cdd5e4-0b08-4f57-99d7-5ecc330366ae",
+      "name": "IT"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.elevenlabs.io/v1/dubbing/{{ $('IT').item.json.dubbing_id }}/audio/it",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "x"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        580,
+        1140
+      ],
+      "id": "405ac4ba-513f-407d-ad35-c709168f6b8a",
+      "name": "HTTP Request4",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        1160
+      ],
+      "id": "e5b63b6f-50e7-4720-850c-3e496197c7ab",
+      "name": "Wait4",
+      "webhookId": "3cf55b71-b0c3-42da-98bd-b22bc2a5b973"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        1260
+      ],
+      "id": "8e982a5c-35d0-4003-986b-46390015677e",
+      "name": "Wait5",
+      "webhookId": "3cf55b71-b0c3-42da-98bd-b22bc2a5b973"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "link",
+              "value": "https://www.youtube.com/shorts/n9OSYQRrFlY",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -200,
+        980
+      ],
+      "id": "6abfe2d8-33ba-43b4-9871-9ccd66db06f2",
+      "name": "Edit Fields3"
+    }
+  ],
+  "pinData": {
+    "HTTP Request": [
+      {
+        "json": {
+          "dubbing_id": "93NxCkdqRAeDB0jBBQmA",
+          "expected_duration_sec": 42.907617008776526
+        }
+      }
+    ],
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.typeworkflowinternal.org",
+            "user-agent": "Paperform/1.0",
+            "content-length": "1510",
+            "accept-encoding": "gzip, br",
+            "cdn-loop": "cloudflare; loops=1",
+            "cf-connecting-ip": "3.91.24.91",
+            "cf-ipcountry": "US",
+            "cf-ray": "9365c84a1e9b81e2-IAD",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "content-type": "application/json",
+            "x-forwarded-for": "172.70.174.227",
+            "x-forwarded-host": "n8n.typeworkflowinternal.org",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "653a3b747a57",
+            "x-real-ip": "172.70.174.227"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "data": [
+              {
+                "title": "Your email",
+                "description": null,
+                "type": "email",
+                "key": "fq39m",
+                "custom_key": null,
+                "value": "kevinfar@gmail.com"
+              },
+              {
+                "title": "Your name",
+                "description": null,
+                "type": "text",
+                "key": "9n7le",
+                "custom_key": null,
+                "value": "kevin"
+              },
+              {
+                "title": "YouTube video URL",
+                "description": null,
+                "type": "text",
+                "key": "6oneb",
+                "custom_key": null,
+                "value": "https://www.youtube.com/shorts/n9OSYQRrFlY"
+              },
+              {
+                "title": "Which language?",
+                "description": "",
+                "type": "dropdown",
+                "key": "7vhmc",
+                "custom_key": null,
+                "value": "ES"
+              },
+              {
+                "title": "How many videos per month?",
+                "description": "",
+                "type": "text",
+                "key": "31n6q",
+                "custom_key": null,
+                "value": "2"
+              },
+              {
+                "title": "How many languages would you like?",
+                "description": null,
+                "type": "text",
+                "key": "eq29",
+                "custom_key": null,
+                "value": "3"
+              }
+            ],
+            "form_id": "680cc1e1b57647f7480353f7",
+            "slug": "ox06naca",
+            "submission_id": "680cc52bd183ba764804a3e3",
+            "created_at": "2025-04-26 11:36:11",
+            "ip_address": "46.11.166.243",
+            "charge": {
+              "products": [],
+              "summary": "",
+              "discount": 0,
+              "discounted_subscriptions": [],
+              "coupon": false,
+              "total": 0,
+              "total_cents": 0,
+              "tax": 0,
+              "tax_percentage": 0,
+              "processing_fee": 0,
+              "authorize": null,
+              "receipt_email": false
+            },
+            "team_id": 468206,
+            "device": {
+              "type": "desktop",
+              "device": "WebKit",
+              "platform": "Windows",
+              "browser": "Chrome",
+              "embedded": false,
+              "url": "https://ox06naca.paperform.co/",
+              "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+              "utm_source": null,
+              "utm_medium": null,
+              "utm_campaign": null,
+              "utm_term": null,
+              "utm_content": null,
+              "ip_address": "46.11.166.243"
+            }
+          },
+          "webhookUrl": "https://n8n.typeworkflowinternal.org/webhook-test/df88ba8a-2874-43cd-ba51-998f02336134",
+          "executionMode": "test"
+        }
+      }
+    ],
+    "Edit Fields": [
+      {
+        "json": {
+          "Email": "kevinfar@gmail.com",
+          "Name": "kevin",
+          "YouTube video URL": "https://www.youtube.com/shorts/n9OSYQRrFlY",
+          "Which language?": "ES",
+          "How many videos per month?": "2",
+          "How many languages would you like?": "3"
+        }
+      }
+    ],
+    "RSS Feed Trigger": [
+      {
+        "json": {
+          "title": "Create Unlimited Viral Instagram Posts (One Click)",
+          "link": "https://www.youtube.com/watch?v=-E0kaamo3uw",
+          "pubDate": "2025-04-26T07:42:00.000Z",
+          "author": "Jack Roberts",
+          "id": "yt:video:-E0kaamo3uw",
+          "isoDate": "2025-04-26T07:42:00.000Z"
+        }
+      }
+    ],
+    "ES": [
+      {
+        "json": {
+          "dubbing_id": "jPcyD2rQbI4GoUh3INdj",
+          "expected_duration_sec": 41.02375947238401
+        }
+      }
+    ],
+    "IT": [
+      {
+        "json": {
+          "dubbing_id": "Tur3aeCWqdz3WZAp65qA",
+          "expected_duration_sec": 38.919959680311656
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Google Drive1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Google Drive2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive2": {
+      "main": [
+        []
+      ]
+    },
+    "RSS Feed Trigger": {
+      "main": [
+        []
+      ]
+    },
+    "ES": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request4": {
+      "main": [
+        [
+          {
+            "node": "Google Drive2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait4": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait5": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IT": {
+      "main": [
+        [
+          {
+            "node": "Wait4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "IT",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "ES",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f75e63ef-7893-46bd-bb4f-f952f7d23016",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0888fb519ee25dd82c0668ce33db49c7c9b5110356c49908a71ad744d2198f1a"
+  },
+  "id": "AGq1M3uNoMTgK5eU",
+  "tags": [
+    {
+      "createdAt": "2025-03-14T10:47:48.715Z",
+      "updatedAt": "2025-03-14T10:47:48.715Z",
+      "id": "P08AAEI2h0qRRIZE",
+      "name": "jack_n8n_course"
+    }
+  ]
+}

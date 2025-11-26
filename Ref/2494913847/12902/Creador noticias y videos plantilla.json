@@ -1,0 +1,1197 @@
+{
+  "name": "Creador noticias y videos plantilla",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -864,
+        320
+      ],
+      "id": "4cd22681-feeb-4f8f-9d6e-9a355075f35c",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://gnews.io/api/v4/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.tema_noticias }}"
+            },
+            {
+              "name": "lang",
+              "value": "={{ $json.idioma }}"
+            },
+            {
+              "name": "token",
+              "value": "={{ $json.token }}"
+            },
+            {
+              "name": "max",
+              "value": "={{ $json.cant_noticias }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -416,
+        416
+      ],
+      "id": "b1f6b62a-9260-4b2c-958a-281241e940b9",
+      "name": "Get News"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -848,
+        704
+      ],
+      "id": "162933ee-86ce-48a1-b580-ed9a91556fbd",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -624,
+        976
+      ],
+      "id": "af1ae24d-b03c-4183-b343-7b2af3857073",
+      "name": "Wait",
+      "webhookId": "41e4d3e2-c82a-46eb-8c81-6f1c6d4dbf25"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -48,
+        960
+      ],
+      "id": "992df244-43f9-45d7-bf3a-70561c1d1625",
+      "name": "Download Post"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -864,
+        512
+      ],
+      "id": "d1d2e955-5f84-4df0-b7d4-ff286354a965",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "idioma",
+              "value": "en",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "tema_noticias",
+              "value": "artificial intelligence",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "token",
+              "value": "141055189d6ff31ec24a4a560f321e09",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "cant_noticias",
+              "value": 4,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -640,
+        416
+      ],
+      "id": "11630cde-82a3-4b79-9dcc-173968902cdd",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "articles",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -192,
+        416
+      ],
+      "id": "c92873a3-3216-42fc-a375-67ec73b51c88",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "articles.title",
+              "value": "={{ $json.articles.title }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "articles.url",
+              "value": "={{ $json.articles.url }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "token",
+              "value": "={{ $('Edit Fields').item.json.token }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "articles.description",
+              "value": "={{ $json.articles.description }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "articles.content",
+              "value": "={{ $json.articles.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        416
+      ],
+      "id": "4a6ee6c9-6b8d-402f-82b4-8230e561bef5",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "model": "gpt-image-1",
+        "prompt": "=Crea una imagen hiperrealista para una miniatura de noticia titulada: \"{{ $json.articles.title }}\". La imagen debe reflejar el tema principal: \"{{ $json.articles.description }}\". Usa colores vibrantes y composición visual impactante que invite a hacer clic y leer la noticia. El estilo debe ser realista y moderno, con detalles llamativos, pero sin sensacionalismo. Añade un fondo desenfocado para enfocar la atención en el elemento principal relacionado con la noticia. Evita texto en la imagen. Usa luz dramática o un toque de contraste para hacerla más atractiva.  \n",
+        "options": {
+          "size": "1024x1536"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -624,
+        656
+      ],
+      "id": "8a2b37ac-4879-4675-a05f-37887aec0f44",
+      "name": "Generate an image",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://upload.imagekit.io/api/v1/files/upload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "value": "=data:image/jpeg;base64,{{ $json.data }}"
+            },
+            {
+              "name": "fileName",
+              "value": "archivo.jpg"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -176,
+        656
+      ],
+      "id": "99cf118d-7f7b-4da6-a366-5836c53094ee",
+      "name": "ImageKit",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "[REMOVED]",
+          "name": "ImageKit"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        656
+      ],
+      "id": "5509a823-0a9c-4538-9f17-39a0ffb7b6a3",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.creatomate.com/v1/renders",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"template_id\": \"0dfa6f44-6f98-406e-bcf7-6b4ced72859f\",\n  \"modifications\": {\n    \"News-Image.source\": \"{{ $('ImageKit').item.json.url }}\",\n    \"Subtitles.text\": \"{{ $json.message.content.titular }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -816,
+        976
+      ],
+      "id": "e91648dd-c7cb-4e16-891e-6e401b72ba69",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Creatomate-AI-News"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Noticias IA",
+        "height": 1088,
+        "width": 1232,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        192
+      ],
+      "id": "e03f4a28-9b53-43c6-ab81-d0c8f80bb945",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.creatomate.com/v1/renders",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"template_id\": \"47657536-798b-4f4f-965e-13cff7475ab9\",\n  \"modifications\": {\n    \"CTA-Text.text\": \"Mas info en nuestro perfil\",\n    \"Price.text\": \"{{ $('On form submission').first().json.Precio.format() }}€\",\n    \"Details.text\": \"{{ $('On form submission').first().json.Detalles }}\",\n    \"Address.text\": \"{{ $('On form submission').first().json['Dirección'] }}\",\n    \"Photo-1.source\": \"{{ $json.url[0] }}\",\n    \"Photo-2.source\": \"{{ $json.url[1] }}\",\n    \"Photo-3.source\": \"{{ $json.url[2] }}\",\n    \"Photo-4.source\": \"{{ $json.url[3] }}\",\n    \"Title.text\": \"Nueva propiedad\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1392,
+        688
+      ],
+      "id": "1960183f-584c-4629-b5b0-98bda66bd48b",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Creatomate-inmobiliaria"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "Información de la propiedad",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Dirección",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Precio",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Detalles",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Imagen 1",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Imagen 2",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Imagen 3",
+              "fieldType": "file",
+              "multipleFiles": false
+            },
+            {
+              "fieldLabel": "Imagen 4",
+              "fieldType": "file",
+              "multipleFiles": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        496,
+        688
+      ],
+      "id": "0b66e4e2-a8af-44b5-a43d-eb1d0743364a",
+      "name": "On form submission",
+      "webhookId": "b8853006-3618-45cf-8d92-0a5c43f82665"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        944,
+        656
+      ],
+      "id": "0be5ad63-ece6-4e58-b980-43eeda025329",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "data.image.url"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1168,
+        688
+      ],
+      "id": "62a0409d-abdb-4fa4-976b-152a1906171f",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "url": "=https://hook.eu2.make.com/aessckxo4uiuafe5pmpokksm91e8yhq2",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "URL_video",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "Caption",
+              "value": "=🔥Nueva propiedad disponible, te la enseñamos en nuestro perfil"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2288,
+        672
+      ],
+      "id": "3d2d34d3-3091-4d6f-8586-5768a3082c3a",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "content": "# Inmobiliaria",
+        "height": 752,
+        "width": 2112,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        352,
+        384
+      ],
+      "id": "76f64a5c-8268-4cd5-beee-024d6a0de1a9",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.imgbb.com/1/upload",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "6d8e316d0a22de3e2e06b872731a4858"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "image",
+              "inputDataFieldName": "Imagen_1"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        400
+      ],
+      "id": "3c3492c4-ab8a-4a07-9645-c5b1b5c90dbd",
+      "name": "IMGBB",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.imgbb.com/1/upload",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "6d8e316d0a22de3e2e06b872731a4858"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "image",
+              "inputDataFieldName": "Imagen_2"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        592
+      ],
+      "id": "c76881ea-6a63-45c6-98ad-458362286d1a",
+      "name": "IMGBB2",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.imgbb.com/1/upload",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "6d8e316d0a22de3e2e06b872731a4858"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "image",
+              "inputDataFieldName": "Imagen_3"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        784
+      ],
+      "id": "83d9b545-b881-4a34-8aa6-0ddd3f18007e",
+      "name": "IMGBB3",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.imgbb.com/1/upload",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "6d8e316d0a22de3e2e06b872731a4858"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "image",
+              "inputDataFieldName": "Imagen_4"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        976
+      ],
+      "id": "b7cee8b5-fe29-4c2e-ae7f-d7ad9fa19532",
+      "name": "IMGBB4",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "url": "=https://hook.eu2.make.com/aessckxo4uiuafe5pmpokksm91e8yhq2",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "URL_video",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "Caption",
+              "value": "={{ $('Message a model').item.json.message.content.caption }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        128,
+        960
+      ],
+      "id": "dcdcd727-ab54-42ad-acd4-7f21a22c4df3",
+      "name": "HTTP Request3"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Crea un texto breve, claro y llamativo que resuma la noticia que te proporcioné. No hagas introducciones ni menciones a videos. El texto debe funcionar como titular o resumen periodístico y estar siempre en español. No uses hashtags, emojis ni símbolos como comillas; solo texto plano. El texto debe poder leerse en 6 segundos.\nTambien crea un caption un poco mas detallado de la noticia para utilizarlo como caption en redes sociales.\n\nEjemplo de respuesta:\n{\n  \"titular\": \"Tormenta histórica deja sin electricidad a miles en la costa atlántica\",\n  \"caption\": \"Una tormenta sin precedentes azotó la costa atlántica causando apagones masivos, daños en viviendas y suspensión del transporte marítimo. Autoridades instan a la población a mantenerse en resguardo mientras continúan las labores de emergencia.\"\n}\n",
+              "role": "system"
+            },
+            {
+              "content": "=Noticia: {{ $('Edit Fields1').item.json.articles.content }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        0,
+        656
+      ],
+      "id": "f2a8d768-5c9f-4994-9464-ed02c30eebf6",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "succeeded",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -256,
+        976
+      ],
+      "id": "fb34c40a-a7fe-409e-b70b-cd11375ce115",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.creatomate.com/v1/renders/{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -432,
+        976
+      ],
+      "id": "ad2814f5-5ac7-4087-9e80-d0a9782fce35",
+      "name": "HTTP Request4",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Creatomate-AI-News"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1616,
+        688
+      ],
+      "id": "e152396c-098b-46b4-b2f1-23d3fa140faa",
+      "name": "Wait1",
+      "webhookId": "41e4d3e2-c82a-46eb-8c81-6f1c6d4dbf25"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "succeeded",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2064,
+        688
+      ],
+      "id": "19946c6c-7156-49e9-bcbc-703d3bbf1499",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.creatomate.com/v1/renders/{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1840,
+        624
+      ],
+      "id": "a8284cfe-e0e2-4cfa-b310-2081acbdcc44",
+      "name": "HTTP Request5",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Creatomate-inmobiliaria"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "On form submission": [
+      {
+        "json": {
+          "Dirección": "Calle de las delicias 34, Peñiscola",
+          "Precio": 749000,
+          "Detalles": "Zona campestre, Obra nueva",
+          "Imagen 1": {
+            "filename": "IMG_5475.jpeg",
+            "mimetype": "image/jpeg",
+            "size": 4684919
+          },
+          "Imagen 2": {
+            "filename": "IMG_5474.jpeg",
+            "mimetype": "image/jpeg",
+            "size": 3503601
+          },
+          "Imagen 3": {
+            "filename": "IMG_5473.jpeg",
+            "mimetype": "image/jpeg",
+            "size": 5012687
+          },
+          "Imagen 4": {
+            "filename": "IMG_5472.jpeg",
+            "mimetype": "image/jpeg",
+            "size": 6082757
+          },
+          "submittedAt": "2025-08-08T16:43:16.801-05:00",
+          "formMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get News": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Generate an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Post": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Get News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ImageKit": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "ImageKit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "IMGBB",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IMGBB2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IMGBB3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IMGBB4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IMGBB": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IMGBB2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "IMGBB3": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "IMGBB4": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Download Post",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request4": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request5": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "474f9fab-51e1-4b3e-b1cd-fee3e45b5175",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "tvP9mNc0G0bMqyjn",
+  "tags": []
+}

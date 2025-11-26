@@ -1,0 +1,188 @@
+[
+  {
+    "id": 14465,
+    "author": "INEMA",
+    "date": "2025-09-21T13:35:56+00:00",
+    "text": "### Hacks de arquitetura\n\n* **Construa sobre algo que já funciona**: não automatize uma ideia fraca. Pegue um processo já validado (ex.: geração de leads que dá algum resultado manualmente) e apenas sistematize.\n* **Agente gerente + subagentes**: em vez de um agente “faz tudo”, crie um roteador que decide qual subagente especializado (lead magnet, social post, RAG, etc.) deve agir. Isso reduz respostas ruins.\n* **Workflow único, limpo**: use `router` + `filters` no n8n/Make em vez de criar 10 fluxos separados. Fica mais rápido de manter e escalar.\n\n### Hacks de banco de dados (Supabase)\n\n* **Contexto salvo uma vez**: Foundations (avatar, dores, desejos, provas, jornada) ficam salvos no Supabase → não precisa reenviar a cada prompt. Reduz custo de tokens e deixa respostas mais consistentes.\n* **Session UID**: sempre passe um identificador único no payload → garante que o histórico de cada usuário seja separado corretamente.\n\n### Hacks de prompts\n\n* **Específicos por subagente**: defina prompts fixos para cada tipo de post (lead magnet, personal story, social). Isso aumenta consistência e evita respostas genéricas.\n* **Templates roubados**: copie estruturas de posts virais no LinkedIn e adapte para os prompts → a IA replica padrões que já performam.\n* **Mini-CTA embutido**: sempre finalize o prompt pedindo CTA de comentário (ex.: “Comente SISTEMA para receber o guia”).\n\n### Hacks de design (D do S.T.A.N.D)\n\n* **Loading divertido**: mostre frases como “a IA foi pegar um café…” → dá experiência premium e prende o usuário enquanto espera.\n* **Botão copiar pronto**: 1 clique para copiar o post final. Isso aumenta usabilidade e reduz frustração.\n* **Avatares personalizados**: foto do usuário e ícone da IA no chat → aumenta percepção de valor.\n\n### Hacks de automação\n\n* **Teste sempre em modo “publish”**: no Bolt/Lovable, se não publicar as mudanças, nada chega ao webhook (erro comum).\n* **Evite payloads pesados**: nunca mande imagens cruas via webhook, só URL. Fotos travam o fluxo.\n* **Filtros inteligentes**: antes de mandar para IA, filtre se a mensagem é válida (ex.: >10 caracteres) para evitar chamadas inúteis e custos.\n\n### Hacks de monetização\n\n* **Venda resultado, não feature**: em vez de dizer “faço dashboard”, venda “10 novos leads qualificados por semana sem esforço”.\n* **Cobrança híbrida**: taxa de setup (R\\$ 2k–10k) + mensalidade de manutenção (R\\$ 500–3k).\n* **Upsell com RAG**: primeiro entrega posts; depois oferece upgrade para RAG/FAQ automático.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14113,
+    "author": "INEMA",
+    "date": "2025-09-09T22:15:38+00:00",
+    "text": "}}\"\n}\n```\nObservação: ajuste a expressão que puxa o texto do agente conforme a saída real do seu node de IA.\n\nImportar via cURL (atalho)\nNo HTTP Request do n8n → Import from cURL:\n```\ncurl -X POST \"https://api.unipile.com/v1/whatsapp/messages\" \\\n  -H \"Authorization: Bearer SEU_TOKEN_UNIPILE_AQUI\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n        \"chat_id\": \"CHAT_ID_AQUI\",\n        \"text\": \"Olá! Recebemos sua mensagem e já vamos te ajudar.\"\n      }'\n```\n\n```\n\nDepois, substitua CHAT\\_ID\\_AQUI por {{\\$json.chat\\_id}} e o texto por uma expressão que leia a resposta do agente.\n\n# 9) Encadeamento final de nodes (ordem)\n\nWebhook (POST) → Set (message\\_text, chat\\_id, from\\_phone) → \\[Wait opcional] → Agente IA (memória por chat\\_id) → \\[Calendar opcional] → HTTP Request (Unipile enviar resposta)\n\n# 10) Plano de testes\n\nTeste 1: eco simples\n• Envie “Oi” → verifique o Webhook e o Set no n8n\n• Agente responde “Olá! Como posso ajudar?” → mensagem chega no WhatsApp\n\nTeste 2: memória\n• Pergunte: “Qual meu pedido?” → depois “O que acabei de perguntar?”\n• Verifique se o agente lembra (mesmo chat\\_id)\n\nTeste 3: agendamento\n• “Quero uma call amanhã 10h, meu e-mail é maria@exemplo.com”\n• Verifique criação do evento no Google Calendar e retorno no WhatsApp\n\n# 11) Erros comuns e soluções\n\n• Webhook do n8n não recebe nada: confirme Production URL no Unipile e método POST\n• Token inválido no Unipile: gere novo Access Token e atualize o header Authorization\n• Resposta vazia do agente: confira o mapeamento do campo de saída do node de IA\n• Datas do Calendar erradas: passe timezone e use formatação ISO 8601\n• Mensagens duplicadas: garanta idempotência com verificação de message\\_id antes de responder\n\n# 12) Segurança e boas práticas\n\n• Nunca exponha tokens em texto aberto; use credenciais do n8n\n• Limite permissões do token Unipile ao mínimo necessário\n• Logue conversas em planilha/DB com chat\\_id, timestamp, intenção e resultado\n• Adicione filtros anti-spam e um menu de ajuda para mensagens vazias\n\n# 13) Extensões rápidas\n\n• Qualificação de leads: formulário em linha (nome, e-mail, interesse) + gravação em Airtable/Sheets\n• Follow-up automático: Wait 24–48h + envio de lembrete cordial\n• FAQ híbrido: base de conhecimento + fallback para agente\n• Handoff humano: palavra-chave “falar com humano” cria tarefa e alerta equipe\n\n# 14) Exemplos rápidos\n\nPergunta: Como mudar o número do WhatsApp depois?\nResposta: Desconecte a conta atual no Unipile, conecte o novo número via QR e mantenha o mesmo Webhook; o chat\\_id muda, então trate contatos existentes com migração ou reinício de sessão.\n\nPergunta: Posso usar outro provedor além do Unipile?\nResposta: Sim. A arquitetura é a mesma: provedor WhatsApp com Webhook → n8n → IA → envio de mensagem. Ajuste apenas o endpoint e autenticação.\n\nPergunta: Como evitar respostas “instantâneas” demais?\nResposta: Insira um Wait node com tempo aleatório (10–60s) antes do envio ao Unipile.\n\nPergunta: Como registrar oportunidades no CRM?\nResposta: Após o Agente, adicione nodes para Pipedrive/HubSpot com criação/atualização de deal e anexe chat\\_id e origem WhatsApp.\n\n# 15) Checklist final\n\n\\[ ] Unipile conectado ao WhatsApp por QR\n\\[ ] Webhook Unipile → URL do Webhook do n8n (POST)\n\\[ ] n8n: Webhook → Set(message\\_text, chat\\_id) → Agente (memória por chat\\_id)\n\\[ ] \\[Opcional] Google Calendar Create Event ligado ao agente ou via IF/Switch\n\\[ ] HTTP Request para enviar resposta ao WhatsApp via Unipile com token válido\n\\[ ] Testes: eco, memória, agendamento e follow-up",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14112,
+    "author": "INEMA",
+    "date": "2025-09-09T22:15:38+00:00",
+    "text": "Aqui vai o passo a passo reestruturado, enxuto e acionável para montar o agente de vendas/suporte no WhatsApp com n8n + Unipile, sem API da Meta.\n\n# 0) Visão geral do fluxo\n\nWhatsApp → Unipile (Webhook) → n8n (Webhook) → Set (mapa de campos) → Agente de IA com memória → \\[Google Calendar opcional] → Unipile (envio de resposta ao WhatsApp)\n\n# 1) Pré-requisitos\n\n1. Conta Unipile ativa (trial serve).\n2. n8n rodando (Desktop, Docker ou Cloud).\n3. Número WhatsApp dedicado (recomendado WhatsApp Business).\n4. Conta Google se for agendar via Calendar.\n5. Credencial do modelo de IA no n8n (ex.: OpenAI).\n\nExemplo de conferência rápida\n• Unipile: consegue ler QR e listar contas conectadas\n• n8n: cria workflow vazio e adiciona um node Webhook\n• Google Calendar: abre a tela de permissão/credencial no n8n\n\n# 2) Conectar o WhatsApp no Unipile\n\n2.1 Acesse Unipile → Connect an account → WhatsApp\n2.2 No seu WhatsApp: Configurações → Dispositivos conectados → Conectar um dispositivo → aponte para o QR do Unipile\n2.3 Anote seu identificador do Unipile (workspace/tenant), visível no painel\nBoas práticas\n• Use um número novo exclusivamente para o bot\n• Ative o WhatsApp Business no mesmo aparelho se quiser manter duas contas\n\n# 3) Criar o Webhook no n8n (gatilho de entrada)\n\n3.1 No n8n, crie workflow → adicione Webhook\n• HTTP Method: POST\n• Path: /whatsapp-in\n• Copie a Production URL (vai no Unipile no próximo passo)\n3.2 Deixe o workflow salvo e pronto para execução (ativado ou executando manualmente para testes)\n\n# 4) Criar o Webhook no Unipile (evento: nova mensagem)\n\n4.1 Unipile → Webhooks → Create Webhook\n• Tipo: Messaging / On new message\n• Callback URL: cole a Production URL do Webhook do n8n\n4.2 Salve e teste enviando uma mensagem para seu próprio WhatsApp; verifique no n8n o JSON chegando\n\nDica de inspeção do payload no n8n\nProcure campos como:\n• data.text  → texto da mensagem\n• data.chat\\_id  → identificador do chat\n• data.from  → telefone do remetente\n\n# 5) Mapear campos úteis no n8n\n\n5.1 Após o Webhook, adicione node Set\nCrie variáveis:\n• message\\_text = {{\\$json.data.text}}\n• chat\\_id = {{\\$json.data.chat\\_id}}\n• from\\_phone = {{\\$json.data.from}} (opcional)\nAtive Keep Only Set (se quiser limpar o payload)\n\n# 6) Agente de IA com memória e objetivo de vendas\n\n6.1 Adicione um node de Chat/Agent\n• Modelo: um rápido e barato para atendimento (ex.: gpt-4o-mini)\n• Memória: ligue a memória por sessão\n– Session Key: defina “below” e use {{\\$json.chat\\_id}}\n6.2 Entrada do agente\n• Mensagem do usuário: {{\\$json.message\\_text}}\n6.3 Prompt de sistema sugerido\nVocê é o agente de WhatsApp da \\[SUA\\_EMPRESA]. Seja claro, cordial e objetivo. Responda dúvidas e, quando fizer sentido, ofereça uma chamada de 15 minutos. Se o cliente aceitar, peça e-mail e melhor horário. Se disponível, use a ferramenta Calendar para criar o evento. Mantenha o contexto por conversa (chat\\_id). Não prometa o que não pode cumprir.\n6.4 Realismo opcional\n• Antes do envio da resposta, adicione Wait com atraso aleatório (10–60s)\n\n# 7) Agendamento opcional com Google Calendar\n\nOpção A: tool calling do agente\n• Conecte o node Google Calendar: Create Event\n• Dê acesso ao agente como ferramenta\n• Campos mínimos: summary, start, end, attendees (e-mail do cliente)\nOpção B: intenção + roteamento\n• Agente retorna intenção “criar\\_evento” com data/hora/e-mail\n• Um IF/Switch aciona o node Create Event e depois prossegue para o envio de resposta\n\n# 8) Enviar a resposta ao WhatsApp via Unipile (HTTP Request)\n\n8.1 Unipile → Access tokens → Generate → copie o token\n8.2 No n8n, adicione HTTP Request após o Agente (ou após Calendar)\n• Method: POST\n• URL: endpoint de enviar mensagem do Unipile para WhatsApp\n– Exemplo ilustrativo, ajuste conforme a documentação do Unipile:\n\n```https://api.unipile.com/v1/whatsapp/messages```\n\n• Headers:\n\nA```uthorization: Bearer SEU_TOKEN_UNIPILE_AQUI\nContent-Type: application/json\n```\n• Body (JSON) típico:\n\n```\n\n```\n{\n  \"chat_id\": \"{{$json.chat_id}}\",\n  \"text\": \"{{ $json['ai_reply']  $json.data[0].text  $json.message || $json.output",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14111,
+    "author": "INEMA",
+    "date": "2025-09-09T22:13:01+00:00",
+    "text": "=============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14110,
+    "author": "INEMA",
+    "date": "2025-09-09T22:12:59+00:00",
+    "text": "Agente de IA Vende para Você (100% Automatizado)\n\nResumo:\nO criador mostra como montar um agente de vendas e suporte totalmente automatizado no WhatsApp usando **n8n** e **Unipile**, sem necessidade de API da Meta e sem programar.\n\nO processo:\n\n1. Configuração simples no Unipile com um número novo ou WhatsApp Business.\n2. Criação de um webhook que recebe mensagens do WhatsApp.\n3. Integração no n8n para processar mensagens e usar IA (ex: GPT-4 mini).\n4. Adição de memória para manter o contexto das conversas.\n5. Definição de prompt para que o agente seja útil, amigável e com objetivo de marcar reuniões de vendas.\n6. Integração com Google Calendar para agendar automaticamente chamadas de descoberta de 15 minutos.\n7. Envio das respostas de volta ao WhatsApp, em tempo real.\n\nPontos-chave:\n\n* WhatsApp tem taxa de abertura de 98%, excelente para vendas.\n* O agente pode responder dúvidas, acessar bancos de dados, planilhas, calendários e automatizar processos.\n* Funciona como um sistema de vendas ativo, lembrando o histórico do cliente e sendo proativo.\n* Configuração rápida: basta importar o JSON pronto e adaptar.\n* Resultado: um sistema que responde, agenda e faz vendas sozinho, colocando a empresa à frente de 99% dos concorrentes.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14109,
+    "author": "INEMA",
+    "date": "2025-09-09T22:12:25+00:00",
+    "text": "=============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14108,
+    "author": "INEMA",
+    "date": "2025-09-09T22:12:20+00:00",
+    "text": "achei Caro o UNIPILE  prefiro o evolutionapi",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14107,
+    "author": "INEMA",
+    "date": "2025-09-09T22:09:31+00:00",
+    "text": "Agente de vendas no WhatsApp\n\n99% das pessoas AINDA ignoram agentes de WhatsApp\n\nO que ele faz:\n🔥 Gerencia o atendimento ao cliente no WhatsApp\n\n💸 Conversas automáticas de vendas\n\n🔥 Unipile: [https://www.unipile.com/](https://www.unipile.com/)🚀 n8n: [https://n8n.io](https://n8n.io/)🔥 Sistema Operacional do WhatsApp",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14105,
+    "author": "INEMA",
+    "date": "2025-09-09T22:08:36+00:00",
+    "text": "===============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14104,
+    "author": "INEMA",
+    "date": "2025-09-09T22:08:33+00:00",
+    "text": "Roube este Agente de WhatsApp Lucrativo \n\nO WhatsApp tem uma taxa de abertura de 98%.\nSe você estiver criando isso para o seu negócio ou vendendo para outras pessoas...\nUm funil de vendas no WhatsApp vai aumentar as conversões 📈\nSimplesmente funciona.\n\nO ponto-chave é começar.\nNeste vídeo...\n💬 Como construir um agente de vendas e suporte no WhatsApp\n🤩 Conectar facilmente o n8n ao WhatsApp\n❌ Sem precisar da Meta\n🔥 98% de taxa de abertura\n\nA melhor parte é que você não precisa de nenhuma API da Meta.\nDepois que você estiver familiarizado com essa plataforma, também poderá aplicar isso em MUITAS outras.\nEu deixei o processo o mais SIMPLES possível.😆",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14103,
+    "author": "INEMA",
+    "date": "2025-09-09T22:07:45+00:00",
+    "text": "=============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14102,
+    "author": "INEMA",
+    "date": "2025-09-09T22:07:43+00:00",
+    "text": "=======",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14101,
+    "author": "INEMA",
+    "date": "2025-09-09T22:07:38+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "🔥 WhatsApp Operating System.json"
+  },
+  {
+    "id": 14100,
+    "author": "INEMA",
+    "date": "2025-09-09T22:04:51+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14100_014.jpg"
+  },
+  {
+    "id": 14099,
+    "author": "INEMA",
+    "date": "2025-09-09T22:04:48+00:00",
+    "text": "j105 - Agente de Vendas com Whatsapp",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14098,
+    "author": "INEMA",
+    "date": "2025-09-09T22:04:47+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14097,
+    "author": "INEMA",
+    "date": "2025-09-09T22:04:44+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14096,
+    "author": "INEMA",
+    "date": "2025-09-09T22:04:44+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14095,
+    "author": "INEMA",
+    "date": "2025-09-09T22:04:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14094,
+    "author": "INEMA",
+    "date": "2025-09-09T22:04:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14093,
+    "author": "INEMA",
+    "date": "2025-09-09T22:04:43+00:00",
+    "text": "https://chatgpt.com/c/68c0a37e-f6cc-8331-8463-692e5d1f0286",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14092,
+    "author": "INEMA",
+    "date": "2025-09-09T22:04:42+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14091,
+    "author": "INEMA",
+    "date": "2025-09-09T22:04:37+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

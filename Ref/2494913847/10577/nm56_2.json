@@ -1,0 +1,278 @@
+{
+  "name": "nm56-2",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "5b0193d9-4959-40ec-8b4f-9c57cce93fb3",
+      "name": "Cron Métricas (15min)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -1100,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery"
+      },
+      "id": "50ee6426-aed2-45f8-82e0-f639e0380ccb",
+      "name": "Coletar Métricas",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar métricas e gerar alertas\nconst metricas = $input.all();\nconst alertas = [];\nconst dashboard = {};\n\n// Processar cada métrica\nfor (const item of metricas) {\n  const { metrica, valor, timestamp } = item.json;\n  dashboard[metrica] = valor;\n  \n  // Verificar alertas\n  switch (metrica) {\n    case 'hitl_pendentes':\n      if (valor > 5) {\n        alertas.push({\n          tipo: 'warning',\n          metrica: metrica,\n          valor: valor,\n          limite: 5,\n          mensagem: `${valor} solicitações HITL pendentes (limite: 5)`\n        });\n      }\n      break;\n      \n    case 'tempo_resposta_medio':\n      if (valor > 300) { // 5 minutos\n        alertas.push({\n          tipo: 'warning',\n          metrica: metrica,\n          valor: valor,\n          limite: 300,\n          mensagem: `Tempo médio de resposta: ${Math.round(valor)}s (limite: 300s)`\n        });\n      }\n      break;\n      \n    case 'interacoes_periodo':\n      if (valor > 100) {\n        alertas.push({\n          tipo: 'info',\n          metrica: metrica,\n          valor: valor,\n          limite: 100,\n          mensagem: `Alto volume de interações: ${valor} nos últimos 15min`\n        });\n      }\n      break;\n  }\n}\n\n// Calcular taxa de conversão\nconst visitas = dashboard.visitas_hoje || 0;\nconst interacoes = dashboard.interacoes_periodo || 1;\nconst taxa_conversao = (visitas / interacoes * 100).toFixed(2);\n\ndashboard.taxa_conversao_estimada = taxa_conversao;\ndashboard.timestamp = new Date().toISOString();\ndashboard.alertas = alertas;\n\nreturn {\n  json: {\n    dashboard: dashboard,\n    alertas: alertas,\n    necessita_notificacao: alertas.length > 0\n  }\n};"
+      },
+      "id": "3a946d1d-dda3-45ff-a5a6-0a82f5cdebe9",
+      "name": "Processar Métricas e Alertas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -660,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert"
+      },
+      "id": "f33bd5be-2ae7-41de-a94e-0b854654552e",
+      "name": "Salvar Métricas",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -440,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.necessita_notificacao }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b006959c-e344-4826-b095-5c7e5a3f5202",
+      "name": "Tem Alertas?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.N8N_WEBHOOK_BASE_URL }}/webhook/telegram-notification",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tipo",
+              "value": "alerta_sistema"
+            },
+            {
+              "name": "alertas",
+              "value": "={{ JSON.stringify($json.alertas) }}"
+            },
+            {
+              "name": "dashboard",
+              "value": "={{ JSON.stringify($json.dashboard) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b8086702-644a-4169-b03a-eee52791add4",
+      "name": "Enviar Notificação Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "1a46cd71-d4ca-45f9-b792-eba934ff6b06",
+      "name": "Cron Relatório Diário (18h)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -1100,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery"
+      },
+      "id": "81d53d2d-8a7d-4c0b-8b4c-5052a8a19c5f",
+      "name": "Gerar Relatório Diário",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.N8N_WEBHOOK_BASE_URL }}/webhook/telegram-notification",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tipo",
+              "value": "relatorio_diario"
+            },
+            {
+              "name": "relatorio",
+              "value": "={{ JSON.stringify($json) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5e00bae6-3e00-4626-a181-dd7a4f23908e",
+      "name": "Enviar Relatório Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -660,
+        400
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Cron Métricas (15min)": {
+      "main": [
+        [
+          {
+            "node": "Coletar Métricas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Coletar Métricas": {
+      "main": [
+        [
+          {
+            "node": "Processar Métricas e Alertas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Métricas e Alertas": {
+      "main": [
+        [
+          {
+            "node": "Salvar Métricas",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Tem Alertas?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem Alertas?": {
+      "main": [
+        [
+          {
+            "node": "Enviar Notificação Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron Relatório Diário (18h)": {
+      "main": [
+        [
+          {
+            "node": "Gerar Relatório Diário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Relatório Diário": {
+      "main": [
+        [
+          {
+            "node": "Enviar Relatório Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "92a878ca-7fff-4288-a392-e819bbe06631",
+  "meta": {
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "P7jWJo4Z4Wp3qcq7",
+  "tags": []
+}

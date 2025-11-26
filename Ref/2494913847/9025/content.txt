@@ -1,0 +1,280 @@
+TOPICO 9025
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-06-08 15:32:43+00:00
+
+Total de mensagens: 13
+Midias baixadas: 2
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-06-08T15:37:49+00:00
+Texto:
+**Text to Speech**
+**Fine-grained Control**
+
+**Advanced control over speech generation**
+
+[**​**](https://docs.fish.audio/text-to-speech/fine-grained-control#getting-started)
+
+**Getting Started**
+
+**To use fine-grained control, you can use either our SDK, API, or Playground.**
+
+
+**SDK/API: We recommend disabling normalization by setting **`"normalize": false`** in the request body. This ensures that the API doesn’t alter the intonation of control tags.**
+
+
+**Playground: You can use V1.6 Control Model, without setting any other options.**
+
+
+**Disabling normalization may reduce the stability of reading numbers, dates, and URLs. You’ll need to handle these cases manually for best results.**
+
+
+[**​**](https://docs.fish.audio/text-to-speech/fine-grained-control#phoneme-control)
+
+**Phoneme Control**
+
+**Phoneme control allows you to specify exact pronunciations for words or characters. Currently, we support:**
+
+
+**CMU Arpabet (for English)**
+
+**Pinyin (for Chinese)**
+
+**To use phoneme control, wrap the desired pronunciation in **`<|phoneme_start|>`** and **`<|phoneme_end|>`** tags. Each tag should contain a single word or character.**
+
+
+[**​**](https://docs.fish.audio/text-to-speech/fine-grained-control#english-example)
+
+**English Example**
+
+**Standard: “I am an engineer.”**
+
+**With phoneme control: “I am an **`<|phoneme_start|>EH N JH AH N IH R<|phoneme_end|>`**.”**
+
+
+[**​**](https://docs.fish.audio/text-to-speech/fine-grained-control#chinese-example)
+
+**Chinese Example**
+
+**Standard: “我是一个工程师。“**
+
+**With phoneme control: “我是一个**`<|phoneme_start|>gong1<|phoneme_end|><|phoneme_start|>cheng2<|phoneme_end|><|phoneme_start|>shi1<|phoneme_end|>`**。“**
+
+
+[**​**](https://docs.fish.audio/text-to-speech/fine-grained-control#paralanguage)
+
+**Paralanguage**
+
+**Paralanguage controls allow you to add natural speech elements and pauses to make the generated speech sound more human-like. There are two main types of controls:**
+
+
+[**​**](https://docs.fish.audio/text-to-speech/fine-grained-control#pause-words)
+
+**Pause Words**
+
+**You can use common pause words like “um”, “uh”, “嗯”, “啊” to control the rhythm of the speech.**
+
+
+[**​**](https://docs.fish.audio/text-to-speech/fine-grained-control#special-effects)
+
+**Special Effects**
+
+**The following special effects can be added using parentheses:**
+
+
+**Effect Description First Available Stage**
+
+`(break) `**Short pause V1.6 Experimental**
+
+`(long-break) `**Extended pause V1.6 Experimental**
+
+`(breath) `**Breathing sound V1.6 Experimental**
+
+`(laugh) `**Laughter sound V1.6 Experimental**
+
+`(cough) `**Coughing sound V1.6 Experimental**
+
+`(lip-smacking) `**Lip smacking sound V1.6 Experimental**
+
+`(sigh) `**Sighing sound V1.6 Experimental**
+
+**The effects **`(laugh)`**, (cough), (lip-smacking), and (sigh) are developing. You may need to repeat them multiple times for better results.**
+
+
+Example: Standard: “I am an engineer.”
+
+With paralanguage: “I am, um, an (break) engineer.”
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-06-08T15:36:46+00:00
+Texto:
+https://docs.fish.audio/text-to-speech/text-to-speech
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-06-08T15:35:52+00:00
+Texto:
+Para fazer uma requisição curl para a API do Fish Audio que funcione no n8n, você precisa configurar alguns elementos importantes. Vou te mostrar como estruturar isso:
+
+## Estrutura básica do curl para Fish Audio
+
+```curl -X POST https://api.fish.audio/v1/tts \
+  -H "Authorization: Bearer SEU_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Seu texto aqui",
+    "voice": "nome_da_voz",
+    "format": "mp3"
+  }'```
+
+## Configuração no n8n
+
+No n8n, você usará o nó **HTTP Request** com estas configurações:
+
+### Configurações principais:
+- **Method**: POST
+- **URL**: `https://api.fish.audio/v1/tts`
+
+### Headers:
+```{
+  "Authorization": "Bearer {{$parameter.apiKey}}",
+  "Content-Type": "application/json"
+}```
+
+### Body (JSON):
+```{
+  "text": "{{$parameter.text}}",
+  "voice": "{{$parameter.voice}}",
+  "format": "mp3",
+  "speed": 1.0,
+  "volume": 1.0
+}```
+
+### Parâmetros opcionais que você pode adicionar:
+- `reference_id`: ID de referência para clonagem de voz
+- `normalize`: true/false para normalização
+- `mp3_bitrate`: qualidade do MP3 (128, 192, 320)
+- `opus_bitrate`: para formato OPUS
+
+## Exemplo prático para n8n
+
+1. **Adicione um nó HTTP Request**
+2. **Configure as credenciais** (crie uma credencial do tipo "Header Auth" com `Authorization: Bearer SEU_API_KEY`)
+3. **Use esta estrutura**:
+
+```{
+  "method": "POST",
+  "url": "https://api.fish.audio/v1/tts",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "text": "Olá, este é um teste de síntese de voz",
+    "voice": "pt-BR-neural",
+    "format": "mp3"
+  }
+}```
+
+## Para salvar o áudio resultante
+
+O Fish Audio retorna o áudio em base64 ou como stream. No n8n, você pode:
+
+1. **Salvar como arquivo** usando o nó "Write Binary File"
+2. **Processar o base64** se necessário
+3. **Integrar com outros serviços** como Google Drive, Dropbox, etc.
+
+Precisa de mais detalhes sobre alguma parte específica da integração?
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-06-08T15:33:09+00:00
+Texto:
+https://fish.audio/pt/go-api/api-keys/
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-06-08T15:32:50+00:00
+Texto:
+https://fish.audio/pt/go-api/billing/
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-06-08T15:32:48+00:00
+Texto:
+Conexao FISH.AUDIO
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-06-08T15:32:48+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-06-08T15:32:48+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-06-08T15:32:48+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-06-08T15:32:47+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-06-08T15:32:47+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-06-08T15:32:47+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-06-08T15:32:43+00:00
+Texto: [Sem texto]
+
+------------------------------
+

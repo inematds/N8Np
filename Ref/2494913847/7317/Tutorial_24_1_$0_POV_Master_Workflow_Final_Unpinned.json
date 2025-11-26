@@ -1,0 +1,1153 @@
+{
+  "name": "Final",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1H6dx4fLNZu7SubAuVVMovIiWizMCuXKB2kGrukE4z8A",
+          "mode": "list",
+          "cachedResultName": "n8n-pov",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1H6dx4fLNZu7SubAuVVMovIiWizMCuXKB2kGrukE4z8A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1H6dx4fLNZu7SubAuVVMovIiWizMCuXKB2kGrukE4z8A/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "pending"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1560,
+        460
+      ],
+      "id": "7a15d7cc-12c3-4a62-bf28-4bee22bcb10d",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=# First-Person POV Image Prompt\n\n## Foreground (Limb Interaction)  \n*First-person view POV GoPro shot of [describe limb/hand interaction—e.g., gripping a weapon, adjusting armor, or touching surroundings]. [Add sensory details: texture, movement, lighting, etc.]*  \n\n## Background (Scene & Atmosphere)  \n*In the background, [describe environment—architecture, lighting, other figures]. [Include ambient details: sounds, smells, weather, or cultural elements to deepen immersion.]*  \n\n---  \n\n### Example Input:  \nTopic: *POV: You wake up as a gladiator entering the Colosseum*  \nEnvironment: *Ancient Rome, poor but fierce warrior*  \n\n### Example Output:  \nFirst-person view POV GoPro shot of your calloused hands tightening around the grip of a chipped gladius, dried blood crusted under cracked knuckles. A ragged leather bracer shifts as you flex your wrist, the morning sun glaring off the sand-strewn ground. In the background, the towering stone arches of the Colosseum loom, their shadows slicing across the dusty arena floor. Distant chants of the crowd vibrate through your chest, mixing with the iron scent of sweat and fear. Other fighters—some praying, others sharpening blades—move like ghosts in the hazy light.\n\n\n### Rules\n- Pure text without line break\n\n---  \n\n### Guidelines for Customization:  \n- Limb Interaction: Always show active hands/feet (e.g., gripping, pushing, or injured).  \n- Sensory Layering: Add 1-2 implied sounds/smells (e.g., clashing metal, burning torches).  \n- Cultural Nuance: Include era-specific props (e.g., Roman armor, medieval torches).  \n\nCurrent topic: {{ $('Google Sheets').item.json.topic }}\nCurrent enviornment: {{ $('Google Sheets').item.json.environment }}\n\nYour output:\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1840,
+        460
+      ],
+      "id": "a5fff6c6-3650-46eb-a521-27be220a91dd",
+      "name": "Image Prompt Agent"
+    },
+    {
+      "parameters": {
+        "model": "google/gemma-3-27b-it:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1840,
+        600
+      ],
+      "id": "f0de1c32-3486-4176-bfa1-d82089aa3126",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.together.xyz/v1/images/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"black-forest-labs/FLUX.1-schnell-Free\",\n  \"prompt\": \"{{ $json.output.replace(\"\\n\", \"\") }}\",\n  \"width\": 720,\n  \"height\": 1280,\n  \"steps\": 4,\n  \"n\": 1,\n  \"response_format\": \"b64_json\",\n  \"stop\": []\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        460
+      ],
+      "id": "291083db-d2f5-48d7-aba7-d7d18b5400f2",
+      "name": "Together AI",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Together AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "=data[0].b64_json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2440,
+        460
+      ],
+      "id": "35decf81-bf36-4c52-afae-2602ae2cb314",
+      "name": "Convert 1 Image"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/workspace/input/{{ $now.format('yyyymmddhhmmii') }}.jpg",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2660,
+        460
+      ],
+      "id": "dc4f869e-24b0-4a6f-b18f-410c49d89bee",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "command": "=cd /workspace/Wan2GP2 && python /workspace/Wan2GP2/i2v_inference.py   \\\n  --input-image {{ $json.directory }}/{{ $json.fileName }} \\\n  --output-file /workspace/output/1.mp4 \\\n  --prompt \"{{ $('Image Prompt Agent').item.json.output }}\" \\\n  --resolution \"1280x720\" \\\n  --frames 81 \\\n  --steps 30 \\\n  --guidance-scale 5.0 \\\n  --attention \"auto\" \\\n  --seed -1 \\\n  --flow-shift 3.0 \\\n  --profile 2 \\\n  --compile \\\n  --teacache-start 0.1 \\\n  --transformer-file=\"/workspace/Wan2GP2/ckpts/wan2.1_image2video_720p_14B_quanto_mbf16_int8.safetensors\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3100,
+        460
+      ],
+      "id": "7bb91a77-19a0-4919-9c85-a0b8c56f6f9b",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "model": "google/gemma-3-27b-it:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1840,
+        960
+      ],
+      "id": "77d0eed3-9a7d-413a-bf03-2f95515c8d2a",
+      "name": "OpenRouter Chat Model2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.together.xyz/v1/images/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"black-forest-labs/FLUX.1-schnell-Free\",\n  \"prompt\": \"{{ $json.output.replace(\"\\n\", \"\") }}\",\n  \"width\": 720,\n  \"height\": 1280,\n  \"steps\": 4,\n  \"n\": 1,\n  \"response_format\": \"b64_json\",\n  \"stop\": []\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        820
+      ],
+      "id": "a95dd4f3-362e-4bc2-8bce-cd98fbcba068",
+      "name": "Together AI 2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Together AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data[0].b64_json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2440,
+        820
+      ],
+      "id": "165b0140-0dbe-4aa0-bfdd-2d2a971a1847",
+      "name": "Convert 1 Image 2"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/workspace/input/{{ $now.format('yyyymmddhhmmii') }}.jpg",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2660,
+        820
+      ],
+      "id": "5b6dd366-eecd-40fa-b718-cc217e7d4d5a",
+      "name": "Read/Write Files from Disk 2"
+    },
+    {
+      "parameters": {
+        "command": "=cd /workspace/Wan2GP2 && python /workspace/Wan2GP2/i2v_inference.py   \\\n  --input-image {{ $json.directory }}/{{ $json.fileName }} \\\n  --output-file /workspace/output/2.mp4 \\\n  --prompt \"{{ $('Image Prompt Agent 2').first().json.output }}\" \\\n  --resolution \"1280x720\" \\\n  --frames 81 \\\n  --steps 30 \\\n  --guidance-scale 5.0 \\\n  --attention \"auto\" \\\n  --seed -1 \\\n  --flow-shift 3.0 \\\n  --profile 2 \\\n  --compile \\\n  --teacache-start 0.1 \\\n  --transformer-file=\"/workspace/Wan2GP2/ckpts/wan2.1_image2video_720p_14B_quanto_mbf16_int8.safetensors\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3100,
+        820
+      ],
+      "id": "4c29b8ae-a2b8-468e-8483-0316ee5d72e2",
+      "name": "Execute Command 2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=# First-Person POV Image Prompt\n\n## Foreground (Limb Interaction)  \n*First-person view POV GoPro shot of [describe limb/hand interaction—e.g., gripping a weapon, adjusting armor, or touching surroundings]. [Add sensory details: texture, movement, lighting, etc.]*  \n\n## Background (Scene & Atmosphere)  \n*In the background, [describe environment—architecture, lighting, other figures]. [Include ambient details: sounds, smells, weather, or cultural elements to deepen immersion.]*  \n\n---  \n\n### Example Input:  \nTopic: *POV: You wake up as a gladiator entering the Colosseum*  \nEnvironment: *Ancient Rome, poor but fierce warrior*  \n\n### Example Output:  \nFirst-person view POV GoPro shot of your calloused hands tightening around the grip of a chipped gladius, dried blood crusted under cracked knuckles. A ragged leather bracer shifts as you flex your wrist, the morning sun glaring off the sand-strewn ground. In the background, the towering stone arches of the Colosseum loom, their shadows slicing across the dusty arena floor. Distant chants of the crowd vibrate through your chest, mixing with the iron scent of sweat and fear. Other fighters—some praying, others sharpening blades—move like ghosts in the hazy light.\n\n\n### Rules\n- Pure text without line break\n\n---  \n\n### Guidelines for Customization:  \n- Limb Interaction: Always show active hands/feet (e.g., gripping, pushing, or injured).  \n- Sensory Layering: Add 1-2 implied sounds/smells (e.g., clashing metal, burning torches).  \n- Cultural Nuance: Include era-specific props (e.g., Roman armor, medieval torches).  \n\nCurrent topic: {{ $('Google Sheets').item.json.topic }}\nCurrent enviornment: {{ $('Google Sheets').item.json.environment }}\n\nYour output:\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1840,
+        820
+      ],
+      "id": "345d6f86-55c9-43b4-b9ae-a428bb6a5645",
+      "name": "Image Prompt Agent 2"
+    },
+    {
+      "parameters": {
+        "model": "google/gemma-3-27b-it:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1840,
+        1320
+      ],
+      "id": "b94e79f1-aa14-4734-96d2-82d42c39779c",
+      "name": "OpenRouter Chat Model3",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.together.xyz/v1/images/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"black-forest-labs/FLUX.1-schnell-Free\",\n  \"prompt\": \"{{ $json.output.replace(\"\\n\", \"\") }}\",\n  \"width\": 720,\n  \"height\": 1280,\n  \"steps\": 4,\n  \"n\": 1,\n  \"response_format\": \"b64_json\",\n  \"stop\": []\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        1180
+      ],
+      "id": "c940e790-3a75-41fa-93b8-622ce2fe7eb3",
+      "name": "Together AI ",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Together AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data[0].b64_json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2440,
+        1180
+      ],
+      "id": "b39fd70c-0d89-4c8f-b7e4-dcad39f4b7cc",
+      "name": "Convert 1 Image "
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/workspace/input/{{ $now.format('yyyymmddhhmmii') }}.jpg",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2660,
+        1180
+      ],
+      "id": "3c629854-74fb-451e-959c-bc0c3ab6ec8f",
+      "name": "Read/Write Files from Disk "
+    },
+    {
+      "parameters": {
+        "command": "=cd /workspace/Wan2GP2 && python /workspace/Wan2GP2/i2v_inference.py   \\\n  --input-image {{ $json.directory }}/{{ $json.fileName }} \\\n  --output-file /workspace/output/3.mp4 \\\n  --prompt \"{{ $('Image Prompt Agent 3').first().json.output }}\" \\\n  --resolution \"1280x720\" \\\n  --frames 81 \\\n  --steps 30 \\\n  --guidance-scale 5.0 \\\n  --attention \"auto\" \\\n  --seed -1 \\\n  --flow-shift 3.0 \\\n  --profile 2 \\\n  --compile \\\n  --teacache-start 0.1 \\\n  --transformer-file=\"/workspace/Wan2GP2/ckpts/wan2.1_image2video_720p_14B_quanto_mbf16_int8.safetensors\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3100,
+        1180
+      ],
+      "id": "fb3e3f12-b1be-4887-865a-5303e01c03bc",
+      "name": "Execute Command "
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=# First-Person POV Image Prompt\n\n## Foreground (Limb Interaction)  \n*First-person view POV GoPro shot of [describe limb/hand interaction—e.g., gripping a weapon, adjusting armor, or touching surroundings]. [Add sensory details: texture, movement, lighting, etc.]*  \n\n## Background (Scene & Atmosphere)  \n*In the background, [describe environment—architecture, lighting, other figures]. [Include ambient details: sounds, smells, weather, or cultural elements to deepen immersion.]*  \n\n---  \n\n### Example Input:  \nTopic: *POV: You wake up as a gladiator entering the Colosseum*  \nEnvironment: *Ancient Rome, poor but fierce warrior*  \n\n### Example Output:  \nFirst-person view POV GoPro shot of your calloused hands tightening around the grip of a chipped gladius, dried blood crusted under cracked knuckles. A ragged leather bracer shifts as you flex your wrist, the morning sun glaring off the sand-strewn ground. In the background, the towering stone arches of the Colosseum loom, their shadows slicing across the dusty arena floor. Distant chants of the crowd vibrate through your chest, mixing with the iron scent of sweat and fear. Other fighters—some praying, others sharpening blades—move like ghosts in the hazy light.\n\n\n### Rules\n- Pure text without line break\n\n---  \n\n### Guidelines for Customization:  \n- Limb Interaction: Always show active hands/feet (e.g., gripping, pushing, or injured).  \n- Sensory Layering: Add 1-2 implied sounds/smells (e.g., clashing metal, burning torches).  \n- Cultural Nuance: Include era-specific props (e.g., Roman armor, medieval torches).  \n\nCurrent topic: {{ $('Google Sheets').item.json.topic }}\nCurrent enviornment: {{ $('Google Sheets').item.json.environment }}\n(This is the final scene of the story—craft a compelling and emotionally satisfying ending that leaves a lasting impact.)\n\nYour output:\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1840,
+        1180
+      ],
+      "id": "ecd426f9-9cff-4756-9090-3695b8d90673",
+      "name": "Image Prompt Agent 3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write a caption for following scene:\n\nScene 1:\n{{ $('Image Prompt Agent').item.json.output }}\n\nScene 2:\n{{ $('Image Prompt Agent 2').item.json.output }}\n\nScene 3:\n{{ $('Image Prompt Agent 3').item.json.output }}\n\n\nThe first caption should be: {{ $('Google Sheets').item.json.topic.replaceAll(\":\", \" -\") }}\n\nEach caption must be concise, no more than 8 words. Use '|' as the separator between captions. Insert a line break after every 3 words. Do not add line breaks at the beginning or end of any caption. Return only the captions without explanations or extra text.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1840,
+        1560
+      ],
+      "id": "9aa58e73-4f25-4735-b2f1-ddccfd53761f",
+      "name": "Caption Agent"
+    },
+    {
+      "parameters": {
+        "model": "google/gemma-3-27b-it:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1820,
+        1720
+      ],
+      "id": "d6b4ad55-ca27-4527-abdd-6155ddd32002",
+      "name": "OpenRouter Chat Model4",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return { data: $input.first().json.output.split(\"|\") }"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        1560
+      ],
+      "id": "6a1869c9-cc89-4913-b3ca-371b7d733aaa",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "command": "=ffmpeg \\\n-i /workspace/output/1.mp4 \\\n-i /workspace/output/2.mp4 \\\n-i /workspace/output/3.mp4 \\\n-i \"{{ $('Google Sheets').item.json.music }}\" \\\n-filter_complex \"\n[0:v]scale=720:1280,setsar=1,format=yuv420p,drawtext=fontfile=/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf:text='{{ $('Code').item.json.data[0] }}':fontsize=28:fontcolor=white:bordercolor=black:borderw=2:box=1:boxcolor=black@1.0:boxborderw=10:x=(w-text_w)/2:y=H*0.1:line_spacing=15[v0];\n[1:v]scale=720:1280,setsar=1,format=yuv420p,drawtext=fontfile=/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf:text='{{ $('Code').item.json.data[1] }}':fontsize=28:fontcolor=white:bordercolor=black:borderw=2:box=1:boxcolor=black@1.0:boxborderw=10:x=(w-text_w)/2:y=H*0.1:line_spacing=15[v1];\n[2:v]scale=720:1280,setsar=1,format=yuv420p,drawtext=fontfile=/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf:text='{{ $('Code').item.json.data[2] }}':fontsize=28:fontcolor=white:bordercolor=black:borderw=2:box=1:boxcolor=black@1.0:boxborderw=10:x=(w-text_w)/2:y=H*0.1:line_spacing=15[v2];\n[v0][v1]xfade=transition=fade:duration=1:offset=3[v01];\n[v01][v2]xfade=transition=fade:duration=1:offset=6[vout];\n[vout]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black,setsar=1,trim=duration=12[final_video];\n[3:a]atrim=0:12,afade=t=out:st=11:d=1,volume=0.5[bg_music]\n\" \\\n-map \"[final_video]\" \\\n-map \"[bg_music]\" \\\n-movflags +faststart \\\n-c:v libx264 -profile:v high -preset fast -crf 22 \\\n-pix_fmt yuv420p \\\n-c:a aac -b:a 192k \\\n-t 10 \\\n{{ $json.output_path }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2740,
+        1560
+      ],
+      "id": "d648d170-1594-4cb6-a8f5-e2732c5d02ab",
+      "name": "Execute Command1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1H6dx4fLNZu7SubAuVVMovIiWizMCuXKB2kGrukE4z8A",
+          "mode": "list",
+          "cachedResultName": "n8n-pov",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1H6dx4fLNZu7SubAuVVMovIiWizMCuXKB2kGrukE4z8A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1H6dx4fLNZu7SubAuVVMovIiWizMCuXKB2kGrukE4z8A/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "[REMOVED]",
+            "output": "={{ $('Output Path').item.json.output_path }}",
+            "status": "done"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "environment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "music",
+              "displayName": "music",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "output",
+              "displayName": "output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3000,
+        1560
+      ],
+      "id": "990c81ed-26a0-4fbb-a129-da235651ab03",
+      "name": "Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Output Path').item.json.output_path }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        3240,
+        1560
+      ],
+      "id": "aadfb5be-8aad-4f1f-8998-1bbc0f5c2489",
+      "name": "Read/Write Files from Disk1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "output_path",
+              "value": "=/workspace/output/{{ $now.format('yyyymmddhhmmii') }}_output.mp4",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2480,
+        1560
+      ],
+      "id": "799e30e9-71ba-4652-8f5d-fe396d7db9d8",
+      "name": "Output Path"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.fileName }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        460
+      ],
+      "id": "05148d5b-3817-47c6-baf4-f5fd98c15331",
+      "name": "Read/Write Files from Disk2"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.fileName }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        820
+      ],
+      "id": "fbcceab8-fbb9-442b-a57b-6481fa498894",
+      "name": "Read/Write Files from Disk3"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.fileName }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        1180
+      ],
+      "id": "a448cb13-442f-4a35-8423-cdcdfcbfe5a4",
+      "name": "Read/Write Files from Disk4"
+    },
+    {
+      "parameters": {
+        "content": "## POV Image #1",
+        "height": 340,
+        "width": 1260
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        400
+      ],
+      "id": "2bd82981-5d20-4bba-8931-59632091ac21",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/workspace/output/1.mp4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        3320,
+        460
+      ],
+      "id": "d87f1fba-8e59-4c0a-b5c8-75a85c13d7fa",
+      "name": "Read/Write Files from Disk5"
+    },
+    {
+      "parameters": {
+        "content": "## POV Video #1",
+        "height": 340,
+        "width": 420
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3060,
+        400
+      ],
+      "id": "7c73ce33-f093-4359-a286-870017334a17",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## POV Image #2",
+        "height": 340,
+        "width": 1260,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        760
+      ],
+      "id": "029b7feb-0f86-4c14-8729-47fa5fe486fc",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## POV Image #3",
+        "height": 340,
+        "width": 1260,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        1120
+      ],
+      "id": "f512de09-71b3-49e1-aa03-d7be03f31214",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## POV Video #2",
+        "height": 340,
+        "width": 420,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3060,
+        760
+      ],
+      "id": "7d44bbd2-748f-4119-8594-e882c81f07a1",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## POV Video #3",
+        "height": 340,
+        "width": 420,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3060,
+        1120
+      ],
+      "id": "4d36bb40-51b2-4cb2-8442-ce185646153c",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/workspace/output/2.mp4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        3320,
+        820
+      ],
+      "id": "1257179b-14d2-4680-b3bb-866d281d3e3b",
+      "name": "Read/Write Files from Disk6"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/workspace/output/3.mp4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        3320,
+        1180
+      ],
+      "id": "131ea86a-9297-4864-894a-69de2f8cdb21",
+      "name": "Read/Write Files from Disk7"
+    },
+    {
+      "parameters": {
+        "content": "## Compile All POV Videos with Subtitles & BGM",
+        "height": 360,
+        "width": 1700,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        1500
+      ],
+      "id": "be54cfea-3019-430d-b238-e0b0b1e3acd1",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        1380,
+        460
+      ],
+      "id": "e2baf327-b4de-481c-ac6c-63b3866fa070",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Image Prompt Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Image Prompt Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Prompt Agent": {
+      "main": [
+        [
+          {
+            "node": "Together AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Together AI": {
+      "main": [
+        [
+          {
+            "node": "Convert 1 Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert 1 Image": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Image Prompt Agent 2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Together AI 2": {
+      "main": [
+        [
+          {
+            "node": "Convert 1 Image 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert 1 Image 2": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk 2": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Prompt Agent 2": {
+      "main": [
+        [
+          {
+            "node": "Together AI 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Image Prompt Agent 3",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Together AI ": {
+      "main": [
+        [
+          {
+            "node": "Convert 1 Image ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert 1 Image ": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk ": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command 2": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Prompt Agent 3": {
+      "main": [
+        [
+          {
+            "node": "Together AI ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command ": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Caption Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Caption Agent": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Output Path",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command1": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Output Path": {
+      "main": [
+        [
+          {
+            "node": "Execute Command1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk2": {
+      "main": [
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk3": {
+      "main": [
+        [
+          {
+            "node": "Execute Command 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk4": {
+      "main": [
+        [
+          {
+            "node": "Execute Command ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk5": {
+      "main": [
+        [
+          {
+            "node": "Image Prompt Agent 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk6": {
+      "main": [
+        [
+          {
+            "node": "Image Prompt Agent 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk7": {
+      "main": [
+        [
+          {
+            "node": "Caption Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "decb838e-ab98-4583-b713-bd9cea9ef9d8",
+  "meta": {
+    "instanceId": "6a75de6e4168977d00a6b54311ee367bd1e6d93c185569b60a8e3439c2efcd38"
+  },
+  "id": "bsi8yQfXwT3cIMwC",
+  "tags": []
+}

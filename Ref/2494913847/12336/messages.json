@@ -1,0 +1,188 @@
+[
+  {
+    "id": 12358,
+    "author": "INEMA",
+    "date": "2025-08-08T02:49:31+00:00",
+    "text": "---\n\n### 🚀 **Hacks para otimizar o backup do N8N no GitHub**\n\n#### 1. **Use nomes de arquivos padronizados e únicos**\n\n* Formate o nome como:\n\n  * `nome-do-fluxo__ID.json`\n  * Exemplo: `EnvioEmail__00123.json`\n* Isso evita conflitos e facilita restaurar o workflow depois.\n\n---\n\n#### 2. **Adicione data e hora nos commits**\n\n* Exemplo de mensagem automática:\n\n  * `Backup: {{ $now.toFormat(\"dd-LL-yyyy HH:mm\") }}`\n* Permite rastrear facilmente quando cada fluxo foi salvo.\n\n---\n\n#### 3. **Use o campo `tags` ou `active` para filtrar**\n\n* Só salve os **workflows ativos ou marcados com tag \"backup\"**:\n\n  * No nó `Workflow Get Many`, filtre por `active: true` ou `tags: [\"backup\"]`\n* Reduz a quantidade de dados desnecessários salvos.\n\n---\n\n#### 4. **Evite sobrescrita errada com verificação dupla**\n\n* No `IF`, além de verificar se o nome existe, você pode verificar:\n\n  * Se o **hash do conteúdo mudou**\n  * Isso evita commits inúteis (sem alterações reais)\n\n---\n\n#### 5. **Salve em ramificações (branches) separadas**\n\n* Crie uma branch por ambiente:\n\n  * `dev`, `homolog`, `prod`\n* Exemplo: `n8n-backup-dev`, `n8n-backup-prod`\n* Permite versionar e restaurar de ambientes diferentes sem misturar.\n\n---\n\n#### 6. **Envie alertas ao final do backup**\n\n* Notifique por Telegram, Slack ou email:\n\n  * Ex: \"Backup N8N concluído: 25 workflows salvos no GitHub\"\n* Use o módulo HTTP, Telegram Bot ou Email no final do fluxo.\n\n---\n\n#### 7. **Agende o backup em horários ociosos**\n\n* Use o trigger Cron para rodar **de madrugada**, evitando interferência em fluxos ativos.\n* Exemplo: `00:30` ou `03:00`\n\n---\n\n#### 8. **Faça backup parcial diário e completo semanal**\n\n* Configure dois fluxos diferentes:\n\n  * **Diário**: apenas os modificados recentemente\n  * **Semanal**: todos os workflows\n* Reduz uso de recursos e mantém segurança\n\n---\n\n#### 9. **Crie log local ou em Google Sheets**\n\n* Guarde os metadados de cada execução:\n\n  * Nome do workflow\n  * Data de backup\n  * Tipo: criado ou atualizado\n* Isso ajuda em auditorias e rastreamento\n\n---\n\n#### 10. **Automatize a restauração**\n\n* Crie um segundo fluxo N8N que:\n\n  * Lista os arquivos do GitHub\n  * Permite restaurar um workflow via API do N8N (`POST /workflows`)\n* Transforma seu GitHub em um “versionador clicável”\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12357,
+    "author": "INEMA",
+    "date": "2025-08-08T02:48:54+00:00",
+    "text": "=============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12356,
+    "author": "INEMA",
+    "date": "2025-08-08T02:48:49+00:00",
+    "text": "**passo a passo detalhado para criar uma automação de backup de workflows no N8N para o GitHub**:\n\n---\n\n### 🔁 **Objetivo:**\n\nCriar uma automação no **N8N** que salve diariamente todos os workflows ativos como arquivos `.json` em um **repositório privado no GitHub**, com versionamento e histórico de alterações.\n\n---\n\n### ✅ **Pré-requisitos:**\n\n1. Conta no **GitHub** com repositório privado criado (ex: `n8n-backup`)\n2. Token de acesso pessoal gerado em **GitHub > Settings > Developer settings > Personal access tokens**\n3. Instância do **N8N** (auto-hospedada ou em servidor)\n\n---\n\n### 🧩 **Passo a passo no N8N**\n\n#### 1. **Trigger**\n\n* Use o nó **Cron** (ex: agendado para rodar todos os dias à meia-noite).\n\n---\n\n#### 2. **Listar arquivos do repositório GitHub**\n\n* Use o nó **GitHub > List Files**\n\n  * Configure a **autenticação com token pessoal**\n  * Escolha o repositório criado (ex: `n8n-backup`)\n  * Isso retorna a lista de nomes dos arquivos `.json` já existentes no repositório\n\n---\n\n#### 3. **Concatenar nomes dos arquivos**\n\n* Use o nó **Set ou Function**\n\n  * Crie uma lista única de nomes dos arquivos existentes (para comparar depois e evitar duplicados)\n  * Ex: `\"workflow-1.json,workflow-2.json,...\"`\n\n---\n\n#### 4. **Obter todos os workflows do N8N**\n\n* Use o nó **N8N > Workflow Get Many**\n\n  * Isso traz todos os fluxos ativos na sua instância\n  * Pode usar filtros se quiser ignorar os desativados\n\n---\n\n#### 5. **Converter JSON para Binário**\n\n* Use o nó **Move Binary Data**\n\n  * Tipo: `JSON → Binário`\n  * Configure com o nome do workflow formatado como:\n\n    * `nome-do-fluxo-jsonizado.json`\n    * Exemplo: `\"Envio_Email_Automático.json\"`\n\n---\n\n#### 6. **Loop por workflow**\n\n* Use o nó **SplitInBatches** (batch size = 1)\n\n  * Permite tratar um workflow por vez sem sobrecarregar\n\n---\n\n#### 7. **Condicional: o arquivo já existe no GitHub?**\n\n* Use o nó **If**\n\n  * Condição: Se o nome do arquivo estiver contido na lista de arquivos existentes (concatenada no passo 3)\n\n    * **True** ➜ Atualizar\n    * **False** ➜ Criar novo\n\n---\n\n#### 8A. **Atualizar arquivo no GitHub (se já existe)**\n\n* Use o nó **GitHub > Edit File**\n\n  * Repositório: `n8n-backup`\n  * Caminho do arquivo: mesmo nome gerado\n  * Conteúdo: binário do workflow\n  * Mensagem de commit:\n\n    * Ex: `\"Backup atualizado – 07/08/2025 23:15\"`\n\n---\n\n#### 8B. **Criar novo arquivo no GitHub (se não existe)**\n\n* Use o nó **GitHub > Create File**\n\n  * Mesmo nome e conteúdo do passo anterior\n  * Commit com mensagem semelhante\n\n---\n\n#### 9. **Finalizar (opcional)**\n\n* Use um nó **NoOp** ou **Merge** para encerrar o processo\n* Pode adicionar uma notificação (ex: via Telegram, Discord ou email)\n\n---\n\n### 🟢 **Resultado**\n\n* Todos os dias, seus workflows do N8N são salvos automaticamente como arquivos `.json` no GitHub\n* Você tem um histórico completo das versões, podendo restaurar qualquer uma\n* Funciona sem limites de operação (se N8N estiver rodando em servidor próprio)\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12355,
+    "author": "INEMA",
+    "date": "2025-08-08T02:48:07+00:00",
+    "text": "=============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12354,
+    "author": "INEMA",
+    "date": "2025-08-08T02:48:03+00:00",
+    "text": "**Resumo  (backup automático de fluxos no Make e N8N)**\n\n**Objetivo geral:**\nEnsinar como automatizar o backup dos fluxos de automação no **Make** (para Google Drive) e no **N8N** (para GitHub), mantendo cópias atualizadas, seguras e versionadas das automações.\n\n---\n\n### **PARTE 1: Make + Google Drive**\n\n**Resumo da automação:**\n\n* Lista todos os cenários existentes no Make.\n* Usa o módulo **\"Get a scenario blueprint\"** para obter os dados dos fluxos.\n* Verifica se o arquivo já existe no Google Drive:\n\n  * Se existir ➜ **Atualiza (update file)**\n  * Se não ➜ **Cria novo (upload file)**\n* Armazena tudo em uma pasta chamada `Make Backup`.\n\n**Vantagens:**\n\n* Fácil de configurar.\n* Google Drive é mais familiar para a maioria dos usuários.\n\n**Desvantagem:**\n\n* Cada operação consome créditos do plano do Make.\n* Um backup diário de muitos cenários (ex: 200) pode consumir **600 operações por dia**, o que pode esgotar o plano rápido.\n\n---\n\n### **PARTE 2: N8N + GitHub**\n\n**Resumo da automação:**\n\n* Usa um trigger (ex: diário à meia-noite).\n* Lista os arquivos do repositório privado no GitHub.\n* Busca todos os workflows do N8N usando **\"Workflow Get Many\"**.\n* Converte os dados de JSON para arquivos binários `.json` com nomes formatados.\n* Usa loop e condicional para:\n\n  * **Atualizar** o arquivo no GitHub se já existir (`edit file`).\n  * **Criar novo** se não existir (`create file`).\n* Insere um commit com data e hora do backup.\n\n**Vantagens:**\n\n* **Operações ilimitadas** se você hospeda o N8N em servidor próprio ou local.\n* Histórico completo no GitHub (versionamento).\n* Processo mais técnico, mas robusto.\n\n---\n\n### **Dicas e boas práticas finais**\n\n* Mantenha **backups em dois lugares** (Drive e GitHub) por segurança.\n* Use **repositórios privados** no GitHub para proteger suas automações.\n* Faça backups **diários** se houver alterações frequentes ou **semanais** se as automações forem mais estáveis.\n* No Make, cuidado com os **limites de operação**.\n* No N8N, aproveite a **gratuidade e liberdade de uso local**.\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12353,
+    "author": "INEMA",
+    "date": "2025-08-08T02:45:55+00:00",
+    "text": "==============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12352,
+    "author": "INEMA",
+    "date": "2025-08-08T02:45:35+00:00",
+    "text": "🚨Backup no GitHub das suas automações\n\n\nVamos criar um sistema automático de cópias de segurança (backups) das nossas automações, tanto no Make quanto no N8N, armazenando-as no Google Drive e no GitHub, respectivamente. Exploramos como configurar cada plataforma, suas vantagens, limitações e casos de uso recomendados.\n\n---\n\n**1. 🐙 Backups no N8N usando o GitHub**\n✅ **O que fazemos?**\nDesenhamos um fluxo que extrai todos os *workflows* do N8N, os converte em arquivos `.json` e os salva/atualiza automaticamente em um repositório privado do GitHub.\n\n🔧 **Passo a passo:**\n\n* Configuramos um *gatilho* (ex.: toda noite).\n* Conectamos ao GitHub usando um *Access Token* criado nos Developer Settings.\n* Obtemos a lista de arquivos no repositório (List files).\n* Concatenamos os nomes dos arquivos existentes para comparar com os novos.\n* Obtemos os *workflows* do N8N com o *Workflow Get Many*.\n* Convertimos os *workflows* de JSON para binário com nome formatado (ex.: nome-do-fluxo.json).\n* Usamos um *loop* para cada arquivo:\n\n  * Se já existir ➜ *Edit file* com o novo conteúdo.\n  * Se não existir ➜ *Create file* com nome e conteúdo binário.\n* Adicionamos uma mensagem de *commit* do tipo: `Backup 07-08-2025 23:15` para rastreabilidade.\n\n🟢 **Vantagens:**\n\n* Operações ilimitadas se você usa o N8N em servidor próprio ou local.\n* O GitHub permite visualizar a rastreabilidade e alterações em cada arquivo.\n\n---\n\n**4. 💡 Dicas finais e boas práticas**\n\n* Recomendamos ter backups tanto no Drive quanto no GitHub, se possível.\n* No Make, atenção ao consumo de operações caso faça backups diários.\n* No N8N, aproveite a possibilidade de operações ilimitadas em servidor próprio.\n* Mantenha sempre os repositórios privados para garantir a segurança das suas automações.\n* Você pode adaptar esse fluxo para fazer backups semanais, caso o volume de alterações não seja alto.\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12351,
+    "author": "INEMA",
+    "date": "2025-08-08T02:43:46+00:00",
+    "text": "===============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12350,
+    "author": "INEMA",
+    "date": "2025-08-08T02:43:34+00:00",
+    "text": "**Imprescindible: Backup dos seus fluxos no N8N e Make de forma automática**\n\n Já tínhamos uma aula onde explicávamos como fazer backups dos seus fluxos do N8N no Google Drive…\n🔁 Mas muitos de vocês pediram para fazer isso no GitHub, então aqui está:\n\nPasso a passo para salvar automaticamente todos os seus fluxos do N8N em um repositório privado do GitHub.\n\nAlém disso, também uma para o Make, onde automatizamos o salvamento de todos os cenários no Google Drive.\n\n**Com essas automações, você vai conseguir:**\n✅ Ter sempre uma cópia atualizada dos seus fluxos.\n✅ Evitar perder trabalho por erros, bugs ou exclusões acidentais.\n✅ Versionar suas alterações e restaurar quando necessário.\n\n**📌 Importância:**\nFazer backup não é opcional. Quando você automatiza processos críticos para clientes ou para o seu negócio, ter uma cópia de segurança diária é **obrigatório**.\nEssas aulas permitem deixar tudo funcionando sem precisar se preocupar mais.\n\n**🔗 Veja no Menu:**\n👉 #🚨Backup no GitHub das suas automações 🔴N8N\n👉 #🚨Backup no Drive das suas automações 🔴N8N \n👉 #🚨Backup no Google Drive das suas automações 🟣MAKE\n\nImplemente isso o quanto antes. Esse é o tipo de automação que só é valorizada… quando já é tarde demais 😅",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12349,
+    "author": "INEMA",
+    "date": "2025-08-08T02:40:12+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "N8N Backup Github.json"
+  },
+  {
+    "id": 12348,
+    "author": "INEMA",
+    "date": "2025-08-08T02:40:02+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_12348_011.jpg"
+  },
+  {
+    "id": 12347,
+    "author": "INEMA",
+    "date": "2025-08-08T02:39:03+00:00",
+    "text": "nm65 - Backup N8N no GitHub",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12346,
+    "author": "INEMA",
+    "date": "2025-08-08T02:38:59+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12345,
+    "author": "INEMA",
+    "date": "2025-08-08T02:38:56+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12344,
+    "author": "INEMA",
+    "date": "2025-08-08T02:38:52+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12343,
+    "author": "INEMA",
+    "date": "2025-08-08T02:38:50+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12342,
+    "author": "INEMA",
+    "date": "2025-08-08T02:38:44+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12341,
+    "author": "INEMA",
+    "date": "2025-08-08T02:38:42+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12340,
+    "author": "INEMA",
+    "date": "2025-08-08T02:38:39+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12339,
+    "author": "INEMA",
+    "date": "2025-08-08T02:38:37+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12338,
+    "author": "INEMA",
+    "date": "2025-08-08T02:38:35+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12337,
+    "author": "INEMA",
+    "date": "2025-08-08T02:38:29+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12336,
+    "author": "INEMA",
+    "date": "2025-08-08T02:38:19+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

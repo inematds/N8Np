@@ -1,0 +1,657 @@
+{
+  "name": "nm38 - Farmacia Main",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "farmacia-receitas",
+        "options": {}
+      },
+      "id": "50aafd91-6ff1-4008-a708-e8503f65e708",
+      "name": "Webhook Evolution API",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        -280,
+        -140
+      ],
+      "webhookId": "farmacia-receitas-webhook"
+    },
+    {
+      "parameters": {
+        "options": {
+          "forceReconnect": 60
+        }
+      },
+      "id": "dbaa10f0-01d5-4e27-90cf-7abc44a1462e",
+      "name": "Email Trigger",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.event}}",
+              "operation": "equals",
+              "value2": "messages.upsert"
+            }
+          ]
+        }
+      },
+      "id": "9f949780-8bfa-4184-89c6-969321d4c042",
+      "name": "Filter WhatsApp Messages",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -140
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "fa71de66-de23-408b-9709-dc69a000e8bb",
+      "name": "Extract WhatsApp Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        120,
+        -140
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "4cc3a317-c6f6-4fbd-af7a-ebc8553fedd3",
+      "name": "Extract Email Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "6749e716-572a-48b1-bd1d-f84d369e3ea7",
+      "name": "Merge Channels",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        320,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "schema": "public",
+        "table": "receitas",
+        "options": {}
+      },
+      "id": "40caf2da-4065-4517-ba62-100946fee5a2",
+      "name": "Save to Database",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        520,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "requestOptions": {}
+      },
+      "id": "4964f428-3f4a-4033-940e-bc38de5eb81b",
+      "name": "Confirm WhatsApp",
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        720,
+        -140
+      ],
+      "executeOnce": false,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$env.SMTP_FROM}}",
+        "toEmail": "={{$json.client.email}}",
+        "subject": "✅ Recebemos sua receita - Protocolo {{$json.orderId}}",
+        "options": {}
+      },
+      "id": "3ec82c5a-2506-47fa-b5ce-b47631cd7301",
+      "name": "Confirm Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        720,
+        60
+      ],
+      "executeOnce": false,
+      "webhookId": "bdd35ec3-bedb-45b1-a436-b4bf4d9cfda2",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.messageType}}",
+              "operation": "equals",
+              "value2": "image"
+            },
+            {
+              "value1": "={{$json.messageType}}",
+              "operation": "equals",
+              "value2": "document"
+            },
+            {
+              "value1": "={{$json.messageType}}",
+              "operation": "equals",
+              "value2": "attachment"
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "36b58b1a-5e09-4215-ad9c-6a9339197dab",
+      "name": "Check Has File",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        920,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$json.mediaUrl}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "c08e0b14-ceab-42b6-b960-94100f07c037",
+      "name": "Download Media",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        -140
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "jsonToBinary",
+        "convertAllData": false,
+        "sourceKey": "attachments",
+        "destinationKey": "files",
+        "options": {}
+      },
+      "id": "79251827-549f-42e9-b4be-d907d42109d2",
+      "name": "Extract Email Attachments",
+      "type": "n8n-nodes-base.moveBinaryData",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "ec37bbaa-2e38-418f-b0a2-53d69eb1f907",
+      "name": "OCR AWS Textract",
+      "type": "n8n-nodes-base.aws",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        -40
+      ],
+      "credentials": {},
+      "continueOnFail": true
+    },
+    {
+      "parameters": {},
+      "id": "384ead90-fb34-4dd8-89d6-19b3cd95fc13",
+      "name": "OCR Google Vision",
+      "type": "n8n-nodes-base.googleCloudVision",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        160
+      ],
+      "credentials": {},
+      "continueOnFail": true
+    },
+    {
+      "parameters": {},
+      "id": "6c09144a-c38f-4b76-987b-f50eb8e33049",
+      "name": "Merge OCR Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "Você é um especialista em análise de receitas médicas. Extraia APENAS os medicamentos prescritos e suas informações. Retorne SEMPRE um JSON válido no formato especificado, mesmo que não encontre medicamentos.",
+              "role": "system"
+            },
+            {
+              "content": "Analise esta receita e extraia os medicamentos:\n\n{{$json.extractedText}}\n\nRetorne no formato:\n{\n  \"medications\": [\n    {\n      \"name\": \"nome do medicamento\",\n      \"dosage\": \"dosagem\",\n      \"quantity\": \"quantidade\",\n      \"instructions\": \"instruções de uso\"\n    }\n  ],\n  \"doctor\": \"nome do médico\",\n  \"crm\": \"número do CRM\",\n  \"date\": \"data da receita\"\n}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "f4a189e8-6d4c-4e1d-bfd8-462b4f0029a7",
+      "name": "Extract Medications AI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        -340
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "e8a9acd2-a1de-4e6c-8f82-cd1e612f4a82",
+      "name": "Extract Medications RegEx",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1720,
+        160
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "93c17c42-ff15-472b-b797-0909d9d678be",
+      "name": "Combine Extractions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1920,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.PRICE_API_URL}}/calculate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "medications",
+              "value": "={{JSON.stringify($json.medications)}}"
+            },
+            {
+              "name": "client_type",
+              "value": "retail"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "341166ef-21be-4f3b-8150-32e14b4f1d5b",
+      "name": "Calculate Prices API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        2120,
+        -140
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT m.id, m.name, m.unit_price, m.tax_rate, m.profit_margin \nFROM medicamentos m \nWHERE LOWER(m.name) IN ({{$json.medications.map(m => \"'\" + m.name.toLowerCase() + \"'\").join(\",\")}})\nAND m.active = true",
+        "options": {}
+      },
+      "id": "38ced2bd-75d6-4cc6-ad63-47b350fc1c0f",
+      "name": "Get Prices Database",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        2120,
+        60
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {},
+      "id": "e4cbceda-bea2-45a9-aa7e-356efd281cae",
+      "name": "Calculate Final Budget",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        2320,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "receitas",
+        "options": {}
+      },
+      "id": "b80f94c7-e5b9-4674-9678-202283587de3",
+      "name": "Update Order Database",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        2520,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "requestOptions": {}
+      },
+      "id": "2b2123e1-7e22-46f9-b19e-c781836e4694",
+      "name": "Send Budget WhatsApp",
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        2720,
+        -140
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$env.SMTP_FROM}}",
+        "toEmail": "={{$json.client.email}}",
+        "subject": "💊 Seu Orçamento está Pronto - {{$json.orderId}}",
+        "options": {}
+      },
+      "id": "3d6543b9-c30e-4a0e-abea-c700f5d54e88",
+      "name": "Send Budget Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        2720,
+        60
+      ],
+      "webhookId": "7fd9d5ee-3e67-4d63-b280-d39f2d7f93ca",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "text": ":pill: *Novo Orçamento Gerado*\n\n:clipboard: *Pedido:* `{{$json.orderId}}`\n:bust_in_silhouette: *Cliente:* {{$json.client.name}}\n:iphone: *Canal:* {{$json.channel}}\n:package: *Medicamentos:* {{$json.medications.length}}\n:moneybag: *Valor Total:* R$ {{$json.summary.finalTotal.toFixed(2)}}\n:hourglass: *Status:* Aguardando Resposta\n\n<{{$env.ADMIN_URL}}/orders/{{$json.orderId}}|Ver Detalhes>",
+        "otherOptions": {}
+      },
+      "id": "90873e91-ea08-4732-a13b-65c1439263ef",
+      "name": "Notify Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        2920,
+        -40
+      ],
+      "webhookId": "337999ae-1530-4027-b4ff-8ccde444947a",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "id": "4dd7efcb-d2ff-45ef-a877-5a37d063bcba",
+      "name": "Manual Review Card",
+      "type": "n8n-nodes-base.trello",
+      "typeVersion": 1,
+      "position": [
+        2120,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Erro ao processar receita: {{$json.error?.message || 'Erro desconhecido'}}"
+      },
+      "id": "f2b90f73-3a7e-4a3c-82a0-d26d89421ab7",
+      "name": "Error Handler",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        3120,
+        -40
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Evolution API": {
+      "main": [
+        [
+          {
+            "node": "Filter WhatsApp Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Email Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter WhatsApp Messages": {
+      "main": [
+        [
+          {
+            "node": "Extract WhatsApp Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract WhatsApp Data": {
+      "main": [
+        [
+          {
+            "node": "Merge Channels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Email Data": {
+      "main": [
+        [
+          {
+            "node": "Merge Channels",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Channels": {
+      "main": [
+        [
+          {
+            "node": "Save to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Database": {
+      "main": [
+        [
+          {
+            "node": "Confirm WhatsApp",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Confirm Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check Has File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Has File": {
+      "main": [
+        [
+          {
+            "node": "Download Media",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extract Email Attachments",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Manual Review Card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge OCR Results": {
+      "main": [
+        [
+          {
+            "node": "Extract Medications AI",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extract Medications RegEx",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Medications AI": {
+      "main": [
+        [
+          {
+            "node": "Combine Extractions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Extractions": {
+      "main": [
+        [
+          {
+            "node": "Calculate Prices API",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Prices Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Prices API": {
+      "main": [
+        [
+          {
+            "node": "Calculate Final Budget",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Final Budget": {
+      "main": [
+        [
+          {
+            "node": "Update Order Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Order Database": {
+      "main": [
+        [
+          {
+            "node": "Send Budget WhatsApp",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Budget Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "14f7eb51-dcc7-4e39-a61d-d7a76711c64d",
+  "meta": {
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "eS04vguAHMG1QZjD",
+  "tags": []
+}

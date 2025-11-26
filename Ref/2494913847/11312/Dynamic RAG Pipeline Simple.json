@@ -1,0 +1,902 @@
+{
+  "name": "RAG Agent Masterclass",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1s9_mwkYRSv-0ybGKn4LdZUGpr55_hOBp",
+          "mode": "list",
+          "cachedResultName": "Agentic Database",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1s9_mwkYRSv-0ybGKn4LdZUGpr55_hOBp"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        -20
+      ],
+      "id": "b94523fc-36d4-4d69-987a-42c36d435b99",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "nateherk88@gmail.com"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        120,
+        -20
+      ],
+      "id": "f14ef45b-257a-4a3b-9218-5ee64fa8ef47",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "nateherk88@gmail.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "policy",
+          "mode": "list",
+          "cachedResultName": "policy"
+        },
+        "options": {
+          "queryName": "match_policy"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        340,
+        -20
+      ],
+      "id": "aab48914-3e63-4d0c-b257-18c55a73320d",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Demo 2.22.25"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        200
+      ],
+      "id": "4d26bb0a-0b63-4f4e-8cd2-b8d76d2025f8",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "Demo 4/2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "file_id",
+                "value": "={{ $json.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        460,
+        200
+      ],
+      "id": "578e1db4-a6ad-4dc2-bf53-7a978b831826",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        320,
+        -480
+      ],
+      "id": "0ff9e4c2-4508-4913-9cfa-9a0e14eda54f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        120,
+        -480
+      ],
+      "id": "0497641d-da13-46a8-933a-d1e17a181612",
+      "name": "When chat message received",
+      "webhookId": "c11ccb36-ff2b-4533-9788-729974b1a84c",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        280,
+        -260
+      ],
+      "id": "b1f7cc10-e31e-456f-8d8f-59041fbf05cc",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Call this tool to retrieve policy and FAQ information. ",
+        "tableName": {
+          "__rl": true,
+          "value": "policy",
+          "mode": "list",
+          "cachedResultName": "policy"
+        },
+        "options": {
+          "queryName": "match_policy"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        460,
+        -260
+      ],
+      "id": "094c0f69-c1ac-48b0-9ff6-617275119fa1",
+      "name": "Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Demo 2.22.25"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1s9_mwkYRSv-0ybGKn4LdZUGpr55_hOBp",
+          "mode": "list",
+          "cachedResultName": "Agentic Database",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1s9_mwkYRSv-0ybGKn4LdZUGpr55_hOBp"
+        },
+        "event": "fileUpdated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        440
+      ],
+      "id": "efb7cb60-0200-4537-955a-a2fa7ae31284",
+      "name": "Google Drive Trigger1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "nateherk88@gmail.com"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        120,
+        440
+      ],
+      "id": "161fc096-b8e1-49ba-b1d5-7ad3f8e037b3",
+      "name": "File ID"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "policy",
+        "filterType": "string",
+        "filterString": "=metadata->>file_id=like.*{{ $json.id }}"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        340,
+        440
+      ],
+      "id": "492db9dc-4d2e-45b2-9e39-918a27a407ab",
+      "name": "Delete a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Demo 2.22.25"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('File ID').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        560,
+        440
+      ],
+      "id": "05d01401-a778-4930-bda9-54acaac4eeca",
+      "name": "Download file1",
+      "executeOnce": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "nateherk88@gmail.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "policy",
+          "mode": "list",
+          "cachedResultName": "policy"
+        },
+        "options": {
+          "queryName": "match_policy"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        780,
+        440
+      ],
+      "id": "cfaac71e-41dc-41fd-9353-39099276f7c6",
+      "name": "Supabase Vector Store2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Demo 2.22.25"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "file_id",
+                "value": "={{ $('File ID').item.json.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        660
+      ],
+      "id": "a5f294d7-0c01-4288-b55c-96b9235e3575",
+      "name": "Default Data Loader1"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1r2Mquv0KFvwzVVsvTb3stzRugQdbDc72",
+          "mode": "list",
+          "cachedResultName": "Recycling Bin",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1r2Mquv0KFvwzVVsvTb3stzRugQdbDc72"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        800
+      ],
+      "id": "6570719c-a9a6-424c-afa3-067ae339a941",
+      "name": "Google Drive Trigger2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "nateherk88@gmail.com"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        100,
+        800
+      ],
+      "id": "ceff7b5a-19a7-4783-b6dc-80c912475014",
+      "name": "File ID1"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "policy",
+        "filterType": "string",
+        "filterString": "=metadata->>file_id=like.*{{ $json.id }}"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        320,
+        800
+      ],
+      "id": "27210ce8-3d73-4fa8-87f5-3490fff6b1bb",
+      "name": "Delete a row1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Demo 2.22.25"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Google Drive Trigger": [
+      {
+        "json": {
+          "exportLinks": {
+            "application/rtf": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=rtf",
+            "application/vnd.oasis.opendocument.text": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=odt",
+            "text/html": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=html",
+            "application/pdf": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=pdf",
+            "text/x-markdown": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=markdown",
+            "text/markdown": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=markdown",
+            "application/epub+zip": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=epub",
+            "application/zip": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=zip",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=docx",
+            "text/plain": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=txt"
+          },
+          "parents": [
+            "1s9_mwkYRSv-0ybGKn4LdZUGpr55_hOBp"
+          ],
+          "lastModifyingUser": {
+            "displayName": "Nate Herkelman",
+            "kind": "drive#user",
+            "me": true,
+            "permissionId": "16985159519608173714",
+            "emailAddress": "nateherk88@gmail.com",
+            "photoLink": "https://lh3.googleusercontent.com/a/ACg8ocLfpxcbef7ZPP8-L76Iqtd8s4xvT1lvYqb1NhJrInOQsVKyTg=s64"
+          },
+          "owners": [
+            {
+              "displayName": "Nate Herkelman",
+              "kind": "drive#user",
+              "me": true,
+              "permissionId": "16985159519608173714",
+              "emailAddress": "nateherk88@gmail.com",
+              "photoLink": "https://lh3.googleusercontent.com/a/ACg8ocLfpxcbef7ZPP8-L76Iqtd8s4xvT1lvYqb1NhJrInOQsVKyTg=s64"
+            }
+          ],
+          "permissions": [
+            {
+              "kind": "drive#permission",
+              "id": "16985159519608173714",
+              "type": "user",
+              "emailAddress": "nateherk88@gmail.com",
+              "role": "owner",
+              "displayName": "Nate Herkelman",
+              "photoLink": "https://lh3.googleusercontent.com/a/ACg8ocLfpxcbef7ZPP8-L76Iqtd8s4xvT1lvYqb1NhJrInOQsVKyTg=s64",
+              "deleted": false,
+              "pendingOwner": false
+            }
+          ],
+          "spaces": [
+            "drive"
+          ],
+          "capabilities": {
+            "canAcceptOwnership": false,
+            "canAddChildren": false,
+            "canAddMyDriveParent": false,
+            "canChangeCopyRequiresWriterPermission": true,
+            "canChangeItemDownloadRestriction": true,
+            "canChangeSecurityUpdateEnabled": false,
+            "canChangeViewersCanCopyContent": true,
+            "canComment": true,
+            "canCopy": true,
+            "canDelete": true,
+            "canDisableInheritedPermissions": false,
+            "canDownload": true,
+            "canEdit": true,
+            "canEnableInheritedPermissions": true,
+            "canListChildren": false,
+            "canModifyContent": true,
+            "canModifyContentRestriction": true,
+            "canModifyEditorContentRestriction": true,
+            "canModifyOwnerContentRestriction": true,
+            "canModifyLabels": false,
+            "canMoveChildrenWithinDrive": false,
+            "canMoveItemIntoTeamDrive": true,
+            "canMoveItemOutOfDrive": true,
+            "canMoveItemWithinDrive": true,
+            "canReadLabels": false,
+            "canReadRevisions": true,
+            "canRemoveChildren": false,
+            "canRemoveContentRestriction": false,
+            "canRemoveMyDriveParent": true,
+            "canRename": true,
+            "canShare": true,
+            "canTrash": true,
+            "canUntrash": true
+          },
+          "permissionIds": [
+            "16985159519608173714"
+          ],
+          "linkShareMetadata": {
+            "securityUpdateEligible": false,
+            "securityUpdateEnabled": true
+          },
+          "downloadRestrictions": {
+            "itemDownloadRestriction": {
+              "restrictedForReaders": false,
+              "restrictedForWriters": false
+            },
+            "effectiveDownloadRestrictionWithContext": {
+              "restrictedForReaders": false,
+              "restrictedForWriters": false
+            }
+          },
+          "kind": "drive#file",
+          "id": "138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg",
+          "name": "Policy and FAQ Document",
+          "mimeType": "application/vnd.google-apps.document",
+          "starred": false,
+          "trashed": false,
+          "explicitlyTrashed": false,
+          "version": "8",
+          "webViewLink": "https://docs.google.com/document/d/138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg/edit?usp=drivesdk",
+          "iconLink": "https://drive-thirdparty.googleusercontent.com/16/type/application/vnd.google-apps.document",
+          "hasThumbnail": true,
+          "thumbnailLink": "https://lh3.googleusercontent.com/drive-storage/AJQWtBO-1StQq_ysJ-WxYp8yehwHCs9PV53IicZrEKeg4Gf7ddz5JNIuFlWRX4GbO86LOqtsspajIJm6Pjk9n3XjqZcJqh9A6Z_ejmbotsp053_Xdesg7l7bd9MJ86d5QQ=s220",
+          "thumbnailVersion": "2",
+          "viewedByMe": true,
+          "viewedByMeTime": "2025-07-11T15:00:59.923Z",
+          "createdTime": "2025-07-11T15:00:53.303Z",
+          "modifiedTime": "2025-07-11T15:00:59.923Z",
+          "modifiedByMeTime": "2025-07-11T15:00:59.923Z",
+          "modifiedByMe": true,
+          "shared": false,
+          "ownedByMe": true,
+          "viewersCanCopyContent": true,
+          "copyRequiresWriterPermission": false,
+          "writersCanShare": true,
+          "size": "4698",
+          "quotaBytesUsed": "4698",
+          "isAppAuthorized": false,
+          "inheritedPermissionsDisabled": false
+        }
+      }
+    ],
+    "Google Drive Trigger1": [
+      {
+        "json": {
+          "exportLinks": {
+            "application/rtf": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=rtf",
+            "application/vnd.oasis.opendocument.text": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=odt",
+            "text/html": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=html",
+            "application/pdf": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=pdf",
+            "text/x-markdown": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=markdown",
+            "text/markdown": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=markdown",
+            "application/epub+zip": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=epub",
+            "application/zip": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=zip",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=docx",
+            "text/plain": "https://docs.google.com/feeds/download/documents/export/Export?id=138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg&exportFormat=txt"
+          },
+          "parents": [
+            "1s9_mwkYRSv-0ybGKn4LdZUGpr55_hOBp"
+          ],
+          "lastModifyingUser": {
+            "displayName": "Nate Herkelman",
+            "kind": "drive#user",
+            "me": true,
+            "permissionId": "16985159519608173714",
+            "emailAddress": "nateherk88@gmail.com",
+            "photoLink": "https://lh3.googleusercontent.com/a/ACg8ocLfpxcbef7ZPP8-L76Iqtd8s4xvT1lvYqb1NhJrInOQsVKyTg=s64"
+          },
+          "owners": [
+            {
+              "displayName": "Nate Herkelman",
+              "kind": "drive#user",
+              "me": true,
+              "permissionId": "16985159519608173714",
+              "emailAddress": "nateherk88@gmail.com",
+              "photoLink": "https://lh3.googleusercontent.com/a/ACg8ocLfpxcbef7ZPP8-L76Iqtd8s4xvT1lvYqb1NhJrInOQsVKyTg=s64"
+            }
+          ],
+          "permissions": [
+            {
+              "kind": "drive#permission",
+              "id": "16985159519608173714",
+              "type": "user",
+              "emailAddress": "nateherk88@gmail.com",
+              "role": "owner",
+              "displayName": "Nate Herkelman",
+              "photoLink": "https://lh3.googleusercontent.com/a/ACg8ocLfpxcbef7ZPP8-L76Iqtd8s4xvT1lvYqb1NhJrInOQsVKyTg=s64",
+              "deleted": false,
+              "pendingOwner": false
+            }
+          ],
+          "spaces": [
+            "drive"
+          ],
+          "capabilities": {
+            "canAcceptOwnership": false,
+            "canAddChildren": false,
+            "canAddMyDriveParent": false,
+            "canChangeCopyRequiresWriterPermission": true,
+            "canChangeItemDownloadRestriction": true,
+            "canChangeSecurityUpdateEnabled": false,
+            "canChangeViewersCanCopyContent": true,
+            "canComment": true,
+            "canCopy": true,
+            "canDelete": true,
+            "canDisableInheritedPermissions": false,
+            "canDownload": true,
+            "canEdit": true,
+            "canEnableInheritedPermissions": true,
+            "canListChildren": false,
+            "canModifyContent": true,
+            "canModifyContentRestriction": true,
+            "canModifyEditorContentRestriction": true,
+            "canModifyOwnerContentRestriction": true,
+            "canModifyLabels": false,
+            "canMoveChildrenWithinDrive": false,
+            "canMoveItemIntoTeamDrive": true,
+            "canMoveItemOutOfDrive": true,
+            "canMoveItemWithinDrive": true,
+            "canReadLabels": false,
+            "canReadRevisions": true,
+            "canRemoveChildren": false,
+            "canRemoveContentRestriction": false,
+            "canRemoveMyDriveParent": true,
+            "canRename": true,
+            "canShare": true,
+            "canTrash": true,
+            "canUntrash": true
+          },
+          "permissionIds": [
+            "16985159519608173714"
+          ],
+          "linkShareMetadata": {
+            "securityUpdateEligible": false,
+            "securityUpdateEnabled": true
+          },
+          "downloadRestrictions": {
+            "itemDownloadRestriction": {
+              "restrictedForReaders": false,
+              "restrictedForWriters": false
+            },
+            "effectiveDownloadRestrictionWithContext": {
+              "restrictedForReaders": false,
+              "restrictedForWriters": false
+            }
+          },
+          "kind": "drive#file",
+          "id": "138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg",
+          "name": "Policy and FAQ Document",
+          "mimeType": "application/vnd.google-apps.document",
+          "starred": false,
+          "trashed": false,
+          "explicitlyTrashed": false,
+          "version": "12",
+          "webViewLink": "https://docs.google.com/document/d/138vBl8GkN6WQF4Ewi6b54LGlRDTxwyKcNf8Q9iNz-jg/edit?usp=drivesdk",
+          "iconLink": "https://drive-thirdparty.googleusercontent.com/16/type/application/vnd.google-apps.document",
+          "hasThumbnail": true,
+          "thumbnailLink": "https://lh3.googleusercontent.com/drive-storage/AJQWtBPcR0sZiPvu9OiiO8FJLLqS9mPfO1Lhhzkw0jUzmL_zAeXkS69BfbJaNltJtRK9eybb3BP4YlRyN6bpb02CBSWJKAoH5n4z1mm-ZC6wXy5WrLA83zplKPO7h_5LhA=s220",
+          "thumbnailVersion": "3",
+          "viewedByMe": true,
+          "viewedByMeTime": "2025-07-11T15:22:32.100Z",
+          "createdTime": "2025-07-11T15:00:53.303Z",
+          "modifiedTime": "2025-07-11T15:22:32.100Z",
+          "modifiedByMeTime": "2025-07-11T15:22:32.100Z",
+          "modifiedByMe": true,
+          "shared": false,
+          "ownedByMe": true,
+          "viewersCanCopyContent": true,
+          "copyRequiresWriterPermission": false,
+          "writersCanShare": true,
+          "size": "4698",
+          "quotaBytesUsed": "4698",
+          "isAppAuthorized": false,
+          "inheritedPermissionsDisabled": false
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Supabase Vector Store2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Trigger1": {
+      "main": [
+        [
+          {
+            "node": "File ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File ID": {
+      "main": [
+        [
+          {
+            "node": "Delete a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a row": {
+      "main": [
+        [
+          {
+            "node": "Download file1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file1": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File ID1": {
+      "main": [
+        [
+          {
+            "node": "Delete a row1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Trigger2": {
+      "main": [
+        [
+          {
+            "node": "File ID1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "51772ef9-24c9-4c74-a637-f1fdf39d4b17",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "95e5a8c2e51c83e33b232ea792bbe3f063c094c33d9806a5565cb31759e1ad39"
+  },
+  "id": "3HvrEQKMzsxhq8fy",
+  "tags": []
+}

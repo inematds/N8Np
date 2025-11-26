@@ -1,0 +1,362 @@
+{
+  "name": "creador_videos",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "prompt"
+            },
+            {
+              "name": "imageID"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -512,
+        -16
+      ],
+      "id": "513ce0b3-92d5-4154-96bc-50396ab45139",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Requerimiento: {{ $('When Executed by Another Workflow').item.json.prompt }}"
+            },
+            {
+              "content": "=## Rol y objetivo\nEres un Ingeniero de Prompts senior para Veo 3 Fast (Image-to-Video). Convierte las indicaciones del usuario en un solo prompt descriptivo y ejecutable por Veo, pensado para animar una imagen de entrada.\n\n## Formato de salida (obligatorio)\n\n- Devuelve solo el prompt final, en una sola línea, sin comillas y sin saltos de línea.\n- Escribe en el mismo idioma de las indicaciones para la descripción visual; pero el audio hablado y cualquier diálogo deben estar en español.\n- Referencia la imagen de entrada como image1 (no uses URLs ni nombres de archivo).\n\n## Mejores prácticas que debes aplicar en el texto del prompt\n\n1. Describe la acción y el movimiento que deben ocurrir en image1 (por ejemplo: “viento suave en cabello y ropa; reflejos del agua que ondulan; hojas que se mecen”). Evita pedir cambios de escena: es un clip único que anima la misma imagen. Controla el tempo (lento, medio, rápido).\n\n2. Cámara y composición: indica plano (gran plano general/medio/primerísimo), ángulo (picado, contrapicado, ojo de pez no), y movimiento de cámara si aplica (paneo, dolly/travelling, pedestal, tilt, handheld leve). Mantén coherencia con la perspectiva de image1. \n\n3. Iluminación, ambiente y estilo: especifica tipo de luz (clave alta/baja, golden hour, luz lateral difusa), atmósfera (serena, tensa, épica), estética (cinematográfica, stop-motion, cartoon, documental). \n\n4. Audio (opcional): si quieres audio, dilo explícitamente y describe sonidos y/o diálogo en frases claras; por ejemplo: audio: brisa suave y pasos sobre grava; diálogo: “texto exacto”. (Veo puede generar audio; el endpoint de fal.ai lo activa por defecto). \n\n5. Negativas semánticas: evita “no/without/don’t”. En su lugar, describe lo que debe verse para desalentar lo no deseado (ej.: “cielo limpio, sin cables ni marcas de agua visibles”). \n\n6. Relación de aspecto y duración: por defecto la variante Fast I2V genera 8 s y 16:9 a 720p; puedes mencionarlo en el texto si es importante (o pedir “tono loop-friendly”). Si tu imagen no es 16:9, el servicio la recorta al centro. \n\n7. Evita vaguedad: reemplaza adjetivos genéricos por descriptores medibles (p. ej., “paneo lento de 2–3 m; bokeh ligero; vibración handheld muy sutil”). \n\n## Audio hablado SIEMPRE en español (obligatorio)\n\n- Añade un bloque explícito de audio: audio: …; diálogo: …\n- El diálogo debe estar redactado en español (preferencia: “español latino neutro”, a menos que el usuario pida un acento regional; si lo pide, úsalo).\n- Si el usuario incluyó diálogo en otro idioma, traduce a español manteniendo nombres propios.\n- Si el usuario no pidió diálogo, añade al menos una frase breve en español coherente con la escena (por ejemplo, una exclamación corta), o especifica solo sonido ambiente también etiquetado en español.\n\n## Plantilla interna (aplícalo y devuelve una sola línea):\nusando image1, [movimiento físico específico en elementos de la imagen]; [cámara: plano/ángulo/movimiento y velocidad]; [iluminación y ambiente]; [estilo estético]; [color/grading]; [coherencia: perspectiva y escala de image1]; audio: [paisaje sonoro en español]; diálogo: “[frase en español, tono y emoción]”; [negativas semánticas]; [si aplica: 16:9, 8 s]\n\n## Normalización antes de devolver\n\n- Quita repeticiones y tecnicismos innecesarios.\n- Devuelve una única línea separada por comas y punto y coma.\n- Mantén identidad, escala, perspectiva e iluminación de image1 en todas las instrucciones.\n- Garantiza que cualquier diálogo esté en español.",
+              "role": "system"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        16,
+        -16
+      ],
+      "id": "f6691def-9a6a-4d96-ac79-07e59c2c160d",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://fal.run/fal-ai/veo3/fast/image-to-video",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ $json.message.content }}"
+            },
+            {
+              "name": "image_url",
+              "value": "={{ $('Get URL').item.json.data.url }}"
+            },
+            {
+              "name": "duration",
+              "value": "8s"
+            },
+            {
+              "name": "generate_audio",
+              "value": "true"
+            },
+            {
+              "name": "resolution",
+              "value": "720p"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        -16
+      ],
+      "id": "3bfe2911-ab4e-428e-921f-73d3b635df47",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.imgbb.com/1/upload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "image",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -208,
+        -16
+      ],
+      "id": "fc670bdf-3bf8-4b8f-b789-c4d6f6b77a24",
+      "name": "Get URL",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "[REMOVED]",
+          "name": "imgBB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.imageID }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -336,
+        -16
+      ],
+      "id": "44371b03-4829-4e09-9b2e-6cd4357faa7c",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive Angel"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## URL de descarga del archivo",
+        "height": 224,
+        "width": 320,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        -80
+      ],
+      "id": "9cf56e7d-8bd8-4348-8075-0c7c0c96618c",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "Response",
+              "value": "=La imagen fue creada y se nombró \"{{ $json.name }}\". \n\nAquí tienes el enlace a la imagen en Google Drive: {{ $json.webViewLink }}\nEl tipo_documento es \"video\"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        864,
+        -16
+      ],
+      "id": "b6ac6184-f84b-4d04-81bd-354482d56f89",
+      "name": "Result"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.video.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        576,
+        -16
+      ],
+      "id": "0ea02dd5-cf79-42f8-9ca6-5c6fcb23bc84",
+      "name": "Download Image"
+    },
+    {
+      "parameters": {
+        "name": "={{ $('When Executed by Another Workflow').item.json.imageTitle }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1sJqM61k7jvXd7Y3_tdXhExH2EJWQdKZw",
+          "mode": "list",
+          "cachedResultName": "Pruebas",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1sJqM61k7jvXd7Y3_tdXhExH2EJWQdKZw"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        720,
+        -16
+      ],
+      "id": "6716e4f9-5f98-4665-92fe-fda9dcee3868",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive Angel"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Salida",
+        "height": 224,
+        "width": 464,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        528,
+        -80
+      ],
+      "id": "7493991f-13ec-4b59-8f7f-81e87bd7f26e",
+      "name": "Sticky Note4"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Get URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get URL": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "275205ec-2c93-47f8-a4b9-3a613d7745e0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "GIgE9u6O4wFRfy5G",
+  "tags": []
+}

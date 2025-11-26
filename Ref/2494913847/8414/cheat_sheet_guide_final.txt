@@ -1,0 +1,69 @@
+This cheat sheet provides universal guidelines for selecting, configuring, and using tools with the n8n AI Agent module. Adherence to these principles is crucial for building reliable, functional, and importable AI agent systems in n8n.
+
+### I. Core Compatibility Principle: How Tools Interact with AI Agents
+
+AI Agents in n8n operate by receiving tasks and then selecting and executing "tools" to accomplish those tasks. A "tool" for an AI Agent is typically a specific, *existing* n8n node configured to perform a distinct action and potentially return data.
+
+**Golden Rule for Connection:** Nodes used as tools for an AI Agent **MUST** be connected via the special **`ai_tool` output** of the AI Agent node to the tool node's input. This is the designated way for an agent to "use" a tool.
+
+### II. Compatible Tool Categories & Node Types
+
+1.  **Native AI Tool Sub-nodes (Always Compatible & Preferred):**
+    *   These are nodes designed by n8n specifically for use with AI Agents.
+    *   **Examples:** Call n8n Workflow, Custom Code (JS/Python), HTTP Request, Vector Store nodes, Calculator, Wikipedia Tool, SerpAPI Tool.
+    *   **Connection:** Direct via `ai_tool`.
+
+2.  **Standard n8n App Nodes (Conditionally Compatible - Require `$fromAI()` for Dynamic Inputs):**
+    *   Many regular n8n nodes for *existing* apps and services (e.g., Gmail, Google Sheets, Slack, HubSpot, Airtable, etc.) can function as tools.
+    *   **Crucial Requirement for Dynamic Inputs:** If the AI needs to provide data *to* the tool's parameters, these parameters **MUST** use the `$fromAI("parameter_name_the_AI_will_provide")` function.
+    *   **Connection:** Direct via `ai_tool`.
+
+3.  **Memory Nodes (Essential for Context - Not Tools Themselves):**
+    *   Provide conversational history. Connected to the agent's dedicated memory input.
+    *   **Examples:** Window Buffer Memory, PostgreSQL Chat Memory, etc.
+    *   **Connection:** Dedicated memory connection type (e.g., `ai_memory`).
+
+### III. Incompatible Node Types & Patterns (❌ ABSOLUTELY AVOID USING THESE AS `ai_tool`s)
+
+*   **Trigger Nodes:** (e.g., Webhook, Cron, Interval, App-specific triggers).
+    *   **Reason:** Agents are reactive, not initiators of workflows via triggers in their toolset.
+*   **General Output Nodes / Final Step Nodes of a Standard Workflow:** (e.g., Respond to Webhook, Set if not returning data to the agent).
+    *   **Reason:** Agent tools should perform an action *and/or return data to the agent*.
+*   **Nodes Requiring Manual UI Interaction During Agent Execution.**
+    *   **Reason:** Agents must operate autonomously.
+*   **Nodes Without Clear, Stable, and Understandable Input/Output Schemas.**
+    *   **Reason:** The AI needs to reliably understand tool I/O.
+*   **Using the standard "Execute Workflow" node as a direct `ai_tool`:**
+    *   **Correction:** ALWAYS use the dedicated **"Call n8n Workflow Tool"** sub-node for agent-to-workflow interaction.
+*   **Invented/Hallucinated "Placeholder" Tools:**
+    *   **Reasoning:** The AI Agent system must be built with **actual, existing, and compatible** n8n nodes. Do not invent node types or tools (e.g., a node named "Alert Nearby Providers" if no such standard n8n node or pre-built HTTP/Custom Code tool for this exists and is documented as compatible).
+    *   **Solution:** If specific functionality is needed, identify a *real* n8n node (e.g., an HTTP Request node to a specific, existing API; a Custom Code node with well-defined logic; or an existing app node) that can perform that action and configure it as the tool according to compatibility rules. If no such real tool can be configured, the functionality cannot be directly implemented as an agent tool in this manner.
+
+### IV. Essential Guidelines for Designing & Configuring Tools for AI Agents
+
+1.  **Tool Descriptions are CRITICAL for AI Understanding:**
+    *   Each tool node **MUST** have a clear, concise, and distinct "Tool Description." This tells the AI *what the tool does* and *when to use it*.
+2.  **Limit Tools Per Agent:**
+    *   Aim for **2-3 tools maximum** per individual AI Agent. More can lead to confusion and errors.
+3.  **Parameterization with `$fromAI()` for Standard App Node Inputs:**
+    *   When a standard n8n app node is used as an `ai_tool`, and the AI provides values for its parameters, these **MUST** use the `$fromAI("parameter_name")` expression.
+4.  **Node Naming for Clarity:**
+    *   Use clear names for tool nodes in the n8n canvas (e.g., `tool_getSheetData`).
+5.  **Ensure Tools Provide Actionable Feedback/Results to the Agent.**
+6.  **JSON Structural Integrity & Mandatory Properties:**
+    *   Ensure the generated JSON for each node includes all mandatory properties as per n8n's requirements for that node type.
+    *   **Common Pitfall:** Nodes like the AI Agent (`@n8n/n8n-nodes-langchain.agent`) and LLM Chat nodes (e.g., `@n8n/n8n-nodes-langchain.lmChatOpenAi`, `@n8n/n8n-nodes-langchain.lmChatAnthropic`) often require an `options: {}` property in their JSON structure, even if it's an empty object. Omitting such mandatory properties will lead to import failures (e.g., "Could not find property option"). Always include them.
+
+### V. `$fromAI()` Function Rules Quick Reference
+
+*   **✅ Use `$fromAI()` with:** Standard n8n app nodes when used as `ai_tool`s for their dynamic parameters.
+*   **❌ Do NOT attempt to use `$fromAI()` directly with:** Native AI Tool Sub-nodes (Call n8n Workflow, Custom Code, HTTP Request, etc.) as they have their own input mechanisms.
+
+### VI. General Best Practices for Building with n8n AI Agents
+
+*   **Iterative Development:** Start simple, test, then add complexity.
+*   **Mental Simulation:** Think like the AI to anticipate tool selection.
+*   **System Message Focus:** Craft clear system messages for the AI Agent.
+*   **Refer to Official n8n Documentation:** For *existing, compatible* nodes, if unsure about parameters or JSON structure, try to consult official n8n documentation via web search.
+
+By following these more explicit guidelines, especially regarding the non-negotiable use of *existing* n8n nodes and the inclusion of all *mandatory JSON properties*, the AI should produce more reliable and importable workflows.

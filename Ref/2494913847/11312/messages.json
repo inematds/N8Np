@@ -1,0 +1,205 @@
+[
+  {
+    "id": 11375,
+    "author": "INEMA",
+    "date": "2025-07-13T06:24:11+00:00",
+    "text": "https://www.youtube.com/live/iZqgcJj6CzM?si=ouqdUEi-3e7PLHO7",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11373,
+    "author": "INEMA",
+    "date": "2025-07-13T06:23:47+00:00",
+    "text": "https://www.youtube.com/live/D7uSxrOzvhI?si=czMyNNVKIsO1x_N9",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11347,
+    "author": "INEMA",
+    "date": "2025-07-13T03:42:06+00:00",
+    "text": "================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11346,
+    "author": "INEMA",
+    "date": "2025-07-13T03:42:00+00:00",
+    "text": "-- Enable the pgvector extension to work with embedding vectors\ncreate extension vector;\n\n-- Create a table to store your documents\ncreate table documents (\n  id bigserial primary key,\n  content text, -- corresponds to Document.pageContent\n  metadata jsonb, -- corresponds to Document.metadata\n  embedding vector(1536) -- 1536 works for OpenAI embeddings, change if needed\n);\n\n-- Create a function to search for documents\ncreate function match_documents (\n  query_embedding vector(1536),\n  match_count int default null,\n  filter jsonb DEFAULT '{}'\n) returns table (\n  id bigint,\n  content text,\n  metadata jsonb,\n  similarity float\n)\nlanguage plpgsql\nas $$\n#variable_conflict use_column\nbegin\n  return query\n  select\n    id,\n    content,\n    metadata,\n    1 - (documents.embedding <=> query_embedding) as similarity\n  from documents\n  where metadata @> filter\n  order by documents.embedding <=> query_embedding\n  limit match_count;\nend;\n$$;",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11345,
+    "author": "INEMA",
+    "date": "2025-07-13T03:40:12+00:00",
+    "text": "criar extensao do supabase vector store\nhttps://supabase.com/docs/guides/ai/langchain?database-method=sql",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11344,
+    "author": "INEMA",
+    "date": "2025-07-13T03:25:56+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11344_006.jpg"
+  },
+  {
+    "id": 11342,
+    "author": "INEMA",
+    "date": "2025-07-13T02:32:02+00:00",
+    "text": "### 🚀 Hacks do Pipeline (mostrados no vídeo)\n\n1. **Recycle Bin como “Deleção Simulada”**\n\n   * Como o Google Drive API não tem evento de “arquivo excluído”, o autor cria uma pasta “recycling bin” para onde os arquivos são movidos quando precisam ser apagados.\n   * O trigger detecta arquivos criados nessa pasta e executa a exclusão no banco.\n   * ✅ **Vantagem**: evita limitações da API e permite controle manual da deleção.\n\n2. **Metadados Inteligentes com `file_ID`**\n\n   * Cada vetor é associado ao ID do arquivo original no Drive.\n   * Permite localizar e deletar rapidamente todos os vetores relacionados a um arquivo específico.\n   * ✅ **Vantagem**: garante sincronização perfeita entre o Drive e o Vector Store.\n\n3. **Text Splitting com Overlap**\n\n   * Ao dividir o conteúdo em blocos de 1000 caracteres com 200 de sobreposição, mantém o contexto entre chunks.\n   * ✅ **Vantagem**: evita perda de informações em consultas longas.\n\n4. **Atualização Dinâmica**\n\n   * Antes de reprocessar um arquivo atualizado, o sistema exclui os vetores antigos usando o `file_ID`.\n   * ✅ **Vantagem**: garante que o banco não fique com dados obsoletos.\n\n5. **Fallback Manual de Query**\n\n   * Quando o método visual falha no Superbase Delete, o autor usa query manual com string:\n\n     ```     metadata->>'file_ID' = '{{file_ID}}'\n     ```\n   * ✅ V**antagem:** mais controle e menos dependência da interface gráfica.\n\n---\n\n### 💡 Hacks Extras para Melhorar o Sistema\n\n6. C**ontrole de Versão de Arquivos\n**\n   * Adicionar metadado v`ersion_number `para rastrear versões dos documentos.\n   * ✅ Assim, você pode manter histórico de alterações.\n\n7. I**ndexação Incremental\n**\n   * Ao invés de reprocessar todo o documento atualizado, detectar quais trechos foram alterados e atualizar só esses vetores.\n   * ✅ Reduz custo de embeddings e aumenta velocidade.\n\n8. M**ultiformato (Docs, PDFs, Vídeos)\n**\n   * Para PDFs: usar OCR (Tesseract ou Google Vision API).\n   * Para vídeos: extrair áudio e transcrever com Whisper ou AssemblyAI.\n   * ✅ Permite ingestão de qualquer tipo de conteúdo.\n\n9. C**hunking Semântico\n**\n   * Em vez de cortar o texto por caracteres, usar IA (ex: LangChain’s RecursiveCharacterTextSplitter) para dividir por sentenças ou parágrafos.\n   * ✅ Mantém integridade do conteúdo.\n\n10. S**istema de Permissões\n**\n    * Gravar no metadado quem é o “owner” do arquivo e quais agentes podem consultar.\n    * ✅ Útil para multiusuário e projetos corporativos.\n\n11. C**ache de Consultas\n**\n    * Cachear resultados frequentes em Redis ou memória para respostas mais rápidas.\n    * ✅ Evita reconsultas ao banco para perguntas repetidas.\n\n12. L**ogs e Auditoria\n**\n    * Salvar logs de:\n\n      * Arquivos processados\n      * Atualizações\n      * Exclusões\n    * ✅ Facilita debugging e garante rastreabilidade.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11341,
+    "author": "INEMA",
+    "date": "2025-07-13T02:30:51+00:00",
+    "text": "====================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11340,
+    "author": "INEMA",
+    "date": "2025-07-13T02:30:44+00:00",
+    "text": "=============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11339,
+    "author": "INEMA",
+    "date": "2025-07-13T02:29:40+00:00",
+    "text": "============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11338,
+    "author": "INEMA",
+    "date": "2025-07-13T02:29:37+00:00",
+    "text": "Aqui vai o **passo a passo completo e direto** para você replicar o pipeline RAG com **Google Drive + Superbase**:\n\n---\n\n### 1. **Preparação**\n\n* Crie uma pasta no Google Drive chamada `agentic database`.\n* Crie outra pasta chamada `recycling bin` (para simular deleção).\n* Configure o Superbase com extensão **pgvector** habilitada.\n* Crie uma tabela chamada `policy` com colunas:\n\n  * `id` (chave primária)\n  * `content` (JSONB)\n  * `embedding` (vetor de dimensão 1536)\n  * `metadata` (JSONB, incluir `file_ID`).\n\n---\n\n### 2. **Detectar Novo Arquivo no Google Drive**\n\n* Configure um **trigger** para “Arquivo criado” na pasta `agentic database`.\n* Pegue o **ID do arquivo** do evento disparado.\n\n---\n\n### 3. **Baixar Arquivo do Google Drive**\n\n* Use o **ID do arquivo** para baixar o binário do Google Docs.\n\n---\n\n### 4. **Enviar o Arquivo ao Superbase**\n\n* Configure um nó de **Superbase Vector Store**:\n\n  * Ação: “Adicionar documentos ao Vector Store”.\n  * Tabela: `policy`.\n  * Embedding Model: OpenAI `text-embedding-3-small` (dimensão 1536).\n  * Data Loader: Binário (não JSON).\n  * Text splitting: cada 1000 caracteres com 200 de overlap.\n  * Adicione metadado `file_ID` com o valor do ID do arquivo.\n\n---\n\n### 5. **Configurar Agente de Consulta**\n\n* Adicione um agente de chat (ex: GPT-4 ou GPT-3.5).\n* Adicione uma ferramenta:\n\n  * Nome: “Retrieve Policy and FAQ”.\n  * Fonte: Superbase Vector Store.\n  * Tabela: `policy`.\n* Vincule o mesmo modelo de embedding para garantir consistência.\n\n---\n\n### 6. **Detectar Atualização de Arquivo no Google Drive**\n\n* Configure um **trigger** para “Arquivo atualizado” na pasta `agentic database`.\n* Pegue o **ID do arquivo atualizado**.\n\n---\n\n### 7. **Deletar Vetores Antigos no Superbase**\n\n* Adicione um nó de **Superbase Delete Row**:\n\n  * Condição: `metadata->>'file_ID' = {{file_ID atualizado}}`.\n  * Isso remove todos os vetores relacionados ao arquivo antigo.\n\n---\n\n### 8. **Reprocessar Arquivo Atualizado**\n\n* Repita o processo de **download** do arquivo com o novo ID.\n* Envie-o novamente ao Vector Store, seguindo o mesmo fluxo do passo 4.\n\n---\n\n### 9. **Detectar Deleção Simulada (Mover para Lixeira)**\n\n* Configure um **trigger** para “Arquivo criado” na pasta `recycling bin`.\n* Pegue o **ID do arquivo** ao ser movido.\n\n---\n\n### 10. **Deletar Vetores Relacionados no Superbase**\n\n* Adicione um nó de **Superbase Delete Row**:\n\n  * Condição: `metadata->>'file_ID' = {{file_ID na lixeira}}`.\n\n---\n\n### 11. **Testar o Pipeline**\n\n* Faça upload de um Google Doc na pasta `agentic database`.\n* Atualize o Doc e verifique se os vetores antigos são excluídos e novos adicionados.\n* Mova o Doc para `recycling bin` e confirme a exclusão dos vetores.\n\n---\n\n### 12. **Melhorias Futuras (opcional)**\n\n* Suporte a PDFs e vídeos (usar OCR ou transcrição).\n* Controle de versão com campo `version_number`.\n* Filtragem por metadados como dono, data, departamento.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11337,
+    "author": "INEMA",
+    "date": "2025-07-13T02:29:12+00:00",
+    "text": "=====================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11336,
+    "author": "INEMA",
+    "date": "2025-07-13T02:28:20+00:00",
+    "text": "Como construir um pipeline **RAG (Retrieval-Augmented Generation)** usando **Google Drive**, **Superbase** e **vetores de IA**. O objetivo é permitir que arquivos do Google Docs sejam automaticamente ingeridos, atualizados e excluídos em uma base vetorial dinâmica, que pode ser consultada por um agente de IA.\n\nAqui está o resumo completo com tópicos:\n\n1. **Introdução e Objetivo**\n\n   * Criar um pipeline RAG que lê arquivos Google Docs de uma pasta no Drive.\n   * Arquivos são convertidos em vetores e armazenados no Superbase.\n   * Atualizações nos Docs refletem no banco vetorial em tempo real.\n   * Sistema também remove os vetores quando os Docs são excluídos (via pasta “lixeira”).\n\n2. **Por que não Pinecone?**\n\n   * O autor prefere Superbase pela facilidade de lidar com dados relacionais e operações SQL.\n   * Pinecone é limitado para exclusões dinâmicas por metadados.\n\n3. **Construção do Pipeline – Etapas principais**\n\n   * **Trigger 1**: Detecta novos arquivos na pasta “agentic database” do Google Drive.\n   * **Download**: Pega o arquivo binário usando o ID do arquivo.\n   * **Vectorização**: Envia o conteúdo para o Superbase com metadados como file\\_ID.\n   * **Consulta**: IA busca informações nos vetores quando solicitada.\n\n4. **Atualização Automática de Arquivos**\n\n   * **Trigger 2**: Detecta modificações nos Docs.\n   * **Deleção**: Remove os vetores antigos com base no file\\_ID.\n   * **Reprocessamento**: Re-vectoriza e armazena o arquivo atualizado.\n\n5. **Exclusão de Arquivos**\n\n   * Como o Google Drive API não detecta deleções diretas, o autor usa uma pasta “recycling bin” (lixeira).\n   * Quando um Doc é movido para lá, o sistema deleta os vetores relacionados no Superbase.\n\n6. **Configurações e Ajustes Importantes**\n\n   * Embedding usado: OpenAI text-embedding-3-small (dimensão 1536).\n   * Text splitting com sobreposição de 200 caracteres para manter contexto.\n   * Metadados podem ser expandidos para versões, donos, departamentos etc.\n\n7. **Problemas e Soluções**\n\n   * Corrigido erro de consulta por mudança no nome da tabela (match\\_documents → match\\_policy).\n   * Corrigido bug de busca no vetor errado ao revisar query names.\n\n8. **Benefícios do Sistema**\n\n   * Pipeline dinâmico e fácil de escalar para outros tipos de arquivos (PDFs, vídeos).\n   * Deleção e atualização de vetores baseada em metadados, algo mais difícil com Pinecone.\n\n9. **Possíveis Melhorias Futuras**\n\n   * Controle de versão dos documentos.\n   * Mais metadados para filtragem robusta.\n   * Suporte a múltiplos tipos de arquivos.\n\n10. **Conclusão**\n\n    * Todo o sistema foi construído em \\~20 minutos.\n    * Ferramenta poderosa para quem quer construir um RAG com Superbase.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11335,
+    "author": "INEMA",
+    "date": "2025-07-13T02:24:42+00:00",
+    "text": "========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11334,
+    "author": "INEMA",
+    "date": "2025-07-13T02:24:38+00:00",
+    "text": "**Pipeline RAG dinâmico com Supabase**\n\nComo criar um pipeline RAG dinâmico e simples que manipula o Google Docs.\n\nEsta configuração atualiza automaticamente seu banco de dados de vetores sempre que um documento é atualizado, e há até uma solução alternativa interessante para remover entradas do banco de dados de vetores se os documentos originais forem excluídos.\n\nÉ uma construção leve, mas muito útil. É claro que você vai querer escalá-la para mais tipos de arquivo e metadados mais ricos com base no seu caso de uso, mas espero que isso lhe dê um ponto de partida sólido!",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11332,
+    "author": "INEMA",
+    "date": "2025-07-13T02:23:56+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Dynamic RAG Pipeline Simple.json"
+  },
+  {
+    "id": 11331,
+    "author": "INEMA",
+    "date": "2025-07-13T02:23:48+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11331_017.jpg"
+  },
+  {
+    "id": 11329,
+    "author": "INEMA",
+    "date": "2025-07-13T02:23:20+00:00",
+    "text": "ap43 - **Pipeline RAG dinâmico com Supabase**",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11328,
+    "author": "INEMA",
+    "date": "2025-07-13T02:23:17+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11327,
+    "author": "INEMA",
+    "date": "2025-07-13T02:23:16+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11326,
+    "author": "INEMA",
+    "date": "2025-07-13T02:23:13+00:00",
+    "text": "...",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11325,
+    "author": "INEMA",
+    "date": "2025-07-13T02:23:12+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11314,
+    "author": "INEMA",
+    "date": "2025-07-13T02:23:03+00:00",
+    "text": "https://chatgpt.com/c/68731934-4d98-8009-95c6-4bdeae8b3626",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11313,
+    "author": "INEMA",
+    "date": "2025-07-13T02:23:02+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11312,
+    "author": "INEMA",
+    "date": "2025-07-13T02:22:53+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

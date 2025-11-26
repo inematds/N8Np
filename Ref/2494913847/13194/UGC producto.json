@@ -1,0 +1,811 @@
+{
+  "name": "UGC producto",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1,
+      "position": [
+        80,
+        672
+      ],
+      "id": "a6947a20-660a-4e46-8051-1dac0a427b5f",
+      "name": "Pensar"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "CHATGPT-4O-LATEST"
+        },
+        "text": "=Analiza la imagen proporcionada y devuelve el resultado exclusivamente en formato Markdown. La estructura debe ser la siguiente:\n\nnombre_marca: (Nombre de la marca visible o deducible en la imagen. Si no hay, indica \"N/A\")\npaleta_colores:\n  - hex: (Código hexadecimal de cada color predominante)\n    nombre: (Nombre descriptivo del color, por ejemplo, \"Azul corporativo\")\nestilo_fuente: (Describe la familia o estilo de la fuente: serif/sans-serif, negrita/fina, moderna/clásica, etc.)\ndescripcion_visual: (Una o dos frases completas que resuman el contenido principal de la imagen, ignorando el fondo.)\n\nIMPORTANTE: No incluyas explicaciones, comentarios ni texto adicional fuera del bloque Markdown.",
+        "imageUrls": "=https://drive.google.com/uc?export=download&id={{ $('Upload file1').item.json.id }}",
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -272,
+        448
+      ],
+      "id": "b4abe937-4159-402a-9437-4e2f253513bf",
+      "name": "Analizar Imagen",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"escenas\": [\n    {\n      \"prompt_imagen\": \"emocion: [string]\\naccion: [string]\\npersonaje: [string]\\nescenario: [string]\\ncamara: [string]\\nestilo: [string]\",\n      \"prompt_video\": \"dialogo: [string]\\nemocion: [string]\\ntipo_voz: [string]\\naccion: [string]\\npersonaje: [string]\\nescenario: [string]\\ncamara: [string]\",\n      \"relacion_aspecto_video\": \"[9:16 o 16:9]\",\n      \"relacion_aspecto_imagen\": \"[3:2 o 2:3]\",\n      \"modelo\": \"[veo3 o veo3_fast]\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        672
+      ],
+      "id": "161f648f-fd3e-4165-9418-2f049393518b",
+      "name": "Salida Estructurada"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.escenas",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        416,
+        448
+      ],
+      "id": "2a4bcdb2-9e2e-4be6-a10d-9273811c6a8a",
+      "name": "Dividir Salida"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data.response.resultUrls[0] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2432,
+        544
+      ],
+      "id": "0f250227-cabf-4e47-8f7a-c92e83d70683",
+      "name": "Obtener Archivos de Video"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/gpt4o-image/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"filesUrl\": [\n    \"https://drive.google.com/uc?export=download&id={{ $('Upload file1').item.json.id }}\"\n  ],\n  \"prompt\": \"{{ $json.prompt_imagen.replace(/\\\"/g, '\\\\\\\\\\\"').replace(/\\n/g, '\\\\\\\\n') }}\",\n  \"size\": \"{{ $json.relacion_aspecto_imagen }}\",\n  \"nVariants\": 1\n}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 3000
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        448
+      ],
+      "id": "1bbd27b7-5bc3-45f5-95bc-e27311e29550",
+      "name": "Crear Imagen",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.kie.ai/api/v1/gpt4o-image/record-info",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $('Crear Imagen').item.json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1088,
+        384
+      ],
+      "id": "37e61e65-f3d2-4336-bdff-781f1b6fd021",
+      "name": "Obtener Imagen",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/veo/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"prompt\":\"{{ $('Dividir Salida').first().json.prompt_video\n    .replace(/\\n/g, '\\\\n')\n    .replace(/\"/g, '\\\\\"') }}\",\n  \"model\": \"{{ $('Dividir Salida').first().json.modelo }}\",\n  \"aspectRatio\": \"{{ $('Dividir Salida').first().json.relacion_aspecto_video }}\",\n  \"imageUrls\": \"{{ $('Obtener Imagen').item.json.data.response.resultUrls[0] }}\"\n}\n",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 3000
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1536,
+        544
+      ],
+      "id": "1b70840c-4a5e-4185-99ac-bc6c4263b4a8",
+      "name": "Crear Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.kie.ai/api/v1/veo/record-info",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $('Crear Video').item.json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1984,
+        480
+      ],
+      "id": "00198fdf-caea-4034-b3d1-acabb4ad7da9",
+      "name": "Obtener Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1760,
+        544
+      ],
+      "id": "8e9864db-f322-4a82-9514-fc120a92deda",
+      "name": "Espera 2",
+      "webhookId": "cf23022b-1ab8-42a0-aa2e-e1ad33b4aeb6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.data.successFlag }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2208,
+        544
+      ],
+      "id": "333bb074-2727-4b85-8ca4-f1d83b431164",
+      "name": "Si 2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        864,
+        448
+      ],
+      "id": "237c2521-30e3-4f2a-bf5c-c115d6f95921",
+      "name": "Espera 1",
+      "webhookId": "6f45a3ee-b783-4f2d-abc3-1bb3d091bf2e"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.data.successFlag }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1312,
+        448
+      ],
+      "id": "26ee2859-87a5-4aa9-a1de-6b2e922352b8",
+      "name": "Si 1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -48,
+        672
+      ],
+      "id": "9f672f3f-0a94-40b8-a448-ffb903c5b4a3",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1sJqM61k7jvXd7Y3_tdXhExH2EJWQdKZw",
+          "mode": "list",
+          "cachedResultName": "Pruebas",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1sJqM61k7jvXd7Y3_tdXhExH2EJWQdKZw"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2656,
+        448
+      ],
+      "id": "06716206-46b1-46b8-8339-2557d68ccbba",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "Video UGC",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Numero videos",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Dialogo",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Modelo video",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "veo3"
+                  },
+                  {
+                    "option": "veo3_fast"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Formato",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Vertical"
+                  },
+                  {
+                    "option": "Horizontal"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Solicitudes especiales",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Imagen de producto",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Numero Whatsapp (con código de país)",
+              "placeholder": "+34622738495",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false,
+          "buttonLabel": "Enviar",
+          "ignoreBots": true
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -944,
+        448
+      ],
+      "id": "146f8381-6abf-4e25-81f4-c89abee388f9",
+      "name": "On form submission",
+      "webhookId": "7b715dc6-4ccb-470a-b2d0-2023374bd43d"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "=Imagen_de_producto",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1sJqM61k7jvXd7Y3_tdXhExH2EJWQdKZw",
+          "mode": "list",
+          "cachedResultName": "Pruebas",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1sJqM61k7jvXd7Y3_tdXhExH2EJWQdKZw"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -720,
+        448
+      ],
+      "id": "7b9a65b0-8448-4ea6-b125-32691c85c9e2",
+      "name": "Upload file1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "reader",
+            "type": "anyone"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -496,
+        448
+      ],
+      "id": "7befa582-54cc-4d74-8e13-b43fc4191362",
+      "name": "Share file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "operation": "send-image",
+        "instanceName": "Prueba",
+        "remoteJid": "={{ $('On form submission').item.json['Numero Whatsapp (con código de país)'].replace('+', \"\") }}@s.whatsapp.net",
+        "media": "={{ $('Obtener Imagen').item.json.data.response.resultUrls[0] }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        352
+      ],
+      "id": "4639be19-bc7a-4def-b21a-d541191f21ef",
+      "name": "Enviar imagem",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Prueba",
+        "remoteJid": "={{ $('On form submission').first().json['Numero Whatsapp (con código de país)'].replace('+', \"\") }}@s.whatsapp.net",
+        "messageText": "={{ $json.data.response.resultUrls[0] }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        2656,
+        640
+      ],
+      "id": "65296edd-3856-483a-bcc8-090053196696",
+      "name": "Enviar texto",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Tu objetivo: Generar prompts para imágenes y videos siguiendo las directrices de tu rol de sistema.\n\nAsegúrate de que la imagen de referencia se represente con la MÁXIMA PRECISIÓN posible en las imágenes resultantes, prestando especial atención a cualquier texto visible.\n\n***\nCantidad de videos a crear: {{ $('On form submission').first().json['Numero videos'] }}\n\n***\nDescripción de la imagen de referencia (análisis de IA):\n {{ $json.choices[0].message.content }}\n\n***\n**Información proporcionada por el usuario:**\n- Relación de aspecto preferida: {{ $('On form submission').first().json.Formato }}\n- Modelo de IA preferido: {{ $('On form submission').first().json['Modelo video'] }}\n- Guion del diálogo: {{ $('On form submission').first().json.Dialogo }}\n- Otras solicitudes especiales: {{ $('On form submission').first().json['Solicitudes especiales'] }}\n\n***\nUtiliza la herramienta \"Pensar\" para verificar y refinar tu salida antes de finalizar.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Generador de Prompts Estilo UGC para Veo3\n\n  Eres un agente de IA experto en crear contenido de estilo UGC (Contenido Generado por Usuarios).\n  Tu misión: Tomar una imagen de referencia o un producto y situarlo en escenas realistas y casuales, como si fueran capturadas por creadores de contenido o influencers en su día a día.\n\n  Todos los resultados deben sentirse **naturales, espontáneos y sin pulir**, evitando cualquier apariencia profesional o excesivamente preparada. Esto implica:\n\n    - Realismo cotidiano con escenarios auténticos y con los que la gente se identifique.\n    - Estilo de foto/video amateur, como grabado con un iPhone.\n    - Encuadres e iluminación ligeramente imperfectos.\n    - Poses naturales y expresiones genuinas.\n    - Imperfecciones visibles (marcas en la piel, pelo desordenado, etc.).\n    - Entornos del mundo real sin modificar (desorden, fondos concurridos).\n\n\nNecesitamos que estos videos parezcan reales. Por lo tanto, en los prompts, el parámetro `camara` siempre debe usar palabras clave como: foto amateur con móvil, imagen de reddit, video de snapchat, selfie casual con iPhone, encuadre ligeramente irregular, contenido auténtico, un poco desenfocado.\n\nSi el usuario no proporciona un diálogo o se te pide explícitamente que lo crees, genera una frase casual y conversacional de menos de 200 caracteres, como si una persona hablara de forma natural con un amigo sobre el producto. Evita un lenguaje demasiado formal o de ventas. El tono debe ser auténtico, espontáneo y cercano, acorde con el estilo UGC. Por ejemplo:\nVi esto en TikTok y tuve que probarlo... y resulta que es la mejor bebida que he probado en mucho tiempo. Además, donan parte de sus beneficios, ¡y la verdad es que está buenísima!\n\nPara el diálogo, usa '...' para indicar pausas y evita caracteres especiales.\n\nIMPORTANTE: NO uses comillas dobles en los prompts de imagen y video.\n\n\n  1 – Acción:\n    Genera instrucciones para modelos de IA de imagen y video basándote en la solicitud del usuario. Asegúrate de que el formato de salida sea un JSON con una lista de `escenas`, donde cada una contenga un `prompt_imagen` y un `prompt_video`. Infiere la relación de aspecto (vertical/horizontal); si no se especifica, usa vertical por defecto.\n\n    **Regla del número de escenas:** Lee la cantidad de videos solicitada por el usuario (un número explícito) y genera **exactamente ese número** de escenas. Si el usuario no especifica un número, genera **1 escena** por defecto. Nunca generes más o menos escenas de las solicitadas.\n\n\n  2 – Guía:\n    - Sigue siempre los principios de realismo casual del estilo UGC mencionados anteriormente.\n    - Asegura la diversidad de género, etnia y color de pelo cuando sea aplicable. La edad de los actores debe ser de 21 a 38 años, a menos que se indique lo contrario.\n    - Utiliza la lista de escenas proporcionada por el usuario si está disponible.\n    - Evita las comillas dobles en los prompts de imagen y video.\n\n\n  3 – Ejemplos:\n    ejemplos_correctos:\n      - |\n        {\n          \"escenas\": [\n            {\n              \"prompt_imagen\": \"accion: Un hombre joven está sacando unos auriculares nuevos de su caja, mirándolos con emoción\\npersonaje: Hombre de unos 25 años, pelo castaño, con una camiseta casual de algodón gris, expresión de alegría genuina\\nescenario: Interior de una habitación de apartamento con una estantería de libros y una planta desenfocadas al fondo, iluminado por la luz natural de una ventana\\ncamara: Selfie casual con un iPhone, encuadre ligeramente inclinado, iluminación natural que crea un ligero contraluz\\nestilo: Muy casual y auténtico, como si fuera una foto espontánea para compartir en redes sociales, momento genuino sin posar\",\n              \"prompt_video\": \"dialogo: \\\"Llevaba meses esperando esto... y por fin están aquí. La cancelación de ruido es una locura, en serio. ¡Valió la pena cada centavo!\\\"\\naccion: El personaje sostiene los auriculares cerca de la cámara, gesticulando con entusiasmo mientras habla con un tono conversacional y cercano\\ncamara: Video grabado con un móvil en modo selfie, calidad amateur, sostenido a mano con ligeros movimientos, luz diurna de la ventana\\nemocion: Emoción y felicidad genuinas, entusiasmo palpable al hablar del producto\",\n              \"relacion_aspecto_video\": \"9:16\",\n              \"relacion_aspecto_imagen\": \"2:3\",\n              \"modelo\": \"veo3_fast\"\n            }\n          ]\n        }\n\n  4 – Notación:\n    - La salida final es una lista JSON `\"escenas\"` en el nivel raíz.\n    - La lista debe contener **exactamente `numero_de_escenas`** objetos, donde `numero_de_escenas` es el número especificado por el usuario (o 1 si no se especifica).\n    - Cada escena contiene:\n      - `prompt_imagen` → texto en formato string con: emocion, accion, personaje, escenario, camara, estilo\n      - `prompt_video` → texto en formato string con: dialogo, emocion, tipo_voz, accion, personaje, escenario, camara\n      - `relacion_aspecto_video` → \"9:16\" o \"16:9\" (por defecto vertical → 9:16)\n      - `relacion_aspecto_imagen` → \"3:2\" o \"2:3\" (por defecto vertical → 2:3)\n      - `modelo` → \"veo3\" o \"veo3_fast\"\n\n  5 – Herramientas:\n    - Herramienta Pensar: Úsala para verificar que la salida esté completa, sea diversa, se adhiera al estilo y que el número de escenas coincida exactamente con lo solicitado."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        16,
+        448
+      ],
+      "id": "38cc3e6f-b742-4826-8136-8aa40814d2af",
+      "name": "Agente IA Creador UGC"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Pensar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA Creador UGC",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analizar Imagen": {
+      "main": [
+        [
+          {
+            "node": "Agente IA Creador UGC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salida Estructurada": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Agente IA Creador UGC",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dividir Salida": {
+      "main": [
+        [
+          {
+            "node": "Crear Imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Archivos de Video": {
+      "main": [
+        [
+          {
+            "node": "Enviar texto",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Imagen": {
+      "main": [
+        [
+          {
+            "node": "Espera 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Imagen": {
+      "main": [
+        [
+          {
+            "node": "Si 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Video": {
+      "main": [
+        [
+          {
+            "node": "Espera 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Video": {
+      "main": [
+        [
+          {
+            "node": "Si 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Espera 2": {
+      "main": [
+        [
+          {
+            "node": "Obtener Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Si 2": {
+      "main": [
+        [
+          {
+            "node": "Obtener Archivos de Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Espera 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Espera 1": {
+      "main": [
+        [
+          {
+            "node": "Obtener Imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Si 1": {
+      "main": [
+        [
+          {
+            "node": "Crear Video",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Enviar imagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Espera 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente IA Creador UGC",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Upload file1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        []
+      ]
+    },
+    "Upload file1": {
+      "main": [
+        [
+          {
+            "node": "Share file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Share file": {
+      "main": [
+        [
+          {
+            "node": "Analizar Imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente IA Creador UGC": {
+      "main": [
+        [
+          {
+            "node": "Dividir Salida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "111e7ba2-7c07-495f-97b3-d7ed22feefd5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "07W2sfXO6wjsfA0f",
+  "tags": []
+}

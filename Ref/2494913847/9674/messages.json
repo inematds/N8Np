@@ -1,0 +1,190 @@
+[
+  {
+    "id": 9727,
+    "author": "Marcio",
+    "date": "2025-06-15T03:45:09+00:00",
+    "text": "Blz",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9696,
+    "author": "INEMA",
+    "date": "2025-06-15T03:20:51+00:00",
+    "text": "dublado",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9695,
+    "author": "INEMA",
+    "date": "2025-06-15T03:20:46+00:00",
+    "text": "https://www.youtube.com/watch?v=HtOj_C5E6RM",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9693,
+    "author": "INEMA",
+    "date": "2025-06-15T03:20:29+00:00",
+    "text": "Você **não deve usar o Google Drive para armazenar imagens no fluxo de postagem automática com n8n** por alguns **motivos técnicos e práticos**:\n\n---\n\n### **1. Links do Google Drive não são diretos nem públicos verdadeiros**\n\n* Os links gerados pelo Drive (mesmo os \"compartilháveis\") **não apontam diretamente para a imagem em formato bruto**.\n* O link abre uma página do Drive com o visualizador da imagem, e **não a imagem em si**.\n* Plataformas como o **Facebook Graph API, Instagram e Threads** exigem **um link direto da imagem (.jpg, .png)** para funcionar.\n\n**Exemplo de link inválido:**\n\n```https://drive.google.com/file/d/XYZ123/view?usp=sharing```\n\nE**xemplo de link válido (do Supabase):\n**\nh```ttps://abc.supabase.co/storage/v1/object/public/ai-images/banner1.png\n```\n---\n\n### 2.** API do Google Drive exige autenticação para acessar os arquivos\n\n*** Mesmo com arquivos compartilhados, muitas vezes o acesso precisa de OA**uth, **token ou autenticação.\n* Isso qu**ebra o fluxo automático d**o n8n se o arquivo não for realmente público e acessível sem login.\n\n---\n\n### 3.** Supabase é feito para servir arquivos estaticamente\n\n*** Fornece li**nks diretos, otimizados e sem redirecionamentos.\n*** O bucket é configurado como pú**blico, **ideal para armazenar recursos como imagens em automações.\n\n---\n\n### 4.** Erros frequentes\n\n*** Ao tentar usar um link do Drive, o Instagram/Threads via API responde com erro:\n\n  * \"U`RL is not accessible\" o`u \"I`nvalid image format\".`",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9692,
+    "author": "INEMA",
+    "date": "2025-06-15T03:20:07+00:00",
+    "text": "========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9691,
+    "author": "INEMA",
+    "date": "2025-06-15T03:19:10+00:00",
+    "text": "Aqui está o **passo a passo completo** para criar um sistema que gera imagens com **OpenAI 4o**, armazena no **Supabase** e publica automaticamente no **Instagram e Threads** usando **n8n** – sem programação:\n\n---\n\n### **ETAPA 1: Geração da Imagem com OpenAI 4o**\n\n1. Use o **ChatGPT com acesso à geração de imagens 4o**.\n2. Envie um prompt para gerar a imagem (ex: \"crie um banner publicitário em estilo anime\").\n3. Baixe a imagem gerada.\n\n---\n\n### **ETAPA 2: Armazenar a Imagem no Supabase**\n\n1. Crie uma conta gratuita no [https://supabase.com](https://supabase.com/).\n2. Vá em **Storage** > clique em **Create Bucket**:\n\n   * Nome: `ai-images`\n   * Marque como **public bucket**.\n3. Faça upload da imagem.\n4. Clique com o botão direito > **Get Public URL**.\n5. Copie esse link.\n\n---\n\n### **ETAPA 3: Inserir Dados no Google Sheets**\n\n1. Crie uma planilha com colunas:\n\n   * `caption` (legenda da imagem)\n   * `source_url` (link público da imagem)\n   * `threads_status` (vazio)\n   * `instagram_status` (vazio)\n\n2. Insira os dados:\n\n   * Colar a legenda (copiada do ChatGPT)\n   * Colar o link público da imagem\n   * Deixe os campos de status em branco\n\n---\n\n### **ETAPA 4: Workflow n8n – Postagem no Instagram**\n\n1. **Agendamento**\n\n   * Adicione um nó `Schedule Trigger`\n   * Configure como diário ou conforme desejar\n\n2. **Buscar Dados da Planilha**\n\n   * Adicione o nó `Google Sheets`\n   * Autentique com sua conta Google\n   * Operação: `Get Rows`\n   * Filtro: `instagram_status` vazio\n   * Retornar somente a **primeira linha vazia**\n\n3. **Publicar no Instagram**\n\n   * Adicione o nó `HTTP Request` (Graph API)\n   * Método: `POST`\n   * URL: `https://graph.facebook.com/v21.0/{instagram-business-id}/media`\n   * Parâmetros:\n\n     * `image_url`: link da imagem\n     * `caption`: legenda\n   * Adicione outro nó `HTTP Request` para:\n\n     * `https://graph.facebook.com/v21.0/{instagram-business-id}/media_publish`\n     * Com o ID retornado na criação de mídia\n\n4. **Atualizar o status no Google Sheets**\n\n   * Adicione `Google Sheets`\n   * Operação: `Update Row`\n   * Coluna de status: `instagram_status = posted`\n\n---\n\n### **ETAPA 5: Workflow n8n – Postagem no Threads**\n\n1. **Reutilize a leitura da planilha com filtro `threads_status` vazio**\n\n2. **Gerar Token de Acesso para Threads**\n\n   * Acesse: [https://developers.facebook.com](https://developers.facebook.com/)\n   * Crie um app\n   * Configure permissões:\n\n     * `threads_content_publish`\n     * `threads_read_replies`\n   * Gere o `Access Token` e o `App Secret`\n   * Use o token no `HTTP Request` para Threads\n\n3. **Publicar no Threads**\n\n   * Use `graph.threads.net`\n   * Método: `POST`\n   * Versão: `v1.0`\n   * Parâmetros JSON:\n\n     * `\"media_type\": \"image\"`\n     * `\"image_url\": \"link da imagem\"`\n     * `\"caption\": \"legenda\"`\n   * Use `JSON.stringify()` para formatar corretamente\n\n4. **Publicar o post (media\\_publish)**\n\n   * Com o ID da mídia retornado\n\n5. **Atualizar o status no Google Sheets**\n\n   * `threads_status = posted`\n\n---\n\n### **Considerações Finais**\n\n* Não use Google Drive como armazenamento – **só Supabase**.\n* Todos os templates e tokens devem estar com permissões atualizadas.\n* Imagens devem estar em formato acessível (ex: `.jpg`, `.png`) e links públicos.",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9690,
+    "author": "INEMA",
+    "date": "2025-06-15T03:18:06+00:00",
+    "text": "**Resumo  “OpenAI 4o Image Generation: Criação e Publicação Automática de Imagens de Anime, Quadrinhos e Anúncios”**\n\n**Visão Geral:**\nComo gerar imagens com o **OpenAI 4o** (personagens animados, quadrinhos e anúncios) e como **postá-las automaticamente no Instagram e Threads** usando **n8n**, sem necessidade de programação.\n\n---\n\n### **1. Geração de Imagens com OpenAI 4o**\n\n* Gerou 4 imagens com prompts simples.\n* Transformou uma imagem em vídeo com outra ferramenta.\n* Estilos testados:\n\n  * Personagem em estilo anime/cartoon\n  * História em quadrinhos com múltiplos painéis (ex: canal no YouTube de IA)\n  * Anúncio de produto (ex: cartão de memória Sandisk)\n  * Carro de Fórmula 1 em estilo pixelado e depois história de acidente em quadrinhos\n\n**Exemplos:**\n\n* Upload de foto e criação de HQ com falas realistas\n* Design de banner com estilo personalizado\n* Transformação de cena em narrativa visual de alto nível\n\n---\n\n### **2. Workflow n8n: Postagem Automática no Instagram e Threads**\n\n#### **Para Instagram:**\n\n* **Trigger de agendamento diário**\n* **Google Sheets** com colunas:\n\n  * Captions\n  * Source URL\n  * Status da publicação\n* Upload da imagem no **Supabase** (não funciona com Google Drive)\n* Geração de **link público da imagem**\n* Uso do **Facebook Graph API**:\n\n  * Geração do **token de acesso estendido**\n  * Configuração com permissões específicas (Instagram Basic, Publish, etc.)\n  * Postagem da imagem no Instagram com legenda\n  * Atualização da planilha com status \"posted\"\n\n#### **Para Threads:**\n\n* Processo semelhante ao Instagram, com ajustes para a API do Threads:\n\n  * Geração de **token próprio do Threads**\n  * API usada: `graph.threads.net`\n  * Permissões: `threads_content_publish`, `threads_read_replies`\n  * Ajustes no JSON com `JSON.stringify()` para a imagem e texto\n  * Postagem do conteúdo e atualização da planilha\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9689,
+    "author": "INEMA",
+    "date": "2025-06-15T03:15:47+00:00",
+    "text": "=======",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9688,
+    "author": "INEMA",
+    "date": "2025-06-15T03:15:43+00:00",
+    "text": "Dica\n\n\n\n**P: Oi, estou tentando usar o n8n para inserir o rosto de alguém em outra imagem.**\n\n**R:** Para inserir o rosto de alguém em outra imagem usando o n8n, você pode utilizar um nó de manipulação de imagens, como o nó \"ImageMagick\". Esse nó permite realizar várias tarefas de edição de imagem, incluindo sobrepor uma imagem sobre outra.\n\nAqui está um guia passo a passo para fazer isso:\n\n1. Adicione um nó \"HTTP Request\" para buscar a imagem do rosto da pessoa.\n\n2. Use o nó \"ImageMagick\" para sobrepor essa imagem na imagem de destino.\n\n3. Configure o nó \"ImageMagick\" para definir a posição e o tamanho da sobreposição.\n\n4. Execute o fluxo de trabalho para gerar a imagem final com o rosto da pessoa inserido.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9687,
+    "author": "INEMA",
+    "date": "2025-06-15T03:15:26+00:00",
+    "text": "===========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9686,
+    "author": "INEMA",
+    "date": "2025-06-15T03:15:10+00:00",
+    "text": "Geração de Imagens OpenAI 4o: \n\nCriação e Publicação Automática de Imagens de Anime, Quadrinhos e Anúncios em Mídias Sociais\n\nSistema de Agente de IA que usa o OpenAI 4o Image Generation para criar personagens animados, painéis de quadrinhos e banners publicitários profissionais — e, em seguida, publico automaticamente esses recursos criativos no Instagram e no Threads usando o n8n. \n\n\n(Observações: Para o Excel, NÃO use o formato XML. Sugiro que você apenas copie e cole o conteúdo do nosso Excel na sua planilha do Google)",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9685,
+    "author": "INEMA",
+    "date": "2025-06-15T03:13:42+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "18.2 Prompts and Images .docx"
+  },
+  {
+    "id": 9684,
+    "author": "INEMA",
+    "date": "2025-06-15T03:13:42+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "18.2 Image Management.xlsx"
+  },
+  {
+    "id": 9683,
+    "author": "INEMA",
+    "date": "2025-06-15T03:13:32+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "18_2___Instagram&Threads_Upload.json"
+  },
+  {
+    "id": 9682,
+    "author": "INEMA",
+    "date": "2025-06-15T03:13:18+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_9682_015.jpg"
+  },
+  {
+    "id": 9681,
+    "author": "INEMA",
+    "date": "2025-06-15T03:13:16+00:00",
+    "text": "al31 - IMG4 Post Instagram",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9680,
+    "author": "INEMA",
+    "date": "2025-06-15T03:13:03+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9679,
+    "author": "INEMA",
+    "date": "2025-06-15T03:13:03+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9678,
+    "author": "INEMA",
+    "date": "2025-06-15T03:13:03+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9677,
+    "author": "INEMA",
+    "date": "2025-06-15T03:13:02+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9676,
+    "author": "INEMA",
+    "date": "2025-06-15T03:13:02+00:00",
+    "text": "https://chatgpt.com/c/684e36c4-c1b0-8009-a078-2bfb04f699dd",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9675,
+    "author": "INEMA",
+    "date": "2025-06-15T03:13:02+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9674,
+    "author": "INEMA",
+    "date": "2025-06-15T03:12:55+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

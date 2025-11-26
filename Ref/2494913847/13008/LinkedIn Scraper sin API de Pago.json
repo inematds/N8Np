@@ -1,0 +1,445 @@
+{
+  "name": "LinkedIn Scraper sin API de Pago",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# 🚀 CONFIGURACIÓN INICIAL\n\n## Paso 1: Crear credenciales de Google Cloud\n1. Ve a [Google Cloud Console](https://console.cloud.google.com/)\n2. Crea un nuevo proyecto (ej: linkedin-scraper)\n3. Busca y habilita **Custom Search API**\n4. Ve a **Credenciales > Crear credenciales > Clave API**\n5. Copia la clave API\n\n## Paso 2: Crear Motor de Búsqueda\n1. Ve a [Programmable Search Engine](https://programmablesearchengine.google.com/)\n2. Crea un nuevo motor de búsqueda\n3. Nombre: \"LinkedIn Search\"\n4. Selecciona: **Search the entire web**\n5. Copia el valor **cx** del URL generado\n\n## Paso 3: Configurar Google Sheets\n1. Crea una hoja de cálculo nueva en Google Sheets\n2. Nombra las columnas: Name, Title, Link, Snippet\n3. Copia el ID del documento desde la URL\n\n## ⚠️ Límites Gratuitos\n- **100 solicitudes/día** a la API de Google\n- **10 resultados** por solicitud\n- Total: **1,000 leads/día** gratis\n- **7,000 leads/semana** sin costo",
+        "height": 800,
+        "width": 520,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        848,
+        -448
+      ],
+      "id": "config_inicial",
+      "name": "Configuración Inicial"
+    },
+    {
+      "parameters": {
+        "content": "# 🎯 FLUJO DE TRABAJO\n\n## Funcionamiento:\n1. **Trigger Manual**: Inicia el flujo manualmente o via chat\n2. **Set Variables**: Configura página inicial (1) y máximo de páginas (10)\n3. **HTTP Request**: Busca en Google usando el API\n4. **Extract Values**: Procesa y limpia los resultados\n5. **Wait**: Espera 5 segundos (evita límites de API)\n6. **Google Sheets**: Añade los leads a la hoja\n7. **Check Pagination**: Verifica si hay más páginas\n8. **Loop**: Si hay más resultados, vuelve al paso 3\n\n## Búsqueda Personalizable:\n```\nsite:linkedin.com/in \"CEO\" \"automotive industry\" \"United States\"\n```\n\n## Ejemplos de búsquedas:\n- `\"CTO\" \"fintech\" \"New York\"`\n- `\"Marketing Director\" \"SaaS\" \"London\"`\n- `\"Data Scientist\" \"AI\" \"remote\"`\n- `\"Product Manager\" \"e-commerce\" \"Berlin\"`",
+        "height": 800,
+        "width": 480,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1392,
+        -448
+      ],
+      "id": "flujo_trabajo",
+      "name": "Flujo de Trabajo"
+    },
+    {
+      "parameters": {
+        "content": "# 🔧 CONFIGURACIÓN HTTP REQUEST\n\n## URL Base:\n```\nhttps://www.googleapis.com/customsearch/v1\n```\n\n## Query Parameters:\n- **key**: Tu API Key de Google Cloud\n- **cx**: Tu ID del motor de búsqueda\n- **q**: La cadena de búsqueda\n- **start**: Índice de inicio (paginación)\n\n## Expresión para Start:\n```javascript\n{{ $runIndex === 0 ? $node[\"Set Variables\"].json[\"currentStartIndex\"] : $node[\"Check Pagination\"].json[\"startIndex\"] }}\n```\n\n## Headers (opcional):\n- Content-Type: application/json\n- Accept: application/json\n\n## Respuesta esperada:\n- items[]: Array con 10 resultados\n- queries.nextPage: Info de siguiente página\n- searchInformation: Metadatos de búsqueda",
+        "height": 800,
+        "width": 656,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1888,
+        -448
+      ],
+      "id": "config_http",
+      "name": "Configuración HTTP"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "indice_inicio",
+              "value": 1,
+              "type": "number"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "max_paginas",
+              "value": 10,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set_variables",
+      "name": "Set Variables",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1648,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/customsearch/v1",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "cx",
+              "value": "TU NUMERO DE CX"
+            },
+            {
+              "name": "q",
+              "value": "=ceo despacho abogados colombia site:linkedin.com/in"
+            },
+            {
+              "name": "start",
+              "value": "={{ $runIndex === 0 ? $node[\"Set Variables\"].json[\"indice_inicio\"] : $node[\"¿Mas páginas?\"].json[\"startIndex\"] }}"
+            },
+            {
+              "name": "key",
+              "value": "TU LLAVE DE API"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http_request",
+      "name": "Google Search API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1024,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Function (n8n) — Google CSE: mapeo + paginación robusta + og:description\n * (compatibilidad sin ?. ni ??)\n */\n\nfunction get(obj, path, fallback) {\n  try {\n    var cur = obj;\n    for (var i = 0; i < path.length; i++) {\n      if (cur == null || typeof cur !== 'object') return fallback;\n      cur = cur[path[i]];\n    }\n    return (cur === undefined ? fallback : cur);\n  } catch (e) {\n    return fallback;\n  }\n}\n\nvar entradaPrimera = $input.first();\nvar resp = entradaPrimera && entradaPrimera.json ? entradaPrimera.json : {};\nvar items = Array.isArray(resp.items) ? resp.items : [];\n\n// Metadatos\nvar req  = get(resp, ['queries','request',0], {});\nvar next = get(resp, ['queries','nextPage',0], {});\nvar info = get(resp, ['searchInformation'], {});\n\n// Valores actuales\nvar indiceActual = Number(req.startIndex != null ? req.startIndex : 1) || 1;\nvar porPagina    = Number(req.count != null ? req.count : (items.length || 10)) || 10;\n\n// Siguiente índice\nvar siguienteIndice = Number(\n  next.startIndex != null ? next.startIndex : (indiceActual + porPagina)\n) || 1;\n\n// Continuación\nvar totalResultados = Number(info.totalResults != null ? info.totalResults : 0) || 0;\nvar quedanPorTotal  = (indiceActual - 1) + items.length < totalResultados;\nvar dentroDeTope    = siguienteIndice <= 100; // tope CSE\nvar continuarBucle  = quedanPorTotal && dentroDeTope;\n\n// Mapeo\nvar resultados = items.map(function(it) {\n  var tituloStr = String(it && it.title ? it.title : '');\n  var partes = tituloStr.split(' - ');\n  var nombre  = partes[0] || null;\n  var titulo  = partes.slice(1).join(' - ') || null;\n  var enlace  = it && it.link ? it.link : null;\n  var resumen = it && it.snippet ? it.snippet : null;\n\n  var imagen =\n    get(it, ['pagemap','cse_thumbnail',0,'src'], null) ||\n    get(it, ['pagemap','cse_image',0,'src'], null);\n\n  // Nuevo: capturar og:description\n  var descripcion =\n    get(it, ['pagemap','metatags',0,'og:description'], null);\n\n  return {\n    // Español\n    nombre: nombre,\n    titulo: titulo,\n    enlace: enlace,\n    resumen: resumen,\n    imagen: imagen,\n    descripcion: descripcion, // og:description en español\n    indiceInicio: siguienteIndice,\n    continuarBucle: continuarBucle,\n\n    // Inglés (compatibilidad)\n    name: nombre,\n    title: titulo,\n    link: enlace,\n    snippet: resumen,\n    image: imagen,\n    description: descripcion, // og:description en inglés\n    startIndex: siguienteIndice,\n    hasMoreResults: continuarBucle,\n  };\n});\n\n// Sin resultados: devolver item “vacío” con control de paginación\nif (resultados.length === 0) {\n  return [{\n    json: {\n      nombre: null, titulo: null, enlace: null, resumen: null, imagen: null,\n      descripcion: null,\n      indiceInicio: siguienteIndice, continuarBucle: false,\n      name: null, title: null, link: null, snippet: null, image: null,\n      description: null,\n      startIndex: siguienteIndice, hasMoreResults: false,\n    }\n  }];\n}\n\nreturn resultados.map(function(r){ return { json: r }; });\n"
+      },
+      "id": "extract_values",
+      "name": "Extract Values",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        688
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "wait_node",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1424,
+        688
+      ],
+      "webhookId": "a9fe11e6-74ff-4251-8ea1-864bf0c8d7f6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.continuarBucle }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if_node",
+      "name": "If Has More Pages",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2064,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1et5G1SmR-mpBxMRBd0_b9hDLV7A3boKfDORt85H7V50",
+          "mode": "list",
+          "cachedResultName": "Scrapeo LinkedIn",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1et5G1SmR-mpBxMRBd0_b9hDLV7A3boKfDORt85H7V50/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Hoja 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1et5G1SmR-mpBxMRBd0_b9hDLV7A3boKfDORt85H7V50/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nombre": "={{ $json.name }}",
+            "Titulo": "={{ $json.title }}",
+            "URL": "={{ $json.link }}",
+            "Snippet": "={{ $json.snippet }}",
+            "Imagen": "={{ $json.image }}",
+            "indiceInicio": "={{ $json.startIndex }}",
+            "continuarBucle": "={{ $json.hasMoreResults }}",
+            "Descripción": "={{ $json.descripcion }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Titulo",
+              "displayName": "Titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Snippet",
+              "displayName": "Snippet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Descripción",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Imagen",
+              "displayName": "Imagen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "indiceInicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "continuarBucle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1632,
+        688
+      ],
+      "id": "f427b182-987d-4bbc-bc63-6352c94f4508",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Make Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## SCRAPER LINKEDIN GRATIS",
+        "height": 576,
+        "width": 1696,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        848,
+        400
+      ],
+      "typeVersion": 1,
+      "id": "6f91efc4-bdd5-435c-82a5-9c2597e152bf",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        1424,
+        464
+      ],
+      "id": "9a90d604-dafe-47da-9bf2-422609cdc71e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Nodo Function (n8n) — Check Pagination\n * Recibe la salida del nodo “Extract Values” y expone:\n *   - indiceInicio (ES) / startIndex (EN)\n *   - continuarBucle (ES) / hasMoreResults (EN)\n */\n\n// Tomamos el primer item de la entrada\nvar entrada = $input.first() && $input.first().json ? $input.first().json : {};\n\n// Leemos valores, con defaults por si faltan\nvar indiceInicio   = Number(entrada.indiceInicio != null ? entrada.indiceInicio : entrada.startIndex || 1);\nvar continuarBucle = Boolean(\n  entrada.continuarBucle != null\n    ? entrada.continuarBucle\n    : (entrada.hasMoreResults != null ? entrada.hasMoreResults : false)\n);\n\n// Devolvemos en ambos idiomas para compatibilidad\nreturn [\n  {\n    json: {\n      // Español\n      indiceInicio: indiceInicio,\n      continuarBucle: continuarBucle,\n\n      // Inglés\n      startIndex: indiceInicio,\n      hasMoreResults: continuarBucle,\n    }\n  }\n];\n"
+      },
+      "id": "check_pagination",
+      "name": "¿Mas páginas?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1840,
+        688
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Set Variables": {
+      "main": [
+        [
+          {
+            "node": "Google Search API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Search API": {
+      "main": [
+        [
+          {
+            "node": "Extract Values",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Values": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Has More Pages": {
+      "main": [
+        [
+          {
+            "node": "Google Search API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "¿Mas páginas?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Mas páginas?": {
+      "main": [
+        [
+          {
+            "node": "If Has More Pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8744c413-9706-42f1-ae22-132e21db9c77",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "nXRvZk4Ve9P6qBnO",
+  "tags": []
+}

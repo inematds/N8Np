@@ -1,0 +1,2292 @@
+{
+  "name": "Marketing Meta Ads Inema",
+  "nodes": [
+    {
+      "parameters": {
+        "hostUrl": "graph-video.facebook.com",
+        "graphApiVersion": "v23.0",
+        "node": "={{ $json['Video ID'] }}",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "fields",
+                "value": "=id,description,length,source,permalink_url,embed_html"
+              }
+            ]
+          }
+        }
+      },
+      "id": "28ef7329-e0e4-411e-814c-b9a1b9fa9074",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        1088,
+        -1968
+      ],
+      "name": "Facebook Graph API10",
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Code1').item.json.extracted_sd_url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2496,
+        -1968
+      ],
+      "id": "623697a8-920f-435a-b663-c955074dc9c8",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "499222b9-bc6e-488f-a6c6-3ed5bd802c8f",
+              "name": "url",
+              "value": "=https://www.facebook.com{{ $('Facebook Graph API10').item.json.permalink_url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1392,
+        -2128
+      ],
+      "id": "86ca562a-33e9-4fe7-af3d-843fe418235d",
+      "name": "Edit Fields5"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// --- Función auxiliar para buscar recursivamente una clave en un objeto o array JSON ---\nfunction buscarValorPorClave(obj, claveBuscada) {\n  if (typeof obj !== 'object' || obj === null) {\n    return null;\n  }\n  if (obj.hasOwnProperty(claveBuscada)) {\n    return obj[claveBuscada];\n  }\n  for (const key in obj) {\n    if (obj.hasOwnProperty(key)) {\n      const resultado = buscarValorPorClave(obj[key], claveBuscada);\n      if (resultado !== null) {\n        return resultado;\n      }\n    }\n  }\n  if (Array.isArray(obj)) {\n    for (const item of obj) {\n      const resultado = buscarValorPorClave(item, claveBuscada);\n      if (resultado !== null) {\n        return resultado;\n      }\n    }\n  }\n  return null;\n}\n// --- Fin de la función auxiliar ---\n\n\n// Obtener el ítem de entrada\nconst item = $input.item;\n\n// Suponemos que el contenido HTML está en item.json.content\nconst htmlInput = item.json.content;\nlet urlSD = null; // Variable para almacenar la URL encontrada\n\n// Verificamos que el contenido sea una cadena (HTML)\nif (typeof htmlInput !== 'string') {\n  item.json.error = \"El contenido recibido no es una cadena de texto (se esperaba HTML).\";\n  console.error(item.json.error);\n  return item; // Devolver el ítem con un campo de error\n}\n\n\n// Expresión regular para encontrar etiquetas <script type=\\\"application\\/json\\\"[^>]*>([\\s\\S]*?)<\\/script>/g;\nlet match;\n\ntry {\n  // Iteramos sobre todas las coincidencias de la expresión regular\n  while ((match = scriptRegex.exec(htmlInput)) !== null) {\n    const contenidoScript = match[1]; // El grupo 1 contiene el contenido dentro de la etiqueta <script>\n\n    if (contenidoScript) {\n      try {\n        const datosJSON = JSON.parse(contenidoScript); // Intentamos parsear el texto como JSON\n\n        // Buscamos dentro del JSON la clave específica\n        const posibleUrl = buscarValorPorClave(datosJSON, 'browser_native_sd_url');\n\n        // Si encontramos una URL válida (con extensión .mp4), la guardamos\n        if (typeof posibleUrl === 'string' && posibleUrl.trim() !== '' && posibleUrl.includes('.mp4')) {\n          urlSD = posibleUrl;\n          console.log(\"URL SD encontrada dentro de una etiqueta <script>:\", urlSD);\n          break; // Salimos del bucle al encontrar la primera URL válida\n        }\n\n      } catch (errorJSON) {\n        // Ignoramos scripts que no contienen JSON válido\n        // console.warn(\"Script ignorado por error al parsear JSON:\", errorJSON.message);\n      }\n    }\n  }\n\n} catch (error) {\n  item.json.error = \"Error durante el procesamiento con regex/JSON: \" + error.message;\n  console.error(item.json.error);\n  return item; // Devolver el ítem con el error\n}\n\n\n// Añadir la URL extraída (o el error) al JSON del ítem\nif (urlSD) {\n  // Limpiar la entidad HTML &amp; y convertirla en &\n  item.json.extracted_sd_url = urlSD.replace(/&amp;/g, '&');\n  console.log(\"URL extraída y limpiada correctamente:\", item.json.extracted_sd_url);\n  // Opcional: eliminar el contenido HTML original si ya no se necesita\n  // delete item.json.content;\n} else {\n  item.json.error = \"No se encontró 'browser_native_sd_url' usando regex y parseo JSON.\";\n  console.error(item.json.error);\n}\n\n// Devolver el ítem modificado\nreturn item;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2096,
+        -1968
+      ],
+      "id": "054e6859-56d8-4792-a461-6ba2400753ec",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "dc4f539c-b1ea-48f6-8f9f-842a2a0a2d82",
+              "leftValue": "={{ $json.content }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2256,
+        -2112
+      ],
+      "id": "14371d0d-6854-46b8-8549-fa84e3f1d268",
+      "name": "If7"
+    },
+    {
+      "parameters": {
+        "content": "## Transcripción mejores videos",
+        "height": 660,
+        "width": 3220,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        208,
+        -2304
+      ],
+      "typeVersion": 1,
+      "id": "6de7afa2-35be-491d-bd37-3ea38d1954db",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## \"Sistema de Guiones / Generación de Ideas / Feedback\"",
+        "height": 1940,
+        "width": 3668,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -464,
+        -1584
+      ],
+      "typeVersion": 1,
+      "id": "19132853-ff5c-43e8-904f-3700ea05d614",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks"
+            }
+          ]
+        }
+      },
+      "id": "a2bbbac5-e680-47cc-9256-83abb2bce630",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        368,
+        -2944
+      ],
+      "name": "Desencadenador de programación2",
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "e611d3c4-35b4-492f-9b79-2f5d545f3f5a",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        720,
+        -2944
+      ],
+      "name": "Dividir salida6",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "0df79b11-7063-4ad8-aad9-acaaf1279037",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        1088,
+        -2944
+      ],
+      "name": "Dividir salida7",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "c6b54bd9-b4a0-46c4-b113-81059bb750fe",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        1712,
+        -2688
+      ],
+      "name": "Dividir salida8",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "d99d639f-5601-45d8-a213-219b0f8a90f0",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        2368,
+        -2688
+      ],
+      "name": "Dividir salida9",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2048,
+        -2688
+      ],
+      "id": "bff0a7a8-cca5-442e-bedb-46694fba63b9",
+      "name": "Espera"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4ae9d184-693b-49c1-a971-fc91e1a90522",
+              "leftValue": "={{ $json.effective_status }}",
+              "rightValue": "ACTIVE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        -2688
+      ],
+      "id": "4797b876-a7ae-452d-bb45-2ef4930987c7",
+      "name": "Condición9"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4ae9d184-693b-49c1-a971-fc91e1a90522",
+              "leftValue": "={{ $json.effective_status }}",
+              "rightValue": "ACTIVE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1872,
+        -2928
+      ],
+      "id": "7a20001c-f93d-4f2b-b216-1b864e6bca9e",
+      "name": "Condición10"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "28d7bfb5-4d2b-4133-880e-b8c2f6455346",
+              "name": "Ad ID",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "3385c600-4d4d-4756-b04c-dcc2815e7e95",
+              "name": "Ad Name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "11e2bbb6-7422-4e0e-8e03-3532d6f11d5b",
+              "name": "Campaign Name",
+              "value": "={{ $json.campaign.name }}",
+              "type": "string"
+            },
+            {
+              "id": "bc300bdf-3df1-4dbc-b64a-1decd34e0caf",
+              "name": "AdSet Name",
+              "value": "={{ $json.adset.name }}",
+              "type": "string"
+            },
+            {
+              "id": "cf3b0615-d5ff-4f20-9690-146d3bd1a0b2",
+              "name": "Active Status",
+              "value": "={{ $json.effective_status }}",
+              "type": "string"
+            },
+            {
+              "id": "c50c53c9-b36b-4940-8e04-466b88ed7966",
+              "name": "Impresiones",
+              "value": "={{ $json.insights.data[0].impressions }}",
+              "type": "string"
+            },
+            {
+              "id": "885107c2-dd41-41ac-9519-1c548cd1b9d1",
+              "name": "Clicks",
+              "value": "={{ $json.insights.data[0].clicks }}",
+              "type": "string"
+            },
+            {
+              "id": "8c771e20-750a-4b83-8d8b-7b9f98fefacd",
+              "name": "Spend",
+              "value": "={{ $json.insights.data[0].spend }}",
+              "type": "string"
+            },
+            {
+              "id": "517e1d58-2e92-464a-af9a-58319d0f74d5",
+              "name": "CPC",
+              "value": "={{ $json.insights.data[0].cpc }}",
+              "type": "string"
+            },
+            {
+              "id": "754fb45a-8973-48bc-894d-be2d8cdbb224",
+              "name": "CPM",
+              "value": "={{ $json.insights.data[0].cpm }}",
+              "type": "string"
+            },
+            {
+              "id": "9bb4617b-267e-4d99-94c8-0794871fd33e",
+              "name": "Conversions",
+              "value": "={{ $json.insights.data[0].action_values[3].action_type }}",
+              "type": "string"
+            },
+            {
+              "id": "12b30ca9-189b-4023-8def-c8df4a6ef91a",
+              "name": "Conversion Value",
+              "value": "={{ $json.insights.data[0].action_values[3].action_type*74 }}",
+              "type": "string"
+            },
+            {
+              "id": "09951900-5588-4685-9c05-5e08a02c808b",
+              "name": "Video ID",
+              "value": "={{ $json.creative.video_id }}",
+              "type": "string"
+            },
+            {
+              "id": "5c6e1ac1-a754-4a69-81df-e35fdfb3d182",
+              "name": "Frecuencia",
+              "value": "={{ $json.insights.data[0].frequency }}",
+              "type": "string"
+            },
+            {
+              "id": "db2b4e3e-cb98-4ec3-9373-89627b795dd3",
+              "name": "Tiempo medio visto",
+              "value": "={{ $json.insights.data[0].video_avg_time_watched_actions[0].value }}",
+              "type": "number"
+            },
+            {
+              "id": "7a411378-b859-4614-904b-73eece34e1bb",
+              "name": "Tiempo visto 25%",
+              "value": "={{ $json.insights.data[0].video_p25_watched_actions[0].value }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2720,
+        -2688
+      ],
+      "id": "43fa8cc4-e479-4b5a-8a9d-16ee8f726edb",
+      "name": "Editar campos6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "119650e0-fb37-48e1-bb87-efd4cdd29434",
+              "leftValue": "={{ $json.creative.video_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2528,
+        -2928
+      ],
+      "id": "deb30871-ce47-4dba-abe8-22e938b6a0b2",
+      "name": "Condición6"
+    },
+    {
+      "parameters": {
+        "content": "## Ads Meta por anuncios",
+        "height": 680,
+        "width": 3220,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        208,
+        -3104
+      ],
+      "typeVersion": 1,
+      "id": "41a38093-db27-4da6-a4d2-381adf86d477",
+      "name": "Nota adhesiva1"
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v23.0",
+        "node": "me",
+        "edge": "adaccounts",
+        "options": {}
+      },
+      "id": "25ec9e5f-7eb7-401a-b65a-845d8679b55f",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        528,
+        -2672
+      ],
+      "name": "Obtener cuentas de anuncios FB",
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v23.0",
+        "node": "={{$json.id}}",
+        "edge": "campaigns",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "fields",
+                "value": "id,name,effective_status"
+              }
+            ]
+          }
+        }
+      },
+      "id": "2c9d0721-d574-4917-9000-24a986d3a62d",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        896,
+        -2688
+      ],
+      "name": "Obtener campañas de anuncios",
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v23.0",
+        "node": "={{$json.id}}",
+        "edge": "adsets",
+        "options": {
+          "fields": {
+            "field": [
+              {
+                "name": "id"
+              },
+              {
+                "name": "name"
+              },
+              {
+                "name": "effective_status"
+              },
+              {
+                "name": "budget"
+              },
+              {
+                "name": "currency"
+              }
+            ]
+          }
+        }
+      },
+      "id": "206d92d1-0918-4a9d-93f9-e8e215dec861",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        1472,
+        -2944
+      ],
+      "name": "Obtener conjuntos de anuncios FB",
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v23.0",
+        "node": "={{$json.id}}",
+        "edge": "ads",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "fields",
+                "value": "=id,name,effective_status,creative{image_url,video_id,link_url},insights.date_preset(maximum){ctr,cpm,cpc,cpp,spend,actions,action_values,impressions,clicks,reach,frequency,cost_per_result,results,conversion_values,conversions,website_purchase_roas,purchase_roas,objective,objective_results,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p95_watched_actions,video_p100_watched_actions,video_avg_time_watched_actions,video_time_watched_actions,video_play_actions,cost_per_unique_click,cost_per_conversion,cost_per_action_type,cost_per_thruplay,inline_link_clicks,inline_post_engagement,landing_page_view_per_link_click},campaign{id,name},adset{id,name},ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,account_id,account_name,account_currency\n"
+              }
+            ]
+          }
+        }
+      },
+      "id": "dd436754-45c0-4bd4-a9ff-551952d6b265",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        2208,
+        -2928
+      ],
+      "name": "Obtener contenido de anuncios FB",
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks"
+            }
+          ]
+        }
+      },
+      "id": "f4491bc4-27d7-44b2-8132-60d91d0ba2af",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        368,
+        -3728
+      ],
+      "name": "Desencadenador de programación",
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "ad8e959b-0fcc-493b-b3c3-8516441779ac",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        720,
+        -3728
+      ],
+      "name": "Dividir salida",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "89bf781a-a005-43fe-a0d7-65080753885b",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        1088,
+        -3728
+      ],
+      "name": "Dividir salida10",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "cd8a055d-0d46-4e69-a761-69d4d726cbeb",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        1712,
+        -3472
+      ],
+      "name": "Dividir salida11",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "34511cd2-8d8f-4bec-8947-c5bb7fedb3f7",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        2368,
+        -3472
+      ],
+      "name": "Dividir salida12",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2048,
+        -3472
+      ],
+      "id": "7cfd310b-7ed5-465c-8c42-f1a2e009cba2",
+      "name": "Espera1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4ae9d184-693b-49c1-a971-fc91e1a90522",
+              "leftValue": "={{ $json.effective_status }}",
+              "rightValue": "ACTIVE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        -3472
+      ],
+      "id": "552d7603-a527-420d-a071-be2020ecdc80",
+      "name": "Condición"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4ae9d184-693b-49c1-a971-fc91e1a90522",
+              "leftValue": "={{ $json.effective_status }}",
+              "rightValue": "ACTIVE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1872,
+        -3712
+      ],
+      "id": "d9bedafc-718f-4687-9b86-b2880ab152d8",
+      "name": "Condición12"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "28d7bfb5-4d2b-4133-880e-b8c2f6455346",
+              "name": "Ad ID",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "3385c600-4d4d-4756-b04c-dcc2815e7e95",
+              "name": "Ad Name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "11e2bbb6-7422-4e0e-8e03-3532d6f11d5b",
+              "name": "Campaign Name",
+              "value": "={{ $json.campaign.name }}",
+              "type": "string"
+            },
+            {
+              "id": "bc300bdf-3df1-4dbc-b64a-1decd34e0caf",
+              "name": "AdSet Name",
+              "value": "={{ $json.adset.name }}",
+              "type": "string"
+            },
+            {
+              "id": "cf3b0615-d5ff-4f20-9690-146d3bd1a0b2",
+              "name": "Active Status",
+              "value": "={{ $json.effective_status }}",
+              "type": "string"
+            },
+            {
+              "id": "c50c53c9-b36b-4940-8e04-466b88ed7966",
+              "name": "Impresiones",
+              "value": "={{ $json.insights.data[0].impressions }}",
+              "type": "string"
+            },
+            {
+              "id": "885107c2-dd41-41ac-9519-1c548cd1b9d1",
+              "name": "Clicks",
+              "value": "={{ $json.insights.data[0].clicks }}",
+              "type": "string"
+            },
+            {
+              "id": "8c771e20-750a-4b83-8d8b-7b9f98fefacd",
+              "name": "Spend",
+              "value": "={{ $json.insights.data[0].spend }}",
+              "type": "string"
+            },
+            {
+              "id": "517e1d58-2e92-464a-af9a-58319d0f74d5",
+              "name": "CPC",
+              "value": "={{ $json.insights.data[0].cpc }}",
+              "type": "string"
+            },
+            {
+              "id": "754fb45a-8973-48bc-894d-be2d8cdbb224",
+              "name": "CPM",
+              "value": "={{ $json.insights.data[0].cpm }}",
+              "type": "string"
+            },
+            {
+              "id": "9bb4617b-267e-4d99-94c8-0794871fd33e",
+              "name": "Conversions",
+              "value": "={{ $json.insights.data[0].actions[4].value }}",
+              "type": "string"
+            },
+            {
+              "id": "12b30ca9-189b-4023-8def-c8df4a6ef91a",
+              "name": "Conversion Value",
+              "value": "={{ $json.insights.data[0].action_values[8].value }}",
+              "type": "string"
+            },
+            {
+              "id": "09951900-5588-4685-9c05-5e08a02c808b",
+              "name": "Video ID",
+              "value": "={{ $json.creative.video_id }}",
+              "type": "string"
+            },
+            {
+              "id": "5c6e1ac1-a754-4a69-81df-e35fdfb3d182",
+              "name": "Frecuencia",
+              "value": "={{ $json.insights.data[0].frequency }}",
+              "type": "string"
+            },
+            {
+              "id": "db2b4e3e-cb98-4ec3-9373-89627b795dd3",
+              "name": "Tiempo medio visto",
+              "value": "={{ $json.insights.data[0].video_avg_time_watched_actions[0].value }}",
+              "type": "number"
+            },
+            {
+              "id": "7a411378-b859-4614-904b-73eece34e1bb",
+              "name": "Tiempo visto 25%",
+              "value": "={{ $json.insights.data[0].video_p25_watched_actions[0].value }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2880,
+        -3712
+      ],
+      "id": "467007d6-f751-4946-8880-04f284e0c505",
+      "name": "Editar campos"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "119650e0-fb37-48e1-bb87-efd4cdd29434",
+              "leftValue": "={{ $json.creative.video_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2720,
+        -3472
+      ],
+      "id": "006e0267-785e-4ab6-913a-d84ed6c7a370",
+      "name": "Condición7"
+    },
+    {
+      "parameters": {
+        "content": "## Ads Meta Mensaual",
+        "height": 680,
+        "width": 3220,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        208,
+        -3888
+      ],
+      "typeVersion": 1,
+      "id": "99d7f4be-bf6b-42c6-a90d-97380a909583",
+      "name": "Nota adhesiva"
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v23.0",
+        "node": "me",
+        "edge": "adaccounts",
+        "options": {}
+      },
+      "id": "23183d2a-6d41-4702-9e0f-c1920653cd69",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        560,
+        -3472
+      ],
+      "name": "Obtener cuentas de anuncios FB1",
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v23.0",
+        "node": "={{$json.id}}",
+        "edge": "campaigns",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "fields",
+                "value": "id,name,effective_status"
+              }
+            ]
+          }
+        }
+      },
+      "id": "3006e525-dfcc-49be-88b9-0d159f54b69c",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        896,
+        -3472
+      ],
+      "name": "Obtener campañas de anuncios1",
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v23.0",
+        "node": "={{$json.id}}",
+        "edge": "adsets",
+        "options": {
+          "fields": {
+            "field": [
+              {
+                "name": "id"
+              },
+              {
+                "name": "name"
+              },
+              {
+                "name": "effective_status"
+              },
+              {
+                "name": "budget"
+              },
+              {
+                "name": "currency"
+              }
+            ]
+          }
+        }
+      },
+      "id": "9016c4b8-10a5-4197-b68c-43639e022c59",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        1472,
+        -3728
+      ],
+      "name": "Obtener conjuntos de anuncios FB1",
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v23.0",
+        "node": "={{$json.id}}",
+        "edge": "ads",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "fields",
+                "value": "=id,name,effective_status,creative{image_url,video_id,link_url},insights.date_preset(this_month){ctr,cpm,cpc,cpp,spend,actions,action_values,impressions,clicks,reach,frequency,cost_per_result,results,conversion_values,conversions,website_purchase_roas,purchase_roas,objective,objective_results,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p95_watched_actions,video_p100_watched_actions,video_avg_time_watched_actions,video_time_watched_actions,video_play_actions,cost_per_unique_click,cost_per_conversion,cost_per_action_type,cost_per_thruplay,inline_link_clicks,inline_post_engagement,landing_page_view_per_link_click},campaign{id,name},adset{id,name},ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,account_id,account_name,account_currency\n"
+              }
+            ]
+          }
+        }
+      },
+      "id": "f99a9725-7e68-461f-9c46-ac428e8c9029",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        2208,
+        -3712
+      ],
+      "name": "Obtener contenido de anuncios FB1",
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks"
+            }
+          ]
+        }
+      },
+      "id": "5b670777-758d-4cab-9256-c6f5b6474b0e",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        368,
+        -4464
+      ],
+      "name": "Desencadenador de programación1",
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "ff84a4c3-7b03-49d0-b107-ea7d9ac41ded",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        720,
+        -4464
+      ],
+      "name": "Dividir salida1",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "0d7119db-cb3c-4f26-b14e-f557ddb83a99",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        1088,
+        -4464
+      ],
+      "name": "Dividir salida13",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "00d45d38-1389-418c-9111-fea58d95d823",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        1712,
+        -4208
+      ],
+      "name": "Dividir salida14",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "ce9bdb74-2279-44ac-9dc2-84ff43b21742",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        2368,
+        -4208
+      ],
+      "name": "Dividir salida15",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2048,
+        -4208
+      ],
+      "id": "97acc5dc-2b7a-4431-9c46-28513d7e9984",
+      "name": "Espera2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4ae9d184-693b-49c1-a971-fc91e1a90522",
+              "leftValue": "={{ $json.effective_status }}",
+              "rightValue": "ACTIVE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        -4208
+      ],
+      "id": "a2cd9e65-813c-4b70-a7b0-9a63995c2342",
+      "name": "Condición1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4ae9d184-693b-49c1-a971-fc91e1a90522",
+              "leftValue": "={{ $json.effective_status }}",
+              "rightValue": "ACTIVE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1872,
+        -4448
+      ],
+      "id": "bb95b3fb-3c0f-4fcb-8cf1-02faf7d398f9",
+      "name": "Condición14"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4ae9d184-693b-49c1-a971-fc91e1a90522",
+              "leftValue": "={{ $json.effective_status }}",
+              "rightValue": "ACTIVE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "86d803d1-ea76-4821-95bc-5d067020578a",
+              "leftValue": "={{ $json.insights }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2528,
+        -4448
+      ],
+      "id": "1f4dd636-6cc4-407d-9edc-30de82942568",
+      "name": "Condición15"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "28d7bfb5-4d2b-4133-880e-b8c2f6455346",
+              "name": "Ad ID",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "3385c600-4d4d-4756-b04c-dcc2815e7e95",
+              "name": "Ad Name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "11e2bbb6-7422-4e0e-8e03-3532d6f11d5b",
+              "name": "Campaign Name",
+              "value": "={{ $json.campaign.name }}",
+              "type": "string"
+            },
+            {
+              "id": "bc300bdf-3df1-4dbc-b64a-1decd34e0caf",
+              "name": "AdSet Name",
+              "value": "={{ $json.adset.name }}",
+              "type": "string"
+            },
+            {
+              "id": "cf3b0615-d5ff-4f20-9690-146d3bd1a0b2",
+              "name": "Active Status",
+              "value": "={{ $json.effective_status }}",
+              "type": "string"
+            },
+            {
+              "id": "c50c53c9-b36b-4940-8e04-466b88ed7966",
+              "name": "Impresiones",
+              "value": "={{ $json.insights.data[0].impressions }}",
+              "type": "string"
+            },
+            {
+              "id": "885107c2-dd41-41ac-9519-1c548cd1b9d1",
+              "name": "Clicks",
+              "value": "={{ $json.insights.data[0].clicks }}",
+              "type": "string"
+            },
+            {
+              "id": "8c771e20-750a-4b83-8d8b-7b9f98fefacd",
+              "name": "Spend",
+              "value": "={{ $json.insights.data[0].spend }}",
+              "type": "string"
+            },
+            {
+              "id": "517e1d58-2e92-464a-af9a-58319d0f74d5",
+              "name": "CPC",
+              "value": "={{ $json.insights.data[0].cpc }}",
+              "type": "string"
+            },
+            {
+              "id": "754fb45a-8973-48bc-894d-be2d8cdbb224",
+              "name": "CPM",
+              "value": "={{ $json.insights.data[0].cpm }}",
+              "type": "string"
+            },
+            {
+              "id": "9bb4617b-267e-4d99-94c8-0794871fd33e",
+              "name": "Conversions",
+              "value": "={{ $json.insights.data[0].actions[16].value }}",
+              "type": "string"
+            },
+            {
+              "id": "12b30ca9-189b-4023-8def-c8df4a6ef91a",
+              "name": "Conversion Value",
+              "value": "={{ $json.insights.data[0].actions[16].value*$json.insights.data[0].action_values[3].value }}",
+              "type": "string"
+            },
+            {
+              "id": "09951900-5588-4685-9c05-5e08a02c808b",
+              "name": "Video ID",
+              "value": "={{ $json.creative.video_id }}",
+              "type": "string"
+            },
+            {
+              "id": "5c6e1ac1-a754-4a69-81df-e35fdfb3d182",
+              "name": "Frecuencia",
+              "value": "={{ $json.insights.data[0].frequency }}",
+              "type": "string"
+            },
+            {
+              "id": "db2b4e3e-cb98-4ec3-9373-89627b795dd3",
+              "name": "Tiempo medio visto",
+              "value": "={{ $json.insights.data[0].video_avg_time_watched_actions[0].value }}",
+              "type": "number"
+            },
+            {
+              "id": "7a411378-b859-4614-904b-73eece34e1bb",
+              "name": "Tiempo visto 25%",
+              "value": "={{ $json.insights.data[0].video_p25_watched_actions[0].value }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2880,
+        -4448
+      ],
+      "id": "f7aa13e0-6ae8-460c-97e4-d5d752544edc",
+      "name": "Editar campos1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "119650e0-fb37-48e1-bb87-efd4cdd29434",
+              "leftValue": "={{ $json.creative.video_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2720,
+        -4208
+      ],
+      "id": "16b5c42f-0b77-4ef2-a580-3ebc88f82b62",
+      "name": "Condición8"
+    },
+    {
+      "parameters": {
+        "content": "## Ads Meta Semanal",
+        "height": 680,
+        "width": 3220,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        208,
+        -4624
+      ],
+      "typeVersion": 1,
+      "id": "f96e0a70-cd3b-420e-88e7-cdb4bdf4ee08",
+      "name": "Nota adhesiva2"
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v23.0",
+        "node": "me",
+        "edge": "adaccounts",
+        "options": {}
+      },
+      "id": "621128fd-2f49-4314-9be0-968ccb297f97",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        560,
+        -4208
+      ],
+      "name": "Obtener cuentas de anuncios FB2",
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v23.0",
+        "node": "={{$json.id}}",
+        "edge": "campaigns",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "fields",
+                "value": "id,name,effective_status"
+              }
+            ]
+          }
+        }
+      },
+      "id": "ee7fb95f-8334-4ee8-8dfe-289740606ac4",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        896,
+        -4208
+      ],
+      "name": "Obtener campañas de anuncios2",
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v23.0",
+        "node": "={{$json.id}}",
+        "edge": "adsets",
+        "options": {
+          "fields": {
+            "field": [
+              {
+                "name": "id"
+              },
+              {
+                "name": "name"
+              },
+              {
+                "name": "effective_status"
+              }
+            ]
+          }
+        }
+      },
+      "id": "bb62c013-997c-4a3c-b37a-449f63332617",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        1472,
+        -4464
+      ],
+      "name": "Obtener conjuntos de anuncios FB2",
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v23.0",
+        "node": "={{$json.id}}",
+        "edge": "ads",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "fields",
+                "value": "=id,name,effective_status,creative{image_url,video_id,link_url},insights.date_preset(last_7d){ctr,cpm,cpc,cpp,spend,actions,action_values,impressions,clicks,reach,frequency,cost_per_result,results,conversion_values,conversions,website_purchase_roas,purchase_roas,objective,objective_results,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p95_watched_actions,video_p100_watched_actions,video_avg_time_watched_actions,video_time_watched_actions,video_play_actions,cost_per_unique_click,cost_per_conversion,cost_per_action_type,cost_per_thruplay,inline_link_clicks,inline_post_engagement,landing_page_view_per_link_click},campaign{id,name},adset{id,name},ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,account_id,account_name,account_currency\n"
+              }
+            ]
+          }
+        }
+      },
+      "id": "2db0fb96-e6f3-4f24-9d15-772cbf65c6b7",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        2208,
+        -4448
+      ],
+      "name": "Obtener contenido de anuncios FB2",
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1616,
+        -1952
+      ],
+      "id": "0da729d2-2c0e-431b-8d08-c11d7399e83c",
+      "name": "Scrap basico"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2732cf11-7d5d-46db-abca-7097581b077d",
+              "name": "content",
+              "value": "={{ $json.data }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1872,
+        -2128
+      ],
+      "id": "015b90d9-b5b6-47d3-95f9-fe3083ee5d4d",
+      "name": "Contenido"
+    },
+    {
+      "parameters": {
+        "path": "scrapeo",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        416,
+        -2160
+      ],
+      "id": "a86e9a25-0e0b-460d-929a-b12162aff2e0",
+      "name": "Webhook1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "64113609-6adf-4693-8d51-ede088d97d38",
+              "name": "userprompt",
+              "value": "=Investiga en profundidad el perfil del cliente ideal para el siguiente servicio, incluyendo:\n- De que se trata el servicio y su descripción detallada.\n- Público objetivo principal y sus necesidades.\n- Análisis de caracteristicas y narrativa de marca.\n\nServicio: {{ $json['nome do serviço'] }}\nNotas del servicio: {{ $json['descrição'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1504,
+        -1472
+      ],
+      "id": "95bc3429-7bf4-4fb7-bbde-79f7d485fbe8",
+      "name": "Editar Campos 2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9cb2899d-6988-4c9b-b966-2da679725175",
+              "name": "IdeaDeGuion",
+              "value": "={{ $json.output }}",
+              "type": "array"
+            },
+            {
+              "id": "bbb3d4d9-766f-4afe-aeff-c1b4b9650bbc",
+              "name": "proyecto",
+              "value": "=[\"{{ $('Switch1').item.json.id }}\"]",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {
+          "ignoreConversionErrors": true
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2192,
+        -1104
+      ],
+      "id": "2300a5e2-493e-49ce-946b-b19aee367750",
+      "name": "Editar Campos"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "IdeaDeGuion",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        2432,
+        -1104
+      ],
+      "id": "5fa8d544-e647-499f-aba8-5f90b1446a4a",
+      "name": "Separar Array"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"name\": \"esquema_guiones_video\",\n  \"schema\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"guiones_video\": {\n        \"type\": \"array\",\n        \"description\": \"Lista de guiones para vídeo\",\n        \"items\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"Titulo_angulo\": {\n              \"type\": \"string\",\n              \"description\": \"Un titular breve y llamativo que define el ángulo del video\"\n            },\n            \"Resumen_Concepto\": {\n              \"type\": \"string\",\n              \"description\": \"Descripción concisa de la idea principal\"\n            },\n            \"Estructura_anuncio\": {\n              \"type\": \"string\",\n              \"description\": \"Formato y secciones del guion en markdown si es necesario\"\n            },\n            \"Sugerencia_Visual\": {\n              \"type\": \"string\",\n              \"description\": \"Temáticas o escenas visuales sugeridas\"\n            },\n            \"Triggers_Emocionales\": {\n              \"type\": \"string\",\n              \"description\": \"Factores emocionales que se buscan activar\"\n            },\n            \"Tecnicas_Respuesta_Directa\": {\n              \"type\": \"string\",\n              \"description\": \"Métodos de persuasión y llamada a la acción\"\n            },\n            \"Sesgos_Cognitivos\": {\n              \"type\": \"string\",\n              \"description\": \"Explicación de los sesgos psicológicos empleados\"\n            }\n          },\n          \"required\": [\n            \"Titulo_angulo\",\n            \"Resumen_Concepto\",\n            \"Estructura_anuncio\",\n            \"Sugerencia_Visual\",\n            \"Triggers_Emocionales\",\n            \"Tecnicas_Respuesta_Directa\",\n            \"Sesgos_Cognitivos\"\n          ],\n          \"additionalProperties\": false\n        }\n      }\n    },\n    \"required\": [\n      \"guiones_video\"\n    ],\n    \"additionalProperties\": false\n  },\n  \"strict\": true\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1968,
+        -912
+      ],
+      "id": "01f11a38-5f75-4c6c-8ee4-9df1e30d4b5e",
+      "name": "Parser Salida Estructurada"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Basado en la siguiente descripción detallada de un servicio y su cliente ideal, genera entre 5 y 8 ángulos publicitarios únicos.\n\n---\nSERVICIO Y CLIENTE IDEAL:\n{{ $json['descrição'] }}\n---\nÁngulos previos: {{ $items(\"Obtener Producto (Ângulos)\")[0].json.fields[\"Angulo Previo\"] }}\n---\n\nDevuelve el resultado únicamente como un array JSON puro, sin ningún texto adicional antes o después. El JSON debe seguir este esquema:\n[\n  {\n    \"Titulo_angulo\": \"Título breve y llamativo del ángulo.\",\n    \"Resumen_Concepto\": \"Descripción concisa de la idea principal.\",\n    \"Estructura_anuncio\": \"Formato y secciones del guion (ej: PAS, AIDA).\",\n    \"Sugerencia_Visual\": \"Temáticas o escenas visuales sugeridas.\",\n    \"Triggers_Emocionales\": \"Factores emocionales a activar.\",\n    \"Tecnicas_Respuesta_Directa\": \"Métodos de persuasión y CTA.\",\n    \"Sesgos_Cognitivos\": \"Sesgos psicológicos a emplear.\"\n  }\n]",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Eres un redactor publicitario experto en Video Sales Letters (VSL), especializado en crear guiones de alto rendimiento. Cuando recibas los datos de producto, devuelve al menos 5 - 8 propuestas distintas en un array JSON. Cada objeto debe incluir: \nTitulo_angulo, Resumen_Concepto, Estructura_anuncio, Sugerencia_Visual, Triggers_Emocionales, Tecnicas_Respuesta_Directa y Sesgos_Cognitivos. No añadas texto adicional"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1776,
+        -1120
+      ],
+      "id": "a55be18d-667b-4d12-a927-aee0180bc953",
+      "name": "Generar Ángulos"
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "value": "app96yXmwaKfQej28",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbly8NS7jgeIKRI0U",
+          "mode": "list"
+        },
+        "id": "={{ $('Webhook2').item.json.query.recordId }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        928,
+        -1184
+      ],
+      "id": "5fbcf04f-4ba3-45f6-b48f-a52a68af8ba3",
+      "name": "Obtener Producto1",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Por favor, reescribe el siguiente guion original, incorporando los comentarios de feedback.\n\n---\nCOMENTARIOS DEL CLIENTE (FEEDBACK): {{ $json['Campos gerado por IA'] }}\n---\nGUION ORIGINAL:{{ $json['descrição'] }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Eres un experto guionista de VSL. Reescribe el guion original usando el feedback proporcionado. Debes:\n\n1. Incorporar cada punto de retroalimentación explícitamente.\n2. Mejorar claridad, emoción e impacto.\n3. Mantener coherencia con el tono y estructura originales.\n4. Optimizar para conversiones directas.\n\nEntrega sólo el guion revisado en Markdown, sin texto extra."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1696,
+        32
+      ],
+      "id": "3ee2e26a-faf3-4da8-8b5a-1eaf5c8c0439",
+      "name": "Cadena LLM – Revisar Guion"
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "value": "app96yXmwaKfQej28",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl9cOOKgyH3iKYVR",
+          "mode": "list"
+        },
+        "id": "recm6gLUzZpr3VOTA",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1536,
+        -624
+      ],
+      "id": "a8145d9b-6e05-4873-a079-36142b5a4d09",
+      "name": "Obtener Guion",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "value": "app96yXmwaKfQej28",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl9cOOKgyH3iKYVR",
+          "mode": "list"
+        },
+        "id": "={{ $json.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1552,
+        32
+      ],
+      "id": "7121451f-fbfd-4b06-9aa6-905a83b884cd",
+      "name": "Obtener Guion Original",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "apprq79kV9fl74Bg3",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl0ynpBwH6r97TNN",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Webhook2').item.json.query.recordId }}",
+            "Guión": "={{ $json.text }}",
+            "Estado": "Guión Revisado",
+            "5. Generar Guion": false
+          },
+          "matchingColumns": [
+            "id"
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2224,
+        432
+      ],
+      "id": "0e639df4-e1d0-4364-aa94-c94e4d52be76",
+      "name": "Actualizar Guion Revisado",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "path": "anuncios-general",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        -928
+      ],
+      "id": "a8be81d1-fd83-4dea-a8f7-8a965816ce7a",
+      "name": "Webhook2"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "eddee505-29e2-48b9-896a-d5e3cfde89f5",
+                    "leftValue": "={{ $json['[AÇÃO] Gerar Detalhes'] }}",
+                    "rightValue": "generar_detalles",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Generar detalles proyecto"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json['[AÇÃO] Gerar Ângaulos'] }}",
+                    "rightValue": "generar_angulos",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "bb5b6fd5-ef22-451b-a23d-258044aafcca"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": "={{ true }}",
+              "outputKey": "Generar Angulos"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "ac785a02-782f-4af2-af20-bb23cf885a71",
+                    "leftValue": "={{ $json['Guiôes'] }}",
+                    "rightValue": "generar_guiones",
+                    "operator": {
+                      "type": "array",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Generar Guion"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "0ab60fd9-c2a2-4e7d-81dc-07737b2f95dc",
+                    "leftValue": "=\n{{ $json['[AÇÃO] Gerar Feedback'] }}",
+                    "rightValue": "generar_feedback",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Generar Feedback"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        704,
+        -688
+      ],
+      "id": "5bb21cef-6ccd-4867-abd3-ceb8aa53e0ae",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "value": "app96yXmwaKfQej28",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblqZVVKmd9W3Rui1",
+          "mode": "list"
+        },
+        "id": "={{ $('Switch1').item.json.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1280,
+        -1472
+      ],
+      "id": "d3dc2f75-2ef0-4013-a9b5-bd2e15ecc4cd",
+      "name": "Obtener Producto",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega o conteúdo diretamente do caminho correto\nconst texto = $json.message.content;\n\n// A resposta da OpenAI não vem com as tags <think>, então não precisamos mais limpá-la.\n// Simplesmente retornamos o texto.\nreturn { resultado: texto };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2192,
+        -1456
+      ],
+      "id": "5798c546-7bfb-49b8-8a36-a83f4e8618f5",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1728,
+        -896
+      ],
+      "id": "c0122814-febd-4aff-bd7d-0dc4a146f709",
+      "name": "Google Gemini Chat Model",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-sonnet-4-20250514",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        -64,
+        144
+      ],
+      "id": "b10d810a-3c98-4d0e-9cc2-a367def9f4dc",
+      "name": "Anthropic Chat Model",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-sonnet-4-20250514",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        80,
+        144
+      ],
+      "id": "07dc3b7d-4f6f-480a-a7b6-ba5131e2c836",
+      "name": "Anthropic Chat Model1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json['tipo de guião'] }}",
+                    "rightValue": "AIDA (Atención – Interés – Deseo – Acción)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "70f3e172-0f65-4661-8a58-8b4973f3f92c"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "AIDA"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f96fdf45-e931-4bec-8af8-d6430128433c",
+                    "leftValue": "={{ $json['tipo de guião'] }}",
+                    "rightValue": "Problema-Agitación-Solución (PAS)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "PAS"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "2be80e28-84b9-4b6d-b40d-aac4fa5e8a11",
+                    "leftValue": "={{ $json['tipo de guião'] }}",
+                    "rightValue": "4P (Problema – Promesa – Prueba – Propuesta)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "4P"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "6436b5cf-0ce0-4e35-ad85-86ce649449ff",
+                    "leftValue": "={{ $json['tipo de guião'] }}",
+                    "rightValue": "FAB (Features – Advantages – Benefits)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "FAB"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c5d6bb71-3095-4c97-bd3c-5a246d070662",
+                    "leftValue": "={{ $json['tipo de guião'] }}",
+                    "rightValue": "Storytelling + CTA (La historia como venta)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ST + CTA"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1792,
+        -608
+      ],
+      "id": "f3cbec46-10ea-4611-abf1-8c6b30e133bd",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Titulo del Angulo: {{ $json['Título del Angulo'] }}\n-----\nResumen del Concepto: {{ $json.Resumen }}\n-----\nEsquema del anuncio: {{ $json.Estructura }}\n-----\nSugerencia Visual (Idea de video): {{ $json['Idea de video'] }}\n-----\nTriggers Emocionales: {{ $json['Triggers Emocionales'] }}\n----\nSesgos Cognitivos: {{ $json['Sesgos Cognitivos'] }}\n----\nTecnicas de Respuesta Directa: {{ $json['Técnicas de respuesta directa'] }}\n----\nDuración Estimada: {{ $json['3. Seleccionar tiempo guión'] }}\n----\nInformación del Producto: {{ $json['Sobre el producto/servicio'][0] }}\n----\nTranscripción del anuncio real que mejor ha funcionado en las campañas hasta ahora: {{ $json['Transcripción del video (from Guion Ganador)'][0] }}\n---\nGenera un guion completo tomando en cuenta toda la información anterior.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Eres un guionista maestro en Video Sales Letters (VSL), especializado en anuncios de alto rendimiento para redes sociales como Facebook, Instagram o TikTok. Tu misión es construir un guion siguiendo el modelo AIDA, combinando persuasión emocional y lógica con un ritmo narrativo que detenga el scroll, mantenga la atención y maximice las conversiones.\n\nCuando recibas este brief:\n\n- **Ángulo creativo:** El concepto principal del anuncio.\n- **Resumen del concepto:** Explicación en Markdown con detalles visuales y psicológicos.\n- **Perfil de audiencia:** Miedos, deseos, lenguaje interno, creencias y objeciones.\n- **Datos extra:** Todo lo relevante sobre el producto, garantía, oferta, diferencial.\n- **Transcripción de anuncio real que mejor a funcionado**\n\nEntrega un guion estructurado de esta forma:\n\n### ESTRUCTURA DEL VSL – MODELO AIDA:\n\n**1. ATENCIÓN (0–5s):**  \n- Comienza con un disparador emocional: pregunta incómoda, afirmación contraria, estadística alarmante.  \n- Asegúrate de que en los primeros 3 segundos se identifique un dolor o deseo del usuario.\n\n**2. INTERÉS (5–20s):**  \n- Refuerza el problema. Muestra que \"conoces su mundo\".  \n- Utiliza metáforas visuales o microhistorias.  \n- Genera curiosidad sobre la solución sin revelarla todavía.\n\n**3. DESEO (20–90s):**  \n- Introduce el producto como respuesta inevitable.  \n- Muestra beneficios con foco en transformación emocional.  \n- Integra prueba social, testimonios, resultados cuantificables, autoridad o validación.  \n- Derriba objeciones lógicas (“¿y si no funciona?”, “es muy caro”) con storytelling.\n\n**4. ACCIÓN (90s–120s):**  \n- Llamada a la acción directa. Usa verbos imperativos.  \n- Refuerza la promesa clave. Añade urgencia real o escasez.  \n- Si aplica, incluye garantía o incentivo extra.\n\n**REGLAS:**\n- Tono conversacional, emocional y directo.\n- Cada frase debe tener propósito. Nada de relleno.\n- Indica escenas o planos si es posible (💡 Visual: pantalla partida, antes/después)."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        2400,
+        -784
+      ],
+      "id": "0b005d3a-af2a-4d14-a2f8-820bb6c06c4b",
+      "name": "AIDA"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Crea un guion completo usando el modelo PAS con la siguiente información:\n\n---\nTítulo del Angulo: {{ $json['Título do Angulo'] }}\nResumen del Concepto: {{ $json['descrição'] }}\n---\n\nPara el contexto del producto, usa la siguiente información:\n{{ $json['Campos gerado por IA'] }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Actúas como un guionista persuasivo especializado en anuncios tipo VSL que despiertan acción rápida en audiencias frías. Tu estructura base es PAS: identificar un problema, agitarlo hasta volverlo insoportable y presentar una solución innegable. Sigue esta estructura exacta y entrega solo el guion revisado en Markdown, sin texto extra."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        2400,
+        -656
+      ],
+      "id": "bc0e4af0-8d2b-4e02-a97e-1f74a29a6ffc",
+      "name": "PAS"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Titulo del Angulo: {{ $json['Título del Angulo'] }}\n-----\nResumen del Concepto: {{ $json.Resumen }}\n-----\nEsquema del anuncio: {{ $json.Estructura }}\n-----\nSugerencia Visual (Idea de video): {{ $json['Idea de video'] }}\n-----\nTriggers Emocionales: {{ $json['Triggers Emocionales'] }}\n----\nSesgos Cognitivos: {{ $json['Sesgos Cognitivos'] }}\n----\nTecnicas de Respuesta Directa: {{ $json['Técnicas de respuesta directa'] }}\n----\nDuración Estimada: {{ $json['3. Seleccionar tiempo guión'] }}\n----\nInformación del Producto: {{ $json['Sobre el producto/servicio'][0] }}\n----\nTranscripción del anuncio real que mejor ha funcionado en las campañas hasta ahora: {{ $json['Transcripción del video (from Guion Ganador)'][0] }}\n---\nGenera un guion completo tomando en cuenta toda la información anterior.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Eres un guionista experto en presentar productos de forma irresistible utilizando la estructura FAB. Esta estructura es ideal para productos técnicos, físicos o de ecommerce. Vas más allá de lo que el producto es, y te enfocas en lo que **hace sentir**.\n\nCon este brief:\n\n- **Ángulo principal**\n- **Resumen técnico + emocional**\n- **Perfil usuario ideal**\n- **Ficha de producto con detalles, materiales, funciones**\n- **Transcripción de anuncio real que mejor a funcionado**\n\nCrea un guion que responda:\n\n### GUION DE VSL – MODELO FAB:\n\n**1. FEATURES (0–20s):**  \n- Explica en detalle lo que el producto tiene.  \n- Muestra sus materiales, tecnología o diseño único.\n\n**2. ADVANTAGES (20–40s):**  \n- ¿Qué ventajas ofrece frente a lo habitual?  \n- Usa comparativas: “A diferencia de otras opciones…”\n\n**3. BENEFITS (40–90s):**  \n- Aterriza cómo impacta su vida: tranquilidad, tiempo, autoestima, rendimiento.  \n- Usa microhistorias (“Pedro ya no tiene que...”).\n\n**4. CTA FINAL (90–120s):**  \n- CTA fuerte recordando el beneficio más emocional.  \n- Cierre con urgencia (“Solo hoy”, “Entrega inmediata”).\n\n**NOTA:** Usa tomas detalladas del producto. Aplica si es físico, digital o SaaS."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        2400,
+        -528
+      ],
+      "id": "d128e101-4b7b-43a0-88dc-12ca4bacc58f",
+      "name": "4Ps"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Titulo del Angulo: {{ $json['Título del Angulo'] }}\n-----\nResumen del Concepto: {{ $json.Resumen }}\n-----\nEsquema del anuncio: {{ $json.Estructura }}\n-----\nSugerencia Visual (Idea de video): {{ $json['Idea de video'] }}\n-----\nTriggers Emocionales: {{ $json['Triggers Emocionales'] }}\n----\nSesgos Cognitivos: {{ $json['Sesgos Cognitivos'] }}\n----\nTecnicas de Respuesta Directa: {{ $json['Técnicas de respuesta directa'] }}\n----\nDuración Estimada: {{ $json['3. Seleccionar tiempo guión'] }}\n----\nInformación del Producto: {{ $json['Sobre el producto/servicio'][0] }}\n----\nTranscripción del anuncio real que mejor ha funcionado en las campañas hasta ahora: {{ $json['Transcripción del video (from Guion Ganador)'][0] }}\n---\nGenera un guion completo tomando en cuenta toda la información anterior.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Eres un guionista experto en presentar productos de forma irresistible utilizando la estructura FAB. Esta estructura es ideal para productos técnicos, físicos o de ecommerce. Vas más allá de lo que el producto es, y te enfocas en lo que **hace sentir**.\n\nCon este brief:\n\n- **Ángulo principal**\n- **Resumen técnico + emocional**\n- **Perfil usuario ideal**\n- **Ficha de producto con detalles, materiales, funciones**\n- **Transcripción de anuncio real que mejor a funcionado**\n\nCrea un guion que responda:\n\n### GUION DE VSL – MODELO FAB:\n\n**1. FEATURES (0–20s):**  \n- Explica en detalle lo que el producto tiene.  \n- Muestra sus materiales, tecnología o diseño único.\n\n**2. ADVANTAGES (20–40s):**  \n- ¿Qué ventajas ofrece frente a lo habitual?  \n- Usa comparativas: “A diferencia de otras opciones…”\n\n**3. BENEFITS (40–90s):**  \n- Aterriza cómo impacta su vida: tranquilidad, tiempo, autoestima, rendimiento.  \n- Usa microhistorias (“Pedro ya no tiene que...”).\n\n**4. CTA FINAL (90–120s):**  \n- CTA fuerte recordando el beneficio más emocional.  \n- Cierre con urgencia (“Solo hoy”, “Entrega inmediata”).\n\n**NOTA:** Usa tomas detalladas del producto. Aplica si es físico, digital o SaaS."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        2400,
+        -400
+      ],
+      "id": "9374f65d-515e-4ca1-922a-949398ae8438",
+      "name": "FAB"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Titulo del Angulo: {{ $json['Título del Angulo'] }}\n-----\nResumen del Concepto: {{ $json.Resumen }}\n-----\nEsquema del anuncio: {{ $json.Estructura }}\n-----\nSugerencia Visual (Idea de video): {{ $json['Idea de video'] }}\n-----\nTriggers Emocionales: {{ $json['Triggers Emocionales'] }}\n----\nSesgos Cognitivos: {{ $json['Sesgos Cognitivos'] }}\n----\nTecnicas de Respuesta Directa: {{ $json['Técnicas de respuesta directa'] }}\n----\nDuración Estimada: {{ $json['3. Seleccionar tiempo guión'] }}\n----\nInformación del Producto: {{ $json['Sobre el producto/servicio'][0] }}\n----\nTranscripción del anuncio real que mejor ha funcionado en las campañas hasta ahora: {{ $json['Transcripción del video (from Guion Ganador)'][0] }}\n---\nGenera un guion completo tomando en cuenta toda la información anterior.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Actúas como un guionista experto en storytelling emocional orientado a conversión. Tu tarea es crear un VSL que cuente una historia real o ficticia donde el espectador se vea reflejado, experimente un cambio y actúe al final.\n\nCon este brief:\n\n- **Ángulo narrativo**\n- **Resumen del caso o historia**\n- **Emociones del público objetivo**\n- **Producto/solución y resultados reales**\n- **Transcripción de anuncio real que mejor a funcionado**\n\nCrea un guion fluido y humano con esta estructura:\n\n### GUION DE VSL – STORYTELLING:\n\n**1. CONTEXTO EMOCIONAL (0–15s):**  \n- “Recuerdo el día que todo cambió…” o  \n- “Siempre hacía esto hasta que un día…”\n\n**2. CONFLICTO / FRUSTRACIÓN (15–30s):**  \n- Relata los obstáculos. Usa detalles personales: “No dormía bien, discutía a diario…”\n\n**3. PUNTO DE INFLEXIÓN (30–60s):**  \n- Descubre el producto por recomendación o casualidad.  \n- Empieza el cambio: “En solo una semana…”.\n\n**4. RESULTADO (60–90s):**  \n- Muestra el antes y después. Transforma en visual.  \n- Refleja un beneficio real y humano.\n\n**5. CTA (90–120s):**  \n- “Si te ha pasado esto, haz clic aquí.”  \n- Refuerza el resultado posible si toman acción hoy.\n\n**ESTILO:** Íntimo, visual, emocional. Ideal para video testimonial, entrevistas o storytelling puro."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        2400,
+        -256
+      ],
+      "id": "4c2d19fe-6b4f-46e5-aeff-f342c898c827",
+      "name": "ST + CTA"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4ae9d184-693b-49c1-a971-fc91e1a90522",
+              "leftValue": "={{ $json.effective_status }}",
+              "rightValue": "ACTIVE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "86d803d1-ea76-4821-95bc-5d067020578a",
+              "leftValue": "={{ $json.insights }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2528,
+        -3712
+      ],
+      "id": "29b3fce3-3d56-43eb-9759-b4cf79c4b384",
+      "name": "Condición13"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "app96yXmwaKfQej28",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblzK0q0MHrwR6RRS",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Mejores Ads?": false,
+            "CPC": "={{ $json.CPC }}",
+            "CPM": "={{ $json.CPM }}",
+            "Clicks": "={{ $json.Clicks }}",
+            "Impressions": "={{ $json.Impresiones }}",
+            "Spend": "={{ $json.Spend }}",
+            "Conversions": "={{ $json.Conversions }}",
+            "Tiempo medio visto": "={{ $json['Tiempo medio visto'] }}",
+            "% Visualizado": 0,
+            "Conversion Value": "={{ $json['Conversion Value'] }}",
+            "Frecuencia": "={{ $json.Frecuencia }}",
+            "Tiempo visto 25%": "={{ $json['Tiempo visto 25%'] }}",
+            "Ad ID": "={{ $json['Ad ID'] }}",
+            "Ad Name": "={{ $json['Ad Name'] }}",
+       

@@ -1,0 +1,116 @@
+{
+  "name": "Clickup tarea",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "37c170be-d5d8-464e-8cc4-d12cc5bfc001",
+      "name": "Workflow Input Trigger"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "team": "9015629441",
+        "space": "90152820692",
+        "folderless": true,
+        "list": "={{ $json.message.content.department }}",
+        "name": "={{ $json.message.content.task_name }}",
+        "additionalFields": {
+          "content": "={{ $json.message.content.task_description }}",
+          "dueDate": "={{ $json.message.content.due_date }}",
+          "priority": 3
+        }
+      },
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        800,
+        0
+      ],
+      "id": "e51f3b1d-b931-45f1-a5bf-f8c16134a544",
+      "name": "ClickUp1",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Eres un asistente experto en gestión de tareas. Tu trabajo es analizar mensajes proporcionados por el usuario y extraer la información clave necesaria para organizar una tarea en formato JSON. Para ello:\n\n1. Identifica el **departamento** relacionado con la tarea según el contexto del mensaje y devuelve el ID. Puede ser uno de los siguientes:\n   - \"Marketing\" = 901507028954\n   - \"Contabilidad\" = 901507028964\n   - \"Atencion al cliente\" = 901507028965\n   - \"Pedidos\" = 901507028967\n\n2. Proporciona una **descripción clara y concisa** de la tarea basada en el contenido del mensaje.\n\n3. Extrae la fecha de entrega de la tarea en el siguiente **formato ISO** (por ejemplo, `[2025-01-21T17:05:21.926+01:00]`). Si no se especifica explícitamente en el mensaje, usa la fecha y hora actual.\n\n4. Genera un **nombre para la tarea** breve y representativo, basado en las palabras clave del mensaje.\n\nDevuelve siempre la información en este formato JSON:\n\n{\n  \"department\": \"ID del departamento\",\n  \"task_description\": \"Descripción de la tarea\",\n  \"due_date\": \"Fecha en el formato especifico\",\n  \"task_name\": \"Nombre breve de la tarea\"\n}\n\nPara tu referencia hoy es {{ $now }}\nLa tarea es {{ $json.query }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        320,
+        20
+      ],
+      "id": "17e00a01-6902-4502-9565-36dd83b5a8f9",
+      "name": "OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "OpenAI1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI1": {
+      "main": [
+        [
+          {
+            "node": "ClickUp1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e86988d1-628c-4a72-b268-d388d7546fec",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e0e4b720cb3656009f5ca7014be06f1fbe69abfc54f93aa2cc3ca2098ff666d6"
+  },
+  "id": "zEJU8uWi7p83iAac",
+  "tags": []
+}

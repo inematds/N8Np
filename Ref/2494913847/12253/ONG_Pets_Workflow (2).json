@@ -1,0 +1,1551 @@
+{
+  "name": "Sistema Completo ONG Pets - Automação N8N",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "whatsapp-trigger-001",
+      "name": "WhatsApp Trigger (EvolutionAPI)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        200
+      ],
+      "webhookId": "pets-whatsapp-webhook",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "[REMOVED]",
+          "name": "EvolutionAPI Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "includeSpamTrash": false
+        },
+        "options": {}
+      },
+      "id": "gmail-trigger-002",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        400
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "canal",
+              "value": "whatsapp",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "usuario_id",
+              "value": "={{ $json.data.key.remoteJid }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "mensagem_texto",
+              "value": "={{ $json.data.message.conversation || $json.data.message.extendedTextMessage?.text || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "tem_audio",
+              "value": "={{ $json.data.message.audioMessage ? true : false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "tem_imagem",
+              "value": "={{ $json.data.message.imageMessage ? true : false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "normalize-whatsapp-003",
+      "name": "Normalizar WhatsApp",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "canal",
+              "value": "gmail",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "usuario_id",
+              "value": "={{ $json.from }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "mensagem_texto",
+              "value": "={{ $json.snippet }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "tem_audio",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "tem_imagem",
+              "value": "={{ $json.attachments && $json.attachments.length > 0 }}",
+              "type": "boolean"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "email_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "normalize-gmail-004",
+      "name": "Normalizar Gmail",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "merge-inputs-005",
+      "name": "Merge Inputs",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "tableId": "historico_conversas",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "usuario_id",
+              "condition": "equal",
+              "keyValue": "={{ $json.usuario_id }}"
+            }
+          ]
+        },
+        "options": {
+          "queryName": "order=timestamp.desc&limit=10"
+        }
+      },
+      "id": "buscar-historico-006",
+      "name": "Buscar Histórico Conversa",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        800,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "id": "transcribe-audio-007",
+      "name": "Transcrever Áudio",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        800,
+        100
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAI ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tem_audio }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equal"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tem_imagem }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equal"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Imagem"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.mensagem_texto }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Texto"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "switch-tipo-entrada-008",
+      "name": "Switch Tipo Entrada",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4o mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Você é um assistente especializado em análise de imagens para uma ONG de proteção animal.\n\nAnalise esta imagem e extraia as seguintes informações:\n1. Se há animais na imagem (tipo, quantidade, condições)\n2. Se parece ser uma situação de emergência ou resgate\n3. Localização visível (placas, endereços, pontos de referência)\n4. Descrição detalhada do que você vê\n\nImagem: {{ $json.data.message.imageMessage.url }}\n\nResponda em formato JSON:\n{\n  \"tem_animal\": boolean,\n  \"tipo_animal\": \"string\",\n  \"quantidade\": number,\n  \"emergencia\": boolean,\n  \"localizacao\": \"string\",\n  \"descricao\": \"string\"\n}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "id": "analisar-imagem-009",
+      "name": "Analisar Imagem",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1200,
+        100
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAI ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensagem_texto || $json.transcricao || $json.descricao_imagem }}",
+        "options": {
+          "systemMessage": "=Você é o orquestrador inteligente da ONG Pets. Sua função é analisar a mensagem do usuário e identificar a intenção para direcioná-la ao agente especializado correto.\n\n## Histórico da Conversa:\n{{ $('Buscar Histórico Conversa').all().map(item => `${item.json.timestamp}: ${item.json.mensagem}`).join('\\n') }}\n\n## Agentes Disponíveis:\n1. **cadastro_animal** - Para registrar novos animais encontrados, perdidos ou para adoção\n2. **agendamento_castracao** - Para agendar cirurgias de castração\n3. **rag_duvidas** - Para responder dúvidas gerais sobre cuidados, procedimentos, etc.\n4. **emergencia** - Para situações urgentes de resgate ou emergência médica\n\n## Regras de Classificação:\n- Palavras-chave para CADASTRO: \"encontrei\", \"achei\", \"perdido\", \"adoção\", \"registrar\", \"cadastrar\"\n- Palavras-chave para CASTRAÇÃO: \"castrar\", \"castração\", \"esterilizar\", \"agendar\", \"cirurgia\"\n- Palavras-chave para EMERGÊNCIA: \"urgente\", \"socorro\", \"ferido\", \"atropelado\", \"emergência\", \"ajuda\"\n- Palavras-chave para DÚVIDAS: \"como\", \"quando\", \"onde\", \"dúvida\", \"informação\", \"orientação\"\n\nResponda APENAS com o nome do agente: cadastro_animal, agendamento_castracao, rag_duvidas ou emergencia",
+          "returnIntermediateSteps": false
+        }
+      },
+      "id": "orquestrador-010",
+      "name": "Orquestrador Inteligente",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        1400,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAI ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "cadastro_animal",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Cadastro"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "agendamento_castracao",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Castracao"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "rag_duvidas",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "RAG"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "emergencia",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Emergencia"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "switch-agentes-011",
+      "name": "Switch Agentes",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4o mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Você é o agente especializado em cadastro de animais da ONG Pets.\n\nMensagem do usuário: {{ $json.mensagem_texto || $json.transcricao }}\nAnálise de imagem: {{ $json.analise_imagem || 'Não disponível' }}\n\nColete as seguintes informações para cadastrar o animal:\n1. Tipo de animal (cão, gato, etc.)\n2. Porte (pequeno, médio, grande)\n3. Cor/características físicas\n4. Situação (perdido, encontrado, para adoção)\n5. Localização onde foi encontrado\n6. Estado de saúde aparente\n7. Contato do responsável\n\nSe alguma informação estiver faltando, pergunte de forma amigável.\nSe todas as informações estiverem completas, confirme o cadastro.\n\nResponda em formato JSON:\n{\n  \"resposta\": \"sua resposta ao usuário\",\n  \"dados_completos\": boolean,\n  \"dados_animal\": {\n    \"tipo\": \"string\",\n    \"porte\": \"string\",\n    \"cor\": \"string\",\n    \"situacao\": \"string\",\n    \"localizacao\": \"string\",\n    \"saude\": \"string\",\n    \"contato\": \"string\"\n  }\n}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "id": "agente-cadastro-012",
+      "name": "Agente Cadastro Animal",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1800,
+        100
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAI ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4o mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Você é o agente especializado em agendamento de castração da ONG Pets.\n\nMensagem do usuário: {{ $json.mensagem_texto || $json.transcricao }}\n\nColete as seguintes informações para agendar a castração:\n1. Nome do animal\n2. Tipo e porte do animal\n3. Idade aproximada\n4. Peso aproximado\n5. Histórico de saúde/vacinas\n6. Nome e contato do tutor\n7. Endereço para busca (se necessário)\n8. Preferência de data\n\nConsulte a agenda disponível e sugira datas.\nVerifique se o animal atende aos critérios (idade mínima, peso, vacinas).\n\nResponda em formato JSON:\n{\n  \"resposta\": \"sua resposta ao usuário\",\n  \"dados_completos\": boolean,\n  \"dados_agendamento\": {\n    \"nome_animal\": \"string\",\n    \"tipo_porte\": \"string\",\n    \"idade\": \"string\",\n    \"peso\": \"string\",\n    \"vacinas\": \"string\",\n    \"nome_tutor\": \"string\",\n    \"contato_tutor\": \"string\",\n    \"endereco\": \"string\",\n    \"data_preferencia\": \"string\"\n  }\n}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "id": "agente-castracao-013",
+      "name": "Agente Castração",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1800,
+        250
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAI ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "base_conhecimento_pets",
+        "description": "Base de conhecimento da ONG Pets com informações sobre cuidados com animais, procedimentos, dicas de saúde e orientações gerais.",
+        "topK": 5
+      },
+      "id": "vector-store-rag-014",
+      "name": "Vector Store RAG",
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "embeddings-openai-015",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        2000,
+        400
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAI ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableName": "base_conhecimento",
+        "options": {}
+      },
+      "id": "supabase-vector-store-016",
+      "name": "Supabase Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        2200,
+        400
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensagem_texto || $json.transcricao }}",
+        "options": {
+          "systemMessage": "Você é um assistente especializado da ONG Pets. Use a base de conhecimento para responder dúvidas sobre:\n- Cuidados com animais\n- Procedimentos de adoção\n- Orientações de saúde\n- Informações sobre castração\n- Dicas de comportamento animal\n\nSempre seja empático, informativo e ofereça ajuda adicional quando necessário.",
+          "returnIntermediateSteps": false
+        }
+      },
+      "id": "agente-rag-017",
+      "name": "Agente RAG Dúvidas",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        1800,
+        550
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAI ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4o mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=🚨 EMERGÊNCIA DETECTADA - ONG PETS 🚨\n\nMensagem: {{ $json.mensagem_texto || $json.transcricao }}\nAnálise de imagem: {{ $json.analise_imagem || 'Não disponível' }}\n\nVocê é o agente de emergência. Priorize:\n1. Coleta rápida de localização exata\n2. Avaliação da gravidade da situação\n3. Orientações de primeiros socorros se necessário\n4. Acionamento da equipe de resgate\n5. Manter contato constante até a chegada da ajuda\n\nResponda de forma urgente e direta. Se a localização não estiver clara, essa é a PRIORIDADE MÁXIMA.\n\nFormato de resposta JSON:\n{\n  \"resposta\": \"resposta urgente ao usuário\",\n  \"nivel_emergencia\": \"baixo|medio|alto|critico\",\n  \"acoes_necessarias\": [\"lista de ações\"],\n  \"equipe_acionada\": boolean,\n  \"dados_emergencia\": {\n    \"localizacao\": \"string\",\n    \"tipo_animal\": \"string\",\n    \"situacao\": \"string\",\n    \"contato\": \"string\"\n  }\n}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "id": "agente-emergencia-018",
+      "name": "Agente Emergência",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1800,
+        700
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAI ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "tableId": "pets",
+        "columnsUi": {
+          "columnValues": [
+            {
+              "column": "tipo",
+              "value": "={{ $json.dados_animal.tipo }}"
+            },
+            {
+              "column": "porte",
+              "value": "={{ $json.dados_animal.porte }}"
+            },
+            {
+              "column": "cor",
+              "value": "={{ $json.dados_animal.cor }}"
+            },
+            {
+              "column": "situacao",
+              "value": "={{ $json.dados_animal.situacao }}"
+            },
+            {
+              "column": "localizacao",
+              "value": "={{ $json.dados_animal.localizacao }}"
+            },
+            {
+              "column": "saude",
+              "value": "={{ $json.dados_animal.saude }}"
+            },
+            {
+              "column": "contato_responsavel",
+              "value": "={{ $json.dados_animal.contato }}"
+            },
+            {
+              "column": "usuario_id",
+              "value": "={{ $('Merge Inputs').item.json.usuario_id }}"
+            },
+            {
+              "column": "canal_origem",
+              "value": "={{ $('Merge Inputs').item.json.canal }}"
+            },
+            {
+              "column": "created_at",
+              "value": "={{ new Date().toISOString() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "salvar-pet-019",
+      "name": "Salvar Pet no Banco",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        100
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "tableId": "agendamentos",
+        "columnsUi": {
+          "columnValues": [
+            {
+              "column": "nome_animal",
+              "value": "={{ $json.dados_agendamento.nome_animal }}"
+            },
+            {
+              "column": "tipo_porte",
+              "value": "={{ $json.dados_agendamento.tipo_porte }}"
+            },
+            {
+              "column": "idade",
+              "value": "={{ $json.dados_agendamento.idade }}"
+            },
+            {
+              "column": "peso",
+              "value": "={{ $json.dados_agendamento.peso }}"
+            },
+            {
+              "column": "vacinas",
+              "value": "={{ $json.dados_agendamento.vacinas }}"
+            },
+            {
+              "column": "nome_tutor",
+              "value": "={{ $json.dados_agendamento.nome_tutor }}"
+            },
+            {
+              "column": "contato_tutor",
+              "value": "={{ $json.dados_agendamento.contato_tutor }}"
+            },
+            {
+              "column": "endereco",
+              "value": "={{ $json.dados_agendamento.endereco }}"
+            },
+            {
+              "column": "data_preferencia",
+              "value": "={{ $json.dados_agendamento.data_preferencia }}"
+            },
+            {
+              "column": "usuario_id",
+              "value": "={{ $('Merge Inputs').item.json.usuario_id }}"
+            },
+            {
+              "column": "canal_origem",
+              "value": "={{ $('Merge Inputs').item.json.canal }}"
+            },
+            {
+              "column": "status",
+              "value": "pendente"
+            },
+            {
+              "column": "created_at",
+              "value": "={{ new Date().toISOString() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "salvar-agendamento-020",
+      "name": "Salvar Agendamento",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        250
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "tableId": "emergencias",
+        "columnsUi": {
+          "columnValues": [
+            {
+              "column": "localizacao",
+              "value": "={{ $json.dados_emergencia.localizacao }}"
+            },
+            {
+              "column": "tipo_animal",
+              "value": "={{ $json.dados_emergencia.tipo_animal }}"
+            },
+            {
+              "column": "situacao",
+              "value": "={{ $json.dados_emergencia.situacao }}"
+            },
+            {
+              "column": "contato",
+              "value": "={{ $json.dados_emergencia.contato }}"
+            },
+            {
+              "column": "nivel_emergencia",
+              "value": "={{ $json.nivel_emergencia }}"
+            },
+            {
+              "column": "usuario_id",
+              "value": "={{ $('Merge Inputs').item.json.usuario_id }}"
+            },
+            {
+              "column": "canal_origem",
+              "value": "={{ $('Merge Inputs').item.json.canal }}"
+            },
+            {
+              "column": "status",
+              "value": "ativo"
+            },
+            {
+              "column": "created_at",
+              "value": "={{ new Date().toISOString() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "salvar-emergencia-021",
+      "name": "Salvar Emergência",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        700
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "tableId": "historico_conversas",
+        "columnsUi": {
+          "columnValues": [
+            {
+              "column": "usuario_id",
+              "value": "={{ $('Merge Inputs').item.json.usuario_id }}"
+            },
+            {
+              "column": "canal",
+              "value": "={{ $('Merge Inputs').item.json.canal }}"
+            },
+            {
+              "column": "mensagem",
+              "value": "={{ $('Merge Inputs').item.json.mensagem_texto }}"
+            },
+            {
+              "column": "resposta",
+              "value": "={{ $json.resposta || $json.output }}"
+            },
+            {
+              "column": "agente_usado",
+              "value": "={{ $('Orquestrador Inteligente').item.json.output }}"
+            },
+            {
+              "column": "timestamp",
+              "value": "={{ new Date().toISOString() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "salvar-historico-022",
+      "name": "Salvar Histórico",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2200,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "merge-respostas-023",
+      "name": "Merge Respostas",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        2400,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Merge Inputs').item.json.canal }}",
+                    "rightValue": "whatsapp",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equal"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "WhatsApp"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Merge Inputs').item.json.canal }}",
+                    "rightValue": "gmail",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equal"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Gmail"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "switch-resposta-024",
+      "name": "Switch Resposta",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2600,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('WhatsApp Trigger (EvolutionAPI)').item.json.webhook_url }}/sendText",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $('Merge Inputs').item.json.usuario_id }}\",\n  \"text\": \"{{ $json.resposta || $json.output }}\"\n}",
+        "options": {}
+      },
+      "id": "enviar-whatsapp-025",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2800,
+        300
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "[REMOVED]",
+          "name": "EvolutionAPI Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Merge Inputs').item.json.email_id }}",
+        "message": "={{ $json.resposta || $json.output }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "enviar-gmail-026",
+      "name": "Enviar Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2800,
+        500
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail ONG Pets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "log-001",
+              "name": "status",
+              "value": "sucesso",
+              "type": "string"
+            },
+            {
+              "id": "log-002",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            },
+            {
+              "id": "log-003",
+              "name": "usuario_id",
+              "value": "={{ $('Merge Inputs').item.json.usuario_id }}",
+              "type": "string"
+            },
+            {
+              "id": "log-004",
+              "name": "canal",
+              "value": "={{ $('Merge Inputs').item.json.canal }}",
+              "type": "string"
+            },
+            {
+              "id": "log-005",
+              "name": "agente_usado",
+              "value": "={{ $('Orquestrador Inteligente').item.json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-sucesso-027",
+      "name": "Log Sucesso",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3000,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "status",
+              "value": "erro",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "erro_detalhes",
+              "value": "={{ $json.error }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "usuario_id",
+              "value": "={{ $('Merge Inputs').item.json.usuario_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-erro-028",
+      "name": "Log Erro",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3000,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "tableId": "logs_sistema",
+        "columnsUi": {
+          "columnValues": [
+            {
+              "column": "status",
+              "value": "={{ $json.status }}"
+            },
+            {
+              "column": "timestamp",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "column": "usuario_id",
+              "value": "={{ $json.usuario_id }}"
+            },
+            {
+              "column": "canal",
+              "value": "={{ $json.canal }}"
+            },
+            {
+              "column": "agente_usado",
+              "value": "={{ $json.agente_usado }}"
+            },
+            {
+              "column": "detalhes",
+              "value": "={{ $json.erro_detalhes || 'Processamento concluído com sucesso' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "salvar-logs-029",
+      "name": "Salvar Logs",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3200,
+        500
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase ONG Pets"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "WhatsApp Trigger (EvolutionAPI)": {
+      "main": [
+        [
+          {
+            "node": "Normalizar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Merge Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Gmail": {
+      "main": [
+        [
+          {
+            "node": "Merge Inputs",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Inputs": {
+      "main": [
+        [
+          {
+            "node": "Buscar Histórico Conversa",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Switch Tipo Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Tipo Entrada": {
+      "main": [
+        [
+          {
+            "node": "Transcrever Áudio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Analisar Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Orquestrador Inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcrever Áudio": {
+      "main": [
+        [
+          {
+            "node": "Orquestrador Inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisar Imagem": {
+      "main": [
+        [
+          {
+            "node": "Orquestrador Inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Orquestrador Inteligente": {
+      "main": [
+        [
+          {
+            "node": "Switch Agentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Agentes": {
+      "main": [
+        [
+          {
+            "node": "Agente Cadastro Animal",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agente Castração",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agente RAG Dúvidas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agente Emergência",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Cadastro Animal": {
+      "main": [
+        [
+          {
+            "node": "Salvar Pet no Banco",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Respostas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Castração": {
+      "main": [
+        [
+          {
+            "node": "Salvar Agendamento",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Respostas",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Agente RAG Dúvidas": {
+      "main": [
+        [
+          {
+            "node": "Merge Respostas",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Agente Emergência": {
+      "main": [
+        [
+          {
+            "node": "Salvar Emergência",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Respostas",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Salvar Pet no Banco": {
+      "main": [
+        [
+          {
+            "node": "Salvar Histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "Salvar Histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar Emergência": {
+      "main": [
+        [
+          {
+            "node": "Salvar Histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Respostas": {
+      "main": [
+        [
+          {
+            "node": "Switch Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Resposta": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Log Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Gmail": {
+      "main": [
+        [
+          {
+            "node": "Log Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Sucesso": {
+      "main": [
+        [
+          {
+            "node": "Salvar Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Erro": {
+      "main": [
+        [
+          {
+            "node": "Salvar Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store RAG": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente RAG Dúvidas",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store RAG",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-08-04T23:00:00.000Z",
+      "updatedAt": "2025-08-04T23:00:00.000Z",
+      "id": "pets-ong-system",
+      "name": "ONG Pets System"
+    }
+  ],
+  "triggerCount": 2,
+  "updatedAt": "2025-08-04T23:00:00.000Z",
+  "versionId": "1104.2"
+}

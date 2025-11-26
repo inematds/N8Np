@@ -1,0 +1,142 @@
+[
+  {
+    "id": 6288,
+    "author": "INEMA",
+    "date": "2025-04-23T22:43:46+00:00",
+    "text": "### **Resumo Geral**\nO criador desenvolveu um **editor de vídeo automatizado com IA**, sem necessidade de código, utilizando **n8n**, **MCP Agents**, **FFmpeg**, **Docker**, **ngrok**, **Supabase**, **Together AI** e **OpenAI Whisper**. Tudo é disparado por uma simples mensagem no Telegram, e o fluxo transforma essa mensagem em um **vídeo completo com narração, imagens geradas por IA e música de fundo**.\n\n---\n\n### **Fluxo de Trabalho Automatizado**\n1. **Gatilho no Telegram**  \n   O usuário envia uma mensagem com o pedido da história, por exemplo: \"Crie uma história sobre uma raposa laranja\".\n\n2. **Transcrição da História**\n   O agente converte a solicitação em um **roteiro narrativo de 15 segundos**.\n\n3. **Narração com IA (Text-to-Speech)**  \n   O roteiro é transformado em **áudio com voz gerada por IA**, usando o servidor Kokoro.\n\n4. **Imagens com IA (Text-to-Image)**  \n   O texto é dividido em partes de 6 segundos e cada trecho gera uma **imagem usando Together AI**.\n\n5. **Renderização do Vídeo**  \n   As imagens e o áudio são combinados em um **vídeo com FFmpeg**. O agente permite:\n   - Escolher entre **modo paisagem ou retrato**\n   - Adicionar **legendas automáticas geradas com OpenAI Whisper**\n   - Incluir **música de fundo do YouTube (com yt-dlp)**\n\n6. **Upload para Supabase**  \n   Os arquivos (áudio, imagens e vídeo final) são armazenados automaticamente no **Supabase**.\n\n7. **Envio automático para Telegram**  \n   O vídeo final é **entregue diretamente no chat** com o usuário.\n\n---\n\n### **Tecnologias Utilizadas**\n- **n8n + Agentes MCP**: Orquestram toda a automação sem código.\n- **Docker**: Roda n8n e Kokoro localmente.\n- **ngrok**: Expõe o servidor local para a internet.\n- **Supabase**: Armazena os arquivos do vídeo.\n- **Together AI**: Gera imagens a partir do texto.\n- **OpenAI Whisper**: Transcreve áudio para gerar legendas.\n- **FFmpeg**: Faz a renderização completa do vídeo com áudio, imagens e legendas.\n- **yt-dlp**: Faz o download do áudio da música de fundo do YouTube.\n\n---\n\n### **Destaques Técnicos**\n- Integrações via **API com JSON**\n- Uso de **múltiplos \"Switch nodes\" e \"IF nodes\"** para controle de fluxo\n- Processamento de imagens em lote com controle individual no Telegram\n- **Substituição de funções humanas básicas de edição de vídeo** com IA e automação\n- Toda a lógica e comandos estão disponíveis na **comunidade do criador com templates prontos**\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 6287,
+    "author": "INEMA",
+    "date": "2025-04-23T22:42:27+00:00",
+    "text": "===================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 6286,
+    "author": "INEMA",
+    "date": "2025-04-23T22:42:24+00:00",
+    "text": "==================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 6285,
+    "author": "INEMA",
+    "date": "2025-04-23T22:42:21+00:00",
+    "text": "---\n\n**12. Agente MCP – Editor de Vídeo com IA**\n\n**Usando ngrok no n8n local (para torná-lo acessível pela internet)**  \n1. Acesse: https://dashboard.ngrok.com/domains > clique em **New Domains**  \n2. Inicie o túnel  \n3. Copie e cole o seguinte comando no terminal  \n4. Copie a **URL gerada no terminal**\n\n---\n\n**Como instalar o n8n com Docker e o Kokoro localmente**\n\n1. Baixe e instale o Docker: https://www.docker.com/  \n2. Abra o aplicativo Docker no desktop  \n3. Crie uma rede para conectar os dois containers:\n\n   ```   docker network create my-network\n   ```\n\n4. Execute o servidor Kokoro conectado à rede criada:\n\n   ```   docker run -d --name fastapi-app --network my-network -p 8880:8880 ghcr.io/remsky/kokoro-fastapi-cpu:latest\n   ```\n\n5. Execute o servidor n8n também na mesma rede:\n\n   ```   docker run -d --name n8n-app \\\n     --network my-network \\\n     -p 5678:5678 \\\n     -e WEBHOOK_URL=https://externally-helped-hippo.ngrok-free.app \\\n     n8nio/n8n:1.88.0\n   ```\n\n   **Importante:** substitua `https://externally-helped-hippo.ngrok-free.app` pela **sua URL ngrok pessoal**.\n\n---\n\n**Como instalar o FFmpeg no Docker (para renderizar vídeos sem a API andynocode)**\n\n1. No Docker, vá em **Containers**, copie o **ID do container**.\n2. Substitua `{{container id}}` pelo seu ID no comando abaixo:\n\n   ```   docker exec -it -u root {{container id}} apk add --update python3 py3-pip gcc python3-dev musl-dev curl ffmpeg\n   ```\n\n   **Exemplo completo:**\n\n   ```   docker exec -it -u root e2b38713d607627c6aa25a4ef61ddfee1630256e0a6c58ca75e2f23d7e2998aa apk add --update python3 py3-pip gcc python3-dev musl-dev curl ffmpeg\n   ```\n\n3. No Mac: Command + Espaço > buscar por \"Terminal\" > colar e executar.\n\n---\n\n**Como instalar o yt-dlp no Docker (para baixar vídeos do YouTube)**\n\n1. Copie o ID do container no Docker.\n2. Substitua `{{container id}}` no comando abaixo:\n\n   ```   docker exec -it -u root {{container id}} apk add yt-dlp\n   ```\n\n   **Exemplo completo:**\n\n   ```   docker exec -it -u root e2b38713d607627c6aa25a4ef61ddfee1630256e0a6c58ca75e2f23d7e2998aa apk add yt-dlp\n   ```\n\n3. No Mac: Command + Espaço > buscar por \"Terminal\" > colar e executar.",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 6284,
+    "author": "INEMA",
+    "date": "2025-04-23T22:41:30+00:00",
+    "text": "https://www.youtube.com/watch?v=dgvVS-5mRFo",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 6283,
+    "author": "INEMA",
+    "date": "2025-04-23T22:41:06+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Tutorial 22.1 - AI Video Editor Templates.zip"
+  },
+  {
+    "id": 6282,
+    "author": "INEMA",
+    "date": "2025-04-23T22:40:56+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_6282_007.jpg"
+  },
+  {
+    "id": 6281,
+    "author": "INEMA",
+    "date": "2025-04-23T22:40:56+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_6281_008.jpg"
+  },
+  {
+    "id": 6280,
+    "author": "INEMA",
+    "date": "2025-04-23T22:40:55+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_6280_009.jpg"
+  },
+  {
+    "id": 6278,
+    "author": "INEMA",
+    "date": "2025-04-23T22:35:52+00:00",
+    "text": "al12 - MCP Agent Videos",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 6277,
+    "author": "INEMA",
+    "date": "2025-04-23T22:35:40+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 6276,
+    "author": "INEMA",
+    "date": "2025-04-23T22:35:39+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 6275,
+    "author": "INEMA",
+    "date": "2025-04-23T22:35:39+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 6274,
+    "author": "INEMA",
+    "date": "2025-04-23T22:35:39+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 6273,
+    "author": "INEMA",
+    "date": "2025-04-23T22:35:38+00:00",
+    "text": "https://chatgpt.com/c/68096a34-9254-8009-8f17-bbb2672890c6",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 6272,
+    "author": "INEMA",
+    "date": "2025-04-23T22:35:38+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 6271,
+    "author": "INEMA",
+    "date": "2025-04-23T22:35:32+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

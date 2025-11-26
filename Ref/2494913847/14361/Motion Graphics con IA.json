@@ -1,0 +1,1980 @@
+{
+  "name": "Motion Graphics con IA",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Video",
+        "formDescription": "Video",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Imagen",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Descripción (Que quieres conseguir)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -9264,
+        -320
+      ],
+      "id": "982e2f9f-7a2e-463c-859f-652609bedd4c",
+      "name": "On form submission",
+      "webhookId": "3b3bc2bf-37d9-41ff-b146-2932897d4a22"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list"
+        },
+        "text": "=Analiza cuidadosamente la imagen proporcionada y describe de forma extremadamente detallada el logo o producto que aparece.\n\nTu objetivo es capturar toda la información visual posible para que otra IA pueda recrear o rediseñar esta imagen con la máxima fidelidad.\n\nInstrucciones:\n- Concéntrate solo en el objeto principal (ignora el fondo o el entorno).\n- Describe:\n  - Colores dominantes (con nombres descriptivos y códigos HEX de 6 dígitos con prefijo `#`)\n  - Formas, siluetas y proporciones\n  - Textos o palabras visibles (indica su contenido exacto y el estilo de letra)\n  - Tipografía (familia, grosor, serif/sans, negrita/fina, etc.)\n  - Estilo visual general (minimalista, moderno, vintage, futurista, etc.)\n  - Materiales o texturas visibles (metal, plástico, tela, cristal, etc.)\n  - Efectos de luz, sombras, brillos o degradados\n  - Elementos gráficos adicionales (iconos, símbolos, ilustraciones)\n  - Sensaciones o tono estético que transmite (lujo, tecnología, naturaleza, etc.)\n\nDevuelve la respuesta únicamente en formato Markdown con este esquema:\n\n**Descripción visual detallada:**\n(Escribe aquí un texto extenso y preciso describiendo todo lo anterior)\n\n**Colores dominantes:**\n- (Nombre descriptivo) — `#XXXXXX`\n- (Nombre descriptivo) — `#XXXXXX`\n- (Nombre descriptivo) — `#XXXXXX`\n\n**Texto visible:**\n- Contenido: \"...\" \n- Estilo de tipografía: ...\n",
+        "imageUrls": "={{ $json.data.url }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -8816,
+        -320
+      ],
+      "id": "0d6c523e-3b3e-4188-934e-88fa24e36112",
+      "name": "Analyze image",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Descripcion de la imagen:{{ $json.content }}\n\nDescripción de lo que quieres el usuario: {{ $('On form submission').first().json['Descripción (Que quieres conseguir)'] }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Eres un experto en diseño visual, efectos de vídeo y generación de contenido para AI Motion Graphics de alto impacto.\n\nRecibirás:\n- La descripción de una imagen base (logotipo, producto o marca)\n- Una descripción detallada del estilo visual deseado, el mensaje a transmitir y los componentes que el usuario quiere que aparezcan en el vídeo (colores, texturas, símbolos, elementos de entorno, iluminación, etc.)\n\nTu tarea es:\n1. Generar 3 prompts para crear imágenes clave que compartan una estética coherente con la imagen base y la descripción.\n2. Generar 4 prompts de transiciones entre estas imágenes, que puedan usarse en un generador de vídeo que recibe un frame inicial y un frame final para crear animaciones fluidas y con ritmo.\n\nReglas para los prompts de imágenes:\n- Deben mantener coherencia visual con el logotipo o estética de la imagen base\n- Deben reflejar los elementos y componentes solicitados por el usuario\n- Deben representar una evolución visual progresiva, como una narrativa visual en 3 fases\n- Deben tener un nivel de detalle alto, estilo visual impactante, realista, artístico o cinematográfico según lo descrito por el usuario\n\nReglas para los prompts de transiciones:\n- Deben describir con precisión el tipo de animación, los efectos visuales, la dirección del movimiento y el estilo que conecte ambas imágenes sin saltos bruscos\n- Deben respetar la misma paleta de colores, estilo visual, ritmo y energía de las imágenes\n- Pueden incluir efectos como ráfagas de partículas, explosiones de luz, morphing veloz, destellos eléctricos, zooms agresivos, deformaciones rápidas, flujos de energía, líneas de velocidad, etc.\n\nDebes devolver la salida **únicamente en JSON** con esta estructura exacta:\n\n{\n  \"images\": {\n    \"prompt_1\": \"<prompt para imagen 1>\",\n    \"prompt_2\": \"<prompt para imagen 2>\",\n    \"prompt_3\": \"<prompt para imagen 3>\"\n  },\n  \"transitions\": {\n    \"base_to_1\": \"<prompt de transición rápida y dinámica de imagen base a imagen 1>\",\n    \"1_to_2\": \"<prompt de transición rápida y dinámica de imagen 1 a imagen 2>\",\n    \"2_to_3\": \"<prompt de transición rápida y dinámica de imagen 2 a imagen 3>\",\n    \"3_to_base\": \"<prompt de transición rápida y dinámica de imagen 3 a imagen base>\"\n  }\n}\n\nNo incluyas ninguna explicación ni texto adicional, solo el JSON con los prompts generados.\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -8592,
+        -320
+      ],
+      "id": "23a56bff-5abb-4625-81b0-89967c1f1f7f",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"images\": {\n    \"prompt_1\": \"Un fondo de neón oscuro iluminado por destellos azul y morado, partículas brillantes flotando en el aire, el logotipo de la marca en el centro resaltado con luz dramática, estilo futurista y ultra realista\",\n    \"prompt_2\": \"El logotipo atravesando un túnel de luz con trazos de neón azul y morado, efecto de velocidad extrema, líneas de energía que envuelven el logo, estilo cyberpunk, sensación de movimiento y potencia\",\n    \"prompt_3\": \"El logotipo suspendido sobre una ciudad futurista llena de rascacielos iluminados en tonos azul y morado, rayos de energía ascendiendo, bruma ligera en el horizonte, atmósfera épica y cinematográfica\"\n  },\n  \"transitions\": {\n    \"base_to_1\": \"Transición rápida: el fondo se oscurece y líneas de luz azul y morado se encienden en espiral alrededor del logotipo, incrementando el brillo en pocos segundos hasta llegar a la escena de la imagen 1\",\n    \"1_to_2\": \"Transición dinámica: las partículas de energía comienzan a girar y se estiran formando un túnel de neón que absorbe el logotipo y lo impulsa hacia adelante, transformando el entorno en el escenario de la imagen 2\",\n    \"2_to_3\": \"Transición veloz: el túnel de luz se fragmenta en miles de rayos que se elevan, revelando gradualmente la ciudad futurista iluminada de la imagen 3 mientras el logotipo queda suspendido en el aire\",\n    \"3_to_base\": \"Transición final: la ciudad se disuelve en partículas que colapsan hacia el centro, contrayéndose hasta dejar únicamente el logotipo flotando en un fondo oscuro inicial\"\n  }\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -8480,
+        -128
+      ],
+      "id": "447425eb-92fe-4815-9b00-f41cd15be5ff",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -8640,
+        -128
+      ],
+      "id": "2563b8bd-829f-46e5-8d92-76c5b0f9a11e",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/playground/createTask",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"google/nano-banana-edit\",\n  \"callBackUrl\": \"{{$execution.resumeUrl}}\",\n  \"input\": {\n    \"prompt\": \"{{ $json['output.images'] }}. Keep the same image format.\",\n    \"image_urls\": [\n      \"{{$('Get URL').first().json.data.url}}\"\n    ],\n    \"num_images\": \"1\"\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -7920,
+        -320
+      ],
+      "id": "eae75941-e9e7-468d-adeb-820fc721fcba",
+      "name": "Nano banana",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.imgbb.com/1/upload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "image",
+              "inputDataFieldName": "Imagen"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -9040,
+        -320
+      ],
+      "id": "8473321e-facb-4f0b-90e9-d2740799790f",
+      "name": "Get URL",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "[REMOVED]",
+          "name": "imgBB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.images",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -8144,
+        -320
+      ],
+      "id": "80891681-da03-4af2-9a6c-ace4c3389672",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -7696,
+        -320
+      ],
+      "id": "47c421cc-de7b-4368-83e6-c3923e80eab9",
+      "name": "Esperar 3",
+      "webhookId": "62c08f62-0f49-4d68-b8ab-2a76603b73d6"
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/playground/recordInfo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $('Nano banana').item.json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -7472,
+        -320
+      ],
+      "id": "066e3101-7460-44d2-9650-18c7246970a4",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1fkgaVhXYLnkSNfHu16CuQmnBJMZ_u7auqkEaCBw_SS8",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Imagen Inicial": "={{ $('Get URL').first().json.data.url_viewer }}",
+            "Descripción": "={{ $('On form submission').first().json['Descripción (Que quieres conseguir)'] }}",
+            "Imagen 1": "={{ JSON.parse($items(\"HTTP Request\")[0].json.data.resultJson).resultUrls[0] }}",
+            "Imagen 2": "={{ JSON.parse($items(\"HTTP Request\")[1].json.data.resultJson).resultUrls[0] }}",
+            "Imagen 3": "={{ JSON.parse($items(\"HTTP Request\")[2].json.data.resultJson).resultUrls[0] }}",
+            "Transicion 1": "={{ $('Basic LLM Chain').first().json.output.transitions.base_to_1 }}",
+            "Transicion 2": "={{ $('Basic LLM Chain').first().json.output.transitions['1_to_2'] }}",
+            "Transicion 3": "={{ $('Basic LLM Chain').first().json.output.transitions['2_to_3'] }}",
+            "Transicion 4": "={{ $('Basic LLM Chain').first().json.output.transitions['3_to_base'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "Nombre Completo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Imagen Inicial",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Descripción",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Imagen 1",
+              "displayName": "Imagen 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Imagen 2",
+              "displayName": "Imagen 2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Imagen 3",
+              "displayName": "Imagen 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Transicion 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Transicion 2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Transicion 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Transicion 4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Video 1",
+              "displayName": "Video 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Video 2",
+              "displayName": "Video 2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Video 3",
+              "displayName": "Video 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Video 4",
+              "displayName": "Video 4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Video Final SD",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Video Final FHD",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -7040,
+        -320
+      ],
+      "id": "53225f1c-9327-4707-9b30-fa2ed9ed311b",
+      "name": "Append row in sheet",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Make Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1fkgaVhXYLnkSNfHu16CuQmnBJMZ_u7auqkEaCBw_SS8",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Descripción": "={{ $('On form submission').first().json['Descripción (Que quieres conseguir)'] }}",
+            "Video 1": "={{ $items()[0].json.video[0].url }}",
+            "Video 2": "={{ $items()[1].json.video[0].url }}",
+            "Video 3": "={{ $items()[2].json.video[0].url }}",
+            "Video 4": "={{ $items()[3].json.video[0].url }}",
+            "row_number": 0,
+            "Transicion 4": "="
+          },
+          "matchingColumns": [
+            "Descripción"
+          ],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "Nombre Completo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Imagen Inicial",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Descripción",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Imagen 1",
+              "displayName": "Imagen 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Imagen 2",
+              "displayName": "Imagen 2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Imagen 3",
+              "displayName": "Imagen 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Transicion 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Transicion 2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Transicion 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Transicion 4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Video 1",
+              "displayName": "Video 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Video 2",
+              "displayName": "Video 2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Video 3",
+              "displayName": "Video 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Video 4",
+              "displayName": "Video 4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Video Final SD",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Video Final FHD",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -7632,
+        160
+      ],
+      "id": "85abe48a-641d-43de-b9fc-dc1de70f97d0",
+      "name": "Update row in sheet",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Make Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -8128,
+        624
+      ],
+      "id": "eff622e8-d860-446e-a671-1e8f856ba5d1",
+      "name": "Espera6",
+      "webhookId": "8d353f34-3dc4-467e-9e25-cf7f3ae7f2ec"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -6880,
+        160
+      ],
+      "id": "2f076359-7d32-4697-a5a1-62ef0de55455",
+      "name": "Espera7",
+      "webhookId": "40d48c77-1191-4acc-9f9e-0a61bfa2eb17"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://queue.fal.run/fal-ai/ffmpeg-api/merge-videos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\"video_urls\": [\"{{ $json['Video 1'] }}\",\"{{ $json['Video 2'] }}\", \"{{ $json['Video 3'] }}\", \"{{ $json['Video 4'] }}\"]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -7104,
+        160
+      ],
+      "id": "0bb259b6-ca13-43c1-acf5-f803830b0df8",
+      "name": "Combinar Clips",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://queue.fal.run/fal-ai/topaz/upscale/video",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n\"video_url\": \"{{ $json.video.url }}\",\n\"upscale_factor\": 2,\n\"H264_output\": true,\n\"target_fps\": 60\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -8352,
+        624
+      ],
+      "id": "64da94aa-8921-42a9-bf4e-fbe347dc8886",
+      "name": "Mejorar Calidad",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "COMPLETED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -6432,
+        160
+      ],
+      "id": "cc01496e-02fe-49f5-bc49-0a8050aa259d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "url": "=https://queue.fal.run/fal-ai/ffmpeg-api/requests/{{ $json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -6208,
+        160
+      ],
+      "id": "bdf4e456-fc02-4ae4-ad92-101a9ce4ed61",
+      "name": "Obtener video completo SD",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://queue.fal.run/fal-ai/ffmpeg-api/requests/{{ $json.request_id }}/status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -6656,
+        96
+      ],
+      "id": "d4920df4-572f-4622-bcb3-81887f8f918a",
+      "name": "Revisar Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://queue.fal.run/fal-ai/topaz/requests/{{ $json.request_id }}/status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -7904,
+        560
+      ],
+      "id": "84687814-6d44-4d6a-817f-2a395e311ce9",
+      "name": "Revisar Video1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "COMPLETED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -7680,
+        624
+      ],
+      "id": "4cdd2765-fd6d-4787-b6f9-b79af2aa6a4a",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1fkgaVhXYLnkSNfHu16CuQmnBJMZ_u7auqkEaCBw_SS8",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Descripción": "={{ $('On form submission').first().json['Descripción (Que quieres conseguir)'] }}",
+            "row_number": 0,
+            "Video Final FHD": "=",
+            "Video Final SD": "={{ $('Obtener video completo SD').item.json.video.url }}"
+          },
+          "matchingColumns": [
+            "Descripción"
+          ],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "Nombre Completo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Imagen Inicial",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Descripción",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Imagen 1",
+              "displayName": "Imagen 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Imagen 2",
+              "displayName": "Imagen 2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Imagen 3",
+              "displayName": "Imagen 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Transicion 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Transicion 2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Transicion 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Transicion 4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Video 1",
+              "displayName": "Video 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Video 2",
+              "displayName": "Video 2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Video 3",
+              "displayName": "Video 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Video 4",
+              "displayName": "Video 4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Video Final SD",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Video Final FHD",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -7184,
+        608
+      ],
+      "id": "7da22562-cfaf-434b-9b86-ef01f8bb3d28",
+      "name": "Update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Make Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://queue.fal.run/fal-ai/minimax/hailuo-02/pro/image-to-video",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\t\"prompt\": {{$json.prompt.toJsonString()}},\n\t\"image_url\": {{$json.image_url.toJsonString()}},\n\t\"prompt_optimizer\": true,\n\t\"end_image_url\": {{$json.end_image_url.toJsonString()}}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -6592,
+        -320
+      ],
+      "id": "dda758ad-b411-462d-8d85-013770410f65",
+      "name": "Crear Video (Loop)",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://queue.fal.run/fal-ai/minimax/requests/{{ $json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -5632,
+        -320
+      ],
+      "id": "037f107e-d1f5-4711-8fd7-aed294a066e5",
+      "name": "Obtener Video (Loop)",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -6368,
+        -320
+      ],
+      "id": "1bd5c1c8-76ab-4fd2-a31e-425fef33698b",
+      "name": "Esperar Tarea",
+      "webhookId": "2592a6d2-a9ca-445c-87d5-da4ec80569b1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $items().every(item => item.json.status === 'COMPLETED') }}",
+              "rightValue": "COMPLETED",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -5920,
+        -320
+      ],
+      "id": "4cac6034-c4f0-4e40-b1e3-e93e9489aa5a",
+      "name": "IF Tarea Completada?"
+    },
+    {
+      "parameters": {
+        "url": "=https://queue.fal.run/fal-ai/minimax/requests/{{ $json.request_id }}/status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -6144,
+        -384
+      ],
+      "id": "0796f5dc-3914-498e-9174-646cf7aa2d28",
+      "name": "Revisar Status",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Recibimos los datos que se guardaron en la hoja de Google\nconst sheetData = $('Append row in sheet').first().json;\nconst initialImageUrl = $('Get URL').first().json.data.url;\n\nconst tasks = [];\n\n// Tarea para el Video 1\ntasks.push({\n  json: {\n    video_index: 1, // Un identificador para saber qué video es\n    prompt: sheetData['Transicion 1'],\n    image_url: initialImageUrl,\n    end_image_url: sheetData['Imagen 1']\n  }\n});\n\n// Tarea para el Video 2\ntasks.push({\n  json: {\n    video_index: 2,\n    prompt: sheetData['Transicion 2'],\n    image_url: sheetData['Imagen 1'],\n    end_image_url: sheetData['Imagen 2']\n  }\n});\n\n// Tarea para el Video 3\ntasks.push({\n  json: {\n    video_index: 3,\n    prompt: sheetData['Transicion 3'],\n    image_url: sheetData['Imagen 2'],\n    end_image_url: sheetData['Imagen 3']\n  }\n});\n\n// Tarea para el Video 4\ntasks.push({\n  json: {\n    video_index: 4,\n    prompt: sheetData['Transicion 4'],\n    image_url: sheetData['Imagen 3'],\n    end_image_url: initialImageUrl\n  }\n});\n\nreturn tasks;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6816,
+        -320
+      ],
+      "id": "e650519e-721b-4e92-a9f6-28d8b1031be4",
+      "name": "Preparar Tareas"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $items();\n\n// Ordena la lista de resultados basándose en el 'video_index' que creamos al principio\nitems.sort((a, b) => a.json.video_index - b.json.video_index);\n\n// Ahora la variable 'items' contiene los resultados en el orden correcto [1, 2, 3, 4]\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -8064,
+        160
+      ],
+      "id": "d3f0ec0a-14bf-40c1-ba34-443d0b44cbbf",
+      "name": "Ordenar Videos",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -8752,
+        160
+      ],
+      "id": "d773b58b-6b97-48bb-8160-19355aafe982",
+      "name": "Wait",
+      "webhookId": "c7e002e8-e336-41ca-8dae-52a532ff6382"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $items().every(item => item.json.status === 'COMPLETED')",
+              "rightValue": "COMPLETED",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -8304,
+        160
+      ],
+      "id": "d0d0a729-af76-4d4a-8adb-d70a69964ca0",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://queue.fal.run/mirelo-ai/sfx-v1/video-to-video",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"video_url\": \"{{ $json.video.url }}\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -8944,
+        160
+      ],
+      "id": "05dee6d5-aef5-4bc6-8759-1aa7a0b432f0",
+      "name": "Añadir audio",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://queue.fal.run/mirelo-ai/sfx-v1/requests/{{ $json.request_id }}/status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -8528,
+        160
+      ],
+      "id": "ca9ef60e-d9a9-49aa-9c65-dfccc1387170",
+      "name": "Comprobar audio",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Analisis y generación de imagenes",
+        "height": 432,
+        "width": 2224
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -9312,
+        -416
+      ],
+      "typeVersion": 1,
+      "id": "72646506-bd75-432d-a3b7-fe78f0b29d75",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Creacion de video",
+        "height": 432,
+        "width": 1616,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -7056,
+        -416
+      ],
+      "typeVersion": 1,
+      "id": "5b7eb6e4-4f4c-4c74-9961-aa95368c43b8",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Creacion de audio",
+        "height": 432,
+        "width": 1904,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -9312,
+        48
+      ],
+      "typeVersion": 1,
+      "id": "b188bfaa-3d7d-4ae6-8bf5-9c610ca559d1",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Combinamos videos",
+        "height": 432,
+        "width": 1488,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -7376,
+        48
+      ],
+      "typeVersion": 1,
+      "id": "9c0116c8-de48-4eb2-89e5-8957b789b651",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Mejoramos calidad de video a FHD",
+        "height": 432,
+        "width": 1392,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -8384,
+        528
+      ],
+      "typeVersion": 1,
+      "id": "d9ee10da-4b27-4b0f-8a8a-b17fa311f620",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.data.state }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -7264,
+        -320
+      ],
+      "id": "4121bc82-4e6f-498e-acc6-d9f9e867139d",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "url": "=https://queue.fal.run/mirelo-ai/sfx-v1/requests/{{ $json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -7840,
+        160
+      ],
+      "id": "37f8627b-684a-44d9-9483-7a5772b77e9c",
+      "name": "HTTP Request2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://queue.fal.run/fal-ai/topaz/requests/{{ $json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -7408,
+        608
+      ],
+      "id": "671dbe24-8120-47f6-9ef3-c0d23b9a0d30",
+      "name": "Obtener video FHD",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Espera7": [
+      {
+        "json": {
+          "status": "IN_QUEUE",
+          "request_id": "f529d8ca-c171-43d7-8716-68e483d7e9bd",
+          "response_url": "https://queue.fal.run/fal-ai/ffmpeg-api/requests/f529d8ca-c171-43d7-8716-68e483d7e9bd",
+          "status_url": "https://queue.fal.run/fal-ai/ffmpeg-api/requests/f529d8ca-c171-43d7-8716-68e483d7e9bd/status",
+          "cancel_url": "https://queue.fal.run/fal-ai/ffmpeg-api/requests/f529d8ca-c171-43d7-8716-68e483d7e9bd/cancel",
+          "logs": null,
+          "metrics": {},
+          "queue_position": 0
+        }
+      }
+    ],
+    "Obtener video FHD": [
+      {
+        "json": {
+          "video": {
+            "url": "https://v3.fal.media/files/kangaroo/S8WlFYpnMimV4-5MTbSmx_video.mp4",
+            "content_type": "video/mp4",
+            "file_name": "video.mp4",
+            "file_size": 1144659840
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Get URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nano banana": {
+      "main": [
+        [
+          {
+            "node": "Esperar 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get URL": {
+      "main": [
+        [
+          {
+            "node": "Analyze image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Nano banana",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar 3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Preparar Tareas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Combinar Clips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Espera6": {
+      "main": [
+        [
+          {
+            "node": "Revisar Video1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Espera7": {
+      "main": [
+        [
+          {
+            "node": "Revisar Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combinar Clips": {
+      "main": [
+        [
+          {
+            "node": "Espera7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mejorar Calidad": {
+      "main": [
+        [
+          {
+            "node": "Espera6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Obtener video completo SD",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Espera7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener video completo SD": {
+      "main": [
+        [
+          {
+            "node": "Mejorar Calidad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revisar Video": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revisar Video1": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Obtener video FHD",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Espera6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Video (Loop)": {
+      "main": [
+        [
+          {
+            "node": "Esperar Tarea",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Video (Loop)": {
+      "main": [
+        [
+          {
+            "node": "Añadir audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar Tarea": {
+      "main": [
+        [
+          {
+            "node": "Revisar Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Tarea Completada?": {
+      "main": [
+        [
+          {
+            "node": "Obtener Video (Loop)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Esperar Tarea",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revisar Status": {
+      "main": [
+        [
+          {
+            "node": "IF Tarea Completada?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Tareas": {
+      "main": [
+        [
+          {
+            "node": "Crear Video (Loop)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ordenar Videos": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Comprobar audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Ordenar Videos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Añadir audio": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comprobar audio": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Esperar 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener video FHD": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "320aadce-7ca9-4d34-b45b-f19b40442f05",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "cdKbFKW1L0kYMtJf",
+  "tags": []
+}

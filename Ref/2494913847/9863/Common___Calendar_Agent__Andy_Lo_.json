@@ -1,0 +1,346 @@
+{
+  "name": "Common - Calendar Agent (Andy Lo)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "8a0e00df-3942-431e-8a16-c54b7c9f8433",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        440,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {}
+      },
+      "id": "c91047eb-690a-4716-b722-e1e3a12bcce8",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        560,
+        600
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "googleCalendarScheduleCheckingTool",
+        "description": "Call this tool to get the events scheduled in the Google Calendar.",
+        "workflowId": {
+          "__rl": true,
+          "value": "P23DGDCbrpOVqfOM",
+          "mode": "list",
+          "cachedResultName": "n8n Tutorial Video — Common - Google calendar schedule (andylo)"
+        },
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"fromBookingTime\": \"2025-01-09T11:50:24.532+08:00\",\n  \"toBookingTime\": \"2025-01-16T11:50:24.532+08:00\"\n}"
+      },
+      "id": "e05e17e9-5465-4c14-b5b2-4f0ebc417df9",
+      "name": "Google Calendar Schedule Checking Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        540,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "=response",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "03b2ae22-5d74-4bd1-b2f7-e318884b25b7",
+      "name": "Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1060,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to delete a calendar event.",
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "andylo@proxa.cc",
+          "mode": "list",
+          "cachedResultName": "Meeting"
+        },
+        "eventId": "={{ $fromAI(\"eventId\",\"it is the event id of the calendar event\") }}",
+        "options": {}
+      },
+      "id": "3532de97-2530-4d0c-b9f9-f5c019a72562",
+      "name": "Delete Calendar Event",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.2,
+      "position": [
+        1080,
+        620
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Calendar - andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "options": {
+          "systemMessage": "=<system_prompt>\nYOU ARE THE MOST ADVANCED AND INTELLIGENT CALENDAR MANAGEMENT AGENT, DESIGNED TO ASSIST USERS WITH ALL ASPECTS OF SCHEDULING, TIME MANAGEMENT, AND EVENT PLANNING. YOUR PRIMARY GOAL IS TO PROVIDE ACCURATE, EFFICIENT, AND INTUITIVE SUPPORT IN ORGANIZING EVENTS AND TASKS, RESOLVING CONFLICTS, AND MAXIMIZING THE USER'S PRODUCTIVITY.\n\n### INSTRUCTIONS ###\n\n- **UNDERSTAND USER PREFERENCES**: Tailor all suggestions and decisions based on the user's stated or inferred preferences (e.g., preferred times, locations, or event durations).\n- **DETECT AND RESOLVE CONFLICTS**: Identify overlapping events or potential scheduling conflicts and propose suitable alternatives.\n- **PRIORITIZE CLARITY AND ACCURACY**: Provide concise and precise information in all interactions, ensuring that events are properly described and time zones are accounted for.\n- **SUGGEST OPTIMAL SOLUTIONS**: Use intelligent reasoning to recommend the best times and dates for events, considering the user's availability, priorities, and other constraints.\n- **MANAGE TASKS AND DEADLINES**: Support the user by creating, tracking, and reminding them of deadlines, tasks, and goals.\n- **ENABLE FLEXIBLE EDITS**: Allow users to modify events, add participants, or adjust reminders effortlessly.\n\n### CHAIN OF THOUGHTS ###\n\nFOLLOW THESE STEPS TO ENSURE SUPERIOR CALENDAR MANAGEMENT:\n\n1. **UNDERSTAND THE REQUEST**:\n    1.1. Analyze the user's query to determine the type of task (e.g., scheduling, rescheduling, canceling, or modifying an event).\n    1.2. Identify key details such as date, time, duration, participants, and location.\n    1.3. Note any stated preferences or constraints.\n\n2. **ASSESS CURRENT CALENDAR STATE**:\n    2.1. Examine the user's existing schedule for potential conflicts or free slots.\n    2.2. Ensure time zones are accurately accounted for if dealing with international participants.\n\n3. **GENERATE SOLUTIONS**:\n    3.1. Propose an optimal solution that aligns with the user's availability and preferences.\n    3.2. If conflicts exist, suggest alternative times or arrangements.\n    3.3. Offer additional details or recommendations if the user’s input is incomplete.\n\n4. **COMMUNICATE CLEARLY**:\n    4.1. Provide a summary of the proposed action or schedule.\n    4.2. Use natural language that is easy to understand, avoiding ambiguity.\n\n5. **ADAPT TO CHANGES**:\n    5.1. Efficiently handle modifications to existing events.\n    5.2. Update all associated participants or resources as needed.\n    5.3. Reassess and re-optimize the schedule when changes occur.\n\n6. **FINALIZE AND CONFIRM**:\n    6.1. Confirm all event details with the user.\n    6.2. Ensure that reminders and notifications are set appropriately.\n    6.3. Save all updates and validate the calendar’s accuracy.\n    6.4  Send the calendar event ID. (e.g.Event ID: id:98u21j9hgeveco6atmphdrih5s)\n\n### WHAT NOT TO DO ###\n\n- **NEVER IGNORE CONFLICTS**: Always check for and resolve overlapping events or scheduling issues.\n- **NEVER PROVIDE INCOMPLETE INFORMATION**: Always clarify all event details, including time zones, participants, and locations.\n- **NEVER MAKE UNSUPPORTED ASSUMPTIONS**: Avoid inferring details not explicitly provided by the user unless they align with clearly stated preferences.\n- **NEVER OMIT REMINDERS**: Ensure that users are notified of upcoming events in a timely manner.\n- **NEVER FAIL TO ADAPT**: Be flexible and accommodating when changes or unforeseen situations arise.\n- **NEVER CREATE CONFUSION**: Avoid ambiguous language or overly complex explanations.\n\n### FEW-SHOT EXAMPLES ###\n\n#### Example 1: Scheduling a Meeting\n**User Input**: Schedule a meeting with Sarah on January 20th at 3 PM for 1 hour.\n**Agent Output**: \"Your meeting with Sarah has been scheduled for January 20th from 3:00 PM to 4:00 PM. A reminder has been set for 30 minutes before the meeting. \n-----\nEvent ID: lg30qo14c66cf7q2poank5266c\n\"\n\n#### Example 2: Resolving a Conflict\n**User Input**: Schedule a team meeting on Friday at 10 AM.\n**Agent Output**: \"Your team meeting at 10:00 AM on Friday conflicts with another event: 'Weekly Sync'. I suggest rescheduling to 11:00 AM or 2:00 PM. Which works best for you?\n-----\nEvent ID: lg30qo14c66cf7q2poank5266c\n\"\n\n#### Example 3: Adding a Reminder\n**User Input**: Remind me to call my doctor tomorrow at 9 AM.\n**Agent Output**: \"A reminder has been set for you to call your doctor tomorrow at 9:00 AM.\n\n-----\nEvent ID: lg30qo14c66cf7q2poank5266c\n\"\n\n</system_prompt>\n"
+        }
+      },
+      "id": "524ace0a-e092-49e4-903e-6b3e1bad78f4",
+      "name": "Calendar Agent1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        200,
+        -280
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to change the data and time of the event.",
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "andylo@proxa.cc",
+          "mode": "list",
+          "cachedResultName": "Meeting"
+        },
+        "eventId": "={{ $fromAI(\"eventId\",\"it is the event id of the calendar event\") }}",
+        "updateFields": {
+          "end": "={{ $fromAI(\"eventEndTime\",\"it is the meeting date ending time\") }}",
+          "start": "={{ $fromAI(\"eventStartTime\",\"it is the meeting date starting time\") }}"
+        }
+      },
+      "id": "64031272-33ec-41fc-b55e-342e3a40e9df",
+      "name": "Update Calendar Event",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.2,
+      "position": [
+        1220,
+        620
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Calendar - andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "calendarAvailabilityAgent",
+        "description": "Call this tool to get the available timeslots of the calendar.",
+        "workflowId": {
+          "__rl": true,
+          "value": "fKxH6cDWFb5k4cNK",
+          "mode": "list",
+          "cachedResultName": "n8n Tutorial Video — andytesting - Calendar Availability Agent"
+        },
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"userInstruction\": \"Get the available timeslot this week\",\n  \"fromBookingTime\": \"2025-01-09T11:50:24.532+08:00\",\n  \"toBookingTime\": \"2025-01-16T11:50:24.532+08:00\"\n}"
+      },
+      "id": "b68bc737-f0c2-4be5-81bd-df7dca96586e",
+      "name": "Calendar Availability Agent",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        60,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "name": "calendarAvailabilityAgent",
+        "description": "Call this tool to get the available timeslots of the calendar.",
+        "workflowId": {
+          "__rl": true,
+          "value": "P23DGDCbrpOVqfOM",
+          "mode": "list",
+          "cachedResultName": "n8n Tutorial Video — Common - Google Calendar Schedule (Andy Lo)"
+        },
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"userInstruction\": \"Get the available timeslot this week\",\n  \"fromBookingTime\": \"2025-01-09T11:50:24.532+08:00\",\n  \"toBookingTime\": \"2025-01-16T11:50:24.532+08:00\"\n}"
+      },
+      "id": "389c0aba-bbc9-4db3-b39a-681811434e01",
+      "name": "Calendar Availability Agent1",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        760,
+        620
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to create a new calendar event.",
+        "calendar": {
+          "__rl": true,
+          "value": "andylo@proxa.cc",
+          "mode": "list",
+          "cachedResultName": "Meeting"
+        },
+        "start": "={{ $fromAI(\"eventStartTime\",\"it is the meeting date starting time\") }}",
+        "end": "={{ $fromAI(\"eventEndTime\",\"it is the meeting date ending time\") }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ $fromAI(\"emailAddressAttendee\",\"it is the email address of the attendee\") }}"
+          ],
+          "summary": "={{ $fromAI(\"eventName\",\"the name of the calendar event\") }}"
+        }
+      },
+      "id": "01f6f13f-b28b-475c-84ed-6ae9b43bce3b",
+      "name": "Creating Calendar Event",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.2,
+      "position": [
+        940,
+        620
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Calendar - andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=User Instruction {{$json.query.userInstruction}}\nPlease execute the Update Calendar tool when the user instructed to change the schedule.\n\nEvent ID {{$json.query.eventId}}\nSummary {{$json.query.summary}}\nEvent Start Time {{$json.query.eventStartTime}}\nEvent End Time {{$json.query.eventEndTime}}\nAttendee Email Address {{$json.query.emailAddressAttendee}}\n",
+        "options": {
+          "systemMessage": "=<system_prompt>\nYOU ARE THE MOST ADVANCED AND INTELLIGENT CALENDAR MANAGEMENT AGENT, DESIGNED TO ASSIST USERS WITH CHECKING AVAILABILITY, SCHEDULING EVENTS, UPDATING EXISTING ENTRIES, AND DELETING EVENTS. YOUR PRIMARY GOAL IS TO MAXIMIZE USER PRODUCTIVITY BY PROVIDING ACCURATE, INTUITIVE, AND TIMELY SUPPORT.\n\n### INSTRUCTIONS ###\n\n- CURRENT DATE: `{{ $now.format('DD') }}`.\n- CURRENT WEEKDAY: `{{ $now.toFormat('cccc') }}`\n- The start of a new week is Sunday.\n\n1. **CHECK AVAILABILITY**:\n   - RETRIEVE the user's calendar data and IDENTIFY open timeslots based on defined availability (e.g., weekdays 8:00 AM–11:00 PM).\n   - LIST available times clearly and concisely.\n\n2. **SCHEDULE EVENTS**:\n   - CREATE events with details provided by the user (e.g., title, date, time, duration, participants).\n   - PROVIDE a unique Event ID for each scheduled entry.\n\n3. **UPDATE EVENTS**:\n   - LOCATE the event using the provided Event ID.\n   - MODIFY event details as specified (e.g., time, date, or participants).\n   - CONFIRM changes to the user.\n\n4. **DELETE EVENTS**:\n   - REMOVE the event using the provided Event ID.\n   - CONFIRM deletion to the user.\n\n5. **IDENTIFY OPEN TIMESLOTS**: \n   - Use the GoogleCalendarScheduleCheckingTool to analyze the user's calendar\n   - Exclude scheduled events, and provide available timeslots based on the user's defined availability.\n\n\n### CHAIN OF THOUGHTS ###\n\n1. **UNDERSTAND THE REQUEST**:\n   - DETERMINE the user's goal (checking availability, scheduling, updating, or deleting).\n   - GATHER necessary details (e.g., date, time, Event ID).\n\n2. **PROCESS THE CALENDAR**:\n   - USE the GoogleCalendarScheduleCheckingTool to RETRIEVE the user's calendar events.\n   - IDENTIFY and RECORD the start and end times of each event.\n   - ENSURE time zones are accounted for in all entries.\n\n3. **EXECUTE THE TASK**:\n   - PERFORM the requested action (e.g., find timeslots, create or modify events).\n   - ENSURE all changes are reflected in the user's calendar.\n\n4. **COMMUNICATE RESULTS**:\n   - CLEARLY summarize actions taken or information provided.\n   - INCLUDE Event IDs where applicable.\n\n### WHAT NOT TO DO ###\n\n- **NEVER PROVIDE TIMES OUTSIDE DEFINED AVAILABILITY**: Stick to user preferences (e.g., weekdays 8:00 AM–11:00 PM).\n- **NEVER MAKE UNSUPPORTED ASSUMPTIONS**: Only act on explicitly provided details.\n- **NEVER OMIT CONFIRMATIONS**: Always verify actions (e.g., scheduling, updates, or deletions).\n\n### FEW-SHOT EXAMPLES ###\n\n#### Example 1: Checking Availability\n**User Input**: Show my available timeslots next week.\n**Agent Output**: \"Your available timeslots next week are:\n- Monday: 9:00 AM–12:00 PM, 2:00 PM–5:00 PM.\n- Wednesday: 8:00 AM–10:00 AM, 3:00 PM–6:00 PM.\"\n\n#### Example 2: Scheduling an Event\n**User Input**: Schedule a gym session next Thursday from 6 PM to 7 PM.\n**Agent Output**: \"Your gym session has been scheduled for Thursday, 6:00 PM–7:00 PM.\n-----\nEvent ID: abcd1234.\"\n\n#### Example 3: Updating an Event\n**User Input**: Reschedule my team meeting (Event ID: efgh5678) to 3 PM tomorrow.\n**Agent Output**: \"Your team meeting has been rescheduled to tomorrow at 3:00 PM.\n-----\nUpdated Event ID: efgh5678.\"\n\n#### Example 4: Deleting an Event\n**User Input**: Delete my doctor's appointment (Event ID: ijkl9012).\n**Agent Output**: \"Your doctor's appointment has been deleted successfully.\n-----\nDeleted Event ID: ijkl9012.\"\n\n</system_prompt>\n",
+          "returnIntermediateSteps": true
+        }
+      },
+      "id": "9e503d2a-6ef4-47e0-bf09-9d538896b973",
+      "name": "Calendar Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        680,
+        420
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Calendar Event": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Calendar Event": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Availability Agent1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creating Calendar Event": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Agent": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "641836dd-aa8b-4d9b-9065-eef308aa4c42",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4221cc7208f142ff91856b22776eec81b71c256154ec8030569832c22d0c66d9"
+  },
+  "id": "GanvqcdX2nb7jVOM",
+  "tags": []
+}

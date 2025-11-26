@@ -1,0 +1,166 @@
+[
+  {
+    "id": 15441,
+    "author": "INEMA",
+    "date": "2025-11-02T23:11:49+00:00",
+    "text": "### Hacks e truques avançados da automação YouTube + TikTok\n\n---\n\n#### 1. Maximizar performance do Apify\n\n* **Use limites curtos (5 a 10 vídeos)** nos testes para não gastar créditos.\n* Ative **múltiplas execuções paralelas** com `Split In Batches` para canais grandes.\n* Crie **contas secundárias gratuitas do Apify** para continuar testando quando atingir o limite mensal.\n* Dica: combine com *Proxy Pool* do Apify para evitar bloqueios de IP.\n\n---\n\n#### 2. Reduzir custo com IA\n\n* Use **Gemini 2.5 Flash** para análises rápidas e gratuitas.\n* Configure um **fallback node**: se OpenAI falhar, o fluxo muda automaticamente para Gemini.\n* Salve resultados no Supabase ou Google Sheets e **não reanalise vídeos já processados**.\n* Diminua custo usando prompts compactos e parâmetros `temperature: 0.3`.\n\n---\n\n#### 3. Aumentar precisão do scraping\n\n* Adicione **filtros de data e visualizações** diretamente no Apify antes da coleta.\n* Extraia também as **tags** dos vídeos — ajudam na análise semântica.\n* Use o campo `\"videoCategoryId\"` do YouTube API para segmentar por nicho.\n\n---\n\n#### 4. Hacks no n8n\n\n* Crie um nó **“Loop com Delay”** (10s) para evitar limite de requisições.\n* Use **“Merge Node (By Key)”** para combinar análise de título e miniatura no mesmo JSON.\n* Adicione **“IF Nodes”** para pular vídeos com menos de 500 views.\n* Guarde cada execução em um **Google Sheet histórico** com timestamp (`{{$now}}`).\n\n---\n\n#### 5. IA com prompts dinâmicos\n\n* Monte **prompts personalizados** com variáveis do fluxo:\n\n  ```  Analise o título: \"{{$json[\"title\"]}}\"\n  Diga por que ele chama atenção e sugira melhorias.\n  ```\n* Adapte o tom e idioma automaticamente conforme o canal (ex: português/inglês).\n* Crie um **prompt de “criador digital”** com persona da sua marca para gerar ideias consistentes.\n\n---\n\n#### 6. Análises mais ricas\n\n* Gere uma **nuvem de palavras** com `aggregate + split + count`.\n* Adicione um nó que envia os melhores insights para um **Discord ou Telegram** via Webhook.\n* Combine com **Google Trends API** para cruzar dados com buscas populares.\n\n---\n\n#### 7. Hacks específicos para TikTok\n\n* Use o **campo “transcription”** para treinar a IA com falas reais do criador.\n* Extraia o **tempo médio de visualização** com scripts personalizados (indicador de retenção).\n* Analise também o **formato do som** (música viral, voz, efeitos) para detectar padrões.\n* Gere automaticamente **“Hooks Top 5 da Semana”** no Sheets.\n\n---\n\n#### 8. Escalando o sistema\n\n* Crie uma **versão cron semanal** (Monday 09:00) e outra manual (test).\n* Use **Supabase ou Notion API** para armazenar histórico de insights.\n* Configure **alertas no Telegram** para avisar quando um vídeo concorrente viralizar.\n* Gere automaticamente **relatórios semanais em PDF** com gráficos via n8n + Google Charts.\n\n---\n\n#### 9. Visualização e relatório\n\n* Adicione **gráficos de crescimento** no Google Sheets (views, likes, engajamento).\n* Gere colunas automáticas com **“Score de Viralidade”** (peso = views + likes + comentários).\n* Use o **modo condicional colorido** (verde = viral, amarelo = médio, vermelho = fraco).\n\n---\n\n#### 10. Super Hack: Reaproveitamento de IA\n\n* A cada análise, salve as melhores ideias em um banco Supabase e use-as para:\n\n  * Reescrever roteiros antigos com IA.\n  * Criar posts derivados (shorts, reels, threads).\n  * Alimentar agentes criativos (“AI Content Strategist”).",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15440,
+    "author": "INEMA",
+    "date": "2025-11-02T23:11:13+00:00",
+    "text": "=====================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15439,
+    "author": "INEMA",
+    "date": "2025-11-02T23:11:09+00:00",
+    "text": "### Passo a passo da automação YouTube + TikTok\n\n---\n\n#### 1. Configuração inicial\n\n1. Acesse o **n8n**.\n2. Crie um novo **workflow**.\n3. Adicione o **gatilho (Trigger)**:\n\n   * Opção A: *Manual Trigger* (para testes).\n   * Opção B: *Schedule Trigger* (por exemplo, toda segunda-feira às 9h).\n\n---\n\n#### 2. Seleção de concorrentes\n\n1. Crie um **nó de código** para inserir os canais que serão analisados.\n\n   * Exemplo:\n\n     ```     [\"https://www.youtube.com/@canal1\", \"https://www.youtube.com/@canal2\"]\n     ```\n2. Use o nó **Split Out** para processar **um canal por vez**.\n\n---\n\n#### 3. Raspagem de dados (Apify)\n\n1. Adicione um **HTTP Request Node**.\n2. Configure com a **API do Apify YouTube Scraper**.\n3. Insira sua **API Key** e o **link do canal**.\n4. Retorne: títulos, miniaturas, visualizações, likes, data.\n5. Filtre:\n\n   * Vídeos dos últimos **6 meses**.\n   * Top **10 vídeos com mais visualizações**.\n\n---\n\n#### 4. Análise com IA (Gemini / OpenAI)\n\n1. **Analisador de títulos:**\n\n   * Prompt:\n\n     ```     Você é um estrategista de YouTube. Analise os títulos e identifique palavras de poder que geram curiosidade e cliques.\n     ```\n2. **Analisador de miniaturas:**\n\n   * Prompt:\n\n     ```     Você é especialista em design de miniaturas. Analise a imagem e descreva quais elementos visuais captam atenção.\n     ```\n3. Salve ambos os resultados em variáveis JSON.\n\n---\n\n#### 5. Análise de comentários\n\n1. Use outro **HTTP Request Node** com **Apify YouTube Comments Scraper**.\n2. Limite a **30 comentários por vídeo**.\n3. Adicione o nó **Aggregate** para unir comentários de todos os vídeos.\n4. Envie os dados para a IA com prompt:\n\n   ```   Classifique os comentários em:\n   - Positivos\n   - Negativos\n   - Sugestões/Feedbacks\n   Gere um resumo com padrões recorrentes.\n   ```\n\n---\n\n#### 6. Geração de novas ideias\n\n1. Crie um nó de IA (Gemini/OpenAI) com prompt:\n\n   ```   Gere ideias de vídeos baseadas nas análises de títulos, miniaturas e comentários. \n   Inclua:\n   - Título sugerido\n   - Miniatura recomendada\n   - Chamada para ação\n   - Possíveis entregáveis\n   ```\n\n---\n\n#### 7. Envio para o Google Sheets\n\n1. Conecte o nó **Google Sheets**.\n2. Crie **4 abas**:\n\n   * “Vídeos” → título, link, visualizações\n   * “Títulos” → palavras de poder\n   * “Miniaturas” → insights visuais\n   * “Ideias” → novos conceitos de vídeos\n\n---\n\n#### 8. Automação para TikTok\n\n1. Copie a estrutura anterior e substitua a API pelo **Apify TikTok Scraper**.\n2. Adicione a **transcrição automática de áudio**.\n3. Prompts de IA:\n\n   * Hook inicial (gancho de abertura)\n   * Proposta de valor\n   * Formato (tutorial, educativo etc.)\n   * Chamada para ação\n   * Fator viral e resumo\n4. Envie tudo para o Google Sheets (nova aba “TikTok”).\n\n---\n\n#### 9. Otimizações e dicas\n\n* Use **Gemini Flash** (baixo custo e rápido).\n* Mantenha as saídas em **JSON estruturado**.\n* Personalize prompts conforme **seu nicho e tom de voz**.\n* Programe execução **automática semanal**.\n* Acompanhe as planilhas para **identificar padrões virais**.\n\n---\n\n#### Resultado final\n\nUm sistema automatizado que:\n\n* Monitora concorrentes do YouTube e TikTok.\n* Analisa títulos, miniaturas e comentários.\n* Gera **novas ideias de conteúdo virais** automaticamente.\n* Registra tudo em planilhas para acompanhamento estratégico.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15438,
+    "author": "INEMA",
+    "date": "2025-11-02T23:10:35+00:00",
+    "text": "=================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15437,
+    "author": "INEMA",
+    "date": "2025-11-02T23:10:31+00:00",
+    "text": "### Resumo geral \n\n**Tema:** Automação completa para analisar concorrência no YouTube e TikTok usando n8n, Apify, IA (Gemini/OpenAI) e Google Sheets.\n\n---\n\n### Objetivo\n\nCriar um **analisador automatizado de concorrência** que:\n\n* Raspa dados de canais (YouTube e TikTok);\n* Analisa vídeos, títulos, miniaturas e comentários;\n* Gera **insights automáticos** e **novas ideias de vídeos** com IA;\n* Registra tudo em **Google Sheets**.\n\n---\n\n### Estrutura da automação\n\n#### 1. YouTube\n\n**Etapas principais:**\n\n1. **Disparo (trigger):**\n\n   * Pode ser manual, semanal ou mensal (via *Schedule Trigger*).\n2. **Seleção de canais concorrentes:**\n\n   * Exemplo: canais de criadores populares (Nate, Niko, etc.).\n3. **Divisão de canais:**\n\n   * Usa o nó **Split Out** para processar um canal por vez.\n4. **Scrape de dados (Apify API):**\n\n   * Extrai vídeos, títulos, miniaturas, métricas.\n   * Filtra os vídeos com mais visualizações nos últimos **6 meses** (Top 10).\n5. **Análise com IA (OpenAI ou Gemini):**\n\n   * **Títulos:** extrai “palavras de poder” que tornam o vídeo atraente.\n   * **Miniaturas:** identifica cores, contraste, texto e elementos que chamam cliques.\n6. **Análise de comentários:**\n\n   * Usa *YouTube Comments Scraper* (Apify).\n   * Classifica feedbacks como positivos, negativos e solicitações.\n   * Gera insights sobre o que o público gosta ou sente falta.\n7. **Geração de novas ideias de vídeo:**\n\n   * IA combina dados (palavras, imagens, comentários) e cria:\n\n     * Título sugerido\n     * Ideia de vídeo\n     * Miniatura recomendada\n     * CTA e formato\n8. **Registro final no Google Sheets:**\n\n   * Quatro abas:\n\n     * Dados dos vídeos\n     * Análise de títulos\n     * Análise de miniaturas\n     * Ideias geradas\n\n---\n\n#### 2. TikTok\n\n**Etapas principais:**\n\n1. **Disparo e seleção de contas.**\n2. **Scrape com Apify TikTok Scraper:**\n\n   * Extrai vídeos, áudios, descrições e miniaturas.\n3. **Transcrição do áudio** (vantagem sobre o YouTube).\n4. **Análise com IA:**\n\n   * **Hook inicial:** frase que prende a atenção.\n   * **Proposta de valor:** promessa do vídeo.\n   * **Formato:** tipo de vídeo (tutorial, educativo, demonstração).\n   * **Chamada à ação:** o que o criador pede (curtir, comentar, seguir).\n   * **Fator viral:** explica por que o vídeo teve sucesso.\n5. **Registro automático no Google Sheets.**\n\n---\n\n### Ferramentas usadas\n\n* **n8n:** orquestra toda a automação.\n* **Apify:** faz a raspagem (YouTube e TikTok).\n* **OpenAI / Gemini:** análise de texto, imagem e geração de ideias.\n* **Google Sheets:** armazena resultados e relatórios.\n* **HTTP Request, Loop, Aggregate, Split Out:** nós principais do n8n.\n\n---\n\n### Resultados obtidos\n\n* Identificação automática do que **funciona** no seu nicho.\n* Descoberta de **oportunidades e lacunas** na concorrência.\n* Geração de **novos roteiros e miniaturas** prontos para gravação.\n* Sistema replicável para **análise contínua** (manual ou agendada).\n\n---\n\n### Dicas e hacks\n\n* Substituir OpenAI por **Gemini** para reduzir custos.\n* Guardar saídas em **JSON** para manter organização.\n* Personalizar *prompts* conforme o **estilo do seu canal**.\n* Usar o **loop** e **aggregate** para combinar dados de vários vídeos.\n* É permitido **imitar estratégias**, mas sempre **adaptando à sua marca**.\n\n---\n\n### Conclusão\n\nA automação cria **um sistema completo de inteligência competitiva** para criadores, agências ou consultores.\nEla **analisa vídeos de concorrentes**, aprende o que funciona e **gera conteúdo estratégico pronto para ação**, tanto para **vídeos longos (YouTube)** quanto **curtos (TikTok)**.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15435,
+    "author": "INEMA",
+    "date": "2025-11-02T23:06:22+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_15435_006.jpg"
+  },
+  {
+    "id": 15434,
+    "author": "INEMA",
+    "date": "2025-11-02T23:05:51+00:00",
+    "text": "===============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15433,
+    "author": "INEMA",
+    "date": "2025-11-02T23:05:48+00:00",
+    "text": "57. Gêneros – Ideias Virais para YouTube e Redes Sociais\n\nVocê aprende a construir **um analisador automatizado de concorrência** que permite estudar canais do **YouTube e TikTok** para descobrir **o que funciona melhor no seu nicho**: títulos, miniaturas, comentários e ideias de vídeo.\nA automação converte todas as informações em **dados úteis dentro do Google Sheets**, para que você possa criar conteúdo mais estratégico e alinhado com o que realmente prende a atenção do seu público.\n\n🛠️ O que conseguimos com essa automação\n\n* Analisar automaticamente os canais dos seus concorrentes.\n* Extrair os vídeos com mais visualizações dos últimos 6 meses.\n* Detectar **quais palavras-chave** funcionam melhor em títulos e miniaturas.\n* Analisar **comentários reais da audiência** para identificar o que eles gostam ou pedem.\n* **Gerar com IA novas ideias de vídeos** otimizadas com base nesses padrões.\n* Ter tudo centralizado em uma **planilha do Google Sheets** organizada por canal, desempenho e insights.\n* **Repetir o processo periodicamente** (de forma automática ou manual) sem necessidade de intervenção.\n\n🧩 Estrutura do fluxo automatizado\n\n🧱 Parte 1 – YouTube\n\n* **Trigger:** executado manualmente ou agendado (ex.: toda segunda às 9h).\n* **Seleção de concorrentes:** inserção dos canais a serem analisados.\n* **Divisão dos canais:** processados um a um com o nó *Split Out*.\n* **Raspagem de dados:** uso da API do **Apify** para obter vídeos, títulos, miniaturas e métricas.\n* **Ordenação e filtragem:** vídeos classificados por visualizações e filtrados pelos últimos 6 meses.\n* **Análise com IA:**\n\n  * *Nó 1:* analisa os títulos e extrai **palavras de poder**.\n  * *Nó 2:* analisa a **miniatura** (imagem) e identifica **elementos visuais que atraem cliques**.\n* **Análise de comentários:** comentários raspados com o **Apify**, agregados e classificados por tipo (elogios, críticas, pedidos, feedbacks).\n* **Geração de ideias:** com base em todos os dados, um modelo de IA propõe **novos vídeos, títulos e miniaturas**.\n* **Registro final:** tudo salvo automaticamente no **Google Sheets** com quatro abas:\n\n  * Dados dos vídeos\n  * Análise de títulos\n  * Análise de miniaturas\n  * Ideias geradas\n\n🎬 Parte 2 – TikTok\n\n* **Trigger e seleção de contas.**\n* **Raspagem com a API Apify TikTok Scraper.**\n* **Transcrição automática do áudio.**\n* **Análise com IA:**\n\n  * Gancho inicial (hook) – frase que prende a atenção.\n  * Proposta de valor.\n  * Formato do conteúdo.\n  * Chamada para ação (CTA).\n  * Fator viral e resumo do vídeo.\n* **Registro no Google Sheets:** todo o resultado é salvo com ganchos, descrições e métricas.\n\n🧰 Ferramentas utilizadas\n\n* **N8N** (automação completa do fluxo)\n* **Apify** (para raspagem de YouTube e TikTok)\n* **Google Sheets** (armazenamento e visualização de resultados)\n* **OpenAI / Gemini** (análise de títulos, miniaturas, comentários e ideias)\n* **HTTP Request + Code + Loop + Aggregate** (nós principais no N8N)\n\n🧠 Dicas principais aprendidas\n\n* Automatizar a análise de concorrência dá uma **vantagem enorme**: você sabe o que agrada e o que falta no seu nicho.\n* Use **Gemini** se quiser reduzir custos sem perder qualidade.\n* Adicione **filtros de data** para evitar vídeos antigos.\n* Personalize os **prompts** para que as ideias geradas reflitam o **seu estilo ou marca**.\n* Guarde os **outputs em JSON** para manter os dados organizados e segmentados.\n* O objetivo **não é copiar**, e sim **interpretar e melhorar o que já funciona**.\n\nRecursos\n\n* **Estrategista YouTube e TikTok**\n* **Modelo de Google Sheets (template)**",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15432,
+    "author": "INEMA",
+    "date": "2025-11-02T23:04:35+00:00",
+    "text": "Ideia para o próximo nível:\nAgora não analisamos apenas concorrentes, analisamos **todo o TikTok por palavra-chave** para encontrar os vídeos mais virais do momento...\ne com **IA geramos novos roteiros prontos para gravar**, adaptados 100% ao seu negócio.\n\n🧠 O sistema faz tudo isso automaticamente:\n\n* Faz **raspagem de vídeos virais com o Apify**, sem precisar de concorrentes.\n* **Analisa os vídeos** (sim... por análise de vídeo) com o **Gemini 2.5 Flash**, detectando **gancho, ritmo, edição, emoções, CTA** e até os **gatilhos psicológicos que disparam a viralidade**.\n* Depois entra o **Claude**, que transforma essa análise em um **roteiro completo** com **suas palavras, seu tom e seu nicho**.\n* Tudo fica salvo no **Google Sheets**: dados, análise, roteiro, CTA e estratégia prontos para gravar.\n\nE falo sério...\n👉 Eu mesmo vou começar a usar esse sistema para meus próprios vídeos,\nporque o que sai daqui é **ouro puro para criar conteúdo viral**.\n\n🔥 Se já te impressionou… esta vai parecer **uma maravilha aplicada ao marketing**.\nVocê pode aplicar isso se for **agência, SaaS, consultor ou criador** que quer **multiplicar seu alcance com IA e estratégia**.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15431,
+    "author": "INEMA",
+    "date": "2025-11-02T23:03:00+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Estratega_Youtube y Tiktok.json"
+  },
+  {
+    "id": 15430,
+    "author": "INEMA",
+    "date": "2025-11-02T23:03:00+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Análisis YouTube.xlsx"
+  },
+  {
+    "id": 15429,
+    "author": "INEMA",
+    "date": "2025-11-02T23:02:54+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_15429_012.jpg"
+  },
+  {
+    "id": 15428,
+    "author": "INEMA",
+    "date": "2025-11-02T23:02:07+00:00",
+    "text": "e57 - Gere Ideias Virais - Youtube e TikTok",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15427,
+    "author": "INEMA",
+    "date": "2025-11-02T23:02:05+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15426,
+    "author": "INEMA",
+    "date": "2025-11-02T23:02:04+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15425,
+    "author": "INEMA",
+    "date": "2025-11-02T23:02:03+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15424,
+    "author": "INEMA",
+    "date": "2025-11-02T23:02:03+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15423,
+    "author": "INEMA",
+    "date": "2025-11-02T23:02:03+00:00",
+    "text": "https://chatgpt.com/c/6907d8f2-d0fc-832d-af64-7451883f8b59",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 15422,
+    "author": "INEMA",
+    "date": "2025-11-02T23:02:02+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15421,
+    "author": "INEMA",
+    "date": "2025-11-02T23:01:55+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

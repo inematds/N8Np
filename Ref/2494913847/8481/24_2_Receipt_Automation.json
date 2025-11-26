@@ -1,0 +1,437 @@
+{
+  "name": "24.2 Receipt Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "text": "=Could you extract the following information from the receipt?\n\n{\n\"Entry Number\": \"\",\n\"Expense Date\": \"\",\n\"Vendor\": \"\",\n\"Expense Type\": \"\", (Housing, Transportation, Food, etc...)\n\"Expense Description\": \"\",\n\"Expense Amount\": \"\",\n\"Customer Name\": \"\",\n}\n\nreturn in JSON format, only return the JSON without other text.",
+        "inputType": "base64",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        520,
+        2120
+      ],
+      "id": "79675647-c91c-43e5-b05e-c63fa8a51782",
+      "name": "Image Analyser",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst parsedItems = items.map((item) => {\n  let content = item.json.content;\n  content = content.replace(\"```json\", \"\").replace(\"```\", \"\");\n  const parsedContent = JSON.parse(content);\n  return parsedContent;\n});\nreturn parsedItems[0];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        2120
+      ],
+      "id": "cc2c75aa-2186-47a6-85ef-824dde8d8df9",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "openai/gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "OPENAI/GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=We just analysed a receipt and got following response:\n\n {{ $('Image Analyser').item.json.content }}\n\nPlease make a summary and send it back to user, and tell him we sucessfully recorded into the google sheet.\n\nThe reply is just a short message, dont put greeting and footer but keep the point form."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        1100,
+        2120
+      ],
+      "id": "6f126be1-361f-4ed6-a92c-6e1b73829809",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1q1i0JmB0G4RiVCLNx8L2AvL7K8yfHcwV4-PCJepiqcA",
+          "mode": "list",
+          "cachedResultName": "Receipt",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1q1i0JmB0G4RiVCLNx8L2AvL7K8yfHcwV4-PCJepiqcA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Receipt History",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1q1i0JmB0G4RiVCLNx8L2AvL7K8yfHcwV4-PCJepiqcA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "Entry Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Expense Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Vendor",
+              "displayName": "Vendor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Expense Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Expense Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Expense Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        900,
+        2120
+      ],
+      "id": "e69ebaa9-36ad-4c53-9eb6-f8a5b957642a",
+      "name": "Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets (andylo@proxa.cc)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        100,
+        2120
+      ],
+      "id": "8781577e-0d99-4986-9bb1-48d0c71d487f",
+      "name": "Telegram Trigger",
+      "webhookId": "3ca5e2d9-702b-49f5-99b9-858ce67fa057",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram account (Andy)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.message.content }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1420,
+        2120
+      ],
+      "id": "7a2cae1f-8350-491d-9d0a-a1a6a177bbd8",
+      "name": "Telegram",
+      "webhookId": "188ec0ba-2bfb-4e95-a0b9-f1f8898acee7",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram account (Andy)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.photo }}",
+                    "rightValue": "Image",
+                    "operator": {
+                      "type": "array",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "[REMOVED]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "image"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.message.photo }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "array",
+                      "operation": "notExists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "empty"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        320,
+        2120
+      ],
+      "id": "e09bf965-6597-47b3-aa15-af2d304c538c",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Please Upload an Image ....",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "65c04c68-fc26-452c-b3d5-ce8e5d73daf7",
+      "name": "Update Telegram Error Message",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        740,
+        2340
+      ],
+      "typeVersion": 1.1,
+      "webhookId": "0d4a0948-4cc4-48d9-b3c4-135767700135",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram account (Andy)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "id": "f83591bc-daee-4199-a8da-02049926d09d",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        520,
+        2340
+      ],
+      "webhookId": "d4d6fc13-d8ad-42b6-b4dd-e922b5534282",
+      "typeVersion": 1.1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Image Analyser": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Image Analyser",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Update Telegram Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets1": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3efbcfbb-8dc4-4d29-9a2b-39f62c3711b1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1740c26791c747bf49d93178a26934eaaffaca5ab2d087ae7e06b06ed236dff6"
+  },
+  "id": "ZJucfVLZgksbcgX3",
+  "tags": []
+}

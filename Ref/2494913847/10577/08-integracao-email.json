@@ -1,0 +1,578 @@
+{
+  "name": "Integração E-mail IMAP/SMTP",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "postProcessAction": "mark",
+        "options": {}
+      },
+      "id": "trigger-email",
+      "name": "Email Trigger (IMAP)",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "credentials": {
+        "imap": {
+          "id": "[REMOVED]",
+          "name": "IMAP Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar e-mail recebido\nconst email = $json;\n\n// Extrair informações básicas\nconst emailData = {\n  id: email.uid || email.messageId,\n  from: email.from?.value?.[0]?.address || email.from,\n  to: email.to?.value?.[0]?.address || email.to,\n  subject: email.subject,\n  text: email.text,\n  html: email.html,\n  date: email.date,\n  attachments: email.attachments || []\n};\n\n// Limpar e processar texto do e-mail\nlet textoLimpo = emailData.text || '';\n\n// Remover assinaturas comuns\nconst assinaturas = [\n  /--\\s*\\n[\\s\\S]*/,\n  /Enviado do meu iPhone[\\s\\S]*/i,\n  /Sent from my iPhone[\\s\\S]*/i,\n  /\\n\\n>.*$/gm\n];\n\nfor (const regex of assinaturas) {\n  textoLimpo = textoLimpo.replace(regex, '');\n}\n\n// Remover quebras de linha excessivas\ntextoLimpo = textoLimpo.replace(/\\n{3,}/g, '\\n\\n').trim();\n\n// Detectar se é resposta ou e-mail novo\nconst isReply = emailData.subject.toLowerCase().includes('re:') || \n               emailData.subject.toLowerCase().includes('fwd:') ||\n               textoLimpo.includes('>');\n\n// Extrair informações de contato do corpo do e-mail\nconst telefoneRegex = /(?:\\+55\\s?)?(?:\\(?\\d{2}\\)?\\s?)?(?:9\\s?)?\\d{4}[\\s-]?\\d{4}/g;\nconst telefones = textoLimpo.match(telefoneRegex) || [];\n\n// Detectar intenção baseada no assunto e conteúdo\nconst assuntoLower = emailData.subject.toLowerCase();\nconst textoLower = textoLimpo.toLowerCase();\n\nlet intencao = 'geral';\nif (assuntoLower.includes('venda') || textoLower.includes('vender') || textoLower.includes('proprietário')) {\n  intencao = 'venda';\n} else if (assuntoLower.includes('compra') || textoLower.includes('comprar') || textoLower.includes('adquirir')) {\n  intencao = 'compra';\n} else if (assuntoLower.includes('aluguel') || textoLower.includes('alugar') || textoLower.includes('locação')) {\n  intencao = 'aluguel';\n} else if (assuntoLower.includes('visita') || textoLower.includes('agendar') || textoLower.includes('conhecer')) {\n  intencao = 'agendamento';\n} else if (assuntoLower.includes('informação') || textoLower.includes('dúvida') || textoLower.includes('pergunta')) {\n  intencao = 'informacao';\n}\n\n// Preparar dados para o orquestrador\nconst orchestratorPayload = {\n  canal: 'email',\n  from: emailData.from,\n  email: emailData.from,\n  telefone: telefones.length > 0 ? telefones[0].replace(/\\D/g, '') : null,\n  mensagem: textoLimpo,\n  assunto: emailData.subject,\n  timestamp: new Date(emailData.date).toISOString(),\n  is_reply: isReply,\n  intencao_detectada: intencao,\n  dados_completos: {\n    email_original: emailData,\n    telefones_encontrados: telefones,\n    attachments: emailData.attachments.map(att => ({\n      filename: att.filename,\n      contentType: att.contentType,\n      size: att.size\n    }))\n  }\n};\n\nreturn {\n  json: {\n    type: 'new_email',\n    processed_data: orchestratorPayload,\n    raw_email: emailData\n  }\n};"
+      },
+      "id": "processar-email",
+      "name": "Processar E-mail Recebido",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "nao-spam",
+              "leftValue": "={{ $json.processed_data.from }}",
+              "rightValue": "noreply",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.processed_data.mensagem.length }}",
+              "rightValue": 10,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "id": "filtrar-email",
+      "name": "Filtrar E-mails Válidos",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.N8N_WEBHOOK_BASE_URL }}/webhook/webhook-entrada-mensagens",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "canal",
+              "value": "={{ $json.processed_data.canal }}"
+            },
+            {
+              "name": "from",
+              "value": "={{ $json.processed_data.from }}"
+            },
+            {
+              "name": "email",
+              "value": "={{ $json.processed_data.email }}"
+            },
+            {
+              "name": "telefone",
+              "value": "={{ $json.processed_data.telefone }}"
+            },
+            {
+              "name": "mensagem",
+              "value": "={{ $json.processed_data.mensagem }}"
+            },
+            {
+              "name": "assunto",
+              "value": "={{ $json.processed_data.assunto }}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{ $json.processed_data.timestamp }}"
+            },
+            {
+              "name": "dados_completos",
+              "value": "={{ JSON.stringify($json.processed_data.dados_completos) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "enviar-orquestrador",
+      "name": "Enviar para Orquestrador",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        900,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "logs_sistema"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nivel": "info",
+            "modulo": "email_imap",
+            "mensagem": "E-mail processado e enviado para orquestrador",
+            "detalhes": "={{ JSON.stringify({ from: $json.processed_data.from, subject: $json.processed_data.assunto, intencao: $json.processed_data.intencao_detectada }) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-email",
+      "name": "Log E-mail Processado",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        900,
+        400
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "email-send",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-envio-email",
+      "name": "Webhook Envio E-mail",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        600
+      ],
+      "webhookId": "email-send-message"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"processing\"\n}"
+      },
+      "id": "resposta-envio-email",
+      "name": "Resposta Envio E-mail",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        460,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar e-mail para envio\nconst dados = $json;\n\n// Validar dados obrigatórios\nif (!dados.to || !dados.message) {\n  throw new Error('Campos obrigatórios: to, message');\n}\n\n// Preparar assunto\nlet assunto = dados.subject || 'Resposta da Imobiliária';\n\n// Se for resposta, adicionar Re:\nif (dados.is_reply && !assunto.toLowerCase().startsWith('re:')) {\n  assunto = 'Re: ' + assunto;\n}\n\n// Preparar corpo do e-mail\nlet corpoEmail = dados.message;\n\n// Se for HTML, usar como está, senão converter texto para HTML básico\nlet isHtml = dados.html || false;\nif (!isHtml) {\n  // Converter quebras de linha para HTML\n  corpoEmail = corpoEmail\n    .replace(/\\n\\n/g, '</p><p>')\n    .replace(/\\n/g, '<br>')\n    .replace(/^/, '<p>')\n    .replace(/$/, '</p>');\n  isHtml = true;\n}\n\n// Adicionar assinatura padrão\nconst assinatura = `\n<br><br>\n<div style=\"border-top: 1px solid #ccc; padding-top: 10px; margin-top: 20px; font-size: 12px; color: #666;\">\n  <strong>Imobiliária</strong><br>\n  📞 Telefone: (11) 99999-9999<br>\n  📧 E-mail: contato@imobiliaria.com<br>\n  🌐 Site: www.imobiliaria.com<br>\n  📍 Endereço: Rua das Flores, 123 - São Paulo/SP\n</div>\n`;\n\ncorpoEmail += assinatura;\n\n// Preparar dados para envio\nconst emailData = {\n  to: dados.to,\n  subject: assunto,\n  message: corpoEmail,\n  isHtml: isHtml,\n  attachments: dados.attachments || [],\n  replyTo: dados.reply_to || null,\n  cc: dados.cc || null,\n  bcc: dados.bcc || null\n};\n\nreturn {\n  json: {\n    email_data: emailData,\n    original_request: dados\n  }\n};"
+      },
+      "id": "preparar-envio-email",
+      "name": "Preparar Envio E-mail",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "{{ $vars.SMTP_FROM_EMAIL }}",
+        "toEmail": "={{ $json.email_data.to }}",
+        "subject": "={{ $json.email_data.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.email_data.message }}",
+        "options": {
+          "ccEmail": "={{ $json.email_data.cc }}",
+          "bccEmail": "={{ $json.email_data.bcc }}",
+          "replyTo": "={{ $json.email_data.replyTo }}"
+        }
+      },
+      "id": "enviar-email",
+      "name": "Enviar E-mail SMTP",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        900,
+        600
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "[REMOVED]",
+          "name": "SMTP Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "logs_sistema"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nivel": "info",
+            "modulo": "email_smtp",
+            "mensagem": "E-mail enviado com sucesso",
+            "detalhes": "={{ JSON.stringify({ to: $json.email_data.to, subject: $json.email_data.subject }) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-envio-sucesso",
+      "name": "Log Envio Sucesso",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        600
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "cronExpression": "0 8 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "cron-newsletter",
+      "name": "Cron Newsletter Semanal (Segunda 8h)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        240,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar clientes para newsletter semanal\nSELECT \n  c.id,\n  c.nome,\n  c.email,\n  c.tipo_interesse,\n  c.localizacao_preferida,\n  c.valor_maximo,\n  c.score_qualificacao\nFROM clientes c\nWHERE c.status = 'ativo'\n  AND c.email IS NOT NULL\n  AND c.email != ''\n  AND c.email NOT LIKE '%@test%'\n  AND c.email NOT LIKE '%@example%'\nORDER BY c.score_qualificacao DESC, c.ultima_interacao DESC\nLIMIT 200;",
+        "options": {}
+      },
+      "id": "buscar-clientes-newsletter",
+      "name": "Buscar Clientes Newsletter",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        460,
+        900
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar imóveis em destaque para newsletter\nSELECT \n  i.id,\n  i.codigo_interno,\n  i.tipo,\n  i.endereco,\n  i.bairro,\n  i.cidade,\n  i.valor,\n  i.quartos,\n  i.banheiros,\n  i.area_construida,\n  i.fotos_urls[1] as foto_principal\nFROM imoveis i\nWHERE i.status = 'disponivel'\n  AND i.created_at >= NOW() - INTERVAL '7 days'\nORDER BY i.visualizacoes DESC, i.created_at DESC\nLIMIT 6;",
+        "options": {}
+      },
+      "id": "buscar-imoveis-destaque",
+      "name": "Buscar Imóveis em Destaque",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        680,
+        900
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gerar newsletter HTML personalizada\nconst clientes = $input.all().slice(0, -1); // Todos exceto o último\nconst imoveis = $input.last().json; // Último input são os imóveis\n\nconst newsletters = [];\n\nfor (const clienteItem of clientes) {\n  const cliente = clienteItem.json;\n  const nome = cliente.nome?.split(' ')[0] || 'Cliente';\n  \n  // Filtrar imóveis por preferências do cliente\n  let imoveisFiltrados = imoveis;\n  \n  if (cliente.localizacao_preferida) {\n    const localizacao = cliente.localizacao_preferida.toLowerCase();\n    imoveisFiltrados = imoveis.filter(i => \n      i.bairro.toLowerCase().includes(localizacao) ||\n      i.cidade.toLowerCase().includes(localizacao)\n    );\n  }\n  \n  if (cliente.valor_maximo) {\n    imoveisFiltrados = imoveisFiltrados.filter(i => i.valor <= cliente.valor_maximo);\n  }\n  \n  // Se não houver imóveis filtrados, usar os primeiros 3\n  if (imoveisFiltrados.length === 0) {\n    imoveisFiltrados = imoveis.slice(0, 3);\n  } else {\n    imoveisFiltrados = imoveisFiltrados.slice(0, 3);\n  }\n  \n  // Gerar HTML dos imóveis\n  const imoveisHtml = imoveisFiltrados.map(imovel => `\n    <div style=\"border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin: 10px 0; background: #f9f9f9;\">\n      <h3 style=\"color: #2c5aa0; margin: 0 0 10px 0;\">${imovel.codigo_interno} - ${imovel.tipo}</h3>\n      <p style=\"margin: 5px 0;\"><strong>📍 Localização:</strong> ${imovel.endereco}, ${imovel.bairro}</p>\n      <p style=\"margin: 5px 0;\"><strong>💰 Valor:</strong> R$ ${imovel.valor.toLocaleString('pt-BR')}</p>\n      <p style=\"margin: 5px 0;\"><strong>🏠 Detalhes:</strong> ${imovel.quartos || 0} quartos, ${imovel.banheiros || 0} banheiros, ${imovel.area_construida || 0}m²</p>\n      <p style=\"margin: 10px 0 0 0;\">\n        <a href=\"https://wa.me/5511999999999?text=Tenho interesse no imóvel ${imovel.codigo_interno}\" \n           style=\"background: #25d366; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; font-size: 14px;\">\n          💬 Tenho Interesse\n        </a>\n      </p>\n    </div>\n  `).join('');\n  \n  // Template da newsletter\n  const newsletterHtml = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Newsletter Imobiliária</title>\n</head>\n<body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;\">\n  \n  <div style=\"text-align: center; background: linear-gradient(135deg, #2c5aa0 0%, #1e3a8a 100%); color: white; padding: 30px; border-radius: 10px; margin-bottom: 30px;\">\n    <h1 style=\"margin: 0; font-size: 28px;\">🏠 Imobiliária</h1>\n    <p style=\"margin: 10px 0 0 0; font-size: 16px;\">Sua casa dos sonhos está aqui!</p>\n  </div>\n  \n  <div style=\"margin-bottom: 30px;\">\n    <h2 style=\"color: #2c5aa0;\">Olá, ${nome}! 👋</h2>\n    <p>Esperamos que esteja tudo bem! Preparamos uma seleção especial de imóveis que podem interessar você.</p>\n  </div>\n  \n  <div style=\"margin-bottom: 30px;\">\n    <h2 style=\"color: #2c5aa0; border-bottom: 2px solid #2c5aa0; padding-bottom: 10px;\">🌟 Destaques da Semana</h2>\n    ${imoveisHtml}\n  </div>\n  \n  <div style=\"background: #f0f8ff; padding: 20px; border-radius: 8px; margin-bottom: 30px;\">\n    <h3 style=\"color: #2c5aa0; margin-top: 0;\">💡 Dica da Semana</h3>\n    <p>O mercado imobiliário está aquecido! É um ótimo momento para investir. Financiamentos estão com taxas atrativas.</p>\n  </div>\n  \n  <div style=\"background: #e8f5e8; padding: 20px; border-radius: 8px; margin-bottom: 30px;\">\n    <h3 style=\"color: #2c5aa0; margin-top: 0;\">🤝 Precisa de Ajuda?</h3>\n    <p>Nossa equipe está sempre pronta para ajudar você a encontrar o imóvel ideal!</p>\n    <p>\n      <a href=\"https://wa.me/5511999999999\" style=\"background: #25d366; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px;\">💬 WhatsApp</a>\n      <a href=\"tel:+5511999999999\" style=\"background: #2c5aa0; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;\">📞 Ligar</a>\n    </p>\n  </div>\n  \n  <div style=\"text-align: center; border-top: 1px solid #ddd; padding-top: 20px; font-size: 12px; color: #666;\">\n    <p><strong>Imobiliária</strong></p>\n    <p>📞 (11) 99999-9999 | 📧 contato@imobiliaria.com</p>\n    <p>🌐 www.imobiliaria.com | 📍 Rua das Flores, 123 - São Paulo/SP</p>\n    <p style=\"margin-top: 15px;\">\n      <a href=\"#\" style=\"color: #666; text-decoration: none; font-size: 11px;\">Descadastrar</a>\n    </p>\n  </div>\n  \n</body>\n</html>\n  `;\n  \n  newsletters.push({\n    cliente_id: cliente.id,\n    nome: cliente.nome,\n    email: cliente.email,\n    assunto: `${nome}, novidades incríveis da semana! 🏠✨`,\n    conteudo_html: newsletterHtml,\n    imoveis_incluidos: imoveisFiltrados.length\n  });\n}\n\nreturn newsletters.map(newsletter => ({ json: newsletter }));"
+      },
+      "id": "gerar-newsletter-html",
+      "name": "Gerar Newsletter HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 10,
+        "options": {}
+      },
+      "id": "split-newsletter",
+      "name": "Split Newsletter em Lotes",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "{{ $vars.SMTP_FROM_EMAIL }}",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.assunto }}",
+        "emailType": "html",
+        "message": "={{ $json.conteudo_html }}",
+        "options": {}
+      },
+      "id": "enviar-newsletter",
+      "name": "Enviar Newsletter",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        900
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "[REMOVED]",
+          "name": "SMTP Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "seconds"
+      },
+      "id": "wait-newsletter",
+      "name": "Wait Entre Envios",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        900
+      ]
+    }
+  ],
+  "connections": {
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Processar E-mail Recebido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar E-mail Recebido": {
+      "main": [
+        [
+          {
+            "node": "Filtrar E-mails Válidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar E-mails Válidos": {
+      "main": [
+        [
+          {
+            "node": "Enviar para Orquestrador",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log E-mail Processado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Envio E-mail": {
+      "main": [
+        [
+          {
+            "node": "Resposta Envio E-mail",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Preparar Envio E-mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Envio E-mail": {
+      "main": [
+        [
+          {
+            "node": "Enviar E-mail SMTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar E-mail SMTP": {
+      "main": [
+        [
+          {
+            "node": "Log Envio Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron Newsletter Semanal (Segunda 8h)": {
+      "main": [
+        [
+          {
+            "node": "Buscar Clientes Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Clientes Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Buscar Imóveis em Destaque",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Imóveis em Destaque": {
+      "main": [
+        [
+          {
+            "node": "Gerar Newsletter HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Newsletter HTML": {
+      "main": [
+        [
+          {
+            "node": "Split Newsletter em Lotes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Newsletter em Lotes": {
+      "main": [
+        [
+          {
+            "node": "Enviar Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Wait Entre Envios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "email",
+      "name": "Email"
+    }
+  ],
+  "triggerCount": 2,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

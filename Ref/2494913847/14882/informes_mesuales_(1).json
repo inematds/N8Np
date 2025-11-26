@@ -1,0 +1,385 @@
+{
+  "name": "informes_mesuales",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 📅 Schedule Trigger\n### Configuración:\n- **Ejecución**: Último día de cada mes\n- **Hora**: 23:00 Buenos Aires\n- **Cron Expression**: `0 23 L * *`\n\n### ¿Qué hace?\nInicia el workflow automáticamente el último día de cada mes para generar el informe mensual completo.",
+        "height": 616,
+        "width": 350
+      },
+      "id": "244ed89a-59ac-4494-85ed-9edcc2c608ac",
+      "name": "Nota: Schedule Trigger",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        192,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "=0 9 1 * *"
+            }
+          ]
+        }
+      },
+      "id": "42e1b1a1-a1cc-4220-9313-cf1a3a3f09cd",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📊 Cálculo de Fechas\n### ¿Qué hace?\nCalcula automáticamente:\n- Primer día del mes: YYYY-MM-01\n- Último día del mes: YYYY-MM-DD\n- Mes anterior para comparación\n- Formato compatible con Supabase\n\n### Variables generadas:\n- `firstDay`, `lastDay`\n- `previousMonthFirst`, `previousMonthLast`\n- `monthName`, `year`",
+        "height": 620,
+        "width": 350,
+        "color": 2
+      },
+      "id": "31508503-7dad-4796-b544-59a439117df3",
+      "name": "Nota: Cálculo de Fechas",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        592,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// NODO: Calcular Fechas del Mes - Adaptado para movimientos_ivan\n// Se ejecuta el día 1 de cada mes para analizar el mes anterior\n\nconst now = new Date();\nconst year = now.getFullYear();\nconst currentMonth = now.getMonth(); // 0-11\n\n// Calcular mes anterior\nconst previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;\nconst previousYear = currentMonth === 0 ? year - 1 : year;\n\n// Primer y último día del mes anterior\nconst firstDay = new Date(previousYear, previousMonth, 1);\nconst firstDayStr = firstDay.toISOString().split('T')[0]; // YYYY-MM-DD\n\nconst lastDay = new Date(previousYear, previousMonth + 1, 0);\nconst lastDayStr = lastDay.toISOString().split('T')[0]; // YYYY-MM-DD\n\n// Nombres en español\nconst monthNames = [\n  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',\n  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'\n];\n\n// Para comparación: mes anterior al anterior\nconst twoMonthsAgoMonth = previousMonth === 0 ? 11 : previousMonth - 1;\nconst twoMonthsAgoYear = previousMonth === 0 ? previousYear - 1 : previousYear;\nconst twoMonthsAgoFirst = new Date(twoMonthsAgoYear, twoMonthsAgoMonth, 1).toISOString().split('T')[0];\nconst twoMonthsAgoLast = new Date(twoMonthsAgoYear, twoMonthsAgoMonth + 1, 0).toISOString().split('T')[0];\n\n// Cantidad de días del mes analizado\nconst daysInMonth = lastDay.getDate();\n\nreturn [{\n  json: {\n    // Fechas del mes a analizar (mes anterior)\n    firstDay: firstDayStr,\n    lastDay: lastDayStr,\n    monthName: monthNames[previousMonth],\n    monthNumber: previousMonth + 1,\n    year: previousYear,\n    daysInMonth: daysInMonth,\n    dateRange: `${firstDayStr} al ${lastDayStr}`,\n    \n    // Para comparaciones\n    twoMonthsAgoFirst: twoMonthsAgoFirst,\n    twoMonthsAgoLast: twoMonthsAgoLast,\n    twoMonthsAgoName: monthNames[twoMonthsAgoMonth],\n    \n    // Metadata\n    executionTime: new Date().toISOString(),\n    executionDay: now.getDate(),\n    note: `Analizando ${monthNames[previousMonth]} ${previousYear} (ejecutado el día ${now.getDate()} de ${monthNames[currentMonth]})`\n  }\n}];"
+      },
+      "id": "d69ecca0-1bc3-4e60-b76c-0eee67389c6b",
+      "name": "Calcular Fechas del Mes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🗄️ Supabase PostgreSQL\n### Configuración:\n- **Tabla**: public.movimientos\n- **Conexión**: Credenciales Supabase\n\n### Query principal:\n- Obtiene todos los movimientos del mes\n- Convierte tipos de datos correctamente\n- Ordena por fecha ascendente\n\n### Datos obtenidos:\n- Movimientos completos del mes\n- Campos procesados y normalizados",
+        "height": 620,
+        "width": 350,
+        "color": 3
+      },
+      "id": "4ccff4c1-e6ae-40ed-a969-1fbcc936c019",
+      "name": "Nota: Supabase Query",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        992,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- NODO: Obtener Movimientos del Mes - Adaptado para movimientos_ivan\n-- Query SQL para PostgreSQL/Supabase\n\nSELECT \n    id,\n    fecha,\n    categoria,\n    subcategoria,\n    detalle,\n    tipo_pago,\n    \n    -- Normalizar ingreso (ya es numeric)\n    COALESCE(ingreso, 0) as ingreso,\n    \n    -- Normalizar gasto (convertir text a numeric, manejar comas europeas)\n    COALESCE(\n        CASE \n            WHEN gasto IS NULL OR gasto = '' THEN 0\n            ELSE CAST(REPLACE(gasto, ',', '.') AS DOUBLE PRECISION)\n        END, 0\n    ) as gasto_numeric,\n    \n    -- Campos de IVA\n    COALESCE(base_imponible, 0) as base_imponible,\n    COALESCE(iva_porcentaje, 0) as iva_porcentaje,\n    COALESCE(iva_importe, 0) as iva_importe,\n    COALESCE(total_bruto, 0) as total_bruto,\n    iva_tipo,\n    deducible,\n    \n    -- Campos calculados\n    CASE \n        WHEN COALESCE(ingreso, 0) > 0 THEN 'ingreso'\n        WHEN COALESCE(\n            CASE \n                WHEN gasto IS NULL OR gasto = '' THEN 0\n                ELSE CAST(REPLACE(gasto, ',', '.') AS DOUBLE PRECISION)\n            END, 0\n        ) > 0 THEN 'gasto'\n        ELSE 'sin_clasificar'\n    END as tipo_movimiento,\n    \n    -- Importe absoluto para rankings\n    CASE \n        WHEN COALESCE(ingreso, 0) > 0 THEN ingreso\n        ELSE COALESCE(\n            CASE \n                WHEN gasto IS NULL OR gasto = '' THEN 0\n                ELSE CAST(REPLACE(gasto, ',', '.') AS DOUBLE PRECISION)\n            END, 0\n        )\n    END as importe_abs,\n    \n    -- Fecha convertida para ordenación\n    TO_DATE(fecha, 'YYYY-MM-DD') as fecha_date,\n    \n    -- Mes en formato texto para agrupación\n    SUBSTRING(fecha, 1, 7) as mes\n\nFROM public.movimientos_ivan\nWHERE fecha >= '{{ $json.firstDay }}'\n  AND fecha <= '{{ $json.lastDay }}'\n  AND fecha IS NOT NULL\nORDER BY TO_DATE(fecha, 'YYYY-MM-DD') ASC, id ASC;",
+        "options": {}
+      },
+      "id": "dc719aed-b533-4b9d-9153-17526741f23a",
+      "name": "Obtener Movimientos del Mes",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1104,
+        640
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 📈 Procesamiento Avanzado\n### ¿Qué hace?\n- Análisis estadístico completo\n- Cálculo de métricas financieras\n- Identificación de patrones\n- Comparación con mes anterior\n- Preparación de datos para Plotly\n\n### Métricas generadas:\n- KPIs financieros\n- Distribuciones por categoría\n- Tendencias y anomalías\n- Datos para visualización",
+        "height": 624,
+        "width": 350,
+        "color": 4
+      },
+      "id": "8d1e8f63-0162-4ac9-94df-32e43eabffbe",
+      "name": "Nota: Procesamiento Avanzado",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1376,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🤖 Generación de Informe HTML\n### Configuración:\n- Genera HTML5 con gráficos Plotly\n- Análisis financiero inteligente\n- Dashboard interactivo\n- Diseño oscuro profesional\n\n### Nota:\nPor limitaciones de tamaño, este nodo genera\nel HTML directamente sin usar LLM.\nPuedes cambiarlo por un nodo de OpenAI después.",
+        "height": 620,
+        "width": 350,
+        "color": 5
+      },
+      "id": "2539245e-7f69-4c4d-9a6d-c0417eb8bf5c",
+      "name": "Nota: Generación HTML",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1744,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener datos del input (adaptado para n8n)\nconst inputData = $input.all();\nlet datos;\n\n// Detectar si es un array o un objeto\nif (Array.isArray(inputData) && inputData.length > 0) {\n  datos = inputData[0].json;\n} else if (inputData.json) {\n  datos = inputData.json;\n} else {\n  datos = inputData;\n}\n\n// Si los datos vienen en un array, tomar el primer elemento\nif (Array.isArray(datos) && datos.length > 0) {\n  datos = datos[0];\n}\n\n// Validar que tenemos los datos necesarios\nif (!datos || !datos.periodo || !datos.resumen) {\n  return [{\n    json: {\n      error: \"Datos incompletos. Se requiere estructura con periodo y resumen\",\n      received: datos\n    }\n  }];\n}\n\n// Funciones auxiliares para generar gráficos\nfunction getPieColor(index) {\n  const colors = [\n    '#667eea', '#764ba2', '#f093fb', '#4ade80', '#fbbf24', \n    '#f87171', '#60a5fa', '#a78bfa', '#34d399', '#fb7185'\n  ];\n  return colors[index % colors.length];\n}\n\nfunction generatePieChartSVG(chartData) {\n  if (!chartData || !chartData.labels || !chartData.values) {\n    return '<p>No hay datos para mostrar el gráfico</p>';\n  }\n\n  const { labels, values } = chartData;\n  const total = values.reduce((sum, val) => sum + parseFloat(val || 0), 0);\n  \n  if (total === 0) return '<p>No hay datos para mostrar</p>';\n  \n  let currentAngle = 0;\n  const radius = 80;\n  const innerRadius = 40;\n  const centerX = 120;\n  const centerY = 120;\n  \n  const paths = values.map((value, index) => {\n    const numValue = parseFloat(value || 0);\n    if (numValue === 0) return '';\n    \n    const angle = (numValue / total) * 360;\n    \n    const startAngle = currentAngle;\n    const endAngle = currentAngle + angle;\n    currentAngle = endAngle;\n    \n    const startAngleRad = (startAngle - 90) * Math.PI / 180;\n    const endAngleRad = (endAngle - 90) * Math.PI / 180;\n    \n    const x1 = centerX + radius * Math.cos(startAngleRad);\n    const y1 = centerY + radius * Math.sin(startAngleRad);\n    const x2 = centerX + radius * Math.cos(endAngleRad);\n    const y2 = centerY + radius * Math.sin(endAngleRad);\n    \n    const x3 = centerX + innerRadius * Math.cos(startAngleRad);\n    const y3 = centerY + innerRadius * Math.sin(startAngleRad);\n    const x4 = centerX + innerRadius * Math.cos(endAngleRad);\n    const y4 = centerY + innerRadius * Math.sin(endAngleRad);\n    \n    const largeArc = angle > 180 ? 1 : 0;\n    \n    return `<path d=\"M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} L ${x4} ${y4} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x3} ${y3} Z\" \n            fill=\"${getPieColor(index)}\" stroke=\"white\" stroke-width=\"2\"/>`;\n  }).filter(path => path !== '').join('');\n  \n  return `\n    <svg class=\"pie-chart\" viewBox=\"0 0 240 240\" xmlns=\"http://www.w3.org/2000/svg\">\n      ${paths}\n      <text x=\"120\" y=\"115\" text-anchor=\"middle\" font-size=\"12\" font-weight=\"bold\" fill=\"#2c3e50\">TOTAL</text>\n      <text x=\"120\" y=\"130\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"bold\" fill=\"#667eea\">€${total.toLocaleString('es-ES', {maximumFractionDigits: 0})}</text>\n    </svg>\n  `;\n}\n\n// Generar HTML optimizado para PDF con gráficos SVG estáticos\nconst htmlContent = `\n<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Informe Financiero - ${datos.periodo.monthName} ${datos.periodo.year}</title>\n    <style>\n        /* Reset y configuración base */\n        * { \n            margin: 0; \n            padding: 0; \n            box-sizing: border-box; \n        }\n        \n        /* Configuración específica para PDF */\n        @page {\n            size: A4;\n            margin: 12mm;\n        }\n        \n        @media print {\n            .page-break { \n                page-break-after: always; \n            }\n            .no-break { \n                page-break-inside: avoid;\n                break-inside: avoid;\n            }\n        }\n        \n        /* Estilos base */\n        body {\n            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;\n            background: white;\n            color: #2c3e50;\n            padding: 0;\n            line-height: 1.6;\n            font-size: 14px;\n        }\n        \n        .container { \n            max-width: 100%; \n            margin: 0;\n            background: white;\n        }\n        \n        /* Header mejorado */\n        .header {\n            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n            color: white;\n            text-align: center;\n            padding: 30px 20px;\n            margin-bottom: 20px;\n        }\n        \n        .main-title {\n            font-size: 2.2rem;\n            font-weight: 800;\n            margin-bottom: 10px;\n        }\n        \n        .subtitle {\n            font-size: 1.1rem;\n            font-weight: 300;\n            opacity: 0.95;\n        }\n        \n        /* KPI Cards mejorados */\n        .kpi-grid {\n            display: grid;\n            grid-template-columns: repeat(2, 1fr);\n            gap: 15px;\n            margin: 20px;\n            padding: 0;\n        }\n        \n        .kpi-card {\n            background: linear-gradient(145deg, #f8f9ff 0%, #e8ecff 100%);\n            border: 2px solid #667eea;\n            border-radius: 12px;\n            padding: 20px;\n            text-align: center;\n        }\n        \n        .kpi-icon {\n            font-size: 2rem;\n            margin-bottom: 10px;\n            display: block;\n        }\n        \n        .kpi-label {\n            font-size: 0.9rem;\n            color: #6c757d;\n            font-weight: 600;\n            text-transform: uppercase;\n            letter-spacing: 1px;\n            margin-bottom: 8px;\n        }\n        \n        .kpi-value {\n            font-size: 1.8rem;\n            font-weight: 800;\n            color: #667eea;\n        }\n        \n        .kpi-value.negative {\n            color: #e74c3c;\n        }\n        \n        .kpi-value.positive {\n            color: #27ae60;\n        }\n        \n        /* Análisis rápido */\n        .analysis-section {\n            margin: 20px;\n            padding: 20px;\n            background: #f8f9fa;\n            border-radius: 12px;\n            border-left: 4px solid #667eea;\n        }\n        \n        .analysis-title {\n            font-size: 1.4rem;\n            font-weight: 700;\n            color: #2c3e50;\n            margin-bottom: 15px;\n        }\n        \n        .alert, .success, .recommendation {\n            padding: 15px;\n            border-radius: 8px;\n            margin: 15px 0;\n            font-weight: 500;\n            line-height: 1.6;\n        }\n        \n        .alert {\n            background: #fee2e2;\n            border-left: 4px solid #ef4444;\n            color: #991b1b;\n        }\n        \n        .success {\n            background: #dcfce7;\n            border-left: 4px solid #22c55e;\n            color: #166534;\n        }\n        \n        .recommendation {\n            background: #dbeafe;\n            border-left: 4px solid #3b82f6;\n            color: #1e40af;\n        }\n        \n        /* Contenedores de gráficos */\n        .chart-container {\n            background: white;\n            margin: 20px;\n            padding: 20px;\n            border-radius: 12px;\n            border: 1px solid #e5e7eb;\n        }\n        \n        .chart-title {\n            font-size: 1.3rem;\n            font-weight: 700;\n            color: #2c3e50;\n            margin-bottom: 20px;\n            text-align: center;\n            padding-bottom: 10px;\n            border-bottom: 2px solid #e9ecef;\n        }\n        \n        /* Gráfico de dona SVG */\n        .pie-chart-container {\n            text-align: center;\n            margin: 20px 0;\n        }\n        \n        .pie-chart {\n            max-width: 400px;\n            height: 300px;\n            margin: 0 auto;\n        }\n        \n        .legend {\n            display: grid;\n            grid-template-columns: repeat(2, 1fr);\n            gap: 8px;\n            margin-top: 15px;\n            font-size: 0.85rem;\n        }\n        \n        .legend-item {\n            display: flex;\n            align-items: center;\n            gap: 8px;\n        }\n        \n        .legend-color {\n            width: 16px;\n            height: 16px;\n            border-radius: 2px;\n        }\n        \n        /* Gráfico de barras simple */\n        .bar-chart {\n            margin: 20px 0;\n        }\n        \n        .bar-item {\n            display: flex;\n            align-items: center;\n            margin-bottom: 8px;\n            font-size: 0.9rem;\n        }\n        \n        .bar-label {\n            width: 120px;\n            text-align: right;\n            padding-right: 10px;\n            font-weight: 500;\n        }\n        \n        .bar-visual {\n            flex: 1;\n            height: 20px;\n            border-radius: 10px;\n            position: relative;\n            overflow: hidden;\n        }\n        \n        .bar-fill {\n            height: 100%;\n            border-radius: 10px;\n            display: flex;\n            align-items: center;\n            padding: 0 10px;\n            color: white;\n            font-weight: bold;\n            font-size: 0.8rem;\n        }\n        \n        .bar-ingresos {\n            background: linear-gradient(90deg, #27ae60, #2ecc71);\n        }\n        \n        .bar-gastos {\n            background: linear-gradient(90deg, #e74c3c, #c0392b);\n        }\n        \n        /* Tablas mejoradas */\n        .table-container {\n            margin: 20px;\n            background: white;\n            border-radius: 12px;\n            overflow: hidden;\n            border: 1px solid #e5e7eb;\n        }\n        \n        .data-table {\n            width: 100%;\n            border-collapse: collapse;\n            font-size: 0.85rem;\n        }\n        \n        .table-header th {\n            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n            color: white;\n            padding: 12px 8px;\n            text-align: left;\n            font-weight: 600;\n            font-size: 0.8rem;\n            text-transform: uppercase;\n        }\n        \n        .table-row td {\n            padding: 10px 8px;\n            border-bottom: 1px solid #e9ecef;\n        }\n        \n        .table-row:nth-child(even) {\n            background: #f8f9fa;\n        }\n        \n        /* Grid de categorías */\n        .category-grid {\n            display: grid;\n            grid-template-columns: repeat(2, 1fr);\n            gap: 15px;\n            margin: 20px;\n        }\n        \n        .category-card {\n            background: white;\n            padding: 15px;\n            border-radius: 12px;\n            border: 1px solid #e5e7eb;\n            border-top: 4px solid #667eea;\n        }\n        \n        .category-card h3 {\n            color: #667eea;\n            font-size: 1.1rem;\n            font-weight: 700;\n            margin-bottom: 10px;\n        }\n        \n        .category-card p {\n            font-size: 0.9rem;\n            margin-bottom: 5px;\n        }\n        \n        .progress-bar {\n            width: 100%;\n            height: 6px;\n            background: #e9ecef;\n            border-radius: 3px;\n            overflow: hidden;\n            margin-top: 10px;\n        }\n        \n        .progress-fill {\n            height: 100%;\n            background: linear-gradient(90deg, #667eea, #764ba2);\n            border-radius: 3px;\n        }\n        \n        /* Footer */\n        .footer {\n            text-align: center;\n            margin-top: 40px;\n            padding: 20px;\n            border-top: 1px solid #e9ecef;\n            color: #6c757d;\n            font-size: 0.85rem;\n        }\n        \n        /* Utilidades */\n        .text-center { text-align: center; }\n        .mb-20 { margin-bottom: 20px; }\n        .mt-20 { margin-top: 20px; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <!-- Header -->\n        <div class=\"header no-break\">\n            <h1 class=\"main-title\">Informe Financiero Mensual</h1>\n            <div class=\"subtitle\">${datos.periodo.monthName} ${datos.periodo.year} | ${datos.periodo.dateRange}</div>\n        </div>\n        \n        <!-- KPIs principales -->\n        <div class=\"kpi-grid no-break\">\n            <div class=\"kpi-card\">\n                <div class=\"kpi-icon\">💰</div>\n                <div class=\"kpi-label\">Total Ingresos</div>\n                <div class=\"kpi-value positive\">€${parseFloat(datos.resumen.totalIngresos || 0).toLocaleString('es-ES', {minimumFractionDigits: 2})}</div>\n            </div>\n            <div class=\"kpi-card\">\n                <div class=\"kpi-icon\">💸</div>\n                <div class=\"kpi-label\">Total Gastos</div>\n                <div class=\"kpi-value negative\">€${parseFloat(datos.resumen.totalGastos || 0).toLocaleString('es-ES', {minimumFractionDigits: 2})}</div>\n            </div>\n            <div class=\"kpi-card\">\n                <div class=\"kpi-icon\">⚖️</div>\n                <div class=\"kpi-label\">Balance</div>\n                <div class=\"kpi-value ${parseFloat(datos.resumen.balance || 0) >= 0 ? 'positive' : 'negative'}\">€${parseFloat(datos.resumen.balance || 0).toLocaleString('es-ES', {minimumFractionDigits: 2})}</div>\n            </div>\n            <div class=\"kpi-card\">\n                <div class=\"kpi-icon\">🎯</div>\n                <div class=\"kpi-label\">Tasa de Ahorro</div>\n                <div class=\"kpi-value\">${datos.resumen.porcentajeAhorro || 0}%</div>\n            </div>\n        </div>\n        \n        <!-- Análisis del período -->\n        <div class=\"analysis-section no-break\">\n            <h2 class=\"analysis-title\">📊 Análisis del Período</h2>\n            ${parseFloat(datos.resumen.porcentajeAhorro || 0) < 10 ? \n                '<div class=\"alert\"><strong>⚠️ ALERTA:</strong> Tasa de ahorro muy baja (' + (datos.resumen.porcentajeAhorro || 0) + '%). Se recomienda urgentemente revisar y reducir gastos no esenciales.</div>' : \n                parseFloat(datos.resumen.porcentajeAhorro || 0) < 20 ?\n                '<div class=\"recommendation\"><strong>💡 RECOMENDACIÓN:</strong> Tasa de ahorro mejorable (' + (datos.resumen.porcentajeAhorro || 0) + '%). Considera optimizar algunos gastos para alcanzar el 20% de ahorro.</div>' :\n                '<div class=\"success\"><strong>✅ EXCELENTE:</strong> Tasa de ahorro saludable (' + (datos.resumen.porcentajeAhorro || 0) + '%). Continúa con este buen hábito financiero.</div>'\n            }\n            ${parseFloat(datos.resumen.balance || 0) < 0 ? \n                '<div class=\"alert\"><strong>⚠️ DÉFICIT:</strong> Balance negativo de €' + parseFloat(datos.resumen.balance || 0).toLocaleString('es-ES', {minimumFractionDigits: 2}) + '. Los gastos superaron los ingresos este mes.</div>' : \n                ''\n            }\n            ${datos.iva ? `\n            <div class=\"recommendation\">\n                <strong>📋 IVA a liquidar:</strong> €${parseFloat(datos.iva.aLiquidar || 0).toLocaleString('es-ES', {minimumFractionDigits: 2})} \n                (Repercutido: €${parseFloat(datos.iva.repercutido || 0).toLocaleString('es-ES', {minimumFractionDigits: 2})} - Soportado: €${parseFloat(datos.iva.soportado || 0).toLocaleString('es-ES', {minimumFractionDigits: 2})})\n            </div>\n            ` : ''}\n            <p class=\"mt-20\"><strong>📈 Total de movimientos procesados:</strong> ${datos.resumen.totalMovimientos || 0}</p>\n            <p><strong>💰 Promedio de gasto diario:</strong> €${parseFloat(datos.resumen.promedioGastoDiario || 0).toLocaleString('es-ES', {minimumFractionDigits: 2})}</p>\n        </div>\n        \n        <div class=\"page-break\"></div>\n        \n        <!-- Gráfico de distribución (Donut Chart SVG) -->\n        ${datos.plotlyData && datos.plotlyData.categoriasChart ? `\n        <div class=\"chart-container no-break\">\n            <h2 class=\"chart-title\">🍰 Distribución de Gastos por Categoría</h2>\n            <div class=\"pie-chart-container\">\n                ${generatePieChartSVG(datos.plotlyData.categoriasChart)}\n                <div class=\"legend\">\n                    ${datos.plotlyData.categoriasChart.labels.map((label, index) => `\n                        <div class=\"legend-item\">\n                            <div class=\"legend-color\" style=\"background-color: ${getPieColor(index)};\"></div>\n                            <span>${label}: €${parseFloat(datos.plotlyData.categoriasChart.values[index] || 0).toLocaleString('es-ES')}</span>\n                        </div>\n                    `).join('')}\n                </div>\n            </div>\n        </div>\n        ` : ''}\n        \n        <!-- Gráfico de evolución (Bar Chart simplificado) -->\n        <div class=\"chart-container no-break\">\n            <h2 class=\"chart-title\">📈 Resumen de Ingresos vs Gastos</h2>\n            <div class=\"bar-chart\">\n                <div class=\"bar-item\">\n                    <div class=\"bar-label\">Ingresos</div>\n                    <div class=\"bar-visual\">\n                        <div class=\"bar-fill bar-ingresos\" style=\"width: 100%;\">\n                            €${parseFloat(datos.resumen.totalIngresos || 0).toLocaleString('es-ES', {maximumFractionDigits: 2})}\n                        </div>\n                    </div>\n                </div>\n                <div class=\"bar-item\">\n                    <div class=\"bar-label\">Gastos</div>\n                    <div class=\"bar-visual\">\n                        <div class=\"bar-fill bar-gastos\" style=\"width: ${Math.min((parseFloat(datos.resumen.totalGastos || 0) / Math.max(parseFloat(datos.resumen.totalIngresos || 1), 1)) * 100, 100)}%;\">\n                            €${parseFloat(datos.resumen.totalGastos || 0).toLocaleString('es-ES', {maximumFractionDigits: 2})}\n                        </div>\n                    </div>\n                </div>\n            </div>\n        </div>\n        \n        <div class=\"page-break\"></div>\n        \n        <!-- Análisis por categorías -->\n        ${datos.categorias && datos.categorias.length > 0 ? `\n        <div class=\"analysis-section\">\n            <h2 class=\"analysis-title\">🏷️ Análisis por Categorías</h2>\n        </div>\n        \n        <div class=\"category-grid no-break\">\n            ${datos.categorias.slice(0, 6).map(cat => `\n                <div class=\"category-card\">\n                    <h3>${cat.nombre || 'Sin categoría'}</h3>\n                    <p><strong>💸 Gastos:</strong> <span style=\"color: #e74c3c;\">€${parseFloat(cat.gastos || 0).toLocaleString('es-ES', {maximumFractionDigits: 2})}</span></p>\n                    <p><strong>💰 Ingresos:</strong> <span style=\"color: #27ae60;\">€${parseFloat(cat.ingresos || 0).toLocaleString('es-ES', {maximumFractionDigits: 2})}</span></p>\n                    <p><strong>📊 Movimientos:</strong> ${cat.movimientos || 0}</p>\n                    <p><strong>📈 Porcentaje del total:</strong> ${cat.porcentajeDelTotal || 0}%</p>\n                    <div class=\"progress-bar\">\n                        <div class=\"progress-fill\" style=\"width: ${Math.min(parseFloat(cat.porcentajeDelTotal || 0), 100)}%\"></div>\n                    </div>\n                </div>\n            `).join('')}\n        </div>\n        ` : ''}\n        \n        <!-- Tabla de top gastos -->\n        ${datos.topGastos && datos.topGastos.length > 0 ? `\n        <div class=\"table-container no-break\">\n            <h2 class=\"chart-title\">💸 Top 10 Gastos del Mes</h2>\n            <table class=\"data-table\">\n                <thead>\n                    <tr class=\"table-header\">\n                        <th>Fecha</th>\n                        <th>Detalle</th>\n                        <th>Categoría</th>\n                        <th>Monto</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    ${datos.topGastos.map(g => `\n                        <tr class=\"table-row\">\n                            <td>${g.fecha || 'Sin fecha'}</td>\n                            <td>${g.detalle || 'Sin detalle'}</td>\n                            <td>${g.categoria || 'Sin categoría'}</td>\n                            <td style=\"color: #e74c3c; font-weight: 700;\">€${parseFloat(g.gasto_numeric || g.gasto || 0).toLocaleString('es-ES', {maximumFractionDigits: 2})}</td>\n                        </tr>\n                    `).join('')}\n                </tbody>\n            </table>\n        </div>\n        ` : ''}\n        \n        ${datos.topIngresos && datos.topIngresos.length > 0 ? `\n        <div class=\"page-break\"></div>\n        \n        <!-- Tabla de top ingresos -->\n        <div class=\"table-container no-break\">\n            <h2 class=\"chart-title\">💰 Top 5 Ingresos del Mes</h2>\n            <table class=\"data-table\">\n                <thead>\n                    <tr class=\"table-header\">\n                        <th>Fecha</th>\n                        <th>Detalle</th>\n                        <th>Categoría</th>\n                        <th>Monto</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    ${datos.topIngresos.map(i => `\n                        <tr class=\"table-row\">\n                            <td>${i.fecha || 'Sin fecha'}</td>\n                            <td>${i.detalle || 'Sin detalle'}</td>\n                            <td>${i.categoria || 'Sin categoría'}</td>\n                            <td style=\"color: #27ae60; font-weight: 700;\">€${parseFloat(i.ingreso || 0).toLocaleString('es-ES', {maximumFractionDigits: 2})}</td>\n                        </tr>\n                    `).join('')}\n                </tbody>\n            </table>\n        </div>\n        ` : ''}\n        \n        ${datos.tiposPago && datos.tiposPago.length > 0 ? `\n        <div class=\"analysis-section\">\n            <h2 class=\"analysis-title\">💳 Métodos de Pago Utilizados</h2>\n        </div>\n        \n        <div class=\"category-grid no-break\">\n            ${datos.tiposPago.map(tipo => `\n                <div class=\"category-card\">\n                    <h3 style=\"color: #f39c12;\">${tipo.tipo || 'Sin especificar'}</h3>\n                    <p><strong>💸 Gastos:</strong> €${parseFloat(tipo.totalGastos || 0).toLocaleString('es-ES', {maximumFractionDigits: 2})}</p>\n                    <p><strong>💰 Ingresos:</strong> €${parseFloat(tipo.totalIngresos || 0).toLocaleString('es-ES', {maximumFractionDigits: 2})}</p>\n                    <p><strong>📊 Transacciones:</strong> ${tipo.cantidad || 0}</p>\n                </div>\n            `).join('')}\n        </div>\n        ` : ''}\n        \n        <!-- Recomendaciones -->\n        <div class=\"analysis-section no-break\">\n            <h2 class=\"analysis-title\">💡 Recomendaciones Financieras</h2>\n            <div class=\"recommendation\">\n                <p><strong>📌 Basado en el análisis de este mes, aquí hay algunas sugerencias:</strong></p>\n                <ul style=\"margin: 15px 0 0 20px; line-height: 1.6;\">\n                    ${parseFloat(datos.resumen.porcentajeAhorro || 0) < 20 ? \n                        '<li>Intenta aumentar tu tasa de ahorro reduciendo gastos en las categorías más altas</li>' : \n                        '<li>Mantén tu excelente tasa de ahorro actual</li>'\n                    }\n                    ${datos.categorias && datos.categorias.length > 0 && parseFloat(datos.categorias[0].porcentajeDelTotal || 0) > 30 ? \n                        '<li>La categoría \"' + datos.categorias[0].nombre + '\" representa más del 30% de tus gastos. Considera revisar estos gastos.</li>' : \n                        ''\n                    }\n                    <li>Promedio diario de gastos: €${parseFloat(datos.resumen.promedioGastoDiario || 0).toLocaleString('es-ES', {maximumFractionDigits: 2})} - úsalo como referencia para tu presupuesto diario</li>\n                    ${(datos.resumen.totalMovimientos || 0) < 20 ? \n                        '<li>Registra todos tus movimientos para obtener un análisis más preciso</li>' : \n                        '<li>Excelente registro de movimientos, esto permite un análisis detallado</li>'\n                    }\n                    ${datos.iva && parseFloat(datos.iva.aLiquidar || 0) > 0 ? \n                        '<li>Recuerda liquidar el IVA trimestral: €' + parseFloat(datos.iva.aLiquidar).toLocaleString('es-ES', {maximumFractionDigits: 2}) + '</li>' : \n                        ''\n                    }\n                </ul>\n            </div>\n        </div>\n        \n        <!-- Footer -->\n        <div class=\"footer\">\n            <p>Informe generado automáticamente el ${new Date().toLocaleDateString('es-ES')}</p>\n            <p style=\"margin-top: 8px;\">Sistema de Reportes Financieros - n8n Automation</p>\n        </div>\n    </div>\n</body>\n</html>\n`;\n\n// Retornar el resultado\nreturn [{\n  json: {\n    htmlContent: htmlContent,\n    periodo: datos.periodo,\n    resumen: datos.resumen,\n    metadata: {\n      generatedAt: new Date().toISOString(),\n      inputType: Array.isArray(inputData) ? 'array' : 'object',\n      hasPlotlyData: !!(datos.plotlyData && datos.plotlyData.categoriasChart),\n      totalCategorias: datos.categorias ? datos.categorias.length : 0,\n      totalGastos: datos.topGastos ? datos.topGastos.length : 0,\n      totalIngresos: datos.topIngresos ? datos.topIngresos.length : 0\n    }\n  }\n}];"
+      },
+      "id": "a03d1827-269a-494c-ba7b-b4f50646301c",
+      "name": "Generar HTML con Dashboard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1840,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📄 Conversión a PDF\n### Configuración:\n- Formato: A4\n- Orientación: Portrait\n- Márgenes: 20mm\n- Incluir gráficos y estilos\n\n### Nombre del archivo:\nInforme_{Mes}_{Año}.pdf",
+        "height": 628,
+        "width": 382,
+        "color": 6
+      },
+      "id": "9aa61fe6-b181-4278-b93c-aa0d39daf574",
+      "name": "Nota: Generación PDF",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2112,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "html": "{{ $json.htmlContent }}"
+      },
+      "id": "65c4091b-2826-4df1-95d9-b8c62f9d3d85",
+      "name": "Convertir HTML a PDF",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1,
+      "position": [
+        2176,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 💚 WhatsApp Evolution API\n### Envío de Documento:\n- Endpoint: /message/sendDocument\n- Incluye PDF como adjunto\n- Mensaje con resumen ejecutivo\n\n### Configuración necesaria:\n- URL de Evolution API\n- Instance name\n- API Key\n- Número destino (formato Argentina)",
+        "height": 632,
+        "width": 350,
+        "color": 7
+      },
+      "id": "33d59356-b9ee-4116-9341-082a54b23946",
+      "name": "Nota: WhatsApp",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2528,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "URL/HTML to PDF",
+        "convertType": "htmlToPDF",
+        "html": "={{ $json.html }}",
+        "advancedOptions": {}
+      },
+      "type": "n8n-nodes-pdfco.PDFco Api",
+      "typeVersion": 1,
+      "position": [
+        2336,
+        640
+      ],
+      "id": "dfed88c9-481b-4049-aa7d-88bf619f477e",
+      "name": "PDFco Api1",
+      "credentials": {
+        "pdfcoApi": {
+          "id": "[REMOVED]",
+          "name": "PDF Fyzon"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// PROCESADOR DE DATOS REALES - Code Node\n// Procesa exactamente los datos que vienen del Aggregate\n\nconst inputData = $input.first().json;\nconst movimientos = inputData.data || [];\n\nconsole.log(`Iniciando procesamiento de ${movimientos.length} movimientos reales`);\n\n// Detectar período automáticamente desde los datos\nlet fechaMin = null;\nlet fechaMax = null;\n\nmovimientos.forEach(mov => {\n  const fecha = mov.fecha;\n  if (!fechaMin || fecha < fechaMin) fechaMin = fecha;\n  if (!fechaMax || fecha > fechaMax) fechaMax = fecha;\n});\n\n// Extraer mes y año del período real\nconst fechaInicio = new Date(fechaMin);\nconst mesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',\n                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];\nconst mesNombre = mesNombres[fechaInicio.getMonth()];\nconst año = fechaInicio.getFullYear();\nconst diasDelMes = new Date(año, fechaInicio.getMonth() + 1, 0).getDate();\n\nconsole.log(`Período detectado: ${mesNombre} ${año} (${movimientos.length} movimientos)`);\n\n// Inicializar contadores\nlet totalIngresos = 0;\nlet totalGastos = 0;\nlet ivaRepercutido = 0;\nlet ivaSoportado = 0;\nlet ivaDeducible = 0;\n\nconst categorias = new Map();\nconst tiposPago = new Map();\nconst gastosPorDia = new Map();\n\n// Arrays para rankings\nconst todosLosGastos = [];\nconst todosLosIngresos = [];\n\n// PROCESAR CADA MOVIMIENTO REAL\nmovimientos.forEach((mov, index) => {\n  console.log(`Procesando ${index + 1}/${movimientos.length}: ${mov.detalle}`);\n\n  const ingreso = parseFloat(mov.ingreso) || 0;\n  const gasto = parseFloat(mov.gasto_numeric) || 0;\n  const ivaImporte = parseFloat(mov.iva_importe) || 0;\n  const baseImponible = parseFloat(mov.base_imponible) || 0;\n\n  // Acumular totales\n  totalIngresos += ingreso;\n  totalGastos += gasto;\n\n  // Procesar IVA\n  if (mov.iva_tipo === 'repercutido') {\n    ivaRepercutido += ivaImporte;\n  } else if (mov.iva_tipo === 'soportado') {\n    ivaSoportado += ivaImporte;\n    if (mov.deducible === 'True') {\n      ivaDeducible += ivaImporte;\n    }\n  }\n\n  // Agrupar por categoría\n  if (mov.categoria) {\n    if (!categorias.has(mov.categoria)) {\n      categorias.set(mov.categoria, {\n        nombre: mov.categoria,\n        gastos: 0,\n        ingresos: 0,\n        movimientos: 0,\n        baseImponible: 0\n      });\n    }\n    const cat = categorias.get(mov.categoria);\n    cat.gastos += gasto;\n    cat.ingresos += ingreso;\n    cat.movimientos += 1;\n    cat.baseImponible += baseImponible;\n  }\n\n  // Agrupar por tipo de pago\n  if (mov.tipo_pago) {\n    if (!tiposPago.has(mov.tipo_pago)) {\n      tiposPago.set(mov.tipo_pago, {\n        tipo: mov.tipo_pago,\n        totalGastos: 0,\n        totalIngresos: 0,\n        cantidad: 0\n      });\n    }\n    const tipo = tiposPago.get(mov.tipo_pago);\n    tipo.totalGastos += gasto;\n    tipo.totalIngresos += ingreso;\n    tipo.cantidad += 1;\n  }\n\n  // Agregar a rankings\n  if (gasto > 0) {\n    todosLosGastos.push({\n      fecha: mov.fecha,\n      detalle: mov.detalle || 'Sin detalle',\n      categoria: mov.categoria || 'Sin categoría',\n      subcategoria: mov.subcategoria || '-',\n      gasto_numeric: gasto\n    });\n  }\n\n  if (ingreso > 0) {\n    todosLosIngresos.push({\n      fecha: mov.fecha,\n      detalle: mov.detalle || 'Sin detalle',\n      categoria: mov.categoria || 'Sin categoría',\n      subcategoria: mov.subcategoria || '-',\n      ingreso: ingreso\n    });\n  }\n});\n\n// Calcular métricas derivadas\nconst balance = totalIngresos - totalGastos;\nconst porcentajeAhorro = totalIngresos > 0 ? (balance / totalIngresos * 100) : 0;\nconst ivaALiquidar = ivaRepercutido - ivaDeducible;\n\n// Preparar rankings\nconst topGastos = todosLosGastos\n  .sort((a, b) => b.gasto_numeric - a.gasto_numeric)\n  .slice(0, 10);\n\nconst topIngresos = todosLosIngresos\n  .sort((a, b) => b.ingreso - a.ingreso)\n  .slice(0, 5);\n\n// Convertir categorías a array ordenado\nconst categoriasArray = Array.from(categorias.values())\n  .map(cat => ({\n    ...cat,\n    gastos: cat.gastos.toFixed(2),\n    ingresos: cat.ingresos.toFixed(2),\n    baseImponible: cat.baseImponible.toFixed(2),\n    porcentajeDelTotal: totalGastos > 0 ? ((cat.gastos / totalGastos) * 100).toFixed(2) : '0.00'\n  }))\n  .sort((a, b) => parseFloat(b.gastos) - parseFloat(a.gastos));\n\n// Convertir tipos de pago a array\nconst tiposPagoArray = Array.from(tiposPago.values())\n  .map(tipo => ({\n    tipo: tipo.tipo,\n    totalGastos: tipo.totalGastos.toFixed(2),\n    totalIngresos: tipo.totalIngresos.toFixed(2),\n    cantidad: tipo.cantidad\n  }))\n  .sort((a, b) => parseFloat(b.totalGastos) - parseFloat(a.totalGastos));\n\n// Generar insights basados en datos reales\nconst insights = [];\n\nif (porcentajeAhorro < 10) {\n  insights.push({\n    tipo: 'alerta',\n    mensaje: `Tasa de ahorro crítica (${porcentajeAhorro.toFixed(1)}%)`,\n    recomendacion: 'Revisar urgentemente gastos no esenciales'\n  });\n} else if (porcentajeAhorro >= 20) {\n  insights.push({\n    tipo: 'positivo',\n    mensaje: `Tasa de ahorro saludable (${porcentajeAhorro.toFixed(1)}%)`,\n    recomendacion: 'Mantener este buen hábito financiero'\n  });\n} else {\n  insights.push({\n    tipo: 'advertencia',\n    mensaje: `Tasa de ahorro mejorable (${porcentajeAhorro.toFixed(1)}%)`,\n    recomendacion: 'Optimizar gastos para alcanzar el 20%'\n  });\n}\n\nif (Math.abs(ivaALiquidar) > 10) {\n  insights.push({\n    tipo: 'info',\n    mensaje: `IVA ${ivaALiquidar > 0 ? 'a liquidar' : 'a favor'}: ${Math.abs(ivaALiquidar).toFixed(2)} €`,\n    recomendacion: ivaALiquidar > 0 ? 'Preparar liquidación trimestral' : 'Considerar solicitar devolución'\n  });\n}\n\nconsole.log(`Procesamiento completado: ${movimientos.length} movimientos de ${mesNombre} ${año}`);\n\n// OUTPUT FINAL - Estructura exacta para el generador HTML\nreturn [{\n  json: {\n    periodo: {\n      monthName: mesNombre,\n      year: año,\n      firstDay: fechaMin,\n      lastDay: fechaMax,\n      daysInMonth: diasDelMes,\n      dateRange: `${fechaMin} al ${fechaMax}`\n    },\n    resumen: {\n      totalIngresos: totalIngresos.toFixed(2),\n      totalGastos: totalGastos.toFixed(2),\n      balance: balance.toFixed(2),\n      porcentajeAhorro: porcentajeAhorro.toFixed(2),\n      totalMovimientos: movimientos.length,\n      promedioGastoDiario: (totalGastos / diasDelMes).toFixed(2),\n      promedioIngresoDiario: (totalIngresos / diasDelMes).toFixed(2)\n    },\n    iva: {\n      repercutido: ivaRepercutido.toFixed(2),\n      soportado: ivaSoportado.toFixed(2),\n      soportadoDeducible: ivaDeducible.toFixed(2),\n      aLiquidar: ivaALiquidar.toFixed(2),\n      porcentajeDeducible: ivaSoportado > 0 ? ((ivaDeducible / ivaSoportado) * 100).toFixed(1) : '0'\n    },\n    categorias: categoriasArray,\n    topGastos: topGastos,\n    topIngresos: topIngresos,\n    tiposPago: tiposPagoArray,\n    insights: insights,\n    plotlyData: {\n      categoriasChart: {\n        labels: categoriasArray.map(c => c.nombre),\n        values: categoriasArray.map(c => parseFloat(c.gastos))\n      }\n    },\n    procesamiento: {\n      fecha: new Date().toISOString(),\n      version: 'data_driven_v1.0',\n      registrosProcesados: movimientos.length,\n      periodoReal: `${mesNombre} ${año}`,\n      fechaInicial: fechaMin,\n      fechaFinal: fechaMax\n    }\n  }\n}];"
+      },
+      "id": "94f7dfc2-1338-414d-b478-13b1b9213c0a",
+      "name": "Procesar y Analizar Datos1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1392,
+        640
+      ],
+      "id": "c5a8d6af-cb5c-4c31-aff4-1d6dd49c0925",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        2592,
+        640
+      ],
+      "id": "b1d2ed6a-f4f4-4562-a88f-8cb4dc46c0b1",
+      "name": "Enviar texto",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution Iván"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Schedule Trigger": [
+      {
+        "json": {
+          "timestamp": "2025-10-01T09:00:00.008+02:00",
+          "Readable date": "October 1st 2025, 9:00:00 am",
+          "Readable time": "9:00:00 am",
+          "Day of week": "Wednesday",
+          "Year": "2025",
+          "Month": "October",
+          "Day of month": "01",
+          "Hour": "09",
+          "Minute": "00",
+          "Second": "00",
+          "Timezone": "Europe/Madrid (UTC+02:00)"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Calcular Fechas del Mes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular Fechas del Mes": {
+      "main": [
+        [
+          {
+            "node": "Obtener Movimientos del Mes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Movimientos del Mes": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar HTML con Dashboard": {
+      "main": [
+        [
+          {
+            "node": "Convertir HTML a PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convertir HTML a PDF": {
+      "main": [
+        [
+          {
+            "node": "PDFco Api1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDFco Api1": {
+      "main": [
+        [
+          {
+            "node": "Enviar texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar y Analizar Datos1": {
+      "main": [
+        [
+          {
+            "node": "Generar HTML con Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Procesar y Analizar Datos1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4c887e5f-a289-42c6-a855-3ee2704aef63",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "53e6d5dabe5a8cc9594bae9b5704bfc831c12a985b649d6d062a707f2c602cad"
+  },
+  "id": "crIVXyrxMitJM04t",
+  "tags": []
+}

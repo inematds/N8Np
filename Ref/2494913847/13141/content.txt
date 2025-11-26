@@ -1,0 +1,707 @@
+TOPICO 13141
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-08-24 18:13:07+00:00
+
+Total de mensagens: 27
+Midias baixadas: 7
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-08-25T00:05:08+00:00
+Texto:
+https://www.youtube.com/watch?v=pxzo2lXhWJE
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-08-25T00:04:34+00:00
+Texto:
+====================
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-08-25T00:04:31+00:00
+Texto:
+No vídeo e também na prática de quem monta esse tipo de fluxo no **n8n**, aparecem vários "hacks" (atalhos e boas práticas) que aceleram muito a construção de sistemas multiagente. Vou organizar em blocos:
+
+---
+
+# Hacks sobre construção no n8n
+
+## 1. Organização e higiene do fluxo
+
+* **Renomear nós sempre** (ex.: “Initial Research”, “Planning Agent”, etc.) → facilita debugar e entender depois.
+* **Pin Data (tecla P)** → trava a saída de um nó; assim você não precisa ficar reexecutando pesquisas/LLM caras cada vez que mexe no fluxo.
+* **Espaçamento e agrupamento visual** → agrupe nós por fase (pesquisa, planejamento, redação, edição, envio).
+
+## 2. Uso de funções e transformações
+
+* **Function nodes para formatar dados** → em vez de arrastar variáveis brutas (`object object`), use um pequeno `Function` para formatar arrays em texto legível para o agente.
+* **Join/aggregate com separadores** → ao juntar várias saídas (`\n\n\n` entre seções), evita que o LLM confunda onde começa/termina uma parte.
+* **Structured Output Parser (JSON schema)** → força os agentes a devolverem campos separados (título, tópicos, subject, content). Isso elimina parsing manual.
+
+## 3. Estratégia de agentes especializados
+
+* **Dividir papéis de IA** → um agente só planeja, outro só escreve seção, outro só edita. Isso reduz alucinação e mantém consistência.
+* **Modelos diferentes para funções diferentes** → use `gpt-5-mini` ou equivalente para passos rápidos (planejamento/redação) e um modelo mais robusto (`gpt-5`, `claude`, `gemini`) para a edição final em HTML.
+
+## 4. Pesquisa otimizada
+
+* **Tavily/SerpAPI/Perplexity com filtros** → defina `topic: news` e `time_range: past_week` para capturar só o que é quente.
+* **Max Results ajustado** → em testes, limite a 3 resultados; em produção, pode aumentar para 6–10 para enriquecer a newsletter.
+
+## 5. Iteração rápida
+
+* **Construir em blocos** → teste o fluxo parcial: primeiro só a pesquisa, depois só o planejador, etc.
+* **Salvar versões** → clone workflows em vez de sobrescrever. Assim você testa ajustes sem quebrar o fluxo ativo.
+* **Wireframe antes** (Excalidraw/Miro) → pensar o fluxo fora do n8n ajuda a não travar depois na implementação.
+
+## 6. Escalabilidade e manutenção
+
+* **Executar Split Out + Execute Workflow** → permite processar seções em paralelo e facilita reuso do sub-workflow em outros projetos.
+* **Logs em Google Sheets/Airtable** → registre cada newsletter enviada, links e fontes para ter histórico e feedback.
+* **Human-in-the-loop** → em vez de enviar direto, configure Gmail para criar rascunho. Assim você revisa antes do disparo.
+
+---
+
+# Exemplos práticos de hacks no fluxo
+
+* Durante o vídeo ele mostra que **formatar os resultados do Tavily com uma Function** deixa o LLM mais eficaz, em vez de mandar dados crus.
+* Ele explica que **Structured Output Parser** resolve o problema de ter tudo misturado em uma única variável.
+* Ele usa o truque de **`.join('\n\n\n')`** ao agregar seções, para que o Editor Agent saiba onde começa cada parte.
+* Ele reforça a importância de **pinar dados** em cada etapa para não gastar chamadas de API à toa durante o build.
+
+---
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-08-25T00:04:01+00:00
+Texto:
+====================
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-08-25T00:01:28+00:00
+Texto:
+Antes de abrir o **n8n** ele rascunhou a ideia em um quadro digital.
+As ferramentas que ele citou foram:
+
+* **Excalidraw (Excal)** → ferramenta simples de diagramas no estilo “whiteboard”, online e gratuita.
+* **Miro** → plataforma colaborativa de quadro branco digital, muito usada para brainstorms, wireframes e fluxos.
+
+Ou seja, ele usou esses **whiteboard tools** apenas para organizar a lógica e visualizar o fluxo de newsletter multiagente antes de implementá-lo no n8n.
+,
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-08-25T00:00:33+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_13164_006.jpg
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-08-25T00:00:04+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_13163_007.jpg
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-08-24T23:59:44+00:00
+Texto:
+==================
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-08-24T23:59:41+00:00
+Texto:
+k: Google Sheets/Airtable com data, título, tópicos, links e coluna Feedback. Um segundo workflow lê esse feedback e ajusta os prompts.
+* Multibusca: rodar Tavily + Perplexity + Brave e consolidar no Normalize Topic Results.
+* Paralelismo real: use vários Execute Workflow (child) para seções com limite de concorrência.
+* Human-in-the-loop: antes do Gmail, pausar via manual approval (Webhook, Telegram, e-mail reply parser) para aceitar/editar.
+* Estilo consistente: adicione um pequeno guia editorial no System do Editor (voz, persona, proibições).
+
+# Prompts prontos para copiar
+
+Planejador — System
+
+```Você é um planejador de newsletter. Com base nos artigos recentes, crie:
+1) newsletter_title criativo e claro
+2) topics: exatamente 3 tópicos (3–5 palavras cada), sem redundância
+Público-alvo: líderes de PMEs interessados em adoção de IA.
+Responda apenas no JSON exigido.```
+
+Redator de Seção — System
+
+V```ocê é redator sênior de newsletters.
+Escreva UMA seção com H2, 2–4 parágrafos curtos e, se útil, 1 lista.
+Cite fontes inline como [n] após o fato.
+Tom profissional e claro.
+Retorne JSON: {"output": "...", "citations":[{"n":1,"title":"...","url":"..."}]}
+```
+Editor — System
+
+Vo```cê é editor-chefe. Gere HTML final com H1, intro, sumário com âncoras, seções H2, bloco "Fontes" único, assinatura.
+Retorne JSON: {"subject":"...","content":"<html>...</html>"}
+
+```# Expressões úteis
+
+* Título do Planejador: {{\$node\["Planning Agent"].json\["newsletter\_title"]}}
+* Juntar seções: {{\$json.output.join('\n\n\n')}}
+* Data de hoje: {{\$now}}
+
+# Perguntas frequentes com exemplos e respostas
+
+Tópico: quantos tópicos usar
+Exemplo: quero 5 tópicos
+Resposta: o vídeo usa 3 para simplificar. Pode aumentar para 4–5, mas o tempo e custo sobem. Ajuste o schema do Planejador para min/maxItems conforme necessário.
+
+Tópico: modelos no OpenRouter
+Exemplo: posso usar Claude?
+Resposta: sim. Troque o chat model no Planejador/Redator/Editor. Regra prática: Mini para planejamento/rascunho; modelo maior no Editor para qualidade de HTML e tom.
+
+Tópico: por que Structured Output Parser?
+Exemplo: o Agent devolveu texto grudado
+Resposta: o SOP garante campos separados (title/topics; subject/content), permitindo arrastar subject e content no Gmail sem regex.
+
+Tópico: fontes nomeadas
+Exemplo: quero que apareça o nome do site em vez de \[source]
+Resposta: ajuste o Redator/Editor para renderizar \[n] como \[Forbes] e no bloco “Fontes” listar “Forbes – URL”.
+
+Tópico: personalização por público
+Exemplo: meu ICP é saúde sênior
+Resposta: adicione no System do Planejador/Redator/Editor uma seção “Público” com tom, jargões permitidos e tópicos sensíveis.
+
+Tópico: logs e revisão
+Exemplo: quero histórico e feedback
+Resposta: após o Editor, acrescente nó Google Sheets Append Row com data, subject, links, status e coluna Feedback. Crie um segundo fluxo que lê feedbacks e re-treina prompts.
+
+Tópico: custo e limites
+Exemplo: como reduzir custo?
+Resposta: diminua max\_results no Tavily, use modelos mini nos passos intermediários, e cacheie com Pin Data durante testes.
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-08-24T23:59:41+00:00
+Texto:
+lts = ($json.results || [])
+  .map(r => ({
+    title: r.title || '',
+    url: r.url || '',
+    raw: r.raw_content || '',
+    snippet: r.content  r.snippet  '',
+    published: r.published_date  r.published  ''
+  }))
+  .filter(r => {
+    if (!r.url || seen.has(r.url)) return false;
+    seen.add(r.url);
+    return true;
+  })
+  .slice(0, 8);
+
+const pack = results.map((r, i) => 
+  `Result ${i+1}
+Title: ${r.title}
+URL: ${r.url}
+Published: ${r.published}
+Raw: ${r.raw.slice(0, 2000)}`
+).join('\n\n');
+
+return [{ json: { topic: $json, research_pack: pack, sources: results.map(r => ({title: r.title, url: r.url})) } }];
+```
+## 6) AI Agent — Section Writer Agent
+
+* Chat Model: OpenRouter → gpt-5-mini
+* User message:
+```
+Você vai escrever UMA seção de newsletter.
+
+Tópico:
+{{$json.topic}}
+
+Pesquisa (amostras, com trechos):
+{{$json.research_pack}}
+
+```* System message:
+
+```Você é redator sênior de newsletters.
+Escreva uma única seção, com:
+- Heading claro (H2)
+- 2–4 parágrafos curtos
+- 1 lista com bullets se útil
+- Cite fontes inline no formato [n] imediatamente após o dado ou citação.
+- Priorize dados verificáveis (datas, números, entidades).
+- Tom profissional, claro, sem jargão.
+- Não escreva título geral, introdução nem conclusão da newsletter.
+Ao final, retorne também uma lista "citations" com [{n, title, url}] na ordem usada.
+Formato de saída:
+{
+  "output": "SEÇÃO EM MARKDOWN OU HTML SIMPLES",
+  "citations": [{"n":1,"title":"...","url":"..."}]
+}
+Responda apenas no JSON pedido.
+
+*``` Opcional: ligar Structured Output Parser com o schema acima:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "output": { "type": "string" },
+    "citations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "n": { "type": "integer" },
+          "title": { "type": "string" },
+          "url": { "type": "string", "format": "uri" }
+        },
+        "required": ["n", "title", "url"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["output"],
+  "additionalProperties": false
+}
+
+```* Pin data.
+
+## 7) Aggregate
+
+* Modo: Aggregate
+* Campo para agregar: output
+* Agregação: Concatenate
+* Resultado: um único item com um array ou string concatenada, conforme a opção.
+  Se ficar como array, antes do Editor use Set:
+* Campo sections\_joined:
+
+  * Valor: {{\$json.output.join('\n\n\n')}}
+
+## 8) AI Agent — Editor Agent
+
+* Chat Model: OpenRouter → gpt-5
+* User message:
+
+Sub```ject (sugestão): {{$node["Planning Agent"].json["newsletter_title"]}}
+
+Sections (separadas por linhas em branco):
+{{$json.sections_joined}}
+
+*``` System message:
+
+Você``` é editor-chefe de newsletter. Entregue HTML final pronto, com:
+1) Título da edição (H1) coerente com o subject
+2) Introdução breve (2–3 linhas) com contexto e tese
+3) Sumário com links-âncora para cada seção
+4) Cada seção com H2, parágrafos curtos e bullets quando útil
+5) Fontes ao final: lista única de URLs clicáveis (sem duplicatas)
+6) Assinatura breve
+
+Estilo HTML:
+- Use <h1>, <h2>, <p>, <ul><li>, <a href="...">texto</a>, <hr>.
+- Nada de CSS externo; texto limpo e responsivo (e-mail safe).
+- Mantenha as citações inline [n] no corpo.
+
+Saída exigida via JSON:
+{
+  "subject": "assunto do e-mail (curto e claro)",
+  "content": "<html>...</html>"
+}
+Responda apenas no JSON exigido.
+
+* ```Require specific output format: on
+* Structured Output Parser → JSON schema:
+
+{
+  "```type": "object",
+  "properties": {
+    "subject": { "type": "string", "minLength": 5 },
+    "content": { "type": "string", "minLength": 50 }
+  },
+  "required": ["subject", "content"],
+  "additionalProperties": false
+}
+
+* P```in data.
+
+## 9) Gmail — Create a draft
+
+* To: seu e-mail
+* Subject: {{\$json.subject}}
+* Message: {{\$json.content}}
+* Email type: HTML
+  Executar e conferir o rascunho.
+
+# Melhorias e variações avançadas
+
+* Anti-alucinação: no Redator, exija ao menos uma \[n] por parágrafo; se faltar fonte, escrever “sem fonte confiável”.
+* Checagem de links: após o Editor, HTTP Request (HEAD) em cada URL; remova as quebradas antes do Gmail.
+* Logs e feedbac
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-08-24T23:59:41+00:00
+Texto:
+resu
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-08-24T23:59:41+00:00
+Texto:
+,. Abaixo vai um guia direto, replicável e completo para você construir exatamente o sistema do vídeo no n8n: pesquisa inicial → planejamento de tópicos → pesquisas por tópico → redação por seção → edição em HTML → envio como rascunho no Gmail. Incluí prompts prontos, schemas do Structured Output Parser, expressões e funções de apoio.
+
+# Resumo completo do fluxo do vídeo
+
+1. Disparo por agenda semanal.
+2. Pesquisa inicial com Tavily filtrando última semana.
+3. Agente Planejador cria título e 3 tópicos a partir da pesquisa.
+4. Split Out divide os 3 tópicos.
+5. Pesquisa aprofundada por tópico com Tavily, agora com raw\_content.
+6. Agente Redator escreve uma seção por tópico, citando fontes.
+7. Aggregate junta as 3 seções.
+8. Agente Editor gera HTML final com introdução, conclusão e bloco de fontes.
+9. Gmail cria um rascunho com subject e corpo em HTML.
+
+# Pré-requisitos rápidos
+
+* n8n 1.101+ com Community Nodes verificados ativados
+* Tavily Search node instalado e credenciado
+* OpenRouter credenciado (modelos: gpt-5-mini para planejar e redigir; gpt-5 para editar)
+* Gmail conectado para Create a draft
+
+# Passo a passo no n8n
+
+## 1) Schedule Trigger
+
+* Intervalo: Weeks
+* Every: 1
+* Day: Sunday
+* Time: 00:00
+  Dica: deixe inativo enquanto monta; ative ao final.
+
+## 2) Tavily Search — pesquisa inicial
+
+* Action: Search
+* Query: seu nicho fixo (ex.: AI adoption for small businesses)
+* Options:
+
+  * Topic: news
+  * Time range: past\_week
+  * Max results: 3
+  * Include raw content: off
+* Boa prática: renomeie o nó para Initial Research e pin data.
+
+## 3) AI Agent — Planning Agent
+
+* Chat Model: OpenRouter → gpt-5-mini
+* User message: defina abaixo com a pesquisa formatada
+* Para formatar os resultados do Tavily em texto legível pelo agente, use um Function antes do Agent:
+
+Function node: Format Initial Results
+
+```// Input: items[0].json.results (Tavily)
+const arr = $json.results || [];
+const lines = arr.map((r, i) => {
+  const title = r.title || '';
+  const url = r.url || '';
+  const summary = (r.content || r.snippet || '').slice(0, 800);
+  const published = r.published_date || r.published || '';
+  return `Article ${i+1}
+Title: ${title}
+URL: ${url}
+Published: ${published}
+Summary: ${summary}`;
+});
+return [{ json: { formatted_articles: lines.join('\n\n') } }];```
+
+No Planning Agent:
+
+* User message:
+
+```You will receive brief digests of 3 recent articles.
+=== INPUT ===
+{{$json.formatted_articles}}```
+
+* System message:
+
+V```ocê é um planejador de newsletter. Com base nos artigos recentes, crie:
+1) newsletter_title criativo e claro
+2) topics: exatamente 3 tópicos (3–5 palavras cada), sem redundância
+Público-alvo: líderes de PMEs interessados em adoção de IA.
+O título e os tópicos devem cobrir o panorama semanal com conexão lógica entre si.
+Responda apenas no formato exigido.
+```
+* Require specific output format: on
+* Structured Output Parser → Define using JSON schema:
+
+{
+```  "type": "object",
+  "properties": {
+    "newsletter_title": { "type": "string", "minLength": 5 },
+    "topics": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "string", "minLength": 3, "maxLength": 60 }
+    }
+  },
+  "required": ["newsletter_title", "topics"],
+  "additionalProperties": false
+}
+
+```* Pin data ao finalizar.
+
+## 4) Split Out
+
+* Campo a dividir: topics
+* Resultado: 3 itens, um por tópico.
+
+## 5) Tavily Search — pesquisa por tópico
+
+* Renomeie para Research Topics
+* Query: {{\$json}}
+  Dica: substitua por expressão clara:
+
+  * Query: {{\$json}}
+  * Em Query, clique em expressão e use: {{\$json}}
+    (ou simplesmente arraste o campo do Split Out se a UI listar o value)
+    Melhor ainda, defina explicitamente:
+  * Query: {{\$json}}
+  * Se o Split Out retornar string “topic”, use: {{\$json}}
+* Options:
+
+  * Topic: general
+  * Time range: past\_month
+  * Max results: 6–8
+  * Include raw content: on
+* Pin data.
+
+Se quiser normalizar/limpar os resultados para o próximo agente, adicione Function:
+
+Function node: Normalize Topic Results
+
+```javascript
+const seen = new Set();
+const
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-08-24T23:59:16+00:00
+Texto:
+================
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-08-24T23:54:59+00:00
+Texto:
+# Passo a Passo do Fluxo
+
+## 1. Trigger
+
+* **Schedule Trigger**: define a cadência (diária, semanal, etc.) para rodar o boletim.
+* Esse nó dispara todo o fluxo automaticamente.
+
+## 2. Initial Research
+
+* **Set / HTTP Request (search API)**: aqui você coloca o tema do boletim.
+* O sistema faz uma pesquisa inicial para dar contexto.
+* Exemplo: Tavily, SerpAPI ou Perplexity API.
+
+## 3. Generating Title & Topics
+
+* **Planning Agent** (LLM): recebe o tema e cria um **plano editorial** com título e tópicos/seções.
+* Saída estruturada em JSON: lista de seções com key\_points e queries.
+* **Split Out**: divide cada seção em itens separados, para processar em paralelo.
+
+## 4. Writing Newsletter Sections
+
+* **Research Topics** (HTTP Request): busca específica por cada subtópico planejado.
+* **Section Writer Agent** (LLM): escreve a seção em Markdown, usando resultados da pesquisa e adicionando citações \[1], \[2] etc.
+* **Memory Tool**: guarda consistência de estilo, evitando contradições entre seções.
+
+## 5. Editing Final Copy
+
+* **Aggregate**: junta todas as seções escritas em um único objeto.
+* **Editor Agent** (LLM): revisa o texto, adiciona abertura, sumário com âncoras, padroniza estilo e cria bloco de fontes únicas no final.
+* Saída: um rascunho final pronto para publicação.
+
+## 6. Send Draft
+
+* **Gmail Node (Create a draft)**: envia o rascunho direto para a sua caixa de entrada.
+* Opcional: pode também salvar no Google Drive ou exportar em PDF/Markdown.
+
+# Pontos-Chave da Arquitetura
+
+1. Cada etapa usa **LLMs diferentes como agentes especializados**: Planejador, Escritor de Seções, Editor.
+2. Uso de **Structured Output Parser** garante que cada agente retorne JSON válido, evitando bagunça.
+3. O fluxo é modular: você pode rodar só uma parte (ex.: gerar seções sem editor).
+4. O **Split Out** permite processar cada seção em paralelo, acelerando.
+5. O **Editor Agent** final é essencial para consistência e profissionalismo no resultado.
+
+# Exemplo de Saída Final
+
+* Título: "Boletim Especial: IA e Saúde em 2025"
+* Abertura: introdução de 2-3 linhas
+* Sumário: lista com links internos
+* Seções: cada uma com subtítulo, parágrafos curtos, citações
+* Fontes: lista consolidada de links no final
+* Rascunho enviado no Gmail para revisão
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-08-24T23:54:16+00:00
+Texto:
+==============
+
+------------------------------
+
+MENSAGEM 16
+Autor: INEMA
+Data: 2025-08-24T23:54:13+00:00
+Texto:
+# Visão geral rápida
+
+1. Você informa o tema do boletim.
+2. Agente Planejador define a estrutura de seções.
+3. Para cada seção: um agente faz pesquisa focada, outro redige a seção com citações.
+4. Agente Editor junta tudo, normaliza estilo, checa links e gera rascunho final.
+5. Sistema envia o rascunho para seu e-mail e/ou salva no Drive.
+
+# Requisitos
+
+* n8n 1.10x ou superior
+* Credenciais de um LLM (OpenAI, Anthropic ou Groq)
+* Um serviço de busca/web scraping: Tavily, SerpAPI ou Perplexity API (escolha 1)
+* Gmail (OAuth) ou SMTP para envio
+* Opcional: Google Drive/Airtable/Notion para logs/arquivos
+
+# Arquitetura dos agentes
+
+* Agente Planejador: transforma o tema em um plano com 4–7 seções.
+* Agente Pesquisador: para cada seção, busca 5–10 fontes de qualidade, devolve título, url e breve síntese.
+* Agente Redator: escreve a seção a partir dos apontamentos do pesquisador, mantendo citações inline e referências.
+* Agente Editor: une todas as seções, padroniza tom, adiciona sumário e bloco final de fontes.
+
+------------------------------
+
+MENSAGEM 17
+Autor: INEMA
+Data: 2025-08-24T18:15:28+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Copy of Newsletter Automation Resource Pack.docx
+
+------------------------------
+
+MENSAGEM 18
+Autor: INEMA
+Data: 2025-08-24T18:13:58+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> AI Newsletter System.json
+
+------------------------------
+
+MENSAGEM 19
+Autor: INEMA
+Data: 2025-08-24T18:13:51+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_13149_019.jpg
+
+------------------------------
+
+MENSAGEM 20
+Autor: INEMA
+Data: 2025-08-24T18:13:22+00:00
+Texto:
+ap56 - Boletim Informativo MultiAgente
+
+------------------------------
+
+MENSAGEM 21
+Autor: INEMA
+Data: 2025-08-24T18:13:20+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 22
+Autor: INEMA
+Data: 2025-08-24T18:13:20+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 23
+Autor: INEMA
+Data: 2025-08-24T18:13:19+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 24
+Autor: INEMA
+Data: 2025-08-24T18:13:18+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 25
+Autor: INEMA
+Data: 2025-08-24T18:13:18+00:00
+Texto:
+https://chatgpt.com/c/68ab5681-88a4-832f-b0a5-d6e814f73a23?model=gpt-5
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 26
+Autor: INEMA
+Data: 2025-08-24T18:13:17+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 27
+Autor: INEMA
+Data: 2025-08-24T18:13:07+00:00
+Texto: [Sem texto]
+
+------------------------------
+

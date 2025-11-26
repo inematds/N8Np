@@ -1,0 +1,218 @@
+[
+  {
+    "id": 12602,
+    "author": "INEMA",
+    "date": "2025-08-11T20:29:12+00:00",
+    "text": "## 🔧 HACKS PARA OTIMIZAÇÃO DA AUTOMATIZAÇÃO\n\n### 1. **Use categorias inteligentes de e-mail**\n\n* Em vez de apenas “spam” ou “cliente”, crie categorias como:\n\n  * `💼 Proposta Comercial`\n  * `📅 Agendamento`\n  * `📩 Follow-up`\n  * `🔔 Urgente`\n  * `📉 Baixa Prioridade`\n\n**Hack:** Ensine a IA a ignorar “obrigado”, “confirmado” e outras mensagens comuns para economizar processamento.\n\n---\n\n### 2. **Reforce a memória com nomes e palavras-chave**\n\n* Adicione instruções como:\n\n  * \"Se o e-mail vier de João e falar de palestra, use a resposta padrão de R\\$ 5.000\"\n* **Prompt base:**\n  “Sempre que encontrar \\[palavra-chave] em e-mails de \\[remetente], associe à resposta \\[X].”\n\n---\n\n### 3. **Restrições de horário para SMS (GoHighLevel)**\n\n* Evite receber mensagens à noite ou em fins de semana:\n\n  * Configure uma verificação de horário no n8n (ex: entre 8h e 18h)\n  * Ou use condições no próprio GoHighLevel\n\n---\n\n### 4. **Memória dinâmica com Airtable**\n\n* Estruture o banco de dados com:\n\n  * `Palavra-chave`\n  * `Resposta Padrão`\n  * `Última atualização`\n* Crie um agente no Lovable só para “inserir memórias”\n\n  * Ex: “Nova regra: coffee > resposta padrão = só aceito chá”\n\n---\n\n### 5. **Modo Turbo: Ignore e-mails inúteis**\n\n* Adicione verificação no início:\n\n  * Se `subject/text` contiver “desconto”, “promoção”, “newsletter” → descarta.\n* Evita criar rascunhos desnecessários e reduz custo de API\n\n---\n\n### 6. **Webhook com senha**\n\n* Adicione proteção básica no webhook:\n\n  * No Lovable: `\"password\": \"secreto\"`\n  * No n8n: verifique se `msg.password == \"secreto\"` antes de executar o fluxo\n\n---\n\n### 7. **Use prompt modular para IA**\n\nDivida o prompt do agente em partes:\n\n```1. Objetivo do agente\n2. Contexto e histórico\n3. Instruções específicas de resposta\n4. Exceções e limitações\n5. Linguagem e tom```\n\n**Hack:** Com isso, você consegue atualizar apenas uma parte sem mexer no prompt todo.\n\n---\n\n### 8. **Versionamento das memórias**\n\n* Crie uma coluna `versão` no Airtable para cada memória\n* Permite restaurar respostas antigas ou comparar alterações feitas pela IA\n\n---\n\n### 9. **Envio condicional de SMS**\n\n* Adicione um filtro: só enviar se for dos 5 contatos VIP\n* Use uma tabela separada no Airtable com a lista dos contatos que merecem alerta\n\n---\n\n### 10. **Agente de verificação antes de atualizar memória**\n\n* Quando o usuário pedir para gravar algo novo, o agente responde:\n\n  * “Você confirma que deseja atualizar a memória X para Y?”\n* Isso evita sobrescrita acidental",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12601,
+    "author": "INEMA",
+    "date": "2025-08-11T20:25:03+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_12601_002.jpg"
+  },
+  {
+    "id": 12599,
+    "author": "INEMA",
+    "date": "2025-08-11T20:19:19+00:00",
+    "text": "dublado",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12598,
+    "author": "INEMA",
+    "date": "2025-08-11T20:19:15+00:00",
+    "text": "https://www.youtube.com/watch?v=PthLcgcRoas",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 12596,
+    "author": "INEMA",
+    "date": "2025-08-11T20:16:02+00:00",
+    "text": "==============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12595,
+    "author": "INEMA",
+    "date": "2025-08-11T20:15:56+00:00",
+    "text": "**passo a passo completo** para criar a automação “Substitua sua secretária com IA” usando **n8n + Lovable + Airtable + GoHighLevel**, conforme explicado no vídeo:\n\n---\n\n## ETAPA 1 – Classificar os e-mails automaticamente (Agente de Classificação)\n\n1. **Criar cenário no n8n**\n\n   * Use o gatilho do **Gmail: On New Email**\n   * Conecte sua conta do Gmail\n\n2. **Adicionar um nó de Classificação de Texto**\n\n   * Use **OpenAI GPT-4.1 Mini**\n   * Informe o corpo e o assunto do e-mail\n   * Defina categorias como:\n\n     * Patrocínio\n     * Cliente\n     * Baixa prioridade / Spam\n     * Negócios / Financeiro\n     * Outros\n\n3. **Salve a classificação para uso posterior**\n\n   * Use um nó “Set” para armazenar o resultado\n   * Pode usar `pin` se estiver testando com dados\n\n---\n\n## ETAPA 2 – Gerar resposta automática (Agente de Resposta)\n\n4. **Adicione um Agente de IA (AI Agent)**\n\n   * Conecte ao **OpenAI**\n   * Use como entrada:\n\n     * Quem enviou o e-mail\n     * Assunto\n     * Texto completo do e-mail\n     * Histórico de mensagens do remetente (últimos 10 e-mails via Gmail node)\n     * Dados do Airtable (base de conhecimento)\n\n5. **Crie o Prompt de Sistema (System Message)**\n\n   * Instruções sobre como responder\n   * Tom de voz\n   * Consulta à memória (Airtable)\n   * Resposta como rascunho, sem “alucinação”\n\n6. **Crie o rascunho da resposta no Gmail**\n\n   * Use o node **Gmail: Create Draft**\n   * Insira:\n\n     * Assunto original\n     * Mensagem gerada pela IA\n     * Thread ID do e-mail original (para manter o contexto)\n\n---\n\n## ETAPA 3 – Agente de Urgência (Criticality Agent)\n\n7. **Crie outro Agente de IA**\n\n   * Avalia se o e-mail é urgente com base em:\n\n     * Palavras-chave (urgente, importante, hoje, etc.)\n     * Valor monetário\n     * Remetente (se for VIP)\n\n8. **Conecte com o GoHighLevel**\n\n   * Gere um Webhook no GoHighLevel (Inbound)\n   * Envie os dados via **HTTP Request (n8n)** usando **cURL**:\n\n     * Assunto\n     * Remetente\n     * Resumo\n\n9. **Configure o GoHighLevel**\n\n   * Crie um contato (você mesmo) com seu número\n   * Crie uma automação:\n\n     * Trigger: Webhook\n     * Ações:\n\n       * Localizar contato\n       * Enviar SMS com os dados do e-mail\n\n---\n\n## ETAPA 4 – Criar base de conhecimento no Airtable\n\n10. **Crie um Airtable com colunas:**\n\n* `ID`\n* `knowledge` (conteúdo da memória)\n* `last_modified`\n* `date`\n\n11. **No n8n, adicione dois nodes Airtable:**\n\n* `Search Records`: para consultar a memória\n* `Upsert Records`: para atualizar ou criar novas informações\n\n---\n\n## ETAPA 5 – Painel do Iron Man (Lovable Interface)\n\n12. **Crie o front-end no Lovable**\n\n* Use o layout de chat estilo Iron Man\n* Defina como endpoint o **Webhook do n8n**\n* Customize com:\n\n  * Avatar\n  * Nome do agente\n  * Fundo visual\n\n13. **Configure o Webhook no n8n**\n\n* Tipo: `POST`\n* Ative a resposta com `Respond to Webhook` no final\n* Adicione os nós:\n\n  * Agente para interpretar comandos\n  * Criar/atualizar memória\n  * Criar rascunhos\n  * Consultar e-mails\n  * Acessar internet com Tavily (opcional)\n\n14. **Use prompts personalizados para comandos do Lovable**\n\n* Ex: “Adicione que palestra custa R\\$ 50.000” → grava na memória\n\n---\n\n## ETAPA 6 – Testes e ativação\n\n15. **Testar todos os fluxos separadamente**\n\n* Classificação\n* Geração de resposta\n* Envio de SMS\n* Atualização da base de conhecimento\n* Comando via Lovable\n\n16. **Ativar todos os cenários no n8n**\n\n* Habilite o webhook\n* Verifique se os drafts estão sendo gerados\n* Monitore notificações no celular\n\n---\n\n## Resultado Final\n\nVocê terá uma **secretária virtual com IA** que:\n\n* Lê e classifica e-mails\n* Cria respostas contextuais\n* Avisa por SMS sobre mensagens críticas\n* Atualiza automaticamente sua base de conhecimento\n* Interage via chat com interface customizada",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12594,
+    "author": "INEMA",
+    "date": "2025-08-11T20:14:34+00:00",
+    "text": "==================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12593,
+    "author": "INEMA",
+    "date": "2025-08-11T20:14:31+00:00",
+    "text": "## **Resumo Geral**\n\nO vídeo apresenta um agente de IA que simula uma secretária virtual — capaz de **classificar e-mails, responder automaticamente, identificar mensagens críticas e interagir via chat**, tudo isso sem codificação, usando **n8n, Lovable, Airtable e GoHighLevel**.\n\n---\n\n## **Objetivo da Automação**\n\nSubstituir uma secretária humana de alto custo por um sistema de IA que:\n\n* Reduz o tempo de resposta\n* Identifica e prioriza e-mails\n* Armazena conhecimento personalizado\n* Notifica eventos críticos por SMS\n* Interage via painel estilo \"Homem de Ferro\"\n\n---\n\n## **Funcionalidades do Agente de IA**\n\n### 1. **Classificação de E-mails**\n\n* Usa n8n + OpenAI para classificar automaticamente os e-mails recebidos em categorias como:\n\n  * Patrocínio\n  * Cliente\n  * Spam / Baixa prioridade\n  * Negócios\n  * Ingressos, etc.\n\n### 2. **Geração de Respostas**\n\n* Um agente responde e-mails automaticamente com base:\n\n  * No tom de voz do usuário\n  * No histórico de conversas anteriores\n  * Em uma base de conhecimento personalizada no **Airtable**\n\n### 3. **Notificações de Alta Prioridade (Criticality Agent)**\n\n* Detecta e-mails urgentes ou importantes (ex: menções de valores, urgência, datas próximas)\n* Envia SMS com resumo usando **GoHighLevel**\n\n### 4. **Memória e Atualizações**\n\n* O usuário pode dizer algo como:\n  “Sempre que me pedirem palestra, diga que custa 50 mil.”\n  → O sistema armazena essa info automaticamente.\n\n### 5. **Painel Interativo (tipo Homem de Ferro)**\n\n* Interface via Lovable para:\n\n  * Criar e-mails\n  * Fazer perguntas ao agente\n  * Atualizar memórias\n  * Pesquisar na internet via Tavily\n  * Consultar e atualizar agenda\n\n---\n\n## **Ferramentas Utilizadas**\n\n* **n8n** – Orquestrador de automações no-code\n* **Lovable.dev** – Front-end para agentes de IA interativos\n* **Airtable** – Base de dados para memória e contexto\n* **GoHighLevel** – Envio de SMS\n* **OpenAI GPT-4.1 Mini** – Modelo base das interações\n* **Tavily** – Pesquisa em tempo real na web\n\n---\n\n## **Etapas de Construção**\n\n1. Conectar Gmail → n8n\n2. Criar agente de classificação de e-mails\n3. Criar agente de resposta com base em contexto + Airtable\n4. Criar agente de criticidade que envia SMS via GoHighLevel\n5. Criar memória e atualizações com Airtable\n6. Conectar painel do Lovable com webhook\n7. Adicionar prompts e ferramentas específicas para cada agente\n8. Testar e-mails reais e validar funcionamento de ponta a ponta\n\n---\n\n## **Exemplo prático**\n\n* Um e-mail chegou perguntando o valor de uma palestra.\n* O sistema:\n\n  1. Classificou como \"patrocínio\"\n  2. Verificou na memória o valor de \\$50.000\n  3. Criou uma resposta automática com o valor\n  4. Enviou SMS informando que era urgente\n  5. Deixou o rascunho pronto no Gmail\n\n---\n\n## **Benefícios**\n\n* Economia de tempo real (até 20h/semana)\n* Automação completa e personalizada\n* Fácil de implementar (no-code)\n* Redução de custos com equipe",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12592,
+    "author": "INEMA",
+    "date": "2025-08-11T20:13:56+00:00",
+    "text": "exemplo do chat",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "memory-chat.html"
+  },
+  {
+    "id": 12591,
+    "author": "INEMA",
+    "date": "2025-08-11T20:12:16+00:00",
+    "text": "**j99) Secretária de IA por R\\$ 10 mil/mês**\n\n**Substitua sua secretária de R\\$ 10 mil/mês em apenas 36 minutos com este agente de IA (sem precisar programar).**\n\nComo construir uma **secretária com IA** (economize até **20 horas por semana**).\n\n**Resumo rápido (TL;DR)**\nEsta automação:\n\n📊 Segmenta todos os e-mails por categoria (navegação facilitada)\n\n📧 Cria um rascunho de resposta na sua caixa de entrada (economiza horas)\n\n🧠 Possui memória totalmente contextual e pessoal (respostas personalizadas)\n\n🚨 Envia SMS se o e-mail for urgente/importante (nunca mais perca e-mails críticos)\n\n🚀 Chat estilo Homem de Ferro na sua caixa de entrada (cria, responde, agenda e atualiza com inteligência)\n\nTudo o que você precisará fazer é visitar a seção de rascunhos da sua caixa de entrada.\n\nNem se dará ao trabalho de responder conteúdos de baixa prioridade ou spam.\n\nIsso **vai reduzir drasticamente o tempo gasto navegando na sua caixa de entrada** e te deixar **muito mais eficiente**.\n\nSimples, mas **incrivelmente poderoso**.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12590,
+    "author": "INEMA",
+    "date": "2025-08-11T20:03:58+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_12590_011.jpg"
+  },
+  {
+    "id": 12589,
+    "author": "INEMA",
+    "date": "2025-08-11T20:03:48+00:00",
+    "text": "**Substitua sua secretária de R\\$ 10 mil por mês em apenas 36 minutos**\n(Economize HORAS com essa IA estilo Homem de Ferro 🤖)\n\n **um sistema de automação com IA** que entrega **resultados comerciais reais e diretos**.\n\n💡 **Proposta**: Use essa automação = economize HORAS do seu dia\n✅ Testado e aprovado: economizei um tempo absurdo hoje com essa construção!\n\n---\n\n**O que essa IA faz por você:**\n\n📊 **Segmenta automaticamente seus e-mails por categoria**\n📧 **Cria rascunhos de respostas direto na sua caixa de entrada**\n🧠 **Entende seu contexto e responde com base na sua personalidade**\n🚨 **Te avisa por mensagem se o e-mail for realmente urgente/importante**\n🚀 **Atua como um “Homem de Ferro” na sua caixa de entrada**\n(cria, responde, agenda, atualiza – tudo com um clique)\n\n---\n\nTudo o que você precisa fazer:\n👉 Ir até sua pasta de rascunhos e revisar (ou só apertar “enviar”)\nSem perder tempo com spam ou mensagens de baixa prioridade.\n\n---\n\n**Resultado:**\n⏳ Você economiza de **2 a 10 vezes o valor da sua hora por semana**\n🔥 Mais produtividade. Menos estresse. Mais tempo para o que importa.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12588,
+    "author": "INEMA",
+    "date": "2025-08-11T19:59:48+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "🧠 Loveable memory System. (1).pdf"
+  },
+  {
+    "id": 12587,
+    "author": "INEMA",
+    "date": "2025-08-11T19:59:40+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "🔥 Replace Your $4k_mo Secretary (1).json"
+  },
+  {
+    "id": 12586,
+    "author": "INEMA",
+    "date": "2025-08-11T19:59:35+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_12586_015.jpg"
+  },
+  {
+    "id": 12585,
+    "author": "INEMA",
+    "date": "2025-08-11T19:59:07+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_12585_016.jpg"
+  },
+  {
+    "id": 12584,
+    "author": "INEMA",
+    "date": "2025-08-11T19:58:30+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_12584_017.jpg"
+  },
+  {
+    "id": 12583,
+    "author": "INEMA",
+    "date": "2025-08-11T19:58:09+00:00",
+    "text": "j99 - IronMade Secretaria",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12582,
+    "author": "INEMA",
+    "date": "2025-08-11T19:58:07+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12579,
+    "author": "INEMA",
+    "date": "2025-08-11T19:58:04+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12578,
+    "author": "INEMA",
+    "date": "2025-08-11T19:58:03+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12577,
+    "author": "INEMA",
+    "date": "2025-08-11T19:58:03+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12576,
+    "author": "INEMA",
+    "date": "2025-08-11T19:58:02+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12575,
+    "author": "INEMA",
+    "date": "2025-08-11T19:58:01+00:00",
+    "text": "https://chatgpt.com/c/689a44f2-37ac-832b-99a2-7af9ded2cc4a",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 12574,
+    "author": "INEMA",
+    "date": "2025-08-11T19:58:00+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12573,
+    "author": "INEMA",
+    "date": "2025-08-11T19:57:50+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

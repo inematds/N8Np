@@ -1,0 +1,141 @@
+[
+  {
+    "id": 9843,
+    "author": "INEMA",
+    "date": "2025-06-15T05:26:31+00:00",
+    "text": "https://www.youtube.com/watch?v=AwJ08JHQmjQ",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9842,
+    "author": "INEMA",
+    "date": "2025-06-15T05:25:29+00:00",
+    "text": "Abaixo está o **passo a passo completo** para criar um **Agente de IA para Restaurante no WhatsApp**, usando **n8n, OpenAI, Google Sheets e Google Calendar** — sem precisar programar.\n\n---\n\n### 1. **Gatilho do WhatsApp**\n\n* Use o **nó de gatilho do WhatsApp** (via API como Ultramsg ou WhatsApp Cloud API).\n* Conecte sua conta WhatsApp Business.\n* Defina para receber mensagens de clientes.\n\n---\n\n### 2. **Detectar Tipo de Mensagem (Texto ou Áudio)**\n\n* Use um **nó IF** no n8n para verificar se a mensagem recebida é de texto ou áudio.\n* Se for áudio, siga para transcrição (passo 3).\n* Se for texto, siga direto para o processamento com IA (passo 4).\n\n---\n\n### 3. **Transcrição de Áudio com OpenAI**\n\n* Use um **nó HTTP Request** para baixar o áudio do WhatsApp.\n* Em seguida, conecte ao **nó OpenAI com recurso de transcrição de áudio (Whisper)**.\n* Envie o áudio e receba o texto transcrito para ser usado no passo seguinte.\n\n---\n\n### 4. **Processamento com Agente OpenAI**\n\n* Use um **nó de Chat com OpenAI** (ex: GPT-4 ou GPT-3.5).\n\n* Configure um **Prompt de Sistema** assim:\n\n  `  Você é um agente de restaurante. Suas funções são:\n  1. Enviar o cardápio atual do restaurante.\n  2. Registrar pedidos e salvar em planilha.\n  3. Verificar disponibilidade no Google Calendar.\n  4. Criar reservas com nome e horário.\n  `\n\n* Envie a pergunta do cliente (texto ou transcrição) como entrada.\n\n---\n\n### 5. O**bter o Cardápio (se solicitado)\n**\n* Se a IA responder com uma solicitação de cardápio:\n\n  * Use um n**ó Google Sheets **para buscar o menu da planilha.\n  * Envie o resultado de volta ao cliente via WhatsApp.\n\n---\n\n### 6. R**egistrar Pedido em Planilha\n**\n* Se a IA identificar que é um pedido:\n\n  * Extraia nome, endereço e itens do pedido da resposta da IA.\n  * Use um n**ó Google Sheets > Append Row **para registrar em uma aba chamada P`edidos.`\n\n  Exemplo de colunas:\n\n  * Nome | Endereço | Pedido | Data\n\n---\n\n### 7. V**erificar e Criar Reserva no Google Calendar\n**\n* Se a IA identificar que é uma reserva:\n\n  * Use o n**ó Google Calendar > Search Events **para verificar disponibilidade no horário solicitado.\n  * Se disponível, use o n**ó Google Calendar > Create Event **para registrar a reserva.\n  * Envie confirmação via WhatsApp.\n\n---\n\n### 8. R**esponder Cliente no WhatsApp\n**\n* Use o n**ó WhatsApp Send Message:**\n\n  * Envie a resposta com o cardápio, status do pedido ou confirmação da reserva.\n\n---\n\n### 9. S**alvar Histórico da Conversa (Opcional)\n**\n* Use um n**ó Google Sheets ou Notion **para salvar o histórico do atendimento para fins de controle.\n\n---\n\n### Exemplo de Fluxo no n8n:\n\n[`WhatsApp Trigger] → [IF: texto ou áudio] \n→ [Transcrição com OpenAI] → [Chat OpenAI com Prompt de Agente] \n→ [Verifica se é Menu] → [Google Sheets - buscar menu] \n→ [Verifica se é Pedido] → [Google Sheets - salvar pedido] \n→ [Verifica se é Reserva] → [Google Calendar - buscar e criar evento] \n→ [WhatsApp - enviar resposta]`",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9841,
+    "author": "INEMA",
+    "date": "2025-06-15T05:25:29+00:00",
+    "text": "======",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9840,
+    "author": "INEMA",
+    "date": "2025-06-15T05:25:29+00:00",
+    "text": "**Resumo do conteúdo :**\n\nUm sistema de automação com IA foi criado para atender restaurantes via WhatsApp, permitindo que os clientes façam pedidos, consultem o cardápio e realizem reservas de forma automatizada, sem necessidade de código. Esse sistema integra OpenAI, Google Sheets e Google Calendar, além de ser controlado pelo n8n.\n\n**Passo a passo da automação apresentada:**\n\n1. **Consulta ao Cardápio:**\n\n   * O cliente envia uma mensagem no WhatsApp solicitando o cardápio.\n   * O sistema responde com o menu atual retirado automaticamente de uma planilha do Google Sheets.\n\n2. **Realização de Pedido:**\n\n   * O cliente faz o pedido pelo WhatsApp.\n   * O sistema pede nome e endereço.\n   * Após o envio, o pedido é registrado automaticamente em uma aba específica da planilha.\n\n3. **Reserva de Mesa:**\n\n   * O cliente informa dia e horário desejado.\n   * A IA verifica a disponibilidade no Google Calendar.\n   * Em caso positivo, registra a reserva no calendário e confirma ao cliente.\n\n4. **Componentes utilizados no n8n:**\n\n   * **Gatilho do WhatsApp** para capturar mensagens.\n   * **Verificação de tipo de mensagem (texto/áudio).**\n   * **Requisição HTTP** para baixar áudios, se necessário.\n   * **Conexão com OpenAI** para interpretar e processar comandos.\n   * **Agente com prompt pré-definido** que entende tarefas como: enviar menu, reservar mesa, registrar pedidos, etc.\n   * **Acesso ao Google Sheets** para obter o menu e registrar pedidos.\n   * **Integração com Google Calendar** para consultar e reservar horários.\n\n5. **Recursos adicionais:**\n\n   * Mensagens de confirmação são enviadas automaticamente ao cliente.\n   * A planilha contém colunas como nome, contato, endereço e pedido, preenchidas automaticamente.\n\n6. **Benefícios:**\n\n   * Atendimento 100% automatizado pelo WhatsApp.\n   * Registro instantâneo das informações.\n   * Não requer codificação manual.\n   * Alta escalabilidade para pequenos e médios restaurantes.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9839,
+    "author": "INEMA",
+    "date": "2025-06-15T05:22:52+00:00",
+    "text": "Agente de IA para Restaurante\n\nSeu Agente de IA para Restaurante em 5 minutos \n\nComo construir um Agente de IA no WhatsApp para reservas de restaurante, gerenciamento de pedidos e interações com clientes.\n\nResponde dúvidas, recebe pedidos e sincroniza automaticamente com o Google Agenda.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9838,
+    "author": "INEMA",
+    "date": "2025-06-15T05:22:09+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "n8n online order.xlsx"
+  },
+  {
+    "id": 9837,
+    "author": "INEMA",
+    "date": "2025-06-15T05:22:02+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Tutorial_3_3_I_Built_an_AI_Agent_for_Content_Research_Auto_Posting.json"
+  },
+  {
+    "id": 9836,
+    "author": "INEMA",
+    "date": "2025-06-15T05:21:55+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_9836_008.jpg"
+  },
+  {
+    "id": 9835,
+    "author": "INEMA",
+    "date": "2025-06-15T05:19:04+00:00",
+    "text": "al39 - **Restaurante AI Agente**",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9834,
+    "author": "INEMA",
+    "date": "2025-06-15T05:19:03+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9833,
+    "author": "INEMA",
+    "date": "2025-06-15T05:19:02+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9832,
+    "author": "INEMA",
+    "date": "2025-06-15T05:19:02+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9831,
+    "author": "INEMA",
+    "date": "2025-06-15T05:19:02+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9830,
+    "author": "INEMA",
+    "date": "2025-06-15T05:19:01+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9829,
+    "author": "INEMA",
+    "date": "2025-06-15T05:19:01+00:00",
+    "text": "https://chatgpt.com/c/684e5816-9e68-8009-96bd-b59449443a5e",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9828,
+    "author": "INEMA",
+    "date": "2025-06-15T05:19:00+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9827,
+    "author": "INEMA",
+    "date": "2025-06-15T05:18:55+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

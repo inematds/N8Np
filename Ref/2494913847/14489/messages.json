@@ -1,0 +1,249 @@
+[
+  {
+    "id": 14522,
+    "author": "INEMA",
+    "date": "2025-09-22T02:49:47+00:00",
+    "text": "WhatsApp.\n\n9. Truncation de texto\n\n* Exemplo: keep head 800 + tail 400.\n* Pergunta: isso perde contexto? Resposta: perde algum contexto, mas aumenta chance de resposta útil com menos tokens.\n\n10. Treinamento contínuo\n\n* Exemplo: confidence<0.7 -> enviar para Google Sheet \"revisar\".\n* Pergunta: como usar esses dados depois? Resposta: montar few-shot ou dataset para fine-tune / prompt improvements.\n\n11. Logs e alertas\n\n* Exemplo: cada execução grava {runId, count, errors} no DB; se errors>5 em 1h -> Slack alert.\n* Pergunta: que métricas acompanhar? Resposta: %processed, avg time, errors/min, %auto-labeled.\n\n12. Credenciais e rotação\n\n* Exemplo: use n8n Credentials; rota tokens via script.\n* Pergunta: como automatizar rotação? Resposta: cron job que chama provider API para renovar e atualiza credential via API do n8n.\n\n13. IMAP corporativo\n\n* Exemplo: IMAP node -> Get headers + body; para labels use mover para pasta equivalente.\n* Pergunta: IMAP funciona igual ao Gmail? Resposta: sim, mas sem labels nativas — use pastas.\n\n14. Evolution API + fallback\n\n* Exemplo: tentar Evolution -> se status !=200 -> enviar por SMTP.\n* Pergunta: posso usar Twilio? Resposta: sim, Twilio é fallback robusto.\n\n15. Webhooks em tempo real\n\n* Exemplo: configurar Gmail Pub/Sub -> webhook n8n -> process immediate.\n* Pergunta: é complexo? Resposta: demanda mais infra (Pub/Sub) mas reduz latência.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14521,
+    "author": "INEMA",
+    "date": "2025-09-22T02:49:47+00:00",
+    "text": "tem em Google Sheet / DB para revisão humana; depois reusar exemplos para few-shot no prompt.\n* workflow: se confidence < 0.7 -> send to Slack/Sheet for review.\n\n12. log centralizado + alertas por falha crítica\n\n* por quê: visibilidade e SLA.\n* como: gravar cada execução num DB (timestamp, itens, erros); usar node HTTP para enviar alertas ao Telegram/Slack se falhas > X em Y minutos.\n\n13. usar n8n Credentials seguras e rotação de chaves\n\n* por quê: segurança (tokens de Gmail, Evolution API, Google).\n* como: configure Credentials no n8n, nunca hardcode. Crie política de rotação mensal.\n\n14. otimizar chamadas ao Gmail: usar “batch get” quando suportado\n\n* por quê: reduzir latência e número de requests.\n* como: use Gmail node com “Get all messages” e depois “Get message” em lote com SplitInBatches.\n\n15. integração Evolution API (WhatsApp) com fallback SMS/email\n\n* por quê: garantir que o resumo chegue.\n* como: se HTTP Request ao Evolution falhar → enviar por SMTP node (email) ou pela API do Twilio.\n* lógica: try evolution -> if fail -> send email.\n\n16. parsing de HTML robusto (lib de texto)\n\n* por quê: corpo em HTML pode ter ruído.\n* como: usar node Function com simples regex + DOM parsing (cheerio) se disponível; no n8n, usar function + string replacements para remover tags.\n* exemplo simples:\n\n  ```  const text = html.replace(/<[^>]*>/g,' ').replace(/\\s+/g,' ').trim();\n  ```\n\n17. teste A/B do classificador com 2 prompts\n\n* por quê: avaliar qual prompt gera melhor acurácia.\n* como: duplicar fluxo, rotular resultados por promptA/promptB e comparar confiança/erro em DB.\n\n18. salvar versão das regras de etiquetas e changelog\n\n* por quê: entender mudanças no comportamento.\n* como: ao atualizar lista de categorias, gravar versão em DB e timestamp; manter histórico para rollback.\n\n19. métricas: taxa de acerto, % de emails marcados como lidos, tempo médio de processamento\n\n* por quê: medir eficácia e justificar ROI.\n* como: no final do processo, calcular e gravar métricas em DB; gerar dashboard (Grafana/Google Sheets).\n\n20. usar Webhooks para triagem em tempo real\n\n* por quê: reduzir latência se houver e-mails críticos.\n* como: configurar Gmail push notifications (Pub/Sub) → webhook n8n → processar instantaneamente; usar webhook apenas para categorias críticas (Códigos de segurança).\n\nLista dos tópicos com exemplos e respostas rápidas (seguindo seu pedido de listar tópicos + exemplos + respostas)\n\n1. Batching\n\n* Exemplo: SplitInBatches com batchSize 5 → HTTP Request Gemini → Wait 800ms.\n* Pergunta: Qual batchSize usar? Resposta: comece em 5 e ajuste conforme limites da API; para limite 600/min use batchSize 10 + 1s sleep.\n\n2. Deduplicação\n\n* Exemplo: DB table processed\\_messages(id, timestamp). Antes de processar, query by messageId.\n* Pergunta: O que fazer se o ID mudar? Resposta: use combinação messageId + subject + timestamp para heurística.\n\n3. Fallback de snippet\n\n* Exemplo: expression body = {{\\$json.textPlain  \\$json.snippet  convertHTML(\\$json.bodyHtml)}}\n* Pergunta: snippet é suficiente? Resposta: para classificação simples sim; para resumo prefira corpo completo.\n\n4. Prompt JSON estrito\n\n* Exemplo de retorno: {\"category\":\"Consultorias\",\"confidence\":0.92}\n* Pergunta: E se o modelo não retorna JSON? Resposta: re-try com instrução mais forte; se persistir, marque para revisão humana.\n\n5. Continue on fail\n\n* Exemplo: node HTTP Request -> continue on fail true -> next node saves error and re-iterates.\n* Pergunta: isso esconde erros? Resposta: não, grave logs; use alertas para erros repetidos.\n\n6. Retries exponenciais\n\n* Exemplo: tentar 1s, 3s, 10s; usar contador em Function node.\n* Pergunta: quantas tentativas? Resposta: 3 é suficiente na maioria dos casos.\n\n7. Rate-limit control\n\n* Exemplo: Wait entre batches ou token-bucket em DB.\n* Pergunta: como saber limite? Resposta: veja docs da API + experimente; 429 indica ajuste necessário.\n\n8. Aggregate antes do resumo\n\n* Exemplo: Aggregate fields subject/from/snippet; enviar 5 itens por categoria ao LLM.\n* Pergunta: quantos itens listar? Resposta: 3 a 5 por categoria para",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14520,
+    "author": "INEMA",
+    "date": "2025-09-22T02:49:47+00:00",
+    "text": "Hacks práticos de n8n (cada item com explicação, configuração e exemplo)\n\n1. executar em lotes (batching) para controlar custo e performance\n\n* por quê: evita chamadas massivas à IA e previne timeouts/ratelimits.\n* como: use o node SplitInBatches antes de chamar o modelo; batchSize = 5–10.\n* exemplo: SplitInBatches -> HTTP Request (Gemini) -> Wait (1s) -> Continue.\n* dica: ajuste batchSize conforme limites da API (se 60 req/min, batchSize menor + delay).\n\n2. deduplicação por messageId antes do processamento\n\n* por quê: evita processar o mesmo e-mail várias vezes (re-runs, duplicatas).\n* como: usar um node Set/Function para gerar chave = messageId e um node Database (SQLite/Postgres) ou Google Sheets para checar existência.\n* exemplo de Function (JS):\n\n  ```  const id = items[0].json.messageId;\n  return [{ json: { id } }];\n  ```\n* fluxo: if exists -> skip, else -> process + save id em DB.\n\n3. fallback seguro: usar snippet se o corpo completo não estiver disponível\n\n* por quê: alguns providers devolvem só HTML ou vazio.\n* como: no mapping, faça: body = \\$json\\[\"textPlain\"] ?? \\$json\\[\"snippet\"] ?? convertHTML(\\$json\\[\"bodyHtml\"])\n* exemplo de expressão n8n:\n\n  ```  {{$json[\"textPlain\"] || $json[\"snippet\"] || $json[\"bodyPlainText\"]}}\n  ```\n\n4. prompt robusto para classificador com exemplos e formato JSON estrito\n\n* por quê: modelos retornam texto livre, padronizar evita parsing.\n* prompt modelo (colar no HTTP Request):\n\n   ``` Você é um classificador de e-mail. Dê 1 única categoria entre: Consultorias, Conteúdo criativo, Faturas, Pessoal, Suporte, Promoções, Notificações sociais, Códigos de segurança, Newsletters, Reservas, Atualizações, Spam.\n  Retorne apenas JSON estrito:\n  {\"category\":\"<nome>\",\"confidence\":0.00}\n  Assunto: {{ $json[\"subject\"] }}\n  Corpo: {{ $json[\"body\"] }}\n  Exemplos:\n  - \"senha 2FA\" -> Códigos de segurança\n  - \"cupom 50%\" -> Promoções\n  \n```* dica: inclua 3–5 exemplos reais por categoria para maior precisão.\n\n5. tratar erros sem parar o fluxo: continueOnFail + manejos de saída\n\n* por quê: uma falha na API não deve quebrar todo o loop.\n* como: em nós críticos, ative \"Continue on Fail\" e conecte saída de erro a um nó Log ou re-iterator.\n* exemplo: no node HTTP Request -> On Error: Continue; output para node Function que anota o erro e retorna para o SplitInBatches.\n\n6. retries exponenciais para chamadas de rede\n\n* por quê: falhas transitórias (rate-limit) se recuperam com retry.\n* como: usar node Wait + contador no node Function; ou usar node HTTP Request com Retry configurado (se disponível).\n* estratégia: retry 1s → 3s → 10s; 3 tentativas.\n\n7. controle de rate-limit com token bucket simples\n\n* por quê: evitar 429 e bloqueios.\n* como: manter contador em DB ou use node Cron + Wait entre lotes; ou usar um node que calcule sleep = Math.max(0, neededDelay).\n* exemplo: após cada batch, Wait 1000 ms se você está teclando perto do limite.\n\n8. usar aggregate + transform antes da IA do resumo\n\n* por quê: reduzir número de tokens e tornar o resumo previsível.\n* como: Aggregate (modo merge) pegando somente subject, from e snippet; depois montar um texto curto.\n* exemplo de texto enviado ao modelo:\n\n    ```Categoria: Consultorias\n  1) Assunto — Remetente — Snippet curto\n  ...\n  \n\n```9. limitar o comprimento do texto enviado ao LLM (truncation com regras)\n\n* por quê: economia de tokens e evitar resposta truncada.\n* como: em Function, corte body a 800–1200 chars, mantendo início + fim (head+tail) para preservar contexto.\n* snippet JS:\n\n    c```onst s = text;\n  if(s.length>1200) text = s.slice(0,800) + \"\\n...\\n\" + s.slice(-400);\n  \n\n1```0. usar schemas JSON + Parse JSON para garantir segurança\n\n* por quê: evita dependência de string-scrape.\n* como: no response do modelo, forçar que retorne JSON; em seguida JSON Parse node para extrair category/confidence.\n* exemplo: prompt pede explicitamente \"retorne apenas JSON\".\n\n11. modo “treinamento contínuo”: salvar exemplos rotulados manualmente para re-treino ou few-shot\n\n* por quê: melhorar precisão ao longo do tempo.\n* como: quando confidence < 0.7, criar item em",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14519,
+    "author": "INEMA",
+    "date": "2025-09-22T02:40:22+00:00",
+    "text": "==================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14518,
+    "author": "INEMA",
+    "date": "2025-09-22T02:40:16+00:00",
+    "text": "consultas.\n\n3. Array aggregator ou Merge\n   Una todos os resultados em um único array.\n\n4. Text aggregator ou Mapper\n   Monte uma lista com campos essenciais por item:\n\n   * categoria\n   * subject\n   * from\n   * snippet ou primeiro parágrafo do corpo\n\n5. Google AI > Gemini 2.0 Flash\n   Prompt sugerido:\n\n   ```   Você recebe e-mails agrupados por categoria. Gere um resumo para WhatsApp:\n   - Agrupe por categoria\n   - Cada categoria inicia com *Título* usando asteriscos\n   - Liste 1–3 itens por categoria no formato: • Assunto — Remetente\n   - Se não houver itens, escreva: \"Hoje não há e-mails importantes.\"\n   Responda somente com o texto do WhatsApp.\n   ```\n\n6. Evolution API > Enviar mensagem\n   Envie o texto gerado ao número desejado. Inclua a data no cabeçalho da mensagem se quiser:\n   Exemplo de cabeçalho:\n   Resumo de e-mails importantes — 02/06\n\n7. Fallback de vazio\n   Se o Merge retornar zero itens, pule a IA e envie direto a mensagem padrão.\n\n### n8n\n\nNós equivalentes:\n\n* Cron\n* Gmail: Search por label\n* Merge node (modo concat)\n* Function ou Item Lists para preparar campos\n* HTTP Request para Gemini 2.0 Flash\n* HTTP Request para Evolution API\n\n---\n\n## Checklist de testes\n\n* Criou todas as etiquetas no Gmail\n* Classificação está coerente em 20 e-mails de amostra\n* Promoções e notificações sociais estão sendo marcadas como lidas\n* Spam está indo para lixeira se habilitado\n* Resumo chega no WhatsApp todos os dias no horário configurado\n* Mensagem de “sem e-mails importantes” aparece quando aplicável\n\n---\n\n## Solução de problemas\n\n* IA erra a categoria: refine as descrições das categorias no prompt e inclua 2–3 exemplos reais por categoria\n* Mensagens sem corpo: use snippet ou converta HTML para texto antes de enviar ao modelo\n* Limites de API: adicione retry com backoff e mantenha continue on error\n* Duplicatas no resumo: use deduplicação por messageId antes do Merge\n* IMAP com anexos pesados: baixe somente cabeçalho e corpo em texto\n\n---\n\n## Perguntas rápidas com exemplos\n\n1. Quantas horas devo buscar, 24 ou 72\n   Resposta: comece com 24h para rodar diariamente. Use 72h nos primeiros testes para ter volume.\n\n2. Posso classificar e manter não lidos\n   Resposta: sim. Apenas não conecte o nó de Mark as Read para as categorias que quer manter em destaque.\n\n3. Quero apagar spam automaticamente\n   Resposta: crie rota “Spam” direto para Delete message. Teste por 3 dias antes de ativar definitivo.\n\n4. E se eu não usar Gmail\n   Resposta: use IMAP para buscar mensagens e mova para pastas equivalentes às etiquetas. O classificador e o resumo não mudam.\n\n5. Custo da IA\n   Resposta: Gemini 2.0 Flash costuma ser gratuito para este volume; se migrar para outro modelo, ative limites de tokens e lotes menores.\n\n6. Como definir minhas categorias\n   Resposta: exporte 50–100 e-mails, peça ao ChatGPT um agrupamento por tema com nomes e descrições e use isso no prompt do classificador.\n\n7. O que enviar no WhatsApp\n   Resposta: apenas assunto e remetente por item, agrupado por categoria. Evite colar corpo completo por privacidade.\n\n8. Como evitar que o fluxo pare\n   Resposta: em cada módulo habilite continuar em caso de erro e reconecte saída de erro ao loop; adicione retries nos nós de rede.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14517,
+    "author": "INEMA",
+    "date": "2025-09-22T02:40:16+00:00",
+    "text": "# Passo a passo para organizar e resumir e-mails com IA (Make e n8n)\n\n## Visão geral\n\nVocê terá dois fluxos:\n\n1. Classificação automática de e-mails por etiquetas\n2. Resumo diário no WhatsApp apenas do que é importante\n\nFunciona com Gmail ou IMAP corporativo. A IA sugerida é Gemini 2.0 Flash pelo bom custo e velocidade. O envio ao WhatsApp pode ser feito via Evolution API.\n\n---\n\n## Pré-requisitos\n\n* Conta Gmail com acesso via Make ou n8n\n* Alternativa corporativa: credenciais IMAP válidas\n* Chave de API do Google AI Studio para Gemini 2.0 Flash\n* Instância da Evolution API conectada ao seu WhatsApp Business\n* Lista de etiquetas no Gmail criadas previamente, por exemplo:\n\n  * Consultorias, Conteúdo criativo, Faturas, Pessoal, Suporte e consultas\n  * Promoções, Notificações sociais, Códigos de segurança, Newsletters, Reservas e viagens, Atualizações de serviços, Spam\n\nDica rápido: se não souber quais categorias usar, exporte 50–100 e-mails e peça ao ChatGPT para sugerir agrupamentos e descrições.\n\n---\n\n## Fluxo A — Classificação automática\n\n### Make\n\n1. Agendador\n   Frequência a seu gosto. Para começar, manual.\n\n2. Gmail > Search messages\n   Parâmetros:\n\n   * Query: todos lidos e não lidos\n   * Data inicial: now minus 72h (ou 24h) em formato ISO\n   * Return all: yes\n\n3. Tools > Iterator\n   Itera cada mensagem retornada.\n\n4. Gmail > Get a message\n   Pegue assunto, remetente e corpo em texto.\n\n5. Google AI (ou HTTP) > Chamada ao Gemini 2.0 Flash\n   Envie um JSON com:\n\n   * subject: assunto\n   * text: corpo em texto\n   * categories: lista com nome e descrição de cada etiqueta\n     Prompt sugerido:\n\n   ```   Você é um classificador de e-mails. Retorne apenas JSON:\n   { \"category\": \"<nome-da-categoria>\", \"confidence\": 0-1 }\n   Categorias possíveis:\n   - Códigos de segurança: logins, 2FA, verificação\n   - Notificações sociais: redes sociais, seguidores, curtidas\n   - Promoções: ofertas, marketing, cupons\n   - Newsletters: comunicados recorrentes e conteúdos editoriais\n   - Reservas e viagens: passagens, hospedagem, confirmações\n   - Atualizações de serviços: status de produtos e assinaturas\n   - Faturas: boletos, recibos, pagamentos\n   - Consultorias: propostas, reuniões, alinhamentos com clientes\n   - Conteúdo criativo: roteiros, materiais, entregas criativas\n   - Pessoal: família, amigos, assuntos pessoais\n   - Suporte e consultas: dúvidas de clientes, tickets\n   Se não houver correspondência clara, use \"Spam\" ou \"Outro\".\n   ```\n\n6. Tools > Parse JSON\n   Extraia category e confidence.\n\n7. Roteamento por categoria\n   Para cada categoria:\n\n   * Gmail > Add label to messages (use o messageId do item)\n   * Para Promoções, Notificações sociais, Códigos de segurança, Reservas e viagens, Newsletters, Atualizações de serviços e Spam:\n     Gmail > Mark message as read\n     Opcional para Spam: Gmail > Delete message\n\n8. Tratamento de erros\n   Em cada módulo, nas configurações de erro, selecione continue using error output e reconecte a saída de erro de volta ao Iterator, para o fluxo nunca parar por falhas temporárias da API.\n\n9. Teste\n   Rode o cenário com 10–20 e-mails recentes e confira no Gmail se as etiquetas e leituras foram aplicadas corretamente.\n\n### n8n\n\nNós equivalentes:\n\n* Cron ou Webhook\n* Gmail: Search > Read\n* Split in Batches ou Item Lists\n* HTTP Request para Gemini 2.0 Flash\n* JSON Parse\n* Switch para categorias\n* Gmail: Add Label / Mark as Read / Delete\n* Error workflow: Ativar continue on fail nos nós críticos e reconectar ao loop\n\n### IMAP corporativo\n\n* Make: use o módulo IMAP da comunidade para listar mensagens e pegar cabeçalho e corpo\n* n8n: IMAP Email node\n* O restante do fluxo (classificar, etiquetar, marcar como lido) segue igual; para etiquetar, use regras da sua plataforma de e-mail corporativo ou mova para pastas correspondentes às “etiquetas”\n\n---\n\n## Fluxo B — Resumo diário no WhatsApp\n\n### Make\n\n1. Agendador diário\n   Horário sugerido: 21:00.\n\n2. Para cada categoria importante\n   Gmail > Search messages por label correspondente.\n   Exemplo: Consultorias, Conteúdo criativo, Faturas, Pessoal, Suporte e",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14516,
+    "author": "INEMA",
+    "date": "2025-09-22T02:38:46+00:00",
+    "text": "====================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14515,
+    "author": "INEMA",
+    "date": "2025-09-22T02:38:42+00:00",
+    "text": "Resumo :\n\nUma automação para organizar e-mails e receber um resumo no WhatsApp. Ele divide em duas partes principais:\n\n### 1. Classificação automática de e-mails\n\n* Os e-mails das últimas 24 ou 72 horas são filtrados.\n* Cada e-mail passa por um loop e é classificado por IA (Gemini 2.0 Flash).\n* São criadas categorias (ex.: promoções, notificações, viagens, faturas, newsletters).\n* ChatGPT pode ser usado para sugerir categorias a partir de exemplos de e-mails reais.\n* Após a classificação, os e-mails recebem etiquetas e os menos importantes são marcados como lidos (ou até excluídos, no caso de spam/promoções).\n* O fluxo é configurado para continuar mesmo em caso de erro (continue using error output).\n\n### 2. Resumo diário no WhatsApp\n\n* Trigger diário às 21h.\n* Recupera e-mails das categorias mais importantes (consultorias, conteúdo criativo, faturas, pessoal, suporte).\n* Faz merge e agrega os dados principais (assunto, corpo do e-mail, remetente).\n* Usa Gemini 2.0 Flash para gerar um resumo organizado por categorias, com negrito (asteriscos) para leitura no WhatsApp.\n* Se não houver e-mails, envia mensagem “Hoje não há e-mails importantes”.\n* O envio é feito pelo Evolution API (WhatsApp Business).\n\n### Benefícios\n\n* Caixa de entrada limpa automaticamente.\n* Organização sem esforço manual.\n* Notificação apenas do que é realmente importante.\n* Economia de tempo e foco no essencial.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14512,
+    "author": "INEMA",
+    "date": "2025-09-22T02:32:40+00:00",
+    "text": "=================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14511,
+    "author": "INEMA",
+    "date": "2025-09-22T02:32:37+00:00",
+    "text": "e23. Seu E-mail, Limpo e Organizado Automaticamente\n\nAprendemos a automatizar completamente a organização do nosso e-mail e a receber um resumo diário no WhatsApp apenas com os e-mails mais importantes.\n\n🔧 Automação 1 – Classificação Automática de E-mails\nObjetivo: Etiquetar automaticamente os e-mails de acordo com o conteúdo para manter a caixa de entrada limpa e organizada.\n\n🛠️ Passos do fluxo:\n\n* Filtramos e-mails recebidos nas últimas 72 horas (ajustável para 24h).\n* Loop sobre cada e-mail recebido para processá-los um por um.\n* Uso de IA (Gemini 2.0 Flash) como classificador de texto para categorizar e-mails segundo:\n  • Assunto (subject)\n  • Corpo (text)\n* Criamos etiquetas personalizadas (notificações, promoções, viagens, faturas, etc.).\n* Sugestão: Usar o ChatGPT para definir categorias com seus próprios e-mails.\n* Adicionamos etiquetas a cada e-mail conforme sua classificação.\n* Marcamos como lidos os menos importantes (ofertas, notificações sociais, etc.).\n* Tratamento de erros: usamos continue using error output para evitar que o fluxo pare caso algo falhe.\n* Opcional: podemos excluir diretamente e-mails classificados como spam ou promoções em vez de apenas marcá-los como lidos.\n\n💬 Automação 2 – Resumo Diário pelo WhatsApp\nObjetivo: Enviar um resumo pelo WhatsApp apenas com os e-mails importantes.\n\n📦 Categorias importantes selecionadas:\n\n* Consultorias\n* Conteúdo criativo\n* Faturas\n* Pessoal\n* Suporte e consultas\n\n🔄 Fluxo:\n\n* Disparo diário às 21h.\n* Recuperamos os e-mails de cada categoria importante.\n* Unificamos (Merge) todos os e-mails em um único array.\n* Adicionamos os dados principais: assunto, texto e endereço de e-mail.\n* Chamamos o Gemini 2.0 Flash com um prompt projetado para gerar um resumo limpo para WhatsApp:\n  • O resumo é agrupado por categorias.\n  • Usa negritos (com asteriscos) para facilitar a leitura.\n  • Adiciona a mensagem \"Hoje não há e-mails importantes\" se não houver dados.\n* Enviamos o resumo por WhatsApp usando a Evolution API.\n* A mensagem inclui a data e o conteúdo agrupado.\n\nRecursos\n\n* Classificador de e-mails\n* Resumidor de e-mails por WA\n* Resumidor de e-mails corporativos\n* Classificador de e-mails corporativos",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14510,
+    "author": "INEMA",
+    "date": "2025-09-22T02:31:47+00:00",
+    "text": "================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14509,
+    "author": "INEMA",
+    "date": "2025-09-22T02:31:44+00:00",
+    "text": "Seu E-mail, Limpo e Organizado Automaticamente\n\nQuero compartilhar uma automação que mudou minha vida: ter o e-mail perfeitamente organizado de forma automática e receber um resumo no WhatsApp apenas com o que realmente importa. 📬➡️📲 Vimos isso em um workshop de automação, mas senti a obrigação de melhorá-la e compartilhar 😊\n\nO que faz essa automação?\n✅ Classifica automaticamente nossos e-mails por categorias personalizadas\n✅ Marca como lidos ou exclui os que não interessam\n✅ Mantém os importantes em destaque\n✅ Envia um resumo diário no WhatsApp com os e-mails mais relevantes\n\n\nAlém disso, criei mais duas automações:\n👉 Para e-mails corporativos (quando não uso Gmail), estou utilizando um módulo IMAP que baixei dos nodes da comunidade.\nCom esse módulo podemos praticamente replicar o mesmo fluxo em contas de e-mail empresariais.\n\n👉 Também deixo o link para o node IMAP que você pode instalar: NODE IMAP\n\nSe vocês acharem necessário e útil, posso gravar um pequeno vídeo explicando como montar tudo isso no Make e adiciono aqui mesmo. Basta pedir nos comentários. 👇\n\nEspero que seja tão útil para vocês quanto está sendo para mim.\nTer a caixa de entrada limpa, organizada e saber todos os dias o que é importante sem precisar abrir o e-mail é realmente um divisor de águas! 🚀",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14508,
+    "author": "INEMA",
+    "date": "2025-09-22T02:31:12+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14508_013.jpg"
+  },
+  {
+    "id": 14507,
+    "author": "INEMA",
+    "date": "2025-09-22T02:30:32+00:00",
+    "text": "[https://www.npmjs.com/package/n8n-nodes-imap](https://www.npmjs.com/package/n8n-nodes-imap)",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14506,
+    "author": "INEMA",
+    "date": "2025-09-22T02:28:12+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Clasificador_Emails_Gmail_Paso_1 (1).json"
+  },
+  {
+    "id": 14505,
+    "author": "INEMA",
+    "date": "2025-09-22T02:28:12+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Resumidor_Correos_Diarios (1) (1).json"
+  },
+  {
+    "id": 14504,
+    "author": "INEMA",
+    "date": "2025-09-22T02:28:12+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Resumidor_correos_empresa (1).json"
+  },
+  {
+    "id": 14503,
+    "author": "INEMA",
+    "date": "2025-09-22T02:28:12+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Correo_empresa (1).json"
+  },
+  {
+    "id": 14502,
+    "author": "INEMA",
+    "date": "2025-09-22T02:27:54+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14502_019.jpg"
+  },
+  {
+    "id": 14501,
+    "author": "INEMA",
+    "date": "2025-09-22T02:26:37+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14501_020.jpg"
+  },
+  {
+    "id": 14498,
+    "author": "INEMA",
+    "date": "2025-09-22T02:23:04+00:00",
+    "text": "e23 - Organize seu Email",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14497,
+    "author": "INEMA",
+    "date": "2025-09-22T02:22:49+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14496,
+    "author": "INEMA",
+    "date": "2025-09-22T02:22:48+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14495,
+    "author": "INEMA",
+    "date": "2025-09-22T02:22:48+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14494,
+    "author": "INEMA",
+    "date": "2025-09-22T02:22:48+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14493,
+    "author": "INEMA",
+    "date": "2025-09-22T02:22:47+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14492,
+    "author": "INEMA",
+    "date": "2025-09-22T02:22:47+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14491,
+    "author": "INEMA",
+    "date": "2025-09-22T02:22:47+00:00",
+    "text": "https://chatgpt.com/c/68d0b1ef-5a74-8329-84f9-ff0c063b299a",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14490,
+    "author": "INEMA",
+    "date": "2025-09-22T02:22:46+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14489,
+    "author": "INEMA",
+    "date": "2025-09-22T02:22:42+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

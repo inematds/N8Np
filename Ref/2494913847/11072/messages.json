@@ -1,0 +1,191 @@
+[
+  {
+    "id": 11098,
+    "author": "INEMA",
+    "date": "2025-07-09T02:49:51+00:00",
+    "text": "============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11097,
+    "author": "INEMA",
+    "date": "2025-07-09T02:49:47+00:00",
+    "text": "# Configuração Manual do Workflow N8N - Passo a Passo\n\n## 1. Webhook (incoming data)\n```Tipo: Webhook\nHTTP Method: POST\nPath: entry-blog\nResponse Mode: Using 'Respond to Webhook' Node```\n\n## 2. Set/Edit Fields\nC```ampo 1:\n  Name: topic\n  Value: {{ $json.body.topicDetails }}\n\nCampo 2:\n  Name: style\n  Value: {{ $json.body.writingStyle }}\n\nCampo 3:\n  Name: title\n  Value: {{ $json.body.articleTitle }}\n```\n## 3. AI Agent\nAg```ent Type: Conversational Agent\nPrompt Type: Define below\n\nPrompt:\nUser Topic: {{ $json.topic }}\n\nUser Style: {{ $json.style }}\n\nChat Model: OpenRouter ou OpenAI\nModel: google/gemini-2.0-flash-exp (ou gpt-4)\n\nOutput Parser: Structured Output Parser\nSchema: {\"blog\": \"string\"}\n\nOptions:\n- Retry on Fail: Yes\n- Max Retries: 5\n- Wait Between Retries: 1000ms\n\n```### System Message (cole isso no AI Agent):\nYou``` are a provocative, unapologetically confident blogging agent that crafts bold, minimalist natural health posts. This agent fearlessly dismantles conventional medical narratives, exposes the failures of our disease-management system, and challenges readers to abandon the broken status quo.\n\nTONE & ATTITUDE:\n• Write with unwavering confidence – present natural health solutions as obviously superior\n• Be brazenly critical of current medical practices\n• Use provocative language that makes readers uncomfortable with the status quo\n• Express frustration with how the medical system has failed patients\n\nCONTENT STRUCTURE:\n• Begin with a conversational hook that questions conventional wisdom\n• Use short, punchy paragraphs (2-3 sentences max)\n• Pose critical questions that expose absurdity of medical practices\n• Highlight key points in bold\n• End with action step encouraging readers to abandon conventional approaches\n\nOUTPUT FORMAT:\nOutput ONLY in JSON: {\"blog\": \"[FULL BLOG POST HERE]\"}\n\n#```# 4. Set/Edit Fields 2\nCamp```o 1:\n  Name: title\n  Value: {{ $('Edit Fields').item.json.title }}\n\nCampo 2:\n  Name: content  \n  Value: {{ $json.blog }}\n\nCampo 3:\n  Name: author\n  Value: HealthMinimalistBlogger\n\n##``` 5. Respond to Webhook\nRespo```nse Mode: Custom JSON\n\nResponse Body:\n{\n  \"title\": \"{{ $json.title }}\",\n  \"content\": \"{{ JSON.stringify($json.content) }}\",\n  \"author\": \"{{ $json.author }}\"\n}\n\n## ```Conexões:\n1. Webhook → Edit Fields\n2. Edit Fields → AI Agent\n3. AI Agent → Edit Fields 2\n4. Edit Fields 2 → Respond to Webhook\n5. Chat Model → AI Agent (conexão AI)\n6. Output Parser → AI Agent (conexão AI)",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11096,
+    "author": "INEMA",
+    "date": "2025-07-09T02:49:39+00:00",
+    "text": "======================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11095,
+    "author": "INEMA",
+    "date": "2025-07-09T02:46:36+00:00",
+    "text": "# Lovable & Supabase Setup Prompt\n\n## Complete Prompt for Building the Natural Health Blogging Website\n\n```Build me a blogging website that has a natural health and holistic feel that allows for a single blog page, an archive page, and allows me to add a new blog with a quick form field.\n\nThe form fields should be:\n- Article Title (single line text input)\n- Topic & Details (text area)\n- Writing Style (dropdown list with options: \"Informative\" and \"Theoretical\")\n\nThis form once submitted should connect and trigger my N8N blogging agent using this webhook: [YOUR_WEBHOOK_URL]\n\nIt will return information from the webhook in this format:\n{\n  \"title\": \"title here\",\n  \"content\": \"entire blog post here\",\n  \"author\": \"author here\"\n}\n\nCreate my Supabase tables to accept this webhook response data and present it on the frontend.\n\nAdd a loading spinner/progress bar once I hit \"Generate Article\" from the form and wait for the blogging agent in N8N to do its work.\n\nMake this website have earthy tones and be a very simple personal blogging website with the following features:\n\n1. Homepage showing the latest blog post\n2. Archive page showing all blog posts in a grid or list view\n3. Individual blog post pages when clicking \"Read More\" from the archive\n4. Navigation bar with Home, Archive, and New Article links\n5. Responsive design that works on all devices\n6. Footer with copyright information\n\nThe Supabase table should have these columns:\n- id (UUID, primary key)\n- title (text)\n- content (text)\n- author (text)\n- topic (text)\n- style (text)\n- created_at (timestamp)\n- updated_at (timestamp)\n\nEnable Row Level Security (RLS) on the table and make it publicly readable.\n\nStyle requirements:\n- Use earthy, natural colors (greens, browns, beiges)\n- Minimalist design with plenty of whitespace\n- Clean, readable typography\n- Subtle animations and transitions\n- Loading spinner should be a natural/organic animation\n\nMake the \"Generate Article\" button prominent and ensure it properly handles the async nature of the webhook call.```\n\n## Additional Refinement Prompts (if needed)\n\n### For fixing the loading spinner:\nT```he loading spinner when the article is generating is not spinning. Make it more attractive as I am waiting. Use a nature-inspired animation like leaves spinning or a flower blooming.\n```\n### For improving navigation:\nWh```en I click on \"Read More\", make sure it takes me to the single blog page. Also add smooth scroll animations between sections.\n\n```### For better mobile experience:\nImp```rove the mobile responsive design. Make the form fields stack vertically on mobile and ensure the text is readable without zooming.\n\n#```# Supabase SQL Command (if needed manually)\n\nCREATE TABLE blog_posts (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  title TEXT NOT NULL,\n  content TEXT NOT NULL,\n  author TEXT DEFAULT 'HealthMinimalistBlogger',\n  topic TEXT,\n  style TEXT CHECK (style IN ('Informative', 'Theoretical')),\n  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),\n  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()\n);\n\n-- Enable Row Level Security\nALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;\n\n-- Create policy for public read access\nCREATE POLICY \"Allow public read access\" ON blog_posts\n  FOR SELECT USING (true);\n\n-- Create updated_at trigger\nCREATE OR REPLACE FUNCTION update_updated_at_column()\nRETURNS TRIGGER AS $$\nBEGIN\n  NEW.updated_at = NOW();\n  RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TRIGGER update_blog_posts_updated_at\n  BEFORE UPDATE ON blog_posts\n  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11094,
+    "author": "INEMA",
+    "date": "2025-07-09T02:46:05+00:00",
+    "text": "e printei o workflow que mostrou no video, se fosse usar o gemini poderia ele analisar o video.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11093,
+    "author": "INEMA",
+    "date": "2025-07-09T02:45:22+00:00",
+    "text": "tambem printei o prompt do agente",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11092,
+    "author": "INEMA",
+    "date": "2025-07-09T02:45:08+00:00",
+    "text": "no cloude, levei a transcricao do video",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11091,
+    "author": "INEMA",
+    "date": "2025-07-09T02:44:49+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11091_008.jpg"
+  },
+  {
+    "id": 11090,
+    "author": "INEMA",
+    "date": "2025-07-09T02:43:14+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11090_009.jpg"
+  },
+  {
+    "id": 11089,
+    "author": "INEMA",
+    "date": "2025-07-09T02:29:04+00:00",
+    "text": "Problema foi mal configurado aqui estava como imediatamente e deve ser using Respond to Webhook node",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11089_010.jpg"
+  },
+  {
+    "id": 11088,
+    "author": "INEMA",
+    "date": "2025-07-09T01:37:57+00:00",
+    "text": "https://www.youtube.com/watch?v=0c_NpEBLltM",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11083,
+    "author": "INEMA",
+    "date": "2025-07-08T21:36:09+00:00",
+    "text": "### 🌱 **Propósito do HealthMinimalistBlogger**\n\nCriar um **agente de blog provocador e confiante** que:\n\n* Produz posts **minimalistas sobre saúde natural**, denunciando as falhas da medicina convencional.\n* Incentiva os leitores a **questionar o sistema médico** e buscar **alternativas naturais** para prevenção e cura.\n* Usa uma linguagem ousada para **despertar consciência** e provocar mudanças no comportamento das pessoas.\n\n---\n\n### 📦 **Como funciona**\n\n1. Recebe **tópico** e **estilo** do usuário (ex: “Doença cardíaca em jovens” / “Teórico”).\n2. Gera um post no formato JSON com título, conteúdo e autor.\n3. Pode ser integrado em um **app web** com frontend (Lovable) e backend (Supabase/N8N).\n\n---\n\n### 🎯 **Objetivo final**\n\nOferecer uma plataforma automatizada para:\n✅ Gerar blogs de saúde natural com **um clique**.\n✅ Armazenar e exibir os posts em uma interface moderna.\n✅ Empoderar leitores a abandonar práticas médicas tradicionais em favor de soluções naturais.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11082,
+    "author": "INEMA",
+    "date": "2025-07-08T21:35:48+00:00",
+    "text": "tem correcoes a fazer",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11081,
+    "author": "INEMA",
+    "date": "2025-07-08T21:35:41+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "nm57 - webhook Blog.json"
+  },
+  {
+    "id": 11080,
+    "author": "INEMA",
+    "date": "2025-07-08T21:33:44+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11080_015.jpg"
+  },
+  {
+    "id": 11079,
+    "author": "INEMA",
+    "date": "2025-07-08T21:32:41+00:00",
+    "text": "nm57 - webhook Blog",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11078,
+    "author": "INEMA",
+    "date": "2025-07-08T21:32:40+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11077,
+    "author": "INEMA",
+    "date": "2025-07-08T21:32:40+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11076,
+    "author": "INEMA",
+    "date": "2025-07-08T21:32:39+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11075,
+    "author": "INEMA",
+    "date": "2025-07-08T21:32:39+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11074,
+    "author": "INEMA",
+    "date": "2025-07-08T21:32:39+00:00",
+    "text": "https://chatgpt.com/c/686d5820-7e80-8009-b114-b89697f5bf9f",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11073,
+    "author": "INEMA",
+    "date": "2025-07-08T21:32:38+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11072,
+    "author": "INEMA",
+    "date": "2025-07-08T21:32:33+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

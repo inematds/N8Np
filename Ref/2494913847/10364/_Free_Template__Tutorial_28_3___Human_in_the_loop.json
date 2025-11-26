@@ -1,0 +1,518 @@
+{
+  "name": "[Free Template] Tutorial 28.3 - Human-in-the-loop",
+  "nodes": [
+    {
+      "parameters": {
+        "model": "openai/gpt-4o",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        -260
+      ],
+      "id": "1cee4c0c-7439-4975-923b-47e12645e928",
+      "name": "OpenRouter Chat Model4",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1380,
+        -200
+      ],
+      "id": "9ca83cfe-d400-44f6-bc22-1e4d21eb079f",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"original_email\": \"\",\n  \"from\": \"\",\n  \"sender_email\": \"\",\n  \"sender_sentiment\": \"\",\n  \"reply_body\": \"\",\n  \"subject\": \"\",\n  \"thread_id\":\"\",\n  \"message_id\": \"\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -1060,
+        -260
+      ],
+      "id": "5288f9e9-873d-4f50-886b-291ca5ffe118",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "756212738",
+        "message": "=You have received an email from {{ $json.output.from }}, it's in {{ $json.output.sender_sentiment }} sentiment. Here's the content:\n\n{{ $json.output.original_email }}\n\nHere's the planned reply\n\nSubject: {{ $json.output.subject }}\nBody: {{ $json.output.reply_body }}\n\nPlease approve by replying small case 'ok'.",
+        "responseType": "freeText",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -880,
+        -100
+      ],
+      "id": "b8fc0ed3-ce8f-4a9c-9c0d-060d75974f6d",
+      "name": "Telegram Confirm Node",
+      "webhookId": "2e6b8c94-943d-49a5-96b2-49d9f78284d8",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram account - andynocodehumanintheloopbot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an AI assistant handling restaurant feedback emails.\nGiven the following customer email:\n\n---\nMessage ID: {{ $json.id }}\nThread ID: {{ $json.threadId }}\nFrom: {{ $json.From }}\nSubject: {{ $json.Subject }}\nSnippet: {{ $json.snippet }}\n---\nAnd here's reply suggestion:\n{{ $json.suggestion || 'N/A' }}\n---\n\n(1). Determine if the feedback is positive, negative, or unclear.\n(2). Summarize the main feedback points.\n(3). Draft a suitable reply:\n    - If positive, thank the customer and invite them again.\n    - If negative, apologize and offer to address the issue.\n    - If unclear, politely ask for more details to better understand their experience.\n(4). At footer please apply this fixed footer text section\n(5). Reply by \"Andy Restaurant Team\"\n\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are an AI assistant handling restaurant feedback emails."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        -1220,
+        -100
+      ],
+      "id": "8c3500c2-c156-4593-a5e6-3eec7a64f6f9",
+      "name": "Email Agent"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.data.text }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1180,
+        120
+      ],
+      "id": "19538278-bd68-4861-9376-5eb84c6d3153",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Email Agent').item.json.output.thread_id }}",
+        "emailType": "text",
+        "message": "={{ $('Email Agent').item.json.output.reply_body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -880,
+        120
+      ],
+      "id": "b209bc55-eb63-426c-866b-6f1bdfac1ec6",
+      "name": "Reply Email",
+      "webhookId": "13811c88-b674-46de-9ba1-1db2047658fb",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "suggestion",
+              "value": "={{ $json.data.text }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "From",
+              "value": "={{ $('Email Agent').item.json.output.sender_email }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Subject",
+              "value": "={{ $('Email Agent').item.json.output.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "snippet",
+              "value": "={{ $('Email Agent').item.json.output.reply_body }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "thread_id",
+              "value": "={{ $('Email Agent').item.json.output.thread_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1180,
+        340
+      ],
+      "id": "6e8a59c0-6c4f-454d-83d4-97db34d5d7dc",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "IHEFaUIqXarj1nyN",
+          "mode": "list",
+          "cachedResultName": "Proxa — [Free Template] Tutorial 28.3 - Human-in-the-loop"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "suggestion": "={{ $json.suggestion }}",
+            "From": "={{ $json.From }}",
+            "Subject": "={{ $json.Subject }}",
+            "snippet": "={{ $json.snippet }}",
+            "threadId": "={{ $json.thread_id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "suggestion",
+              "displayName": "suggestion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "From",
+              "displayName": "From",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "Subject",
+              "displayName": "Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "snippet",
+              "displayName": "snippet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "threadId",
+              "displayName": "threadId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -880,
+        340
+      ],
+      "id": "343c1da6-2f3f-40cc-84df-834b88e0bae6",
+      "name": "Execute Workflow"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "suggestion"
+            },
+            {
+              "name": "From"
+            },
+            {
+              "name": "Subject"
+            },
+            {
+              "name": "snippet"
+            },
+            {
+              "name": "threadId"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1380,
+        -40
+      ],
+      "id": "40f89576-771b-4bfc-8014-cf33db824851",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "content": "## Remarks\n\n- If you are using the same email address, the reply gmail node may got error. So please so different emails for senders and recipients for testing\n- It's case sensitive for the \"ok\". You can change the if condition in the \"IF\" node.",
+        "height": 220,
+        "width": 320,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1860,
+        -140
+      ],
+      "id": "4739f44d-18b7-4a64-a5a3-c8bcf431ee61",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "# 🅰🅽🅳🆈🅽🅾🅲🅾🅳🅴 𝔸𝕀 𝔸𝕔𝕒𝕕𝕖𝕞𝕪\n\n",
+        "height": 80,
+        "width": 600,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1360,
+        -420
+      ],
+      "id": "90da7ed1-1f6a-4047-be1a-99bc21c13a1d",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "# Email Agent",
+        "height": 80,
+        "width": 400
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -680,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "3eef9d5a-9e2a-457f-a0eb-9530c914e3f4",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# If OK : Send Email",
+        "height": 80,
+        "width": 400,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -680,
+        140
+      ],
+      "typeVersion": 1,
+      "id": "1609e447-47ce-4ddb-9a69-3303ff81991b",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "# If not OK : Email Revision",
+        "height": 80,
+        "width": 460,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -680,
+        360
+      ],
+      "typeVersion": 1,
+      "id": "1edb181d-8443-478f-b3c2-1b1c7d98c068",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenRouter Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Email Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Email Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Email Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Confirm Node": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram Confirm Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Reply Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Email Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "788f2d78-2cf5-4fee-8bb3-3134fa9507eb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1740c26791c747bf49d93178a26934eaaffaca5ab2d087ae7e06b06ed236dff6"
+  },
+  "id": "IHEFaUIqXarj1nyN",
+  "tags": []
+}

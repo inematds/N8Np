@@ -1,0 +1,629 @@
+{
+  "name": "Agente de emails con validación humana",
+  "nodes": [
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"asunto\": {\n      \"type\": \"string\",\n      \"description\": \"Asunto para el email\"\n    },\n    \"cuerpo_email\": {\n      \"type\": \"string\",\n      \"description\": \"Cuerpo del email para enviar al cliente\"\n    }\n  },\n  \"required\": [\"asunto\", \"cuerpo_email\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -60,
+        400
+      ],
+      "id": "df1fac03-cffb-4c60-abc4-a92b8d3f0d22",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Nombre: {{ $json.fields.Nombre }}\nEmail: {{ $json.fields.Email }}\nTelefono de whatsapp: {{ $json.fields.Telefono }}\nServicio: {{ $json.fields.Servicio }}\nPresupuesto: {{ $json.fields.Presupuesto }}\nEmpresa: {{ $json.fields.Empresa }}\nTiempo de aplicación: {{ $json.fields['Tiempo servicio'] }}\nDescripción del proyecyo: {{ $json.fields['Descripción'] }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Eres un experto vendedor de una agencia que ofrece soluciones de autmatizaciones con IA. Tu trabajo es responder a los clientes potenciales entrantes abordando sus necesidades de manera profesional. Recibirás información como la descripción del proyecto y el cronograma del lead, y tu objetivo es convencerlos de que somos la mejor Agencia de IA del mercado.\n\nHerramientas\nBase_datos - Usa esta herramienta para buscar entre los proyectos anteriores que hemos realizado.\n\nReglas\n- Recibirás información sobre un lead y necesitas redactar un correo electrónico profesional. Mantenlo conciso, a nadie le gusta leer un correo demasiado largo.\n- Tu objetivo principal es convencer al lead de agendar una segunda llamada. Tu trabajo es hacerles creer que podemos llevar a cabo el proyecto que han descrito y superar sus expectativas.\n- Recupera información sobre proyectos anteriores para compartir con el lead y demostrar que nuestro equipo es capaz de manejar su proyecto. Encuentra un proyecto similar que hayamos realizado para compartir con el lead. Comparte el resultado de cómo ayudamos al cliente.\n-El tono debe de ser cercano y no demasiado formal, tiene que parecer extremadamente humano\n-El asunto debe de ser corto, muy llamativo y que contenga el nombre del cliente potencial\n\nNotas Finales\nFirma los correos electrónicos como Angel Aparicio, IA Masters Automations  \nAquí está la fecha/hora actual: {{ $now }}\nHoy es: {{ $now.format('cccc') }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -880,
+        20
+      ],
+      "id": "1ea901f4-b190-4c7f-8e5b-88113269a064",
+      "name": "Agente de Ventas"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "sendTo": "angel.aparicio92@gmail.com",
+        "subject": "=Se requiere APROBACIÓN para nuevo lead: {{ $('On form submission').item.json.Empresa }} - {{ $('On form submission').item.json['¿En que servicio estás interesado?'] }}",
+        "message": "={{ $('On form submission').item.json['Nombre completo'] }} de {{ $('On form submission').item.json.Empresa }} está buscando {{ $('On form submission').item.json['¿En que servicio estás interesado?'] }}. Su presupuesto es {{ $('On form submission').item.json['¿Cual es tu presupuesto?'] }} con un plazo de {{ $('On form submission').item.json['¿Para cuando esperas implementar el servicio?'] }}.\n\nPor favor, aprueba o rechaza el envío de este mensaje generado por AItor GarcIA, nuestro Agente de Ventas con IA.\n\nAsunto: {{ $json.output.asunto }}\n\nEmail: {{ $json.output.cuerpo_email }}",
+        "responseType": "freeText",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -440,
+        20
+      ],
+      "id": "4e983a6c-4e88-4781-b880-71a79c1334b7",
+      "name": "Feedback",
+      "webhookId": "10605e1c-7bc0-4a9f-b23a-9797cc88449e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.data.text }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "=Aprobado",
+              "description": "El correo electrónico ha sido revisado y aprobado tal como está. La persona, de forma explícita o implícita, expresa su aprobación, indicando que no se requieren cambios.  \nFrases de ejemplo incluyen:\n  \"Se ve bien.\"\n  \"Adelante, envíalo.\"\n  \"Está bien para mí.\"\n  \"Aprobado.\"\n  \"No necesita cambios.\"\n  \"OK\""
+            },
+            {
+              "category": "Re-Generar",
+              "description": "El correo electrónico ha sido revisado, pero la persona solicita modificaciones antes de enviarlo. Esto puede incluir ajustes, eliminación de partes, reformulaciones o revisiones importantes.  \nFrases de ejemplo incluyen:\n  \"¿Podemos ajustar esta parte?\"\n  \"Necesita algunos cambios.\"\n  \"Me gustaría reformular esto.\"\n  \"No está del todo bien, revisémoslo.\"\n  \"¿Puedes ajustar esto antes de enviarlo?\"\n  \"No menciones que no podemos hacer eso.\""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1,
+      "position": [
+        -180,
+        20
+      ],
+      "id": "bd143aa9-d3c8-49d0-83d8-39161f45171b",
+      "name": "Verifica el feedback"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('On form submission').item.json.Email }}",
+        "subject": "={{ $('Agente de Ventas').item.json.output.asunto }}",
+        "emailType": "text",
+        "message": "={{ $('Agente de Ventas').item.json.output.cuerpo_email }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "IA Masters Automations"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        200,
+        -100
+      ],
+      "id": "c08d3e4c-2adb-4228-9d36-d15cdbe6752a",
+      "name": "Envio Email",
+      "webhookId": "9ae2a2f2-de7c-46a1-93f7-8b2612d40751",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Email: {{ $('Agente de Ventas').item.json.output.cuerpo_email }}\n\nFeedback: {{ $json.data.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Eres un redactor experto en correos electrónicos. Tu trabajo es tomar un correo entrante y revisarlo con base en la retroalimentación proporcionada por la persona.\n\nReglas\n-Firma los correos electrónicos como Angel Aparicio, IA Masters Automations\n-El tono debe de ser cercano y no demasiado formal, tiene que parecer extremadamente humano\n-El asunto debe de ser corto, muy llamativo y que contenga el nombre del cliente potencial\nAquí está la fecha y hora actual: {{ $now }}\nHoy es: {{ $now.format('cccc') }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        200,
+        80
+      ],
+      "id": "539b7feb-7c86-4a41-a996-c2dc99fda65e",
+      "name": "Revisión Agente"
+    },
+    {
+      "parameters": {
+        "model": "=gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        -380,
+        400
+      ],
+      "id": "c64d3e71-1860-4d2e-808b-47f4acffc052",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "Formulario de contacto",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Nombre completo",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Telefono de WhatsApp",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Empresa",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "¿En que servicio estás interesado?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Automatización de procesos"
+                  },
+                  {
+                    "option": "Consultoria"
+                  },
+                  {
+                    "option": "Chatbot de atención al cliente"
+                  },
+                  {
+                    "option": "Consultoria de negocio"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "¿Cual es tu presupuesto?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "1.000€ a 2.000€"
+                  },
+                  {
+                    "option": "2.000€ a 5.000€"
+                  },
+                  {
+                    "option": "5.000€ a 10.000€"
+                  },
+                  {
+                    "option": "+10.000€"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "¿Para cuando esperas implementar el servicio?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Lo antes posible"
+                  },
+                  {
+                    "option": "En 2 semanas"
+                  },
+                  {
+                    "option": "En 1 mes"
+                  },
+                  {
+                    "option": "+ de 1 mes"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Descríbenos brevemente el proyecto",
+              "fieldType": "textarea",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false,
+          "buttonLabel": "Enviar",
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "Hemos recibido tu solicitud. En breve contactaremos contigo"
+            }
+          },
+          "ignoreBots": true
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -1320,
+        20
+      ],
+      "id": "3d953131-4efb-4bd9-bed2-9a9f1b4c3246",
+      "name": "On form submission",
+      "webhookId": "6e868906-f857-41e5-b39d-a44238ea3b26"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appVOzlTB2OGkmqWf",
+          "mode": "list",
+          "cachedResultName": "Clientes",
+          "cachedResultUrl": "https://airtable.com/appVOzlTB2OGkmqWf"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblKVxjy1gSv5RlsX",
+          "mode": "list",
+          "cachedResultName": "Clientes Potenciales",
+          "cachedResultUrl": "https://airtable.com/appVOzlTB2OGkmqWf/tblKVxjy1gSv5RlsX"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nombre": "={{ $json['Nombre completo'] }}",
+            "Email": "={{ $json.Email }}",
+            "Telefono": "={{ $json['Telefono de WhatsApp'] }}",
+            "Empresa": "={{ $json.Empresa }}",
+            "Servicio": "={{ $json['¿En que servicio estás interesado?'] }}",
+            "Presupuesto": "={{ $json['¿Cual es tu presupuesto?'] }}",
+            "Tiempo servicio": "={{ $json['¿Para cuando esperas implementar el servicio?'] }}",
+            "Descripción": "={{ $json['Descríbenos brevemente el proyecto'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Telefono",
+              "displayName": "Telefono",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Empresa",
+              "displayName": "Empresa",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Servicio",
+              "displayName": "Servicio",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Presupuesto",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Descripción",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Tiempo servicio",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Creada",
+              "displayName": "Creada",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -1100,
+        20
+      ],
+      "id": "6c69c6ed-96d7-4de2-85e9-6db6af3be40e",
+      "name": "Airtable",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appVOzlTB2OGkmqWf",
+          "mode": "list",
+          "cachedResultName": "Clientes",
+          "cachedResultUrl": "https://airtable.com/appVOzlTB2OGkmqWf"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl77JXJh8dV2v5I4",
+          "mode": "list",
+          "cachedResultName": "Proyectos",
+          "cachedResultUrl": "https://airtable.com/appVOzlTB2OGkmqWf/tbl77JXJh8dV2v5I4"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        -780,
+        340
+      ],
+      "id": "ed1a5c58-368c-4e15-9590-5534fbfb401b",
+      "name": "Base_datos",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Angel Aparicio | IA MASTERS AUTOMATIONS 🦎\n",
+        "height": 80,
+        "width": 580,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        -240
+      ],
+      "id": "85ad5290-9113-40b4-a846-485f38e78ce9",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {
+    "On form submission": [
+      {
+        "json": {
+          "Nombre completo": "Miguel Garcia",
+          "Email": "angel.aparicio92@gmail.com",
+          "Telefono de WhatsApp": 657483923,
+          "Empresa": "IA Automatizaciones",
+          "¿En que servicio estás interesado?": "Automatización de procesos",
+          "¿Cual es tu presupuesto?": "2.000€ a 5.000€",
+          "¿Para cuando esperas implementar el servicio?": "En 1 mes",
+          "Descríbenos brevemente el proyecto": "Quiero crear una automatizacion para automatizar el seguimiento del cliente una vez ha realizado la compra (post-vesta)",
+          "submittedAt": "2025-03-28T11:42:51.674+01:00",
+          "formMode": "test"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Agente de Ventas",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "Revisión Agente",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente de Ventas": {
+      "main": [
+        [
+          {
+            "node": "Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feedback": {
+      "main": [
+        [
+          {
+            "node": "Verifica el feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica el feedback": {
+      "main": [
+        [
+          {
+            "node": "Envio Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Revisión Agente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revisión Agente": {
+      "main": [
+        [
+          {
+            "node": "Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente de Ventas",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Verifica el feedback",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Revisión Agente",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable": {
+      "main": [
+        [
+          {
+            "node": "Agente de Ventas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Base_datos": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente de Ventas",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9fd51331-e674-45c1-b0f3-7914049fe201",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e0e4b720cb3656009f5ca7014be06f1fbe69abfc54f93aa2cc3ca2098ff666d6"
+  },
+  "id": "izjcBbEvG3QGmTik",
+  "tags": [
+    {
+      "createdAt": "2025-03-28T11:31:01.494Z",
+      "updatedAt": "2025-03-28T11:31:01.494Z",
+      "id": "adJ6NteHvlxoQsqZ",
+      "name": "🦎IA MASTERS AUTOMATIONS"
+    }
+  ]
+}

@@ -1,0 +1,238 @@
+[
+  {
+    "id": 12930,
+    "author": "INEMA",
+    "date": "2025-08-15T21:32:57+00:00",
+    "text": "**Hacks para o caso de notícias (GNews + OpenAI + Creatomate)**\n\n* Use sempre **palavras-chave específicas** no GNews (ex.: `\"inteligência artificial\" OR \"AI\"`), isso melhora a relevância e evita gastar créditos com notícias irrelevantes.\n* No prompt da OpenAI Image, adicione **“sem texto”** e **descrição de estilo** (realista, vibrante, minimalista) para evitar imagens poluídas.\n* Configure **fallback de imagem**: se a geração falhar, use uma imagem padrão hospedada no ImageKit/ImgBB para não quebrar o fluxo.\n* No GPT-5 Mini para título/caption, peça **saída em formato JSON** para separar facilmente os campos no n8n.\n* Programe o loop de checagem no Creatomate com **intervalos progressivos** (5s, 10s, 15s…) para evitar sobrecarga de requisições.\n* Se for postar em várias redes, **mande o vídeo primeiro para o Make** e de lá replique para todas as plataformas — economiza requisições no n8n.\n\n---\n\n**Hacks para o caso imobiliário (Formulário + ImgBB + Creatomate)**\n\n* Ao invés de 4 campos separados para imagens, use **upload múltiplo** no formulário e depois divida no n8n, isso agiliza o envio.\n* Otimize as imagens no upload para **resolução e peso compatíveis** com redes sociais (ex.: 1080px de largura) antes de passar para o Creatomate — ImageKit pode fazer isso via URL.\n* Crie **placeholders de foto** no template (foto padrão de fachada, planta, logo da imobiliária) para casos de campos vazios.\n* Inclua no template campos para **logo, cor da marca e contato**, assim todos os vídeos saem padronizados sem esforço extra.\n* No caption, insira **variáveis automáticas** (ex.: preço, bairro) para aumentar a relevância na rede social sem digitar nada manualmente.\n\n---\n\n**Hacks gerais para ambos os fluxos**\n\n* Use **múltiplas credenciais de Creatomate** (uma por template) para não confundir variáveis e tokens.\n* Organize todos os endpoints e tokens no n8n usando **credenciais genéricas** para facilitar manutenção e evitar expor dados.\n* Crie um **modo de teste**: antes de publicar, envie o vídeo para um canal privado no Telegram/Drive para revisão.\n* Aproveite o **modo gratuito** do Creatomate para prototipar e só passar para o pago quando o fluxo estiver 100% estável.\n* Documente no próprio n8n cada nó com **nota explicativa** para lembrar o que ele faz (útil se precisar ajustar no futuro).",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12929,
+    "author": "INEMA",
+    "date": "2025-08-15T21:32:38+00:00",
+    "text": "=================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12928,
+    "author": "INEMA",
+    "date": "2025-08-15T21:32:35+00:00",
+    "text": "renderizar.\n\n6. Quantas notícias por execução?\n   Depende de limites de API e custo. Comece com 3–5 itens, monitore consumo e tempo de render.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12927,
+    "author": "INEMA",
+    "date": "2025-08-15T21:32:35+00:00",
+    "text": "(n8n) recebe os campos e os arquivos/imagens.\n\n3. Subir as 4 imagens\n   • Use ImgBB (ou ImageKit) 4 vezes:\n   POST [https://api.imgbb.com/1/upload?key=IMGBB\\_KEY](https://api.imgbb.com/1/upload?key=IMGBB_KEY)\n   form-data: image=@imagemX\n   • Colete as 4 URLs públicas.\n\n4. Montar modifications do template imobiliário\n   • Crie um template de Real Estate no Creatomate e copie “API Integration”.\n   • HTTP Request (POST) /v1/renders com JSON:\n   {\n   \"template\\_id\": \"TEMPLATE\\_IMOB\",\n   \"modifications\": {\n   \"AddressText\": \"{{\\$json.address}}\",\n   \"PriceText\": \"{{ \\$json.price | number\\_format }} €\",\n   \"DetailsText\": \"{{\\$json.details}}\",\n   \"Photo1\": \"URL1\",\n   \"Photo2\": \"URL2\",\n   \"Photo3\": \"URL3\",\n   \"Photo4\": \"URL4\"\n   }\n   }\n\n5. Poll de status e obtenção do vídeo\n   • Igual ao Caso 1: Wait → GET render → quando succeeded, pegue a url.\n\n6. Publicar com Make\n   • Envie { video\\_url, caption: “Nova propriedade disponível. Veja no nosso perfil.” } para o webhook do Make.\n   • No Make, publique na(s) rede(s) desejada(s).\n\nExemplos práticos de cURL (com chaves explícitas como placeholders)\nGNews – busca de notícias (verifique se seu plano usa apikey ou token)\n\n```curl -G \"https://gnews.io/api/v4/search\" \\\n  --data-urlencode \"q=inteligência artificial\" \\\n  --data-urlencode \"lang=pt\" \\\n  --data-urlencode \"max=4\" \\\n  --data-urlencode \"apikey=GNEWS_API_KEY_AQUI\"```\n\nImgBB – upload\n\n```curl -X POST \"https://api.imgbb.com/1/upload?key=IMGBB_KEY_AQUI\" \\\n  -F \"image=@/caminho/miniatura.jpg\"```\n\nImageKit – upload base64\n\n```curl -X POST \"https://upload.imagekit.io/api/v1/files/upload\" \\\n  -u \"PRIVATE_API_KEY_AQUI:\" \\\n  -F \"file=$(base64 -w 0 miniatura.jpg)\" \\\n  -F \"fileName=miniatura.jpg\"```\n\nCreatomate – render\n\n```curl -X POST \"https://api.creatomate.com/v1/renders\" \\\n  -H \"Authorization: Bearer CREATOMATE_API_KEY_AQUI\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"template_id\": \"TEMPLATE_ID_AQUI\",\n    \"modifications\": {\n      \"ImageURL\": \"https://.../miniatura.jpg\",\n      \"Title\": \"OpenAI lança GPT-5 em momento chave\"\n    }\n  }'```\n\nCreatomate – status do render\n\n```curl -X GET \"https://api.creatomate.com/v1/renders/RENDER_ID_AQUI\" \\\n  -H \"Authorization: Bearer CREATOMATE_API_KEY_AQUI\"```\n\nPrompts prontos (copiar e colar)\nImagem da notícia (OpenAI Image)\nCrie uma miniatura chamativa para uma notícia titulada: “{{title}}”. A imagem deve refletir o tema central descrito em: “{{description}}”. Estilo visual limpo, contraste claro, sem texto, apropriada para capa de vídeo social.\n\nTítulo + caption (GPT-5 Mini)\nGere 2 saídas em português:\n\n1. título jornalístico curto (máx. 80 caracteres) para o vídeo;\n2. caption para redes (3–4 linhas, informativo, sem hashtags).\n   Baseie-se neste conteúdo:\n   Título: {{title}}\n   Descrição: {{description}}\n   Conteúdo: {{content}}\n\nChecklist rápido de erros comuns\n• Usar token errado no GNews: confirme se seu endpoint usa apikey= ou token=.\n• Upload falha no ImgBB/ImageKit: verifique se enviou form-data correto e se a imagem é base64 válido ou arquivo binário.\n• Poll no Creatomate: sempre faça loop até status=succeeded antes de publicar.\n• Mistura de credenciais por template: mantenha um Authorization separado por projeto/template.\n• Resolução baixa no plano gratuito do Creatomate: para escala/qualidade, migre para plano pago e ajuste a resolução do template.\n\nPerguntas rápidas e respostas\n\n1. Preciso usar as duas opções de imagem (ImageKit e ImgBB)?\n   Não. Use apenas uma. ImgBB é bem simples; ImageKit dá CDN e transformações.\n\n2. Posso publicar direto do n8n sem Make?\n   Sim, desde que você integre a API da rede social no n8n. O Make só facilita.\n\n3. Qual formato do vídeo usar?\n   Para Reels/TikTok, 9:16. Para YouTube/Twitter/X landscape, 16:9. Mantenha o template coerente com a rede.\n\n4. Posso incluir trilha sonora e logo?\n   Sim. Adicione campos no template (LogoURL, MusicURL) e preencha nas modifications.\n\n5. Como evitar posts ruins por notícia fraca?\n   Filtre por fonte/país, exija palavra-chave no título e valide mínimo de palavras no conteúdo antes de",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 12926,
+    "author": "INEMA",
+    "date": "2025-08-15T21:32:35+00:00",
+    "text": "Aqui vai um passo a passo objetivo para montar os dois fluxos de vídeo no n8n + Creatomate + Make, usando GNews, OpenAI, ImageKit/ImgBB.\n\nPasso a passo – Caso 1: vídeos de notícias de IA\n\n1. Preparar contas e chaves\n   • Criar contas e pegar chaves: GNews (token/apikey), OpenAI (GPT-5 Mini + imagem), Creatomate (API key), ImageKit ou ImgBB (chave), Make (webhook).\n   • Guarde cada credencial em credenciais seguras no n8n (HTTP Request, Generic Credential).\n\n2. Criar o template no Creatomate\n   • No Creatomate, escolha um template social (9:16) ou landscape (16:9) e nomeie os campos que pretende preencher: ex. ImageURL, Title.\n   • Copie o cURL/JSON de “API Integration” (vai mostrar template\\_id e as chaves de modifications).\n\n3. Montar o gatilho no n8n\n   • Use um Manual Trigger (ou Scheduler).\n   • Crie um Set (ou Input Fields) com: lang, query, gnews\\_token/apikey, news\\_count (ex.: 4).\n\n4. Buscar notícias na GNews\n   • HTTP Request (GET) → endpoint de busca. Exemplo (confirme qual parâmetro seu plano usa):\n   • Variante comum: [https://gnews.io/api/v4/search?q={{\\$json.query}}\\&lang={{\\$json.lang}}\\&max={{\\$json.news\\_count}}\\&apikey=GNEWS\\_API\\_KEY](https://gnews.io/api/v4/search?q={{$json.query}}&lang={{$json.lang}}&max={{$json.news_count}}&apikey=GNEWS_API_KEY)\n   • Algumas libs usam token=GNEWS\\_TOKEN\n   • A resposta vem com articles\\[]. Faça um Item Lists → Split Out por articles.\n\n5. Preparar contexto por item\n   • Em cada artigo, use um Set para guardar title, description, url, content (quando houver) e repassar ao restante do fluxo.\n\n6. Gerar a imagem da capa\n   • OpenAI Image (ou HTTP p/ imagens): prompt curto e direto. Exemplo:\n   “Crie uma miniatura de notícia sobre ‘{{\\$json.title}}’. A imagem deve refletir o tema principal descrito em ‘{{\\$json.description}}’. Estilo chamativo, composição clara, sem texto.”\n   • Se o nó retorna binário, converta para Base64 (Binary → Move/Convert) antes do upload, se necessário.\n\n7. Subir a imagem para URL pública\n   • Opção A – ImageKit (upload via Basic Auth):\n   Endpoint: POST [https://upload.imagekit.io/api/v1/files/upload](https://upload.imagekit.io/api/v1/files/upload)\n   Body (form-data): file=BASE64\\_DA\\_IMAGEM, fileName=news.jpg\n   Auth: Basic com PRIVATE\\_API\\_KEY como usuário.\n   • Opção B – ImgBB:\n   POST [https://api.imgbb.com/1/upload?key=IMGBB\\_KEY](https://api.imgbb.com/1/upload?key=IMGBB_KEY)\n   form-data: image=@binário\\_ou\\_base64\n   • Guarde a URL pública retornada (display\\_url/url).\n\n8. Escrever título e caption com GPT-5 Mini\n   • OpenAI Chat (model: gpt-5-mini). Prompt sugerido:\n   “Gere:\n\n   1. título jornalístico curto (até 80 caracteres) em português para o vídeo;\n   2. caption para redes (3–4 linhas, informativo, sem hashtags).\n      Use como base: título, descrição e conteúdo da notícia a seguir: …”\n      • Extraia dois campos: title\\_final e caption\\_final.\n\n9. Renderizar o vídeo no Creatomate\n   • HTTP Request (POST) → [https://api.creatomate.com/v1/renders](https://api.creatomate.com/v1/renders)\n   Headers: Authorization: Bearer YOUR\\_CREATOMATE\\_API\\_KEY\n   Body (JSON):\n   {\n   \"template\\_id\": \"SEU\\_TEMPLATE\\_ID\",\n   \"modifications\": {\n   \"ImageURL\": \"URL\\_PUBLICA\\_IMAGEM\",\n   \"Title\": \"{{\\$json.title\\_final}}\"\n   }\n   }\n   • O retorno vem com id e status=pending/planning.\n\n10. Checar status em loop\n    • Wait 5s → HTTP Request (GET) [https://api.creatomate.com/v1/renders/RENDER\\_ID](https://api.creatomate.com/v1/renders/RENDER_ID)\n    • Se status != succeeded, volte ao Wait; se succeeded, capture o result\\_url.\n\n11. Enviar para o Make e publicar\n    • HTTP Request (POST) → webhook do Make com { video\\_url: result\\_url, caption: caption\\_final }.\n    • No Make, poste no Instagram/LinkedIn/etc. (módulo da plataforma).\n    • No n8n, o loop avança para a próxima notícia até completar news\\_count.\n\nPasso a passo – Caso 2: vídeos imobiliários via formulário\n\n1. Formulário de entrada\n   • Use um formulário (Typeform/Google Forms) ou Webhook do n8n pedindo: endereço, preço, descrição, imagem1–imagem4.\n\n2. Receber no n8n\n   • Webhook (n8n) recebe",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 12925,
+    "author": "INEMA",
+    "date": "2025-08-15T21:31:22+00:00",
+    "text": "===================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12924,
+    "author": "INEMA",
+    "date": "2025-08-15T21:31:16+00:00",
+    "text": "Como criar e publicar vídeos automaticamente usando o Creatomate e automações no n8n/Make, com dois casos práticos:\n\n1. **Notícias de IA** – Busca na API do GNews, gera imagens com OpenAI, hospeda em ImageKit/ImgBB, cria vídeo com template no Creatomate e publica automaticamente em redes sociais.\n2. **Imobiliária** – Recebe dados e fotos via formulário, hospeda imagens no ImgBB, monta vídeo com template de imóveis no Creatomate e envia para publicação automática, tudo sem edição manual.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12923,
+    "author": "INEMA",
+    "date": "2025-08-15T21:25:55+00:00",
+    "text": "==================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12922,
+    "author": "INEMA",
+    "date": "2025-08-15T21:24:56+00:00",
+    "text": "e38. Automatize vídeos para redes em minutos\n\n🎯 Objetivo\nAprender a montar um sistema completo para gerar vídeos automáticos a partir de notícias ou formulários, utilizando modelos pré-desenhados e ferramentas de IA. Essa automação permite publicar conteúdo visual nas redes sociais sem intervenção manual, economizando tempo e esforço. São abordados dois casos de uso: notícias sobre IA e setor imobiliário, ambos com resultados 100% automatizados.\n\n🛠️ O que conseguimos com essa automação?\n\n* Criar vídeos automaticamente a partir de um modelo.\n* Gerar conteúdo atualizado com notícias de inteligência artificial.\n* Publicar imóveis em formato de vídeo a partir de um simples formulário.\n* Usar IA para criar imagens e textos atraentes para redes.\n* Publicar automaticamente os vídeos no Instagram ou em outras plataformas.\n* Reduzir ao mínimo o esforço manual na produção de conteúdo recorrente.\n\n🧩 Estrutura do fluxo automatizado\n\n**Caso 1: Vídeos de notícias de IA**\n\n* Disparo manual no N8N com campos configuráveis: idioma, token e número de notícias.\n* Consulta à API do GNews para obter títulos e descrições.\n* Geração de imagem com Image 1 (OpenAI) para cada notícia.\n* Upload das imagens para domínio público (ImageKit ou IMGBB).\n* Geração de texto com GPT-5 Mini: título para o vídeo e legenda para redes.\n* Criação do vídeo no Creatomate usando um modelo personalizado.\n* Verificação de status e download do vídeo.\n* Envio do vídeo e da legenda para o Make, que publica no Instagram.\n\n**Caso 2: Vídeos imobiliários a partir de formulário**\n\n* Recebimento de dados de um formulário externo (endereço, preço, descrição, 4 imagens).\n* Upload das imagens para o IMGBB e obtenção de URLs públicas.\n* Montagem do vídeo no Creatomate usando modelo do tipo “Real Estate”.\n* Verificação do status do vídeo e envio final para o Make.\n* Publicação automática nas redes com legenda personalizada.\n\n🧰 Ferramentas utilizadas\n\n* N8N: motor principal da automação.\n* Creatomate: plataforma de criação de vídeos com modelos.\n* OpenAI (GPT-5 Mini + DALL·E): para gerar textos e imagens.\n* GNews API: fonte de notícias para alimentar os vídeos.\n* ImageKit / IMGBB: hospedagem de imagens em URL pública.\n* Make: para publicação final do vídeo no Instagram ou outras redes.\n\n🧠 Dicas-chave aprendidas\n\n* Aproveitar modelos visuais no Creatomate para acelerar a produção sem perder qualidade.\n* Separar tokens e credenciais por projeto ou modelo para evitar erros.\n* Sempre trabalhar com URLs públicas para arquivos multimídia quando automatizar com APIs externas.\n* Limitar a resolução nos testes gratuitos do Creatomate, mas considerar o pagamento se for escalar.\n* Estruturar os fluxos com loops controlados e verificações de status antes de seguir para o próximo passo.\n* Ideal para setores como agências, imobiliárias, e-commerce, educação ou fitness.\n\n**Recursos**\n\n* Blueprint\n* GNews\n* Creatomate\n* IMGBB\n* ImageKit",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12921,
+    "author": "INEMA",
+    "date": "2025-08-15T21:24:45+00:00",
+    "text": "============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12920,
+    "author": "INEMA",
+    "date": "2025-08-15T21:24:23+00:00",
+    "text": "Crie vídeos automáticos com IA + modelos\n\nVocê já imaginou publicar reels no Instagram sem abrir nenhum editor? 😮\n\nMontar um sistema que converte notícias ou formulários em vídeos prontos para redes sociais, com texto, imagem e legenda incluídos.\n\n🎯 O que você vai conseguir?\n\n* Transformar notícias sobre IA em vídeos informativos e virais.\n* Criar vídeos imobiliários a partir de um simples formulário com fotos.\n* Tudo gerado com IA (texto e imagens) e renderizado com modelos no Creatomate.\n\n* Publicação automática nas redes sociais com Make.\n\n🔥 Usamos N8N, GPT-4.5 Mini, GNews API, IMGBB, Creatomate e mais.\nIsso pode ser aplicado se você é agência, SaaS, consultor ou possui qualquer negócio com conteúdo repetitivo.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12919,
+    "author": "INEMA",
+    "date": "2025-08-15T21:23:32+00:00",
+    "text": "=======================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12918,
+    "author": "INEMA",
+    "date": "2025-08-15T21:23:27+00:00",
+    "text": "* **GNews API** – API para buscar e filtrar notícias em tempo real ou históricas de mais de 60 mil fontes, com suporte a múltiplos idiomas e integração fácil via JSON.}\n\n* **ImageKit** – Plataforma para otimização, armazenamento e entrega rápida de imagens e vídeos via CDN, com manipulação e transformação em tempo real.\n\n* **ImgBB API** – Serviço simples de hospedagem de imagens com upload via API, retornando URLs públicas para compartilhamento e integração.\n\n* **Creatomate** – Ferramenta para criar vídeos e imagens automaticamente a partir de templates, com API, editor visual e integração com automações.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12917,
+    "author": "INEMA",
+    "date": "2025-08-15T21:18:49+00:00",
+    "text": "https://imagekit.io/",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 12916,
+    "author": "INEMA",
+    "date": "2025-08-15T21:18:37+00:00",
+    "text": "https://api.imgbb.com/",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12915,
+    "author": "INEMA",
+    "date": "2025-08-15T21:18:19+00:00",
+    "text": "https://creatomate.com/",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 12914,
+    "author": "INEMA",
+    "date": "2025-08-15T21:18:04+00:00",
+    "text": "https://gnews.io/",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 12913,
+    "author": "INEMA",
+    "date": "2025-08-15T21:17:23+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_12913_018.jpg"
+  },
+  {
+    "id": 12912,
+    "author": "INEMA",
+    "date": "2025-08-15T21:17:03+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Creador noticias y videos plantilla.json"
+  },
+  {
+    "id": 12911,
+    "author": "INEMA",
+    "date": "2025-08-15T21:16:59+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_12911_020.jpg"
+  },
+  {
+    "id": 12910,
+    "author": "INEMA",
+    "date": "2025-08-15T21:16:45+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_12910_021.jpg"
+  },
+  {
+    "id": 12909,
+    "author": "INEMA",
+    "date": "2025-08-15T20:13:45+00:00",
+    "text": "e38- Vídeos para Redes Sociais",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12908,
+    "author": "INEMA",
+    "date": "2025-08-15T20:13:44+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12907,
+    "author": "INEMA",
+    "date": "2025-08-15T20:13:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12906,
+    "author": "INEMA",
+    "date": "2025-08-15T20:13:42+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12905,
+    "author": "INEMA",
+    "date": "2025-08-15T20:13:41+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12904,
+    "author": "INEMA",
+    "date": "2025-08-15T20:13:41+00:00",
+    "text": "https://chatgpt.com/c/689f9521-b214-832b-917c-451b5f6f605a",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 12903,
+    "author": "INEMA",
+    "date": "2025-08-15T20:13:39+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12902,
+    "author": "INEMA",
+    "date": "2025-08-15T20:13:30+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

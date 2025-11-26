@@ -1,0 +1,306 @@
+[
+  {
+    "id": 13267,
+    "author": "INEMA",
+    "date": "2025-08-25T02:39:25+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13267_001.jpg"
+  },
+  {
+    "id": 13266,
+    "author": "INEMA",
+    "date": "2025-08-25T02:17:23+00:00",
+    "text": "Porque “sistema operacional de IA” não é no sentido técnico de Windows/Linux, mas sim uma **camada que organiza, conecta e executa todos os processos críticos de um negócio**, de forma centralizada e escalável.\n\n---\n\n# Como isso é visto como um Sistema Operacional de IA\n\n### 1. Camada de coleta (interface do usuário)\n\n* O **Bolt** funciona como a “tela inicial” do sistema operacional.\n* Assim como no Windows você abre programas, aqui o usuário abre o **dashboard personalizado**, responde perguntas e vê resultados em tempo real.\n* É o ponto de interação humano → máquina.\n\n### 2. Camada de processamento (IA + automações)\n\n* O **n8n** é o “kernel” do sistema: recebe dados, orquestra fluxos e garante que cada peça (IA, APIs, banco de dados) execute a tarefa certa.\n* Ele conecta módulos externos como um sistema operacional conecta drivers.\n* Exemplo: você responde “tenho 100 leads/mês e fecho 2 vendas”. O n8n processa, calcula taxa de conversão, pede para o modelo de IA sugerir tarefas, e grava tudo.\n\n### 3. Camada de memória e persistência\n\n* O **Supabase** é o equivalente ao **sistema de arquivos** do OS.\n* Ele guarda usuários, credenciais, tarefas, escores e logs.\n* Assim como o SO mantém estrutura de diretórios e permissões, o Supabase mantém tabelas com RLS (Row Level Security) e garante que cada usuário só veja os próprios dados.\n\n### 4. Camada de visualização e feedback\n\n* O **dashboard** é a interface gráfica (GUI) do sistema operacional.\n* Mostra gráficos de radar (status), barras de progresso (recursos em uso), tarefas (processos em execução) e CTA (atalhos para próxima ação).\n* O cliente não precisa saber “o que acontece por baixo”. Ele só vê resultados prontos, como quem abre o Finder/Explorador de Arquivos.\n\n### 5. Camada de integrações externas\n\n* Webhooks, e-mails e workshops funcionam como “aplicativos instalados” dentro do sistema operacional.\n* Cada módulo adiciona uma funcionalidade — igual quando você instala programas num SO.\n\n---\n\n# Por que não é só “um agente”?\n\n* Um **agente de IA** é como um app isolado: faz uma função única (responder perguntas, escrever texto).\n* Um **sistema operacional de IA** combina **vários componentes (IA + automação + dados + interface)** em um ecossistema que:\n\n  * recebe entrada,\n  * processa,\n  * guarda estado,\n  * exibe saída,\n  * gera valor contínuo.\n\n---\n\n# Analogia simples\n\n* **Agente de IA = calculadora** (resolve uma conta quando você pede).\n* **Sistema operacional de IA = computador inteiro** (onde a calculadora é só um programa dentro de um ecossistema de interface, arquivos, automações, memória e integrações).\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13265,
+    "author": "INEMA",
+    "date": "2025-08-25T02:17:08+00:00",
+    "text": "=====================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13263,
+    "author": "INEMA",
+    "date": "2025-08-25T02:05:28+00:00",
+    "text": "Supabase simplifica tudo.\n\n---\n\n## 5) Monte o fluxo no n8n\n\nFluxo mínimo sugerido\n\n1. Webhook (gatilho do Bolt)\n2. Funcionamento\n   2.1) Set/Code: normalize payload;\n   2.2) LLM (OpenAI/Groq/Anthropic):\n   – gera análise curta por pergunta;\n   – gera resumo personalizado de 80–120 palavras;\n   – gera 5 a 8 tarefas com prioridade.\n   2.3) Supabase node: upsert em user\\_assessments e user\\_tasks.\n   2.4) Email/Notificação: envia resumo e link do dashboard.\n\nExemplo de mapeamento\n\n* Entrada: name, email, company, respostas (q1..q6), free\\_text.\n* Saída: q1..q6\\_score, overall\\_score, resumo\\_personalizado, tarefas\\[].\n\nPerguntas comuns\nQ: Agentes são necessários?\nA: Não. Use prompts determinísticos por etapa; é mais previsível em produção.\n\n---\n\n## 6) Ligue tudo ponta a ponta\n\n1. No n8n, clique Executar no Webhook.\n2. No Bolt, preencha o formulário e crie conta.\n3. Verifique no n8n se o payload chegou e se as etapas concluíram.\n4. Confira no Supabase a linha criada/atualizada.\n5. Atualize o dashboard e veja radar/barras mudarem.\n\nExemplo\nMude manualmente um score no Supabase e recarregue o dashboard para testar o update em tempo real.\n\nPerguntas comuns\nQ: O texto veio “engessado” (tipo “Certainly,”)?\nA: Ajuste o prompt do LLM com tom/voz desejados e proíba frases clichê.\n\n---\n\n## 7) Personalize tarefas e categorias\n\n* Gere tarefas com prioridade high/medium/low, cada uma com justificativa curta.\n* Agrupe por categoria do seu nicho (ex.: captação, follow-up, oferta, pricing).\n* No front, permita marcar done e atualize progresso.\n\nExemplo de saída do LLM (resumo)\nObjetivo nos próximos 30 dias: elevar lead→consulta de 30% para 50% com respostas em 15 min, confirmação automática e lembretes D-1/D-0.\n\nPerguntas comuns\nQ: Quantas tarefas por ciclo?\nA: 5 a 8 por sprint semanal mantêm foco e medem progresso.\n\n---\n\n## 8) Publique e escale\n\n* Duplique o app no Bolt por cliente (troque logo/cores).\n* Use variáveis de ambiente para credenciais e webhooks por cliente.\n* No n8n, salve um template e replique o workflow.\n\nExemplo de oferta\nSetup único + mensalidade. Camadas: Basic (relatórios), Pro (tarefas e e-mails), Elite (workshops e auditorias mensais).\n\nPerguntas comuns\nQ: Como lidar com 1000 clientes?\nA: Multi-tenant no Supabase, namespaces no n8n, filas por webhook, logs e alertas.\n\n---\n\n## 9) Funil e monetização\n\n* O dashboard é um funil vivo: CTA para workshop, agenda, WhatsApp, proposta.\n* Envie e-mails automáticos com “próxima melhor ação” com base no score.\n\nExemplo de CTAs no painel\nBotão Agendar Sessão, contador para workshop ao vivo, prova social e trilha de vídeos curtos por categoria.\n\nPerguntas comuns\nQ: Cobro por usuário ou por conta?\nA: Por conta + add-ons (usuários extras, integrações, relatórios avançados).\n\n---\n\n## 10) Segurança, LGPD e manutenção\n\n* Ative RLS no Supabase por auth\\_user\\_id.\n* Centralize logs em webhook\\_logs e configure alertas no n8n.\n* Tenha termos de uso e política de privacidade.\n* Versione prompts e workflows.\n\nExemplo de política RLS (ideia)\nPermitir select/update apenas quando auth.uid() = auth\\_user\\_id.\n\nPerguntas comuns\nQ: E se o webhook falhar?\nA: Reprocesso com retry/backoff e fila (ex.: armazenar payload no Supabase e marcar status).\n\n---\n\n## Checklist final de validação\n\n* [ ] Cadastro e login funcionam.\n* [ ] Webhook recebe e valida payload.\n* [ ] LLM gera resumo e tarefas coerentes.\n* [ ] Supabase atualiza linhas certas por auth\\_user\\_id.\n* [ ] Dashboard reflete mudanças sem erros.\n* [ ] CTA e e-mails disparam com os dados corretos.\n\nExemplos de perguntas prontas para colar no seu Super-Prompt\n\n* Qual gargalo comercial mais te atrapalha hoje?\n* Quantos leads semanais e qual % viram consulta?\n* Em quanto tempo sua equipe responde um novo lead?\n* Qual taxa de comparecimento nas consultas?\n* Qual seu ticket médio atual e alvo?\n* Descreva em 1 frase seu objetivo em 90 dias.\n\nRespostas às perguntas\n\n* Se os leads são bons mas poucas consultas, foque no tempo de resposta e confirmação.\n* Se há muitas consultas e poucas vendas, foque em oferta, prova social e follow-up.\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13262,
+    "author": "INEMA",
+    "date": "2025-08-25T02:05:28+00:00",
+    "text": "# Passo a passo: Sistema Operacional de IA com Bolt + Supabase + n8n\n\nResumo em uma linha\nTransforme um formulário de avaliação em um dashboard vivo e personalizado que atualiza textos, métricas e tarefas em tempo real, usando Bolt (front-end), Supabase (dados/usuários) e n8n (automação/IA).\n\n## 0) Pré-requisitos rápidos\n\n* Conta no Supabase (projeto criado).\n* Conta no n8n (self-host ou cloud) com credenciais de OpenAI/Groq/Anthropic (ou outro LLM).\n* Acesso ao Bolt.new (ou Lovable) para gerar o app.\n* Um domínio ou subdomínio opcional para publicar o dashboard.\n\nExemplo\nVocê tem um nicho “clínicas de estética”. As perguntas de avaliação mapeiam maturidade comercial e viram um plano de ação no painel.\n\nPerguntas comuns\nQ: Preciso saber programar?\nA: Não. O fluxo usa prompt no Bolt, nodes no n8n e assistentes prontos do Supabase.\n\n---\n\n## 1) Defina o avatar e um único problema central\n\n* Escolha 1 público, 1 dor principal e 1 resultado prometido.\n* Valide com 5 a 10 entrevistas rápidas o que eles pagariam para acompanhar semanalmente.\n\nExemplo\nAvatar: donos de clínicas. Problema: poucas consultas marcadas. Resultado: aumentar taxa lead→agenda.\n\nPerguntas comuns\nQ: Posso atacar vários problemas?\nA: Comece com um. Depois adicione módulos no mesmo OS (agendamento, follow-up, upsell).\n\n---\n\n## 2) Modele o questionário de avaliação\n\n* Liste 6 a 12 perguntas que expliquem o gargalo (múltipla escolha + 1 aberta).\n* Planeje escores por pergunta e um score geral.\n\nExemplo de 6 perguntas\n\n1. Quantos leads semanais?\n2. % que respondem em 1h?\n3. % que viram consulta?\n4. Taxa de comparecimento?\n5. Ticket médio?\n6. Onde você mais sente perda?\n\nPerguntas comuns\nQ: Quantas perguntas é ideal?\nA: 8 a 12 equilibram precisão e velocidade. Deixe 1 aberta para personalização do texto.\n\n---\n\n## 3) Prepare o Supabase\n\n1. Crie o projeto e ative Auth por e-mail/senha.\n2. Ative a extensão pgcrypto.\n3. Crie tabelas mínimas.\n\nSQL base (ajuste nomes conforme seu caso)\n\n```-- habilite UUID\ncreate extension if not exists \"pgcrypto\";\n\n-- usuários (perfil)\ncreate table if not exists user_profiles (\n  id uuid primary key default gen_random_uuid(),\n  auth_user_id uuid unique,\n  name text,\n  company text,\n  email text,\n  created_at timestamptz default now()\n);\n\n-- respostas e escores\ncreate table if not exists user_assessments (\n  id uuid primary key default gen_random_uuid(),\n  auth_user_id uuid references auth.users(id) on delete cascade,\n  q1_score int, q2_score int, q3_score int, q4_score int, q5_score int, q6_score int,\n  overall_score int,\n  free_text jsonb,\n  created_at timestamptz default now()\n);\n\n-- tarefas/ação\ncreate table if not exists user_tasks (\n  id uuid primary key default gen_random_uuid(),\n  auth_user_id uuid references auth.users(id) on delete cascade,\n  title text,\n  priority text check (priority in ('high','medium','low')),\n  done boolean default false,\n  created_at timestamptz default now()\n);\n\n-- logs de webhooks\ncreate table if not exists webhook_logs (\n  id uuid primary key default gen_random_uuid(),\n  payload jsonb,\n  created_at timestamptz default now()\n);```\n\nBoas práticas\n\n* Ative RLS e políticas por auth\\_user\\_id.\n* Crie views resumidas para o dashboard (ex.: progress\\_view).\n\nPerguntas comuns\nQ: Preciso calcular overall\\_score no banco?\nA: Pode calcular no n8n e gravar pronto ou usar uma view/função no Postgres.\n\n---\n\n## 4) Gere o app no Bolt\n\n1. Abra o Bolt.new e cole o Super-Prompt adaptado ao seu nicho.\n2. Substitua a Webhook URL do prompt pela URL do seu n8n.\n3. Cole suas perguntas na seção “Assessment Questions”.\n4. Conecte o projeto Supabase nas integrações do Bolt e aplique o schema.\n5. Ajuste branding (logo, cores, textos) e confirme:\n   a) ao enviar respostas, o app chama o webhook;\n   b) o app grava/atualiza dados no Supabase;\n   c) o dashboard puxa dados do Supabase.\n\nExemplo prático\nTroque o logo e confirme que o cadastro cria o usuário no Supabase e popula user\\_assessments com os campos do seu questionário.\n\nPerguntas comuns\nQ: Posso começar sem Supabase?\nA: Até dá, mas perde login, dados e escala.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13261,
+    "author": "INEMA",
+    "date": "2025-08-25T02:05:07+00:00",
+    "text": "=======================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13260,
+    "author": "INEMA",
+    "date": "2025-08-25T02:05:03+00:00",
+    "text": "próxima ação de negócios.\n\n# Quando usar\n\n* Você quer um produto padronizado com personalização real.\n* Precisa mostrar ganhos semanais com números e progresso.\n* Deseja reduzir trabalho manual de onboard e relatórios.\n\n# Quando não usar\n\n* Caso único e artesanal, sem repetição.\n* Cliente não tem dados, não quer responder perguntas e não usa painel.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13259,
+    "author": "INEMA",
+    "date": "2025-08-25T02:05:03+00:00",
+    "text": "O passo a passo mostra como transformar um questionário simples em um sistema operacional de IA: o usuário responde, o n8n processa com IA, o Supabase guarda e calcula, e o Bolt exibe um dashboard vivo com métricas, tarefas e CTA — tudo replicável para muitos clientes.\n\n# O que isso faz, exatamente\n\n1. Coleta estruturada\n   Você define perguntas de avaliação. O app (Bolt) coleta respostas, cria a conta do usuário e envia tudo via webhook.\n\n2. Processamento com IA e automação\n   O n8n recebe o payload, gera análises, textos personalizados e uma lista de tarefas priorizadas, calcula escores e devolve/atualiza no banco.\n\n3. Armazenamento e identidade\n   O Supabase autentica usuários, salva respostas, escores, tarefas e logs com segurança e RLS.\n\n4. Visualização e ação\n   O Bolt puxa os dados do Supabase e mostra gráfico de radar, barras de progresso, cards, vídeos por categoria e CTAs (ex.: agendar sessão, workshop com contador).\n\n5. Escala e recorrência\n   Você duplica o app para vários clientes, mudando só branding e perguntas. Cada cliente tem seu próprio dashboard e você cobra mensalidade.\n\n# Para que serve\n\n* Entregar valor contínuo e visível ao cliente (não é só “um agente” que some depois).\n* Padronizar um produto com personalização suficiente para parecer sob medida.\n* Criar um funil vivo com CTA dentro do próprio painel para upsell/serviços.\n\n# Principais peças do sistema\n\n* Bolt ou Lovable: front-end e geração do app/dashboards.\n* Supabase: autenticação, tabelas de avaliação, tarefas, escores, logs.\n* n8n: automação dos passos, prompts determinísticos, escrita/leitura no banco e e-mails.\n* LLM de sua escolha: geração dos resumos, tarefas e recomendações.\n\n# Fluxo de dados resumido\n\nUsuário responde no Bolt → Webhook do n8n recebe → n8n gera escores/textos/tarefas → n8n atualiza Supabase → Bolt lê Supabase e atualiza o dashboard em tempo real.\n\n# O que você ganha na prática\n\n* Produto repetível: um “OS de IA” que você pode vender para nichos diferentes.\n* Entrega clara: painel com métricas que mudam conforme o cliente executa tarefas.\n* Funil embutido: CTA para workshops, agendamentos e upgrades.\n\n# Exemplo rápido\n\nNicho: clínica de estética\nPerguntas: leads semanais, tempo de resposta, taxa de agendamento, comparecimento, ticket, onde perde mais.\nn8n: gera análise de gargalos e 6 tarefas para subir lead→consulta.\nSupabase: guarda escores e tarefas.\nBolt: mostra radar, progresso das tarefas e botão Agendar Sessão.\n\n# Perguntas comuns, com respostas\n\n1. Preciso programar?\n   Resposta: Não. Você usa prompt no Bolt, nós prontos no n8n e tabelas modelo no Supabase.\n\n2. Quantas perguntas devo usar?\n   Resposta: 8 a 12 dão bom equilíbrio. Inclua 1 pergunta aberta para personalização de texto.\n\n3. Por que não usar “agentes” complexos?\n   Resposta: Em produção, prompts determinísticos por etapa são mais previsíveis e fáceis de manter.\n\n4. Como isso vira dinheiro recorrente?\n   Resposta: Cobrança mensal pelo acesso ao dashboard, relatórios, workshops, integrações e melhorias contínuas.\n\n5. Consigo escalar para muitos clientes?\n   Resposta: Sim. Duplique o app, isole credenciais/variáveis por cliente e use RLS no Supabase.\n\n6. E se o webhook falhar?\n   Resposta: Logue payloads no Supabase, implemente retry/backoff no n8n e um status de reprocessamento.\n\n# Exemplos práticos por tópico\n\nColeta\nExemplo: formulário pergunta “Em quanto tempo você responde novos leads?”.\nResposta: O valor alimenta o score de velocidade de atendimento.\n\nProcessamento\nExemplo: prompt no n8n pede “5 tarefas de alto impacto para aumentar agendamentos em 14 dias”.\nResposta: Gera tarefas com prioridade high/medium/low e justificativas curtas.\n\nArmazenamento\nExemplo: tabela user\\_assessments com q1..q10\\_score e overall\\_score.\nResposta: O n8n grava o cálculo final e o histórico por data.\n\nVisualização\nExemplo: gráfico de radar mostra forças e fraquezas por categoria (captação, follow-up, oferta).\nResposta: Cliente enxerga onde focar na semana.\n\nCTA e funil\nExemplo: contador para workshop e botão Agendar Sessão.\nResposta: Converte uso do painel em",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13258,
+    "author": "INEMA",
+    "date": "2025-08-25T02:00:30+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13258_009.jpg"
+  },
+  {
+    "id": 13257,
+    "author": "INEMA",
+    "date": "2025-08-25T01:58:11+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13257_010.jpg"
+  },
+  {
+    "id": 13256,
+    "author": "INEMA",
+    "date": "2025-08-25T01:57:58+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13256_011.jpg"
+  },
+  {
+    "id": 13255,
+    "author": "INEMA",
+    "date": "2025-08-25T01:49:08+00:00",
+    "text": "==================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13254,
+    "author": "INEMA",
+    "date": "2025-08-25T01:49:03+00:00",
+    "text": "**“NÃO venda agentes de IA, venda sistemas operacionais de IA em vez disso (n8n, Bolt)”**:\n\n---\n\n### Ideia central\n\nO criador explica que **vender agentes de IA não é escalável nem sustentável**, porque eles são facilmente substituíveis e entregam pouco valor. A proposta é criar e vender **sistemas operacionais de IA** — estruturas completas que combinam automações, banco de dados, IA e dashboards — capazes de resolver problemas centrais de um negócio e gerar renda recorrente.\n\n---\n\n### Estrutura de um sistema operacional de IA\n\n1. **IA (o cérebro)** – faz transformações e análises.\n2. **Automação (n8n/Make)** – conecta os serviços e executa os fluxos.\n3. **Banco de dados (Supabase)** – armazena e organiza dados dos usuários.\n4. **Front-end/Dashboard (Bolt, Lovable, etc.)** – interface para o cliente, com design profissional, relatórios, gráficos e ações personalizadas.\n\n---\n\n### Como funciona na prática\n\n* O cliente responde perguntas de avaliação.\n* O sistema cria automaticamente um **dashboard personalizado** com gráficos, indicadores e tarefas específicas.\n* Os dados são enviados para o **n8n** e armazenados no **Supabase**.\n* O dashboard mostra progresso, pontos fortes e fracos, vídeos e recomendações.\n* O sistema integra **webhooks, e-mails, workshops ao vivo e CTAs**, funcionando como um **funil automatizado** de vendas.\n\n---\n\n### Estratégia de monetização\n\n1. **Escolher um avatar/cliente ideal**: precisa ter dinheiro, ser fácil de encontrar, atuar em serviços com alta margem e estar em um mercado em crescimento.\n2. **Resolver um único problema central** desse cliente, validando que ele quer pagar por isso.\n3. **Escalar dashboards personalizados** – uma vez construído, o sistema pode ser replicado para milhares de clientes, cada um com dados e relatórios únicos.\n4. **Oferecer recorrência** – dashboards + relatórios contínuos geram renda mensal previsível.\n\n---\n\n### Exemplos práticos\n\n* Transformar relatórios em PDF em **dashboards interativos** com gráficos, vídeos e planos de ação.\n* Usar **Supabase + n8n + Bolt** para automatizar a coleta de dados, criação de dashboards e envio de e-mails personalizados.\n* Criar workshops e integrações que funcionam como **CTA automatizado** para upsell.\n\n---\n\n### Conclusão\n\nO vídeo mostra que o caminho lucrativo não é vender agentes isolados, mas **sistemas operacionais de IA**, que entregam valor contínuo e são difíceis de substituir. Isso permite **automatizar funis, gerar dashboards dinâmicos e escalar para milhares de clientes** com pouco esforço adicional.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13252,
+    "author": "INEMA",
+    "date": "2025-08-25T01:43:00+00:00",
+    "text": "https://www.youtube.com/watch?v=_HOAErmqmlQ",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 13251,
+    "author": "INEMA",
+    "date": "2025-08-25T01:42:32+00:00",
+    "text": "====================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13250,
+    "author": "INEMA",
+    "date": "2025-08-25T01:42:28+00:00",
+    "text": "Esse **Super-Prompt do Bolt** é um modelo pronto para gerar um **dashboard profissional e totalmente automatizado**, que se adapta dinamicamente às perguntas que você definir.\n\n### O que ele faz em resumo:\n\n1. **Cria uma aplicação web completa** (React + TypeScript + Tailwind + Supabase) pronta para produção.\n2. **Gera automaticamente o banco de dados** no Supabase, criando colunas e tabelas de acordo com as perguntas que você fornecer.\n3. **Constrói um dashboard dinâmico e responsivo**, com gráficos de radar, barras de progresso, cards de desempenho e sistema de tarefas.\n4. **Personaliza a experiência de cada usuário**: autenticação, perfil, resultados individuais e atualização em tempo real.\n5. **Integrações externas**: Webhooks (ex.: n8n), vídeos do YouTube por categoria, links sociais e promoção de workshops com contagem regressiva.\n6. **Design premium**: estética nível Apple, modo escuro/claro, animações suaves, responsivo para mobile.\n7. **Fluxo completo do usuário**: cadastro + avaliação → resultados imediatos no dashboard → dados enviados via webhook → acompanhamento em tempo real.\n\n### Em uma frase:\n\nEsse prompt cria um **sistema operacional de IA para dashboards personalizados**, onde cada cliente/usuário tem um painel único, com dados, tarefas, vídeos e insights adaptados às suas respostas.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13249,
+    "author": "INEMA",
+    "date": "2025-08-25T01:42:22+00:00",
+    "text": "=================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13248,
+    "author": "INEMA",
+    "date": "2025-08-25T01:42:20+00:00",
+    "text": "==================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13247,
+    "author": "INEMA",
+    "date": "2025-08-25T01:36:17+00:00",
+    "text": "CSS\n* Supabase (auth, DB, real-time)\n* Lucide React (ícones)\n* Vite (dev server)\n\n📁 Organização de Arquivos:\n\n* Estrutura modular (menos de 200 linhas por arquivo)\n* Separação clara de responsabilidades\n* Interfaces TypeScript para todos os dados\n\n🎯 Fluxo de Experiência do Usuário:\n\n1. Landing page com formulário de inscrição/avaliação\n2. Cadastro + avaliação integrados (suas perguntas personalizadas)\n3. Acesso imediato ao dashboard com resultados personalizados\n4. Webhook dispara dados do usuário para seu endpoint\n5. Atualizações em tempo real quando seu serviço responde\n6. Gestão de tarefas e acompanhamento de progresso\n7. Experiência otimizada para mobile\n\n---\n\n### Seção de Configuração\n\nWebhook URL:\n`https://clientee.app.n8n.cloud/webhook-test/9e4dddbf-0f24-40d8-a200-c2b002845a24`\n\nSuas Perguntas de Avaliação (exemplo):\n\n* O que mais te interessa em trading?\n* O que está te impedindo de operar (ou ser consistente se já opera)?\n* Qual porcentagem de lucro anual tornaria o trading vantajoso para você?\n* Você se vê mais como trader de curto prazo ou investidor de longo prazo?\n* Quanto capital se sentiria confortável em começar?\n* Qual o maior erro que sente que já cometeu no trading (ou teme cometer)?\n* Se tivesse a orientação certa, qual seria seu objetivo nº 1 nos próximos 12 meses?\n\n---\n\n### O que você recebe – Sistema Completo\n\n✅ Dashboard profissional (baseado em KPI existente)\n✅ Banco de dados auto-adaptável\n✅ Interface responsiva para mobile\n✅ Dark/light mode\n✅ Sistema de gestão de tarefas\n✅ Atualizações em tempo real + Webhook\n✅ Gráficos de radar escaláveis\n✅ Autenticação e perfis de usuário\n✅ Promoção de workshops com countdown\n✅ Integração com redes sociais\n✅ Vídeos do YouTube por categoria\n✅ Design premium nível Apple\n✅ Código pronto para produção",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13246,
+    "author": "INEMA",
+    "date": "2025-08-25T01:36:16+00:00",
+    "text": "🦸♂ Super-Prompt do Bolt\n\nConstrua um Dashboard Completo – Auto-Adaptável às Suas Perguntas\n\nCrie uma aplicação web pronta para produção usando React, TypeScript, Tailwind CSS e Supabase que replique toda a funcionalidade e design do dashboard de KPIs existente, mas que se adapte dinamicamente a qualquer número de perguntas de avaliação que você fornecer.\n\n### Conjunto Completo de Funcionalidades:\n\n🎨 Design & UI (Estética nível Apple):\n\n* Alternância entre modo escuro/claro com transições suaves\n* Barra lateral profissional com logo, perfil do usuário e navegação\n* Gráfico de radar para visualização de pontuações (auto-adapta ao número de perguntas)\n* Design responsivo para mobile com barra lateral colapsável\n* Fundos com gradiente e efeitos visuais premium\n* Animações suaves e microinterações em todo o sistema\n* Tipografia profissional e espaçamento consistente\n* Estados de hover e elementos interativos\n* Estados de carregamento e transições suaves\n\n🏗 Estrutura de Layout:\n\n* Sidebar esquerda: logo, perfil do usuário, visão geral de forças, navegação por categoria, links sociais, promoção de workshop\n* Área principal: listas dinâmicas de tarefas, resumos de desempenho, vídeos integrados, acompanhamento de progresso\n* Layout mobile: sidebar colapsável e interface amigável ao toque\n* Cabeçalho: menu do usuário, alternância de modo escuro, branding profissional\n\n📊 Componentes do Dashboard:\n\n* Card de visão geral de forças com gráfico de radar\n* Navegação por categoria (gerada dinamicamente pelas perguntas)\n* Sistema de gestão de tarefas com prioridades e acompanhamento de conclusão\n* Resumo de desempenho mostrando pontos fortes e áreas de crescimento\n* Integração de vídeos do YouTube por categoria\n* Rastreamento de progresso com percentuais de conclusão\n* Seções expansíveis para mais detalhes\n\n🔐 Autenticação e Gestão de Usuários:\n\n* Supabase Auth com cadastro/login via e-mail e senha\n* Gestão de perfil com avatar e informações da empresa\n* Persistência de sessão e logout seguro\n* Menu do usuário com configurações e preferências\n\n📱 Experiência Mobile:\n\n* Interface otimizada para toque\n* Sidebar colapsável que desliza\n* Formulários responsivos e otimizados\n* Gráficos de radar responsivos\n* Suporte a gestos de swipe\n\n🎯 Sistema de Gestão de Tarefas:\n\n* Organização por prioridade (alta, média, baixa)\n* Acompanhamento de conclusão com checkboxes\n* Detalhes expansíveis das tarefas com explicações\n* Filtro por categorias\n* Indicadores de progresso e estatísticas de conclusão\n* Estimativa de tempo por tarefa\n\n📈 Visualização de Dados:\n\n* Gráficos de radar interativos\n* Barras de progresso animadas\n* Cards de pontuação com cores para níveis de desempenho\n* Indicadores de tendência e sugestões de melhoria\n* Hierarquia visual bem definida\n\n🔗 Integrações:\n\n* Embeds de YouTube para cada categoria\n* Links para redes sociais (YouTube, Instagram, TikTok, Twitter, site)\n* Links para workshops com contadores regressivos\n* Integração com Webhooks\n\n⚡ Funcionalidades em Tempo Real:\n\n* Contador regressivo ao vivo para workshops\n* Atualizações de disponibilidade em tempo real (simuladas)\n* Cálculos de pontuação instantâneos\n* Acompanhamento ao vivo conforme tarefas são concluídas\n\n🎨 Elementos de Branding:\n\n* Integração do logo DENT (versões claro/escuro)\n* Esquema de cores profissional e consistente\n* Banner de promoção de workshop com urgência\n* Prova social (avaliações 5 estrelas, depoimentos)\n\n---\n\n### Esquema de Banco de Dados Auto-Gerado\n\nCriação dinâmica de colunas conforme suas perguntas:\n\n```CREATE TABLE user_assessments (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,\n  -- AUTO-GERADO: question_1_score, question_2_score, etc.\n  -- AUTO-CALCULADO: overall_score baseado no número de perguntas\n  created_at timestamptz DEFAULT now()\n);```\n\n* Estrutura multi-tabelas completa com relacionamentos\n* Inclui: user\\_profiles, user\\_tasks, webhook\\_logs\n* Políticas de segurança (RLS) implementadas\n\n---\n\n### Requisitos Técnicos\n\n🛠 Stack:\n\n* React 18 + TypeScript\n* Tailwind",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13245,
+    "author": "INEMA",
+    "date": "2025-08-25T01:35:10+00:00",
+    "text": "======================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13244,
+    "author": "INEMA",
+    "date": "2025-08-25T01:35:08+00:00",
+    "text": "j101. Sistema de Automação de IA\n\n\nNÃO venda agentes de IA, venda sistemas operacionais de IA em vez disso (n8n, Bolt)\n\nNão venda agentes de IA; venda sistemas operacionais de IA. Neste vídeo, eu mostro como você pode conectar o Bolt com o n8n e os passos exatos para ir de um completo iniciante até realmente monetizar sistemas operacionais de IA em renda mensal.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13243,
+    "author": "INEMA",
+    "date": "2025-08-25T01:33:51+00:00",
+    "text": "==============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13242,
+    "author": "INEMA",
+    "date": "2025-08-25T01:33:15+00:00",
+    "text": "Não venda agentes de IA, venda sistemas operacionais de IA em vez disso\n\nEstá NO AR 🥳\nVocê não está preparado.\n\nNeste vídeo eu mostro como construir aplicativos operacionais de IA ILIMITADOS em escala.\n\nComo funciona...\n🙋 O cliente responde 20 perguntas (em um aplicativo incrível)\n🧑‍💻 Uma conta de usuário e senha são criadas\n👾 Os dados são enviados para o N8N e um plano de ação personalizado é criado\n🤩 Esse texto e números personalizados atualizam dinamicamente os painéis dos usuários\n💸 O painel agrega um valor insano e promove sua próxima CTA\n\nSistemas operacionais de IA – a maior reclamação é fazer os dados aparecerem.\nIsso resolve COMPLETAMENTE.\n\nVocê pode implementar isso para mil clientes, e cada um desses clientes pode ter um painel com dados e textos totalmente diferentes.\n\nEle se conecta diretamente ao Supabase, e eu vou mostrar como atualizar isso no n8n.\n\nSeus recursos exclusivos estão sempre disponíveis na sua sala de aula 📚\nIsso inclui seu prompt Bolt de disparo único (horas de tentativa e erro em um clique).",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13241,
+    "author": "INEMA",
+    "date": "2025-08-25T01:32:25+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Bolt Super-Prompt.pdf"
+  },
+  {
+    "id": 13240,
+    "author": "INEMA",
+    "date": "2025-08-25T01:32:04+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13240_026.jpg"
+  },
+  {
+    "id": 13239,
+    "author": "INEMA",
+    "date": "2025-08-25T01:30:03+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "🦸♂️ AI Automation System.json"
+  },
+  {
+    "id": 13238,
+    "author": "INEMA",
+    "date": "2025-08-25T01:29:58+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13238_028.jpg"
+  },
+  {
+    "id": 13237,
+    "author": "INEMA",
+    "date": "2025-08-25T01:29:09+00:00",
+    "text": "**j101- AI Automation System**",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13236,
+    "author": "INEMA",
+    "date": "2025-08-25T01:29:05+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13235,
+    "author": "INEMA",
+    "date": "2025-08-25T01:29:05+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13234,
+    "author": "INEMA",
+    "date": "2025-08-25T01:29:04+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13233,
+    "author": "INEMA",
+    "date": "2025-08-25T01:29:04+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13232,
+    "author": "INEMA",
+    "date": "2025-08-25T01:29:04+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13231,
+    "author": "INEMA",
+    "date": "2025-08-25T01:29:03+00:00",
+    "text": "https://chatgpt.com/c/68abbbb1-3104-8323-a4eb-95f114bb21ea",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 13230,
+    "author": "INEMA",
+    "date": "2025-08-25T01:29:03+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13229,
+    "author": "INEMA",
+    "date": "2025-08-25T01:28:57+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

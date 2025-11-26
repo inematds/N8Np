@@ -1,0 +1,172 @@
+[
+  {
+    "id": 12543,
+    "author": "INEMA",
+    "date": "2025-08-11T18:55:06+00:00",
+    "text": "dublado",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12542,
+    "author": "INEMA",
+    "date": "2025-08-11T18:55:02+00:00",
+    "text": "https://www.youtube.com/watch?v=qTVFGTup5qM",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 12540,
+    "author": "INEMA",
+    "date": "2025-08-11T18:51:58+00:00",
+    "text": "### 🚀 HACKS GERAIS\n\n1. **Use GPT-5 para preencher campos automaticamente**\n\n   * Em vez de mapear campos manualmente, clique na **estrela (✨)** nas configurações e deixe o GPT-5 preencher título, texto, datas, destinatários e muito mais.\n\n2. **Combine múltiplos agentes em uma única mensagem**\n\n   * Exemplo: “Verifique meu CRM e agende uma reunião com o João às 14h de amanhã.”\n   * O sistema identifica que deve usar o agente de CRM + agente de calendário.\n\n3. **Use variáveis do Telegram diretamente nos nós**\n\n   * Ex: `${$json[\"message\"][\"chat\"][\"id\"]}` para o `chat ID`\n   * Permite respostas automáticas específicas por usuário.\n\n4. **Use o mesmo fluxo para diferentes plataformas de entrada**\n\n   * Substitua o `Telegram Trigger` por `Slack`, `WhatsApp (via API)`, ou `Webhook` para usar o mesmo motor de automação.\n\n5. **Crie um painel com status das execuções**\n\n   * Use `Notion` ou `Google Sheets` para logar cada interação com data, tarefa, status, e resposta da IA.\n\n---\n\n### 🧠 HACKS DE PROMPTING\n\n6. **Use system prompts claros e com função definida**\n\n   * Exemplo: `\"Você é um assistente de e-mail responsável por criar, responder e enviar mensagens via Gmail.\"`\n   * Isso ajuda o GPT-5 a agir com mais precisão.\n\n7. **Oriente o modelo com exemplos de resposta**\n\n   * Adicione um bloco no system message com 2–3 exemplos de entradas e saídas esperadas.\n   * Aumenta a consistência nas ações do modelo.\n\n8. **Adicione regras no prompt**\n\n   * Exemplo: “Nunca envie e-mail sem assunto. Sempre use linguagem formal. Sempre agende eventos com 1h de antecedência mínima.”\n   * Isso cria um padrão de comportamento da IA.\n\n---\n\n### 🔧 HACKS DE CONFIGURAÇÃO\n\n9. **Use `context window = 20` para manter conversas curtas e rápidas**\n\n   * Ideal para interações com comandos diretos e sem memórias extensas.\n\n10. **Organize os agentes com nomes claros**\n\n* Ex: `email_agent`, `calendar_agent`, `crm_agent`\n* Facilita o reuso e manutenção futura do fluxo.\n\n11. **Use `IF nodes` para condicionar a resposta ou executar múltiplos agentes**\n\n* Ex: se a mensagem contiver “e-mail”, ative o Email Agent; se contiver “agenda”, ative o Calendar Agent.\n\n12. **Salve o histórico em um banco (Airtable, Supabase, Notion, etc.)**\n\n* Permite análise posterior, geração de dashboards e logs de desempenho.\n\n---\n\n### 💡 HACKS AVANÇADOS\n\n13. **Implemente fallback para GPT-4 ou Claude**\n\n* Caso o GPT-5 esteja lento ou instável, use roteamento condicional para outro modelo.\n\n14. **Adicione verificação de contexto antes da execução**\n\n* Ex: “Você já enviou este e-mail hoje. Deseja repetir?”\n* Isso evita duplicações e melhora a experiência do usuário.\n\n15. **Transforme os fluxos em uma API REST para outros apps**\n\n* Exporte o fluxo com `Webhook` e consuma via sites, apps mobile ou outros bots.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12539,
+    "author": "INEMA",
+    "date": "2025-08-11T18:50:25+00:00",
+    "text": "=======================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12538,
+    "author": "INEMA",
+    "date": "2025-08-11T18:50:22+00:00",
+    "text": "Aqui está um **passo a passo completo** para montar o *AI Agent Army* no **n8n** com o **GPT-5**, baseado no vídeo. Dividi em blocos organizados por etapas principais e agentes envolvidos.\n\n---\n\n### ⚙️ ETAPA 1 – CONFIGURAÇÃO INICIAL DO n8n\n\n1. **Crie um bot no Telegram**\n\n   * Acesse o [BotFather](https://t.me/BotFather)\n   * Crie um novo bot e copie o **Token de Acesso (API Token)**\n\n2. **Adicione o nó `Telegram Trigger` no n8n**\n\n   * Conecte com o token do seu bot\n   * Tipo de recurso: `Message`\n   * Operação: `On New Message`\n\n3. **Adicione o nó `Edit Fields`**\n\n   * Captura e formata o input do usuário\n   * Campo: `chat input`\n   * Tipo: `text`\n\n4. **Configure o nó `AI Agent`**\n\n   * Modelo: `GPT-5 (via OpenAI)`\n   * API Key da OpenAI\n   * Mensagem do sistema define o papel do agente (ex: \"Você é um assistente de e-mail, agende, envie e responda mensagens.\")\n   * Entrada do usuário conectada ao prompt\n   * Habilite **tools** e defina as ferramentas por agente\n\n5. **Adicione o nó `Telegram Send Message`**\n\n   * Conecta ao mesmo bot\n   * Recurso: `Message`\n   * Operação: `Send Message`\n   * Chat ID: vindo do nó de trigger\n   * Texto: resposta do GPT-5\n\n---\n\n### 🧠 ETAPA 2 – CONFIGURAÇÃO DOS AGENTES (SUBAGENTES)\n\n#### 1. **Email Agent (Gmail)**\n\n* Função: Redigir, enviar, responder e deletar e-mails\n* Integração: Google Gmail API\n* Ações:\n\n  * `Create Draft`\n  * `Send Email`\n  * `Get Messages`\n* Parâmetros como assunto, corpo e destinatário definidos **automaticamente pelo GPT-5**\n\n#### 2. **Calendar Agent (Google Calendar)**\n\n* Função: Criar, deletar, atualizar e listar eventos\n* Integração: Google Calendar\n* Campos:\n\n  * `start time`, `end time`, `description`, `summary`\n  * Todos preenchidos automaticamente pelo modelo\n* Permite agendamentos com base em linguagem natural\n\n#### 3. **Database Agent (Airtable)**\n\n* Função: Buscar, criar e atualizar registros\n* Integração: Airtable\n* Campos: nome, e-mail, empresa, etc.\n* Operações:\n\n  * `Search Record`\n  * `Create or Update Record`\n* Tokens e tabelas da Airtable devem estar configurados\n\n#### 4. **CRM Agent (Sales Tracker - Airtable)**\n\n* Função: Gerenciar oportunidades e leads\n* Campos: nome da oportunidade, status, prioridade, valor, prazo\n* Ações:\n\n  * Atualizar status ou prioridade de leads\n  * Automatizar mudanças de estágio no funil\n\n#### 5. **Social Media Agent**\n\n* Função: Postar em redes sociais\n* Integrações:\n\n  * LinkedIn: criar post como pessoa ou empresa\n  * Twitter/X: criar tweet\n  * Threads (via Graph API do Facebook)\n* Campos como texto da publicação definidos automaticamente\n\n#### 6. **Proposal Agent (Google Docs)**\n\n* Função: Criar e atualizar propostas em documentos\n* Integração: Google Docs\n* Ações:\n\n  * `Create Document`\n  * `Update Document`\n* Define título, conteúdo, posição de inserção via IA\n\n#### 7. **Web Research Agent (Pesquisa Online)**\n\n* Função: Buscar informações externas\n* Ferramentas usadas:\n\n  * Perplexity\n  * Google Search\n  * YouTube\n* Não foi detalhado no vídeo, mas funciona com o GPT-5 consultando essas fontes\n\n---\n\n### 🧩 ETAPA 3 – FLUXO DE EXECUÇÃO (EXEMPLO)\n\n1. Usuário envia mensagem no Telegram (ex: “Marcar reunião com João amanhã às 14h”)\n2. `Telegram Trigger` capta a mensagem\n3. `Edit Fields` estrutura o conteúdo\n4. `AI Agent (GPT-5)` interpreta e aciona o agente necessário (ex: `Calendar Agent`)\n5. `Calendar Agent` agenda o evento no Google Calendar\n6. `Telegram Send Message` responde ao usuário com confirmação\n\n---\n\n### 📁 EXTRAS\n\n* Todos os agentes utilizam memória simples\n* O template **pode ser baixado gratuitamente**\n* A maioria dos parâmetros (como horários, e-mails, campos) são definidos pelo GPT-5 automaticamente\n* Pode-se adicionar outras ferramentas ao fluxo, como Notion, Slack, etc.\n\n---\n\n### 📌 Exemplo de tarefas que você pode enviar ao Telegram:\n\n* “Crie um rascunho de e-mail para reunião na sexta às 14h”\n* “Agende um evento no calendário amanhã às 10h”\n* “Publique um post no LinkedIn com este conteúdo”\n* “Atualize o status da oportunidade XYZ para ‘Em negociação’”",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 12537,
+    "author": "INEMA",
+    "date": "2025-08-11T18:50:05+00:00",
+    "text": "===========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12536,
+    "author": "INEMA",
+    "date": "2025-08-11T18:49:07+00:00",
+    "text": "Como usar o GPT-5 para montar um “exército” de agentes de IA integrados no n8n, com um template gratuito. Ele faz demonstrações e depois explica a configuração de cada agente.\n\nPrincipais pontos:\n\n  * GPT-5 usado para responder mensagens, criar e-mails no Gmail, agendar eventos no Google Calendar e executar múltiplas tarefas em sequência (buscar dados no CRM, criar e-mail, agendar reunião etc.).\n\n* **Configuração no n8n**\n\n  * Gatilho inicial via Telegram Bot (configurado pelo BotFather).\n  * Nó de edição de campo para capturar o input do chat.\n  * Nó AI Agent configurado com GPT-5, prompts para orientar o papel do agente e ferramentas necessárias.\n  * Nó final do Telegram para enviar a resposta ao usuário.\n\n* **Agentes criados no template**\n\n  1. **Email Agent** – integra com Gmail para criar, enviar, responder e gerenciar e-mails.\n  2. **Calendar Agent** – gerencia Google Calendar (criar, atualizar e deletar eventos).\n  3. **Database Agent** – conecta ao Airtable para buscar, criar ou atualizar contatos e registros.\n  4. **Social Media Agent** – publica em LinkedIn, Twitter/X e Threads (via Facebook Graph API).\n  5. **Proposal Agent** – cria e atualiza documentos no Google Docs para propostas comerciais.\n  6. **CRM Agent** – gerencia oportunidades no CRM do Airtable, atualizando status, prioridade e informações.\n  7. **Web Research Agent** – realiza pesquisas usando GPT-5 com ferramentas como Perplexity, Google Maps e YouTube Search (explicado apenas de forma superficial).\n\n* **Observações finais**\n\n  * O template é personalizável e gratuito.\n  * Apesar de todo o sistema usar GPT-5, o autor não percebeu grande diferença prática entre GPT-5 e outros modelos para essa aplicação específica.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12535,
+    "author": "INEMA",
+    "date": "2025-08-11T18:45:05+00:00",
+    "text": "**Crie seu próprio exército de agentes de IA com OpenAI GPT-5**\n\nGuia passo a passo sobre como criar um exército de agentes de IA usando o GPT-5, completo com agentes baseados em funções que trabalham juntos, repassam tarefas entre si e lidam com projetos complexos mais rápido do que qualquer agente sozinho.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12534,
+    "author": "INEMA",
+    "date": "2025-08-11T18:44:32+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Tutorial 35 - GPT-5 AI Agent Army.json"
+  },
+  {
+    "id": 12533,
+    "author": "INEMA",
+    "date": "2025-08-11T18:44:27+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_12533_010.jpg"
+  },
+  {
+    "id": 12532,
+    "author": "INEMA",
+    "date": "2025-08-11T18:42:50+00:00",
+    "text": "al48 - Exercito de Agentes GPT5",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12531,
+    "author": "INEMA",
+    "date": "2025-08-11T18:42:46+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12530,
+    "author": "INEMA",
+    "date": "2025-08-11T18:42:44+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12529,
+    "author": "INEMA",
+    "date": "2025-08-11T18:42:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12528,
+    "author": "INEMA",
+    "date": "2025-08-11T18:42:41+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12527,
+    "author": "INEMA",
+    "date": "2025-08-11T18:42:40+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12526,
+    "author": "INEMA",
+    "date": "2025-08-11T18:42:38+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12525,
+    "author": "INEMA",
+    "date": "2025-08-11T18:42:37+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12524,
+    "author": "INEMA",
+    "date": "2025-08-11T18:42:35+00:00",
+    "text": "https://chatgpt.com/c/689a3ace-b90c-8325-b059-c90d693b6cf4?model=gpt-4o",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 12523,
+    "author": "INEMA",
+    "date": "2025-08-11T18:42:33+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12522,
+    "author": "INEMA",
+    "date": "2025-08-11T18:42:27+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

@@ -1,0 +1,373 @@
+TOPICO 8979
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-06-08 04:03:20+00:00
+
+Total de mensagens: 17
+Midias baixadas: 4
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-06-08T04:09:18+00:00
+Texto:
+Passo a Passo
+
+### 1. **Pré-requisitos**
+
+* Conta no **n8n** (cloud ou local)
+* Conta no **Airtable** com uma base criada
+* Workflow com agente (ex: ChatGPT Agent)
+
+---
+
+### 2. **Criar Tabela no Airtable**
+
+Crie uma base chamada `Registro e Gastos` com a tabela `Projetos` contendo os seguintes campos:
+
+* `Data e Hora`
+* `Input`
+* `Output`
+* `Mensagem de Erro`
+* `Ações`
+* `Tokens`
+* `Custo Total`
+* `Nome da Automação`
+* `Subagente` (opcional)
+
+---
+
+### 3. **No n8n, configure seu agente**
+
+* Use o nó **ChatGPT Agent (ou outro agente)**
+* Vá em **Options > Return Intermediate Steps = TRUE**
+
+---
+
+### 4. **Adicionar módulo de código (Function Node)**
+
+* Adicione um nó **Function** após a execução do agente
+* Use `JSON.stringify` para transformar os dados:
+
+```return [{
+  json: {
+    input: $json["input"],
+    output: $json["output"],
+    error: $json["error"] || null,
+    actions: JSON.stringify($json["intermediateSteps"], null, 2),
+    tokens: $json["tokenUsage"]?.totalTokens || 0,
+    custo: $json["tokenUsage"]?.totalCost || 0,
+    nomeAutomacao: $workflow.name,
+    dataHora: new Date().toLocaleString("pt-BR"),
+  }
+}];```
+
+---
+
+### 5. **Adicionar módulo Airtable (Create Record)**
+
+* Configure o módulo **Airtable > Create Record**
+* Selecione a base `Registro e Gastos`
+* Mapeie os campos do Function Node:
+
+| Airtable          | n8n (Function Output) |
+| ----------------- | --------------------- |
+| Data e Hora       | `dataHora`            |
+| Input             | `input`               |
+| Output            | `output`              |
+| Mensagem de Erro  | `error`               |
+| Ações             | `actions`             |
+| Tokens            | `tokens`              |
+| Custo Total       | `custo`               |
+| Nome da Automação | `nomeAutomacao`       |
+
+---
+
+### 6. **Tratamento de erros**
+
+* No nó do agente, ative a opção **Continue on Fail = TRUE**
+* Crie uma rota de erro (via conexão inferior do nó) e duplique o Function + Create Record
+* No Function de erro, use `output = "Erro"` e registre `mensagem de erro` do agente
+
+---
+
+### 7. **Testar fluxo**
+
+* Execute o agente com uma pergunta
+* Verifique os dados sendo salvos no Airtable
+* Simule erro para testar o caminho de erro
+
+---
+
+### 8. **Visualizações no Airtable**
+
+Crie “views” para análise:
+
+* Por Data
+* Por Agente/Subagente
+* Por Maior Gasto
+* Por Ocorrência de Erros
+
+---
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-06-08T04:08:48+00:00
+Texto:
+==================
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-06-08T04:08:45+00:00
+Texto:
+Sistema completo para rastrear gastos e ações de agentes de IA com Airtable**
+
+**Objetivo principal:**
+Criar um sistema de rastreamento que registre automaticamente cada interação de um agente de IA, incluindo: input, output, erros, ações executadas, tokens consumidos e custo por execução — tudo salvo no **Airtable** (ou Google Sheets).
+
+---
+
+**Componentes e Etapas do Sistema:**
+
+1. **Módulos essenciais configurados no agente (n8n):**
+
+   * Ativação da opção **Return Intermediate Steps**.
+   * Captura de input/output, erros, ferramentas utilizadas, tokens e custo.
+
+2. **Transformação dos dados:**
+
+   * Uso de `JSON.stringify` para transformar logs em texto estruturado.
+   * Criação de campos como: nome do projeto, data/hora, input, output, erros, ações, tokens, custo e nome da automação.
+
+3. **Envio para Airtable:**
+
+   * Mapeamento dos campos em um módulo “Create a Record”.
+   * Criação de visualizações por data, agente, subagente e custos.
+
+---
+
+**Exemplos práticos demonstrados:**
+
+* Execução de agente simples com:
+
+  * Busca de contato
+  * Criação de evento no calendário
+  * Criação de rascunho de e-mail
+* Execução de superagente com subagentes (ex: Gmail, Google Calendar)
+
+  * Separação dos registros de gastos e erros por subagente
+  * Registro automático mesmo quando há erro (ex: modelo indisponível)
+
+---
+
+**Casos úteis:**
+
+* Controle de gastos em projetos com IA
+* Prova de entregas para clientes
+* Diagnóstico de erros recorrentes
+* Otimização de uso de tokens e ferramentas
+* Visualizações personalizadas por data, automação ou agente
+
+---
+
+**Conclusão:**
+
+* Ferramenta essencial para quem trabalha com automações e agentes de IA.
+* Fácil de replicar, personalizável e poderosa para quem quer transparência e controle.
+* Código e estrutura fornecidos prontos para copiar e colar.
+* Pode ser integrado com Telegram, WhatsApp, Instagram e outros canais.
+
+---
+
+**Resumo visual:**
+
+* **Ferramentas:** n8n + Airtable
+* **Uso:** Logs de IA, análise de gastos, controle de subagentes
+* **Público-alvo:** Freelancers, agências, equipes que prestam serviços com IA
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-06-08T04:07:09+00:00
+Texto:
+============
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-06-08T04:07:06+00:00
+Texto:
+💸 21. Controle os gastos dos seus agentes de IA
+
+Aprendemos a implementar um sistema que registra cada interação do seu agente de inteligência artificial, incluindo o input, o output, as ações realizadas, os tokens consumidos e o custo total. Tudo isso é armazenado em uma base visual como o Airtable (ou Google Sheets) para analisar gastos, detectar erros e entender como os agentes se comportam.
+
+🧩 O que configuramos?
+
+* 4 módulos principais que extraem informações de cada execução
+* Um código personalizado que transforma os logs em um formato legível
+* Uma tabela no Airtable que registra:
+
+  * Data e hora
+  * Input do usuário
+  * Output do agente
+  * Mensagens de erro (se houver)
+  * Ações executadas
+  * Tokens consumidos
+  * Custo total
+  * Nome da automação
+
+⚙️ Requisitos técnicos
+
+* Ativamos a opção “Return Intermediate Steps” no módulo do agente para registrar as ações intermediárias
+* Utilizamos a função `JSON.stringify` para transformar os logs em texto legível e organizado
+* Configuramos o módulo “Create a Record” no Airtable, mapeando cada campo relevante
+
+📊 Exemplos ao vivo
+
+* Um agente é executado para:
+
+  * Buscar um contato
+  * Criar um evento no calendário
+  * Criar um rascunho de e-mail
+* Todas as ações e custos são automaticamente registrados no Airtable
+* Testes com erros também são realizados: se o modelo estiver indisponível, o sistema detecta e registra como erro sem parar a automação
+* Os mesmos módulos são aplicados a um superagente com subagentes (como Gmail e Google Calendar), permitindo o rastreamento separado de gastos e erros por subagente
+
+🔎 Visualização de dados
+Podem ser geradas visualizações por:
+
+* Agente
+* Data
+* Custo
+* Subagente
+  Isso permite, por exemplo, ver qual agente consome mais, qual dia tem mais atividade ou quanto custa cada processo
+
+💡 Aplicações práticas
+
+* Ideal para uso próprio ou como valor agregado para clientes
+* Permite detectar gastos excessivos, erros recorrentes ou comportamentos inesperados do agente
+* Muito útil para demonstrar com dados reais o valor entregue pela IA
+
+
+🧠 Conclusão
+Este sistema é essencial para quem deseja trabalhar com agentes de IA de forma profissional. Oferece transparência, controle e melhoria contínua. É fácil de replicar, visualmente poderoso e aplicável a qualquer canal: Telegram, WhatsApp, Instagram, entre outros.
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-06-08T04:06:17+00:00
+Texto:
+===============
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-06-08T04:06:14+00:00
+Texto:
+📊 Controle total dos seus agentes de IA (gastos, erros e mais)
+
+🚀 Quer saber exatamente o que seu agente de IA está fazendo, quanto custa cada interação e ter tudo sob controle?
+
+O que você vai conquistar com isso? 👇
+✅ Armazenar automaticamente cada conversa: entrada, saída, erros, ações e ferramentas utilizadas
+✅ Medir quantos tokens são usados por execução e o custo real por tarefa
+✅ Visualizar tudo em uma tabela linda no Airtable ou Google Sheets
+✅ Identificar qual agente ou subagente consome mais recursos
+✅ Ter dados reais para otimizar processos e economizar dinheiro
+✅ E ainda mostrar para seus clientes tudo o que a IA está fazendo por eles! 🧠💰
+
+Isso não é um extra, é uma ferramenta de gestão essencial se você trabalha com agentes de IA.
+Seja para uso próprio ou para venda de agentes a clientes, esse sistema traz transparência, controle e profissionalismo.
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-06-08T04:03:46+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_8988_008.jpg
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-06-08T04:03:39+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Registros_y_gastos_Agentes.json
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-06-08T04:03:30+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_8986_010.jpg
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-06-08T04:03:26+00:00
+Texto:
+e21 - Controle de Gastos
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-06-08T04:03:26+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-06-08T04:03:26+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-06-08T04:03:25+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-06-08T04:03:25+00:00
+Texto:
+https://chatgpt.com/c/68450b27-4478-8009-83c8-ac5e54a45a47
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 16
+Autor: INEMA
+Data: 2025-06-08T04:03:24+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 17
+Autor: INEMA
+Data: 2025-06-08T04:03:20+00:00
+Texto: [Sem texto]
+
+------------------------------
+

@@ -1,0 +1,311 @@
+{
+  "name": "EAA - Find Available Slots",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $('Webhook').item.json.body.args.reason_for_visit }}",
+              "rightValue": "cleaning",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cc0626f9-8176-441d-8442-aab684e5eb90",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -240,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/calendars/pqSr3G6uhGID3VlFI75A/free-slots?startDate={{ $json.rangeStart }}&endDate={{ $json.rangeEnd }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b15c3545-7c56-4ddb-9ec4-30f88cb52458",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Early AI Adopters"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"result\": {{ JSON.stringify(($('HTTP Request').all()[0])) }}\n}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Key",
+                "value": "content-type"
+              },
+              {
+                "name": "Value",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "134ade1a-f859-4606-b658-92dd5c91cdfe",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const jsonString = $('OpenAI').first().json.message.content\nconst data = JSON.parse(jsonString);\n\n\nconst rangeStart = new Date(data.RangeStart).getTime();\nconst rangeEnd = new Date(data.RangeEnd).getTime();\n\n\n\nreturn [\n  {\n    json: {\n      rangeStart: rangeStart,\n      rangeEnd: rangeEnd\n    }\n  }\n  ]"
+      },
+      "id": "e7b2d12e-ddcc-42e7-9feb-cf9688d161ec",
+      "name": "Code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a date formatter for our phone assistant, your task is to take current date and return 2 variables that will be used to create a date range to verify availability. Your response will be sent as a response to a webhook so only include the json without any special characters or symbols.",
+              "role": "system"
+            },
+            {
+              "content": "=### Current date: {{ new Date(new Date($('Webhook').item.json.body.call.start_timestamp).getTime()).toISOString() }} if undefined, use 2025-02-24\nTimezone: America/New_York\nWhen the caller wants to come in : {{ $json.body.args.user_timeframe }}.\nRangeEnd should always be **3 days** after start date.\nIf they want to come as soon as possible, make the startDate the next day.\nOnly output 2 variables in this format :2024-04-22\nRangeStart\nRangeEnd.\n\nExample:\nQ :  Current date: 21-04-2024.\nTimezone: America/New_York.\nWhen the caller wants to come in : Can I come in the 24?\n\nA :\n{\n  \"RangeStart\": \"2024-04-24\",\n  \"RangeEnd\": \"2024-04-27\"\n }\n\nQ :  Current date: 21-04-2024.\nTimezone: America/New_York.\nWhen the caller wants to come in : Can I come in tomorrow?\n\nA :\n{\n  \"RangeStart\": \"2024-04-22\",\n  \"RangeEnd\": \"2024-04-25\"\n }\n\nQ :  Current date: 21-04-2024.\nTimezone: America/New_York.\nWhen the caller wants to come in : Can we do early next week?\n\nA :\n{\n  \"RangeStart\": \"2024-04-28\",\n  \"RangeEnd\": \"2024-05-01\"\n }"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6ce8fb7e-cff9-4ef9-9b41-d14fd6a6b1c9",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        -940,
+        180
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "Early AI Adopters"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/calendars/bT5KnB0CTKMDLBDzWnx7/free-slots?startDate={{ $json.rangeStart }}&endDate={{ $json.rangeEnd }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1ce94b0-2a43-4c38-8443-ffd74005e791",
+      "name": "HTTP Request1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        360
+      ],
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Early AI Adopters"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"result\": {{ JSON.stringify(($('HTTP Request1').all()[0])) }}\n}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Key",
+                "value": "content-type"
+              },
+              {
+                "name": "Value",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "aa0a8023-2908-4ed5-bb12-fa63703905ff",
+      "name": "Respond to Webhook1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        500,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "0f3f23d5-8fc0-4993-adce-8da5b1a5881c",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "95b43db0-6483-4597-8d9c-7c117e12d655",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1120,
+        180
+      ],
+      "webhookId": "0f3f23d5-8fc0-4993-adce-8da5b1a5881c"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fb4c229d-f1bc-4fdf-9b6e-ec8113682aab",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "33c945c65977c983978c20d594c20a4f5880ceb92e7f807d3f5d6c6c8d763803"
+  },
+  "id": "dLHLlpUj5CKtHLd4",
+  "tags": []
+}

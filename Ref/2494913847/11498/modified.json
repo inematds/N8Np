@@ -1,0 +1,139 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "markdown",
+              "value": "={{ $json.message.content }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set Markdown1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        1568
+      ],
+      "id": "98e5cbaf-cd63-4ef4-8252-441d87befa98"
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.message.content }}",
+        "destinationKey": "html",
+        "options": {
+          "completeHTMLDocument": true,
+          "tables": true
+        }
+      },
+      "name": "Markdown to HTML1",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        1552
+      ],
+      "id": "71aae585-798b-4534-a379-6d1f09bcf724"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst token = 'Your-API-Token-Here';\nconst newItems = [];\nfor (const item of items) {\n    const html = item.json.html || '';\n    const reportTitle = item.json.report_title || 'Executive Report';\n    const fileName = reportTitle.replace(/\\s+/g, '_') + '.html';\n    const htmlBase64 = Buffer.from(html).toString('base64');\n    const body = {\n        Parameters: [\n            {\n                Name: 'File',\n                FileValue: {\n                    Name: fileName,\n                    Data: htmlBase64,\n                },\n            },\n            {\n                Name: 'PageSize',\n                Value: 'Letter',\n            },\n            {\n                Name: 'PageOrientation',\n                Value: 'Portrait',\n            },\n        ],\n    };\n    const response = await this.helpers.httpRequest({\n        method: 'POST',\n        url: 'https://v2.convertapi.com/convert/html/to/pdf',\n        headers: {\n            Authorization: `Bearer ${token}`,\n        },\n        body,\n        json: true,\n    });\n    if (response.Files && response.Files.length > 0) {\n        item.json.pdfFileName = response.Files[0].FileName || 'report.pdf';\n        item.json.pdfBase64 = response.Files[0].FileData || null;\n        if (response.Files[0].Url) {\n            item.json.pdfUrl = response.Files[0].Url;\n        }\n    } else {\n        item.json.error = response;\n    }\n    newItems.push(item);\n}\nreturn newItems;\n"
+      },
+      "name": "Convert HTML to PDF (ConvertAPI)1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1984,
+        1536
+      ],
+      "id": "ecd5831c-b73a-42c5-ac10-138a1213dff4"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// Enhance table styling for the executive report\nconst results = items.map(item => {\n  const reportTitle = item.json.report_title || 'Executive Report';\n  let htmlString = item.json.html || '';\n  // CSS styling including improved table formatting\n  const styles = `\n    <style>\n      body { font-family: Arial, sans-serif; margin: 1in; }\n      h1 { text-align: center; font-size: 24pt; margin-bottom: 0.5in; }\n      h2, h3 { font-weight: bold; margin-top: 0.5in; }\n      p { line-height: 1.5; font-size: 12pt; }\n      table { width: 100%; border-collapse: collapse; table-layout: fixed; }\n      thead th { background-color: #f2f2f2; }\n      th, td { border: 1px solid #ddd; padding: 5px; font-size: 10pt; text-align: left; vertical-align: top; word-wrap: break-word; }\n      footer { position: fixed; bottom: 0.5in; left: 0; right: 0; text-align: center; font-size: 10pt; color: #888; }\n    </style>\n  `;\n  // Insert CSS into <head>\n  if (/<head\\s*>/i.test(htmlString)) {\n    htmlString = htmlString.replace(/<head\\s*>/i, `<head>${styles}`);\n  } else {\n    htmlString = `<head>${styles}</head>` + htmlString;\n  }\n  // Add report title if not present\n  if (!/<h1>/i.test(htmlString)) {\n    htmlString = htmlString.replace(/<body\\s*>/i, `<body><h1>${reportTitle}</h1>`);\n  }\n  // Append footer with page numbers for PDF.co\n  htmlString += `<footer><span class=\"pageNumber\"></span> / <span class=\"totalPages\"></span></footer>`;\n  item.json.html = htmlString;\n  item.json.report_title = reportTitle;\n  return item;\n});\nreturn results;\n"
+      },
+      "name": "Style HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1776,
+        1536
+      ],
+      "id": "b3a6553d-4348-408b-9f42-d65bb489fdc4"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "pdfBase64",
+        "options": {
+          "fileName": "={{ $json.pdfFileName }}",
+          "mimeType": "pdf"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2192,
+        1536
+      ],
+      "id": "1c6c2e99-5759-4cdb-9a09-aee65fd9ac84",
+      "name": "Convert to File1"
+    }
+  ],
+  "connections": {
+    "Set Markdown1": {
+      "main": [
+        [
+          {
+            "node": "Markdown to HTML1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown to HTML1": {
+      "main": [
+        [
+          {
+            "node": "Style HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert HTML to PDF (ConvertAPI)1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Style HTML": {
+      "main": [
+        [
+          {
+            "node": "Convert HTML to PDF (ConvertAPI)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7bccc401cac2b66c62937e234acac925ee5bde67762ef736950c3daeccf2d348"
+  }
+}

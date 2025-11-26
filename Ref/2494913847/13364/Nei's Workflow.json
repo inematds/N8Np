@@ -1,0 +1,510 @@
+{
+  "name": "Nei's Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "e5bfe137-eda3-47f7-a262-046c4ab87937",
+      "name": "Hourly YouTube Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "limit": 50,
+        "filters": {
+          "channelId": "YOUR_CHANNEL_ID"
+        },
+        "options": {}
+      },
+      "id": "e0f372e8-29b3-4a3e-b180-97198a0077d0",
+      "name": "Check Live Streams",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $('Check Live Streams').all().length }}",
+              "rightValue": "0",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "id-2",
+              "leftValue": "={{ $('Check Live Streams').item.json.snippet.liveBroadcastContent }}",
+              "rightValue": "live",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b7f98ef9-6a2a-4d14-b58d-462128e3c946",
+      "name": "New Stream Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1408,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Check Live Streams').item.json.streamUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "streamFile"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "id": "19e669ff-eec2-4e7b-894c-7ecbdb7f1bb2",
+      "name": "Download Stream Recording",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1632,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "id": "d99e2cd6-0882-49f1-8220-43cf8821ee1c",
+      "name": "Transcribe Audio",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1856,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4-turbo"
+        },
+        "options": {
+          "maxTokens": "[REMOVED]",
+          "responseFormat": "text",
+          "temperature": 0.3
+        }
+      },
+      "id": "c15c6ea4-3b79-481c-8053-9b16c6e3c3c1",
+      "name": "GPT-4 Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2160,
+        1632
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following video transcription and segment it into 5-minute topic chunks. For each segment, extract:\n\n1. A descriptive title for the topic discussed\n2. Relevant keywords (3-5 key terms)\n3. Start and end timestamps\n4. The segment text content\n\nTranscription: {{ $('Transcribe Audio').item.json.text }}\n\nReturn the results as a JSON array where each segment contains:\n- video_id: Use the video ID from the stream data\n- segment_text: The actual text content for this time segment\n- topic: A concise title describing the main topic\n- keywords: Array of 3-5 relevant keywords\n- start_time: Start timestamp in seconds\n- end_time: End timestamp in seconds\n\nEnsure segments are approximately 5 minutes (300 seconds) each, but adjust boundaries to natural topic breaks when possible.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an expert video content analyzer. Your task is to segment video transcriptions into meaningful topic-based chunks and extract structured metadata. Focus on identifying natural topic boundaries and extracting the most relevant keywords for each segment. Always return valid JSON format.",
+          "maxIterations": 10,
+          "returnIntermediateSteps": false
+        }
+      },
+      "id": "7fdb8f0f-4548-4c7f-8f07-c2f0fd0b93a8",
+      "name": "Segment and Extract Topics",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        2080,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "segments",
+        "options": {}
+      },
+      "id": "63cec7ef-1f05-46c7-aadc-12e03dcad467",
+      "name": "Split Segments",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        2432,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "video_id",
+              "value": "={{ $('Check Live Streams').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "segment_text",
+              "value": "={{ $('Segment and Extract Topics').item.json.segment_text }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "topic",
+              "value": "={{ $('Segment and Extract Topics').item.json.topic }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "keywords",
+              "value": "={{ JSON.stringify($('Segment and Extract Topics').item.json.keywords) }}",
+              "type": "array"
+            },
+            {
+              "id": "id-5",
+              "name": "start_time",
+              "value": "={{ $('Segment and Extract Topics').item.json.start_time }}",
+              "type": "number"
+            },
+            {
+              "id": "id-6",
+              "name": "end_time",
+              "value": "={{ $('Segment and Extract Topics').item.json.end_time }}",
+              "type": "number"
+            },
+            {
+              "id": "id-7",
+              "name": "youtube_url",
+              "value": "=https://www.youtube.com/watch?v={{ $('Check Live Streams').item.json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b6a8f9ef-e585-4bd0-a147-4c78895b3e6a",
+      "name": "Format for Database",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2656,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "youtube_segments",
+        "dataToSend": "autoMapInputData"
+      },
+      "id": "ed462e93-e8fc-477d-b99d-ec87f5a8f8e3",
+      "name": "Store in Database",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a64f1e1e-2d03-49ae-9ad8-ee8a975408fd",
+      "name": "Chat Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        960,
+        976
+      ],
+      "webhookId": "e66185de-5d1d-41f5-9ec3-96e4be8a43d2"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "youtube_segments",
+        "filters": {
+          "conditions": []
+        }
+      },
+      "id": "004cd202-c81d-418b-aee8-d74aedefb2c9",
+      "name": "Query Database Tool",
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4-turbo"
+        },
+        "options": {
+          "maxTokens": "[REMOVED]",
+          "responseFormat": "text",
+          "temperature": 0.7
+        }
+      },
+      "id": "cedeec00-3829-4195-b1b8-68314228f775",
+      "name": "Chat GPT-4 Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a helpful video content assistant that helps users search and analyze YouTube video segments. You have access to a database containing video transcription segments with topics, keywords, timestamps, and YouTube URLs. When users ask questions about video content, use the database tool to search for relevant segments and provide detailed, helpful responses with specific timestamps and links to the exact moments in the videos.",
+          "maxIterations": 10,
+          "returnIntermediateSteps": false,
+          "passthroughBinaryImages": true,
+          "enableStreaming": true
+        }
+      },
+      "id": "604352aa-833a-4b8a-9cc0-ff28354201d4",
+      "name": "Chat Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"response\": {{ JSON.stringify($fromAI) }},\n  \"timestamp\": \"{{ new Date().toISOString() }}\",\n  \"status\": \"success\"\n}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "df006e7c-2148-42d3-81b4-0b537632a0c8",
+      "name": "Send Chat Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1536,
+        976
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Hourly YouTube Check": {
+      "main": [
+        [
+          {
+            "node": "Check Live Streams",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Live Streams": {
+      "main": [
+        [
+          {
+            "node": "New Stream Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New Stream Found?": {
+      "main": [
+        [
+          {
+            "node": "Download Stream Recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Stream Recording": {
+      "main": [
+        [
+          {
+            "node": "Transcribe Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe Audio": {
+      "main": [
+        [
+          {
+            "node": "Segment and Extract Topics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-4 Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Segment and Extract Topics",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Segment and Extract Topics": {
+      "main": [
+        [
+          {
+            "node": "Split Segments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Segments": {
+      "main": [
+        [
+          {
+            "node": "Format for Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format for Database": {
+      "main": [
+        [
+          {
+            "node": "Store in Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Webhook": {
+      "main": [
+        [
+          {
+            "node": "Chat Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Database Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Chat Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat GPT-4 Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Chat Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Chat Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1a1a4280-6b91-4b7c-bb0d-792cbc79c054",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aaadb797535f05587ee95b776c942a7c3f7a46fd7aa0c9b6a9d64e1e595f8af1"
+  },
+  "id": "qMaeVHUGREI39KXa",
+  "tags": []
+}

@@ -1,0 +1,267 @@
+{
+  "name": "PDF -> JPG -> ZIP FILE",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -100
+      ],
+      "id": "fedc3c69-db5b-40ce-bb7a-d7509b519821",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "pdf",
+              "value": "https://pdfco-test-files.s3.us-west-2.amazonaws.com/pdf-to-image/sample.pdf",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        -100
+      ],
+      "id": "2f130fa9-8209-4cf8-bb4a-7e6c05ad5204",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/pdf/convert/to/png",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "xxxx"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.pdf }}"
+            },
+            {
+              "name": "inline",
+              "value": "true"
+            },
+            {
+              "name": "pages",
+              "value": "0-"
+            },
+            {
+              "name": "async",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        -20
+      ],
+      "id": "dc20d8df-b127-4208-b897-ac7d7de99286",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "compress",
+        "binaryPropertyName": "={{Object.keys($input.item.binary).join(',')}}",
+        "fileName": "combined_images.zip",
+        "binaryPropertyOutput": "Newdata"
+      },
+      "type": "n8n-nodes-base.compression",
+      "typeVersion": 1.1,
+      "position": [
+        1320,
+        0
+      ],
+      "id": "5cbe6871-1b13-4bfa-a7b9-fe9d47722d9b",
+      "name": "Compression"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "urls",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        660,
+        -180
+      ],
+      "id": "7c43dc41-cbe6-45ec-87bb-dae060bae768",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.urls }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "id": "488cda72-b09f-4801-adc9-5420e028255a",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "sendTo": "kevinfar@gmail.com",
+        "subject": "your jpgs combined",
+        "message": "please see attachment",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "Newdata"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1540,
+        -100
+      ],
+      "id": "fec8c98f-1360-4da8-a247-20cfb7726f76",
+      "name": "Gmail",
+      "webhookId": "279b298e-3863-44b3-a3f1-68881a6cb651",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all items\nconst newItem = {\n  json: {\n    fileCount: items.length,\n    fileNames: []\n  },\n  binary: {}\n};\n\n// Loop through all items and collect their binary data\nfor (let i = 0; i < items.length; i++) {\n  if (items[i].binary && items[i].binary.data) {\n    // Create a copy of the binary data\n    const binaryData = {...items[i].binary.data};\n    \n    // Modify the filename to make it unique\n    binaryData.fileName = `sample_${i+1}.png`;\n    \n    // Store binary data with index as property name\n    newItem.binary[`data${i}`] = binaryData;\n    \n    // Store filename for reference\n    newItem.json.fileNames.push(binaryData.fileName);\n  }\n}\n\n// Return only one item with all the binary data collected\nreturn [newItem];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        -160
+      ],
+      "id": "52cae6ac-3b96-4405-87ca-7023c0dda4fb",
+      "name": "Code"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compression": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Compression",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "61a6cc72-d033-42fd-8908-a315e6aef896",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0888fb519ee25dd82c0668ce33db49c7c9b5110356c49908a71ad744d2198f1a"
+  },
+  "id": "JI7v1TuBgYFClDHA",
+  "tags": []
+}

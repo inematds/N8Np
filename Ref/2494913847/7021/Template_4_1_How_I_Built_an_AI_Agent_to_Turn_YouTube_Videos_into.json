@@ -1,0 +1,718 @@
+{
+  "name": "Template 6 - How I Built an AI Agent to Turn YouTube Videos into Podcasts (100% No-Code)",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "video",
+        "limit": 1,
+        "filters": {
+          "channelId": "={{ $json['Channel ID'] }}",
+          "publishedAfter": "={{ new Date(new Date().getTime() - 3 * 86400 * 1000).toISOString() }}"
+        },
+        "options": {}
+      },
+      "id": "b74d5d34-56e8-401a-8277-d47897907cb3",
+      "name": "Fetch Latest Videos",
+      "type": "n8n-nodes-base.youTube",
+      "position": [
+        940,
+        320
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "6832e42d-aea2-4816-ae38-744f77784f41",
+      "name": "Schedule Trigger Open AI",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        460,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "video_id",
+              "value": "={{ $json.id.videoId }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "lang",
+              "value": "en",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "transcript_type",
+              "value": "manual",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "93870096-e298-4379-b9e8-eee577127640",
+      "name": "Set Video ID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1120,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.searchapi.io/api/v1/search",
+        "options": {},
+        "queryParametersUi": {
+          "parameter": [
+            {
+              "name": "engine",
+              "value": "youtube_transcripts"
+            },
+            {
+              "name": "video_id",
+              "value": "={{$json['video_id']}}"
+            },
+            {
+              "name": "lang",
+              "value": "={{$json['lang'] || 'en'}}"
+            },
+            {
+              "name": "transcript_type",
+              "value": "={{$json['transcript_type'] || 'auto'}}"
+            },
+            {
+              "name": "api_key",
+              "value": "={{ $('Global Key').item.json['Search API Key'] }}"
+            }
+          ]
+        }
+      },
+      "name": "YouTube Transcripts API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1300,
+        320
+      ],
+      "id": "ed2a3ae6-2324-4a46-af43-54a06ad1cd74"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.transistor.fm/v1/episodes",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $('Global Key').item.json['Transistorfm Key'] }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "episode[show_id]",
+              "value": "={{ $('Get Metadata').item.json['Episode ID'] }}"
+            },
+            {
+              "name": "episode[title]",
+              "value": "=Episode {{ $('Get Metadata').item.json['Epsiode Number'] + 1 }}"
+            },
+            {
+              "name": "episode[audio_url]",
+              "value": "={{ $('Fetch Elevenlabs').item.json.data.attributes.audio_url }}"
+            },
+            {
+              "name": "episode[description]",
+              "value": "={{ $('OpenAI').item.json.message.content.episode_description }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "974638f8-adf2-4999-9465-8ae5ff99b6ed",
+      "name": "Create Episode",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.transistor.fm/v1/episodes/authorize_upload",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "filename",
+              "value": "=Episode{{ $('Get Metadata').item.json['Epsiode Number'] + 1 }}.mp3"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $('Global Key').item.json['Transistorfm Key'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ce3c4f54-4ced-4518-8def-2d65dea58270",
+      "name": "Authorize URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        780,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.data.attributes.upload_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "audio/mpeg"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "f83fadab-eb01-4fb6-8e69-a4a0ec2953c7",
+      "name": "Request Audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1140,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/0yFvBPR0xlgHPG1Q5dQX",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{ $('Global Key').item.json['Elevenlabs Key'] }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $('OpenAI').item.json.message.content.transcript }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b9be0aab-7b52-49b4-b534-207feb04a6f3",
+      "name": "Fetch Elevenlabs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "Search API Key",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Transistorfm Key",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Elevenlabs Key",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "84cd267e-cd3e-42f0-b52c-bb9803acc9e7",
+      "name": "Global Key",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        620,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "xXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx",
+          "mode": "list",
+          "cachedResultName": "Podcast Campaign",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/xXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Metadata",
+          "mode": "name"
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "id": "c6b3f751-b2b0-4e9f-abb0-92771eb2c363",
+      "name": "Get Metadata",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        780,
+        320
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "xXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx",
+          "mode": "list",
+          "cachedResultName": "Podcast Campaign",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/xXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2088697530,
+          "mode": "list",
+          "cachedResultName": "Episode",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/xXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx/edit#gid=2088697530"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Episode Number": "={{ $('Get Metadata').item.json['Epsiode Number'] + 1 }}",
+            "Episode Name": "={{ $('OpenAI').item.json.message.content.episode_name }}",
+            "Episode Description": "={{ $('OpenAI').item.json.message.content.episode_description }}",
+            "Posted Date": "={{ $now }}",
+            "Shared Link": "={{ $json.data.attributes.share_url }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "Episode Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Episode Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Episode Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Posted Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Shared Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "79bd47db-0395-4317-a8a9-f412692de0e8",
+      "name": "Update Episode Record",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1500,
+        520
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Convert to Podcast",
+        "height": 456,
+        "width": 1403.5822370051096
+      },
+      "id": "bce8a2c6-400a-439e-bcaf-56c854879b1d",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        380,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "xXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx",
+          "mode": "list",
+          "cachedResultName": "Podcast Campaign",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/xXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Metadata",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/xXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Get Metadata').item.json.row_number }}",
+            "Epsiode Number": "={{ $('Get Metadata').item.json['Epsiode Number'] + 1 }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "Channel Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Channel ID",
+              "displayName": "Channel ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Episode ID",
+              "displayName": "Episode ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Epsiode Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cae8d2d8-9dd5-449b-b3f7-7ed7bb58702a",
+      "name": "Update Episode",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1640,
+        520
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a podcast director tasked with transforming the transcript of a YouTube video into a one person podcast dialogue.\n\nInstructions:\nAccess the transcript of the YouTube video.\nConvert the content into a podcast dialogue where the speakers summarize and comment on the transcript.\nEnsure the dialogue includes contrasting perspectives that align with the speakers' personalities.\n\nPodcast Details:\nPodcast Name: Minutes AI News\nDuration: 10 seconds\nSpeakers:\nAndy: An AI enthusiast, optimistic about AI's potential.\nTone: Conversational and engaging, reflecting contrasting views on the latest AI news.\n\n* Output the JSON Object of the episode name, description and transcript, for the transcript only text without sound effects, and the speaker name.\n\nOutput JSON Format:\n{\n  \"episode_name\": string,\n  \"episode_description\": string,\n  \"transcript\": string\n}\n\nOutput Example:\n{\n  \"episode_name\": \"O3 AI News\",\n  \"episode_description\": \"Sam Altman, Mark Chen, Hongyu Ren, and special guest Greg Kamradt, President of ARC Prize Foundation, introduce and discuss OpenAI o3, o3-mini, along with a call for safety testing and a new alignment strategy for o-series models.\",\n  \"transcript\": \"Hey everyone, welcome back to Minutes AI News! This is Andy, your friendly AI enthusiast. Today, I've got some really exciting updates to share from the world of artificial intelligence. Have you ever wondered what the future holds for AI? Let's dive right into today's episode and discuss the unveiling of OpenAI's latest advancements—O3 and O3 Mini.\"\n}",
+              "role": "system"
+            },
+            {
+              "content": "={{ JSON.stringify($json.transcripts) }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "id": "6fc9aa5f-18d8-49b6-ab80-8e8eac013ab8",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        460,
+        520
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi Account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger Open AI": {
+      "main": [
+        [
+          {
+            "node": "Global Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Latest Videos": {
+      "main": [
+        [
+          {
+            "node": "Set Video ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Video ID": {
+      "main": [
+        [
+          {
+            "node": "YouTube Transcripts API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube Transcripts API": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorize URL": {
+      "main": [
+        [
+          {
+            "node": "Fetch Elevenlabs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Audio": {
+      "main": [
+        [
+          {
+            "node": "Create Episode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Elevenlabs": {
+      "main": [
+        [
+          {
+            "node": "Request Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Global Key": {
+      "main": [
+        [
+          {
+            "node": "Get Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Metadata": {
+      "main": [
+        [
+          {
+            "node": "Fetch Latest Videos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Episode": {
+      "main": [
+        [
+          {
+            "node": "Update Episode Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Episode Record": {
+      "main": [
+        [
+          {
+            "node": "Update Episode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Authorize URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "267acc00-e9c9-4de6-af36-9ac9bed2fe22",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4221cc7208f142ff91856b22776eec81b71c256154ec8030569832c22d0c66d9"
+  },
+  "id": "KPhdf84hk7lIczXY",
+  "tags": [
+    {
+      "createdAt": "2025-01-28T07:53:03.821Z",
+      "updatedAt": "2025-01-28T07:53:03.821Z",
+      "id": "UmrR2LNV3n5EWSeP",
+      "name": "andynocode free"
+    }
+  ]
+}

@@ -1,0 +1,864 @@
+{
+  "name": "29.1 Family Guy Minecraft Shorts New (Cleaned)",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lODIzfp4EefLY1qhdeWAvaW2HToOW-i6QwQJZWG76EM",
+          "mode": "list",
+          "cachedResultName": "Minicraft",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lODIzfp4EefLY1qhdeWAvaW2HToOW-i6QwQJZWG76EM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lODIzfp4EefLY1qhdeWAvaW2HToOW-i6QwQJZWG76EM/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Pending"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        0,
+        -200
+      ],
+      "id": "f9ecae89-3b12-459c-9d8c-6228e98dbc61",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account - Stanley"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Step 1: Extract latest news from Techcrunch",
+        "height": 400,
+        "width": 860
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -240,
+        -420
+      ],
+      "typeVersion": 1,
+      "id": "11753967-77cb-4ddd-9750-dd0f2294e19c",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Step 2: Generate Voiceover",
+        "height": 460,
+        "width": 1140,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        20
+      ],
+      "typeVersion": 1,
+      "id": "ff5be345-1eef-4bbc-b0c9-414f68d5b3fe",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "batchSize": 2,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        260,
+        120
+      ],
+      "id": "5a42511f-0d33-4c5a-8365-0ca452f572f6",
+      "name": "Loop To Generate Voice"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.fish.audio/v1/tts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "name": "reference_id",
+              "value": "={{ $json.voiceId }}"
+            },
+            {
+              "name": "filename",
+              "value": "={{ $json.speaker }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        280
+      ],
+      "id": "f5a47758-8dd6-4f34-9215-8fb08888b4df",
+      "name": "Fish Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fish audio ashraf@proxa"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://gdrxrpfqehlcglamyemm.supabase.co/storage/v1/object/n8n-family-guy/{{ $now.format('yyyyMMddHHmmss')}}_{{ $json.speaker }}.mpga",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        280
+      ],
+      "id": "b152f6c4-8bda-4f19-8860-f4c79b1fba72",
+      "name": "Store Audio",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase account - andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "=url",
+              "value": "=https://gdrxrpfqehlcglamyemm.supabase.co/storage/v1/object/public/{{ $json.file_key }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "speaker",
+              "value": "={{ $json.speaker }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        500,
+        80
+      ],
+      "id": "de95046c-7692-4983-820c-6c08adbbc21f",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        80
+      ],
+      "id": "df2a1a7a-f3ec-4df3-b721-e254bf530bd7",
+      "name": "Re Download Audio"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "timestamp_granularities[]",
+              "value": "word"
+            },
+            {
+              "name": "model",
+              "value": "whisper-1"
+            },
+            {
+              "name": "response_format",
+              "value": "verbose_json"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8b16683c-2a63-4591-b511-eebdd9cdb58f",
+      "name": "Open AI Whisper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        80
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "file_key",
+              "value": "={{ $json.Key }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "speaker",
+              "value": "={{ $('Fish Request').item.json.speaker }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        280
+      ],
+      "id": "0f5c74b6-a4d9-4070-8de0-07c6af95bdee",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1lODIzfp4EefLY1qhdeWAvaW2HToOW-i6QwQJZWG76EM",
+          "mode": "list",
+          "cachedResultName": "Minicraft",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lODIzfp4EefLY1qhdeWAvaW2HToOW-i6QwQJZWG76EM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lODIzfp4EefLY1qhdeWAvaW2HToOW-i6QwQJZWG76EM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Google Sheets').first().json.row_number }}",
+            "Status": "Completed",
+            "Output": "={{ $json.url }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Mode",
+              "displayName": "Mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Input Video",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Output",
+              "displayName": "Output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1200,
+        560
+      ],
+      "id": "5d44aeab-ed80-4a64-8799-b43a6b10f2f2",
+      "name": "Update Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account - Stanley"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        80,
+        120
+      ],
+      "id": "fbd6198d-6c33-4653-b181-23789f76e832",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is the URL to the article:\n{{ $json.Article }}\n\nPlease use HTTP request tool to get the article content and prepare for the script.\n\nYou MUST return exact 8 OBJECTS in the array refer to 8 CONVERSATION SCRIPT.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are an expert podcast scriptwriter for a tech storytelling show.\n\nGiven the following content, write a dialogue between peter and stewie bumping question while stewie ask and peter answering:\n- mimic the way their character speak yet informative\n- Flows like a their character voiceover\n- 150 to 200 words long\n- Structured with a hook, context, breakdown, takeaways, and outro\n\nMake it sound like both are talking exactly the way they talk in the family cartoon show warm, engaging, jokes, and easy to follow. Include transitions and pauses where appropriate.\n\nIn the response json, you should return in following JSON format without any explaination:\n\n[{\n\"speaker\":  \"{{ $('Google Sheets').item.json['Character A Name'] }} / \"{{ $('Google Sheets').item.json['Character B Name'] }},\n\"text\":  \"script... \",\n\"voiceId\": \"{{ $('Google Sheets').item.json['Character A Voice'] }} for {{ $('Google Sheets').item.json['Character A Name'] }}, {{ $('Google Sheets').item.json['Character B Voice'] }} for {{ $('Google Sheets').item.json['Character B Name'] }}\"\n}...]\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        200,
+        -200
+      ],
+      "id": "778f44a2-f25c-4742-b0ef-24cafc4fe26d",
+      "name": "Script AI Agent"
+    },
+    {
+      "parameters": {
+        "content": "# Andynocode AI Academy\n\nWorkflow: \nhttps://proxa.app.n8n.cloud/workflow/MQnVsHxg0swsAZxe \nSheet:\nhttps://docs.google.com/spreadsheets/d/1lODIzfp4EefLY1qhdeWAvaW2HToOW-i6QwQJZWG76EM/edit?gid=0 \nTechCrunch: \nhttps://techcrunch.com/latest/0/ \nFish Audio: \nhttps://fish.audio/m/ca16c013253047ce9f0f5f48c85e1915/\n\n1. Explain Google Sheet fields\n    1. Character image must be uploaded by the user.\n    2. Character voice must be selected on Fish Audio (https://fish.audio/m/ca16c013253047ce9f0f5f48c85e1915/) — the ID is in the URL.\n2. Generate script AI\n    * We changed it to return JSON directly.\n3. Loop for Fish Audio\n    * We iterate because Fish Audio enforces a concurrency limit.\n",
+        "height": 500,
+        "width": 680,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1620,
+        40
+      ],
+      "id": "5d61e3e8-d2c3-4ee4-b885-78e5a3e20918",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('URL', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        -340
+      ],
+      "id": "a88a6627-3aef-4811-a3e3-155f6338d771",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "[\n  {\n    \"speaker\": \"Peter\",\n    \"text\": \"Hey Stewie! Did you hear about Apple’s play with Image Playground and ChatGPT? They're trying to jazz it up a bit! \",\n    \"voiceId\": \"d75c270eaee14c8aa1e9e980cc37cf1b\"\n  },\n  {\n    \"speaker\": \"Stewie\",\n    \"text\": \"Oh really, Peter? Isn’t that just a flashy way of saying they’re trying to fix a broken toy? What’s the scoop? \",\n    \"voiceId\": \"ca16c013253047ce9f0f5f48c85e1915\"\n  },\n  {\n    \"speaker\": \"Peter\",\n    \"text\": \"Right? So, when Apple launched this thing, folks were like, 'What is this emoji nonsense?' Image quality was a hot mess! \",\n    \"voiceId\": \"d75c270eaee14c8aa1e9e980cc37cf1b\"\n  },\n  {\n    \"speaker\": \"Stewie\",\n    \"text\": \"Ah, I see! So they thought, 'Hey! Let’s throw ChatGPT in there and pretend it’s gourmet food instead of microwave dinner?' \",\n    \"voiceId\": \"ca16c013253047ce9f0f5f48c85e1915\"\n  },\n  {\n    \"speaker\": \"Peter\",\n    \"text\": \"Exactly! Now users can pick styles—like oil painting or anime. Much better than a six-fingered hand! \",\n    \"voiceId\": \"d75c270eaee14c8aa1e9e980cc37cf1b\"\n  },\n  {\n    \"speaker\": \"Stewie\",\n    \"text\": \"Delightful! So, to sum it up, Apple is upgrading its art little by little, aiming to compete with those cooler image generators out there. \",\n    \"voiceId\": \"ca16c013253047ce9f0f5f48c85e1915\"\n  },\n  {\n    \"speaker\": \"Peter\",\n    \"text\": \"You got it! They’re hoping folks give it another shot with all the new styles! \",\n    \"voiceId\": \"d75c270eaee14c8aa1e9e980cc37cf1b\"\n  },\n  {\n    \"speaker\": \"Stewie\",\n    \"text\": \"Well, isn’t that just a peach? Let's see if they pull it off or end up with another sad failed app! \",\n    \"voiceId\": \"ca16c013253047ce9f0f5f48c85e1915\"\n  }\n]\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        -340
+      ],
+      "id": "dcd5d467-519a-4306-b0d2-375d10b5c5eb",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"template_id\": \"0c6c23f9-8f35-468a-9f6a-6e8944252b94\",\n  \"modifications\": {\n    \"Video.source\": \"{{ $('Google Sheets').item.json['Input Video'] }}\",\n    \"Video.duration\": {{ \n      $json.data[0].duration + \n      $json.data[1].duration + \n      $json.data[2].duration + \n      $json.data[3].duration + \n      $json.data[4].duration + \n      $json.data[5].duration + \n      $json.data[6].duration + \n      $json.data[7].duration \n    }},\n    \"audio1.source\": \"{{ $json.data[0].url }}\",\n    \"audio2.source\": \"{{ $json.data[1].url }}\",\n    \"audio3.source\": \"{{ $json.data[2].url }}\",\n    \"audio4.source\": \"{{ $json.data[3].url }}\",\n    \"audio5.source\": \"{{ $json.data[4].url }}\",\n    \"audio6.source\": \"{{ $json.data[5].url }}\",\n    \"audio7.source\": \"{{ $json.data[6].url }}\",\n    \"audio8.source\": \"{{ $json.data[7].url }}\",\n\n    \"subtitles1.duration\": {{ $json.data[0].duration }},\n    \"subtitles2.duration\": {{ $json.data[1].duration }},\n    \"subtitles3.duration\": {{ $json.data[2].duration }},\n    \"subtitles4.duration\": {{ $json.data[3].duration }},\n    \"subtitles5.duration\": {{ $json.data[4].duration }},\n    \"subtitles6.duration\": {{ $json.data[5].duration }},\n    \"subtitles7.duration\": {{ $json.data[6].duration }},\n    \"subtitles8.duration\": {{ $json.data[7].duration }},\n\n    \"image1.source\": \"{{ $json.data[0].speaker === \"Peter\" ? $('Google Sheets').item.json['Character A Image'] : $('Google Sheets').item.json['Character B Image'] }}\",\n    \"image2.source\": \"{{ $json.data[1].speaker === \"Peter\" ? $('Google Sheets').item.json['Character A Image'] : $('Google Sheets').item.json['Character B Image'] }}\",\n    \"image3.source\": \"{{ $json.data[2].speaker === \"Peter\" ? $('Google Sheets').item.json['Character A Image'] : $('Google Sheets').item.json['Character B Image'] }}\",\n    \"image4.source\": \"{{ $json.data[3].speaker === \"Peter\" ? $('Google Sheets').item.json['Character A Image'] : $('Google Sheets').item.json['Character B Image'] }}\",\n    \"image5.source\": \"{{ $json.data[4].speaker === \"Peter\" ? $('Google Sheets').item.json['Character A Image'] : $('Google Sheets').item.json['Character B Image'] }}\",\n    \"image6.source\": \"{{ $json.data[5].speaker === \"Peter\" ? $('Google Sheets').item.json['Character A Image'] : $('Google Sheets').item.json['Character B Image'] }}\",\n    \"image7.source\": \"{{ $json.data[6].speaker === \"Peter\" ? $('Google Sheets').item.json['Character A Image'] : $('Google Sheets').item.json['Character B Image'] }}\",\n    \"image8.source\": \"{{ $json.data[7].speaker === \"Peter\" ? $('Google Sheets').item.json['Character A Image'] : $('Google Sheets').item.json['Character B Image'] }}\",\n    \"image1.duration\": {{ $json.data[0].duration }},\n    \"image2.duration\": {{ $json.data[1].duration }},\n    \"image3.duration\": {{ $json.data[2].duration }},\n    \"image4.duration\": {{ $json.data[3].duration }},\n    \"image5.duration\": {{ $json.data[4].duration }},\n    \"image6.duration\": {{ $json.data[5].duration }},\n    \"image7.duration\": {{ $json.data[6].duration }},\n    \"image8.duration\": {{ $json.data[7].duration }}\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        760,
+        560
+      ],
+      "id": "21a4b5e3-6a90-4b71-9af5-0c9f74fd86f4",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        560,
+        560
+      ],
+      "id": "06f72ee4-25b0-4007-b2a5-0ac2ce8f9af8",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "duration",
+              "value": "={{ $json.duration }}",
+              "type": "number"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "url",
+              "value": "={{ $('Re Download Audio').item.json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "speaker",
+              "value": "={{ $('Re Download Audio').item.json.speaker }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        340,
+        560
+      ],
+      "id": "f3aea8cc-b9b1-43fd-abb8-f44b42cd6ca0",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.creatomate.com/v1/renders",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        980,
+        560
+      ],
+      "id": "fbcf1acb-09e4-4757-9940-228d91cc7f14",
+      "name": "Creatomate",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Creatomate - andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Step 3: Video Compilation",
+        "height": 260,
+        "width": 1100,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        280,
+        500
+      ],
+      "typeVersion": 1,
+      "id": "93136d42-5da2-444d-99e3-20efb83a2646",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "# 🅰🅽🅳🆈🅽🅾🅲🅾🅳🅴 𝔸𝕀 𝔸𝕔𝕒𝕕𝕖𝕞𝕪\n\n",
+        "height": 80,
+        "width": 600,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -380,
+        -540
+      ],
+      "id": "73c0a2d0-d57a-40ab-b443-a7c8a68748a5",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -200,
+        -200
+      ],
+      "id": "29bdd067-f66f-4966-8383-5509e9045935",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "model": "openai/o3-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -340
+      ],
+      "id": "35fff149-7951-4824-bbbc-f65eb3ab8e2e",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Script AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop To Generate Voice": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fish Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fish Request": {
+      "main": [
+        [
+          {
+            "node": "Store Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Audio": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Re Download Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re Download Audio": {
+      "main": [
+        [
+          {
+            "node": "Open AI Whisper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open AI Whisper": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Loop To Generate Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop To Generate Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Script AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Need to Download": {
+      "main": [
+        [
+          {
+            "node": "Request Techcrunsh Latest Page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Final Url",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Url Field1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Request Techcrunsh Latest Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "ai_tool": [
+        [
+          {
+            "node": "Script AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Script AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Creatomate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creatomate": {
+      "main": [
+        [
+          {
+            "node": "Update Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Script AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c1d7b6ac-9d61-4f11-9b0e-09fe458a547b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1740c26791c747bf49d93178a26934eaaffaca5ab2d087ae7e06b06ed236dff6"
+  },
+  "id": "KUDu5OhJSOa4aW8Q",
+  "tags": []
+}

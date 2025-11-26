@@ -1,0 +1,385 @@
+[
+  {
+    "id": 14401,
+    "author": "INEMA",
+    "date": "2025-09-20T05:27:54+00:00",
+    "text": "Podem usar o Claude Code para migrar este projeto",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14400,
+    "author": "INEMA",
+    "date": "2025-09-20T03:15:28+00:00",
+    "text": "Comando para o Relatorio\n\nnpx ccusage@lastest",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14399,
+    "author": "INEMA",
+    "date": "2025-09-20T03:14:13+00:00",
+    "text": "usando para testes com o claude desktop",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14399_003.jpg"
+  },
+  {
+    "id": 14342,
+    "author": "INEMA",
+    "date": "2025-09-18T03:08:58+00:00",
+    "text": "### Hacks de Desenvolvimento\n\n* **Reutilizar workflows**: coloque toda a lógica de chamada em um subworkflow único (Call Master) e invoque via Webhook interno; isso evita duplicar fluxos para on-demand, manhã, noite, domingo.\n* **Templates no ****Bolt.new**: crie um template padrão de tela (login, onboarding, dashboard) e apenas duplique e personalize, reduzindo tempo de design.\n* **Autocompletar preferências**: quando o usuário não preencher, atribua defaults (ex.: voz masculina, horário padrão) para evitar falhas.\n\n---\n\n### Hacks de Automação\n\n* **Polling com guardrails**: use *Wait* de 30s entre checagens no n8n em vez de loops, para não travar execução.\n* **Gerar resumos curtos automáticos**: depois da transcrição, sempre resuma em no máximo 5 frases e armazene; isso mantém memória limpa e leve.\n* **Liberar número automaticamente**: se a chamada cair ou travar, defina timeout (ex.: 5 min) e force liberação do número no Sheets.\n\n---\n\n### Hacks de Personalização\n\n* **Prompts dinâmicos**: personalize o prompt do agente incluindo nome, preferências e último resumo. Isso faz o usuário sentir que o agente “lembra”.\n* **Gatilhos emocionais**: configure frases padrão (ex.: “vamos respirar juntos”) para reforçar suporte sem inventar diagnóstico.\n* **Multi-voz**: ofereça opção de trocar entre vozes diferentes (ex.: neutra, jovem, mais calma). Isso aumenta adesão.\n\n---\n\n### Hacks de Escalabilidade\n\n* **Usar Supabase no lugar do Firebase/Sheets**: melhora a performance e facilita buscas complexas (embeddings, histórico).\n* **Logging em separado**: mande logs técnicos (erros, tempos de resposta, falhas de API) para uma aba exclusiva no Sheets ou para um banco.\n* **Cache de preferências**: mantenha preferências em memória curta no n8n (Redis ou até no próprio contexto da execução) para evitar múltiplas consultas ao Sheets.\n\n---\n\n### Hacks de Segurança\n\n* **Rota de emergência real**: configure no n8n um caminho que envia SMS ou e-mail automático para suporte se detectar palavras-chave de crise.\n* **Anonimização de dados**: use apenas IDs internos no fluxo e nunca envie e-mail/telefone no prompt do agente.\n* **Aviso ético no onboarding**: deixe claro que não substitui um terapeuta humano — isso protege legalmente o projeto.\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14341,
+    "author": "INEMA",
+    "date": "2025-09-18T03:07:56+00:00",
+    "text": "====================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14340,
+    "author": "INEMA",
+    "date": "2025-09-18T03:07:54+00:00",
+    "text": "sumo a partir do log de turnos\n\n# 12) Perguntas rápidas com respostas\n\n* Onde personalizar a voz? No payload do assistant no Vapi: campo voice = male/female/…\n* Como guardar a memória curta e longa? Curta: última conversa em memories.lastSummary; Longa: adicionar linha em calls e manter histórico.\n* Como evitar erros do agente? Fluxos lineares, poucas ferramentas por agente, validações explícitas e checagens condicionais.\n* Posso trocar Firebase por Supabase? Sim: autenticação e tabelas ficam ainda mais simples para queries; adapte os nós HTTP/DB.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14339,
+    "author": "INEMA",
+    "date": "2025-09-18T03:07:54+00:00",
+    "text": "mbers (marcar isAvailable=false)\n7. Iniciar chamada outbound no Vapi via HTTP Request\n8. Loop de polling a cada 30s até status ended\n9. Buscar transcrição e resumo do Vapi (ou gerar resumo via LLM no n8n)\n10. Salvar resumo em memories, atualizar users.lastCallAt e calls\n11. Liberar número (isAvailable=true)\n12. Notificar o app (ex.: webhook de “call-ended” do seu front-end)\n\nExemplo de prompt do agente (resumo)\n\n```Você é um companheiro de apoio emocional para adultos. Estilo: empático, respeitoso, pausas naturais. Nunca faz diagnósticos. Sugere respirações e roteiros breves. Se detectar crise (risco de dano), encerre com orientação: procurar ajuda local e linhas de apoio. Personalize usando: {nome}, {timezone}, {topics}, histórico: {lastSummary}.```\n\nExemplos de chamadas HTTP ao Vapi (ajuste aos endpoints reais)\n\n* Criar/atualizar assistant\n\nP```OST https://api.vapi.ai/assistants\nAuthorization: Bearer {{$env.VAPI_API_KEY}}\nContent-Type: application/json\n\n{\n  \"name\": \"Therapist-{{userId}}\",\n  \"voice\": \"{{voiceGender}}\",\n  \"prompt\": \"…prompt acima…\",\n  \"language\": \"pt-BR\"\n}\n```\n* Iniciar chamada\n\nPO```ST https://api.vapi.ai/calls\nAuthorization: Bearer {{$env.VAPI_API_KEY}}\nContent-Type: application/json\n\n{\n  \"assistantName\": \"Therapist-{{userId}}\",\n  \"to\": \"{{phone}}\",\n  \"from\": \"{{reservedNumber}}\"\n}\n\n```* Buscar status/transcrição\n\nGET``` https://api.vapi.ai/calls/{{callId}}\nAuthorization: Bearer {{$env.VAPI_API_KEY}}\n\nE```xemplo de resumo pós-chamada (LLM node)\n\nResu```ma a conversa em 5 linhas:\n1) estado emocional\n2) gatilhos principais\n3) exercícios praticados\n4) progresso vs. última sessão\n5) próxima micro-ação\nSaída breve em pt-BR.\n\n# ```7) Workflows 4–6: Chamadas agendadas\n\nObjetivo\n\n* Disparar rotinas por preferência: manhã, noite, domingo.\n\nNós\n\n* Schedule Trigger (cron) por preferência\n* Ler preferences filtrando quem marcou a opção\n* Para cada userId, chamar um Subworkflow reutilizando o fluxo de “call-on-demand” (ou mover a lógica para um Workflow Reusable e invocar via Webhook interno)\n\nDica\n\n* Padronize a lógica de chamada em um único fluxo e só mude o gatilho (on-demand vs cron).\n\n# 8) Workflow 7: Relatório semanal\n\nObjetivo\n\n* Sextas, entre 08–18h, coletar usuários, puxar últimos resumos e enviar e-mail.\n\nNós\n\n* Cron\n* Google Sheets (listar users)\n* Para cada user: ler memories e preferences\n* Code/LLM para compor e-mail\n* SMTP ou Gmail node (em produção, use provedor transacional)\n\nExemplo de assunto e corpo\n\nAssun```to: Seu progresso semanal\n\nCorpo: Olá, {{nome}}. Principais avanços desta semana: …\nPróxima micro-ação sugerida: …\nSe quiser ajustar horários, acesse: {{link_dashboard}}\n\n# 9```) Segurança e conformidade\n\n* Mensagens claras: o agente não substitui terapia; em emergência, procurar serviços locais e linhas 188 (CVV) no Brasil.\n* Guardrails no fluxo: se “crise” → rota de emergência (notificação/e-mail + instruções ao usuário).\n* Para lançar publicamente em saúde: avaliar requisitos legais (ex.: LGPD; se for EUA, HIPAA).\n\nExemplo de bloco de emergência (texto curto para o agente)\n\nSe o u```suário mencionar risco iminente de dano a si ou a terceiros:\n1) ser empático\n2) encorajar contato imediato com serviço de emergência local\n3) encerrar a sessão com instruções claras\n\n# 10```) Checklist de testes\n\n* Criar conta, concluir onboarding, verificar gravação correta no Sheets\n* Fazer chamada on-demand; confirmar ligação, encerramento, transcrição, resumo e atualização das planilhas\n* Alternar preferências e disparar chamada agendada\n* Simular frase de crise e validar rota de emergência\n* Testar indisponibilidade de números e liberação ao final\n\n# 11) Erros comuns e correções\n\n* Webhook 401/403: URL incorreta no front-end ou n8n sem URL pública\n* Google Sheets não atualiza: credencial/escopo inválido ou cabeçalho da planilha diferente do esperado\n* Chamada não inicia: número não reservado, payload do Vapi fora do padrão, ou quota\n* Polling infinito: não faça while sem Wait; use repetir a cada 30s com condição de saída\n* Transcrição vazia: confirme endpoint de transcript do Vapi ou gere re",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14338,
+    "author": "INEMA",
+    "date": "2025-09-18T03:07:54+00:00",
+    "text": "nu",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14337,
+    "author": "INEMA",
+    "date": "2025-09-18T03:07:54+00:00",
+    "text": "Aqui vai um passo a passo direto para você replicar o projeto do vídeo (Vapi + n8n + Bolt.new + Firebase + Google Sheets), com exemplos práticos.\n\n# 1) Preparar contas e chaves\n\n* Criar projeto no n8n 1.104.x (ou superior) e habilitar nós HTTP Request, Code, Google Sheets, E-mail/SMTP ou Gmail, LLM da sua preferência.\n* Criar conta no Vapi e gerar API Key.\n* Criar projeto no Firebase (Authentication com e-mail/senha).\n* Criar uma planilha no Google Sheets e uma credencial de Service Account com acesso de edição.\n* Definir variáveis de ambiente no n8n:\n\n  * VAPI\\_API\\_KEY\n  * FIREBASE\\_WEB\\_API\\_KEY\n  * GOOGLE\\_SHEETS\\_CREDENTIALS\\_JSON\n  * SHEET\\_ID\n  * APP\\_WEBHOOK\\_BASE (URL pública do seu n8n)\n\nExemplo de .env local para referência\n\n```VAPI_API_KEY=sk_vapi_xxx\nFIREBASE_WEB_API_KEY=AIzaSyXXXX\nGOOGLE_SHEETS_CREDENTIALS_JSON={\"type\":\"service_account\",\"project_id\":\"...\"}\nSHEET_ID=1AbCdEfGhIjKlMnOpQr\nAPP_WEBHOOK_BASE=https://seu-n8n.com```\n\n# 2) Modelar dados\n\nPlanilhas sugeridas no Google Sheets:\n\n* users: userId, fullName, email, phone, timezone, createdAt, lastCallAt, status\n* preferences: userId, morning (bool), evening (bool), sunday (bool), voiceGender, topics\n* numbers: phoneNumber, isAvailable (bool), lastUsedAt\n* calls: callId, userId, startedAt, endedAt, durationSec, status\n* memories: userId, lastSummary, lastEmotions, historyPointer\n\nExemplo de linha em preferences\n\nu```serId: abc123\nmorning: TRUE\nevening: FALSE\nsunday: TRUE\nvoiceGender: male\ntopics: stress, work-life\n```\n# 3) Construir o front-end no Bolt.new\n\nPáginas mínimas\n\n* Sign up / login com Firebase Auth (e-mail e senha)\n* Onboarding com 5 perguntas e coleta de timezone, telefone, gênero de voz e preferências\n* Dashboard com botões: Iniciar sessão, Ver progresso, Ajustar preferências\n\nAções do front-end\n\n* Ao concluir onboarding: POST para APP\\_WEBHOOK\\_BASE/onboarding\n* Ao clicar Iniciar sessão: POST para APP\\_WEBHOOK\\_BASE/call-on-demand\n* Ao alterar preferências: POST para APP\\_WEBHOOK\\_BASE/prefs-changed\n\nExemplo de POST do onboarding (no front-end)\n\naw```ait fetch(`${APP_WEBHOOK_BASE}/onboarding`, {\n  method: 'POST',\n  headers: {'Content-Type':'application/json'},\n  body: JSON.stringify({\n    userId, fullName, email, phone, timezone,\n    q1, q2, q3, q4, q5,\n    preferences: { morning:true, evening:false, sunday:true, voiceGender:'male', topics:['stress','work'] }\n  })\n});\n\n```# 4) Workflow 1: Onboarding (n8n)\n\nObjetivo\n\n* Receber dados do formulário, normalizar, gravar no Sheets e responder 200 OK.\n\nNós\n\n* Webhook POST /onboarding\n* Code (normalização e validação)\n* Google Sheets (Append/Upsert em users e preferences)\n* Response (200)\n\nExemplo de Code node para extrair campos\n\nco```nst b = $json;\nreturn [\n  {\n    userId: b.userId,\n    fullName: b.fullName?.trim(),\n    email: b.email?.toLowerCase(),\n    phone: b.phone?.replace(/\\D/g,''),\n    timezone: b.timezone,\n    q: [b.q1,b.q2,b.q3,b.q4,b.q5].filter(Boolean),\n    preferences: b.preferences || {}\n  }\n];\n\n```# 5) Workflow 2: Atualização de preferências\n\nObjetivo\n\n* Receber mudanças do usuário e sincronizar no Sheets.\n\nNós\n\n* Webhook POST /prefs-changed\n* Code (validar userId e campos)\n* Google Sheets (Update em preferences por userId)\n* Response (200)\n\nExemplo de payload esperado\n\n{\n```  \"userId\": \"abc123\",\n  \"preferences\": {\n    \"morning\": false,\n    \"evening\": true,\n    \"sunday\": false,\n    \"voiceGender\": \"female\",\n    \"topics\": [\"anxiety\",\"focus\"]\n  }\n}\n\n```# 6) Workflow 3: Chamada sob demanda\n\nObjetivo\n\n* Checar segurança, personalizar agente, iniciar chamada no Vapi, acompanhar status, obter transcrição, resumir e atualizar perfil.\n\nEtapas\n\n1. Webhook POST /call-on-demand com userId\n2. Buscar usuário e preferências no Sheets\n3. Checagem de segurança\n\n   * Usar nó de LLM moderando um texto curto como: “há risco imediato de autoagressão/suicídio?” com resposta binária.\n   * Se risco: acionar caminho de emergência (notificar equipe e encerrar).\n4. Preparar prompt do agente de voz\n5. Criar/atualizar Assistant no Vapi via HTTP Request\n6. Reservar um número disponível na sheet",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14336,
+    "author": "INEMA",
+    "date": "2025-09-18T03:07:22+00:00",
+    "text": "====================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14335,
+    "author": "INEMA",
+    "date": "2025-09-18T03:07:21+00:00",
+    "text": "=====================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14334,
+    "author": "INEMA",
+    "date": "2025-09-18T03:07:18+00:00",
+    "text": "### Contexto do Hackathon\n\n* Primeiro hackathon da comunidade **AI Automation Society Plus**.\n* Prêmio principal: **US\\$ 5.000**.\n* Vencedor: **Azim K**, estudante de ensino médio com apenas **6 meses de experiência** em IA e automação.\n\n---\n\n### O Projeto Vencedor\n\n* **Aplicativo web de saúde mental**.\n* **Front-end**: Bolt.new (web app customizado).\n* **Back-end**: 9 workflows no n8n.\n* **Agente de voz**: Vapi.\n* **Autenticação e dados**: Google Firebase + Google Sheets.\n\n---\n\n### Funcionamento do App\n\n* Cadastro inicial com nome, e-mail, senha e preferências.\n* Onboarding com **perguntas personalizadas** para ajustar o perfil.\n* Usuário recebe ligações do agente de voz (terapeuta virtual).\n* Conversas são **transcritas e resumidas**, alimentando o perfil do usuário.\n* O agente se **torna mais personalizado** a cada interação.\n\n---\n\n### Estrutura dos Workflows (n8n)\n\n1. **Onboarding**\n\n   * Captura dados via webhook.\n   * Atualiza perfis no Google Sheets.\n\n2. **Chamadas**\n\n   * Workflow linear que dispara ligações via Vapi.\n   * Controle de disponibilidade de números.\n   * Verificação de segurança (emergências redirecionadas).\n\n3. **Preferências do usuário**\n\n   * Atualização de perfis e agendamentos (ex.: manhã, noite, domingos).\n\n4. **Relatórios semanais**\n\n   * Coleta informações dos perfis.\n   * Gera resumo e envia por e-mail.\n\n---\n\n### Diferenciais Técnicos\n\n* Workflows **lineares e controlados** (menos erros e mais previsibilidade).\n* **Personalização contínua** do agente de voz para cada usuário.\n* **Verificações de segurança** integradas (emergências redirecionadas).\n* Estrutura pronta para escalar, mas ainda precisaria de **compliance em saúde (ex.: HIPAA)**.\n\n---\n\n### Planos de Azim\n\n* Projeto nasceu como **prova de conceito** no hackathon.\n* Possibilidade de buscar **financiamento** para lançar publicamente.\n* Já possui **agência de criação de voice agents** para clientes.\n* Compartilha **templates e tutoriais** em seu YouTube e comunidade própria.\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14333,
+    "author": "INEMA",
+    "date": "2025-09-18T03:06:40+00:00",
+    "text": "==================================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14332,
+    "author": "INEMA",
+    "date": "2025-09-18T03:06:37+00:00",
+    "text": "Resumo do vídeo: *This Vapi + n8n Voice Agent Won \\$5,000 in Just 21 Days*\n\n1. Contexto do hackathon\n\n* O vídeo apresenta o projeto vencedor do primeiro hackathon da comunidade AI Automation Society Plus, com prêmio de US\\$ 5.000.\n* O ganhador foi Azim K, estudante de ensino médio, com apenas 6 meses de experiência em IA e automação.\n\n2. O projeto vencedor\n\n* Aplicativo web de saúde mental.\n* Front-end: Bolt.new (app web personalizado).\n* Back-end: 9 workflows no n8n.\n* Agente de voz: Vapi.\n* Autenticação e armazenamento: Google Firebase + Google Sheets.\n\n3. Funcionamento do app\n\n* Usuário faz cadastro e responde a perguntas de onboarding para personalizar a experiência.\n* O agente de voz entra em contato por ligação, conduzindo conversas terapêuticas com tom natural.\n* As conversas são transcritas e resumidas; os dados alimentam o perfil do usuário, tornando o agente cada vez mais personalizado.\n\n4. Estrutura dos workflows no n8n\n\n* Onboarding: captura dados via webhook e atualiza perfis no Google Sheets.\n* Chamadas: workflows lineares que disparam ligações via Vapi, controlam disponibilidade de números e fazem verificações de segurança (ex.: redirecionamento em caso de emergência).\n* Atualização de preferências: permite que o usuário personalize perfis e horários de ligação.\n* Relatórios semanais: extrai dados dos perfis e envia resumos por e-mail.\n\n5. Diferenciais técnicos\n\n* Design linear e controlado, com checagens de segurança e falhas.\n* Personalização contínua do agente de voz para cada usuário.\n* Estrutura escalável, embora precise de compliance (ex.: HIPAA) para uso real em saúde mental.\n\n6. Planos de Azim\n\n* O app foi criado como prova de conceito.\n* Considera buscar financiamento para levar a ideia ao público.\n* Já atua em agência criando agentes de voz para clientes e compartilha templates e tutoriais no YouTube e comunidade própria.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14331,
+    "author": "INEMA",
+    "date": "2025-09-18T03:05:55+00:00",
+    "text": "====================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14330,
+    "author": "INEMA",
+    "date": "2025-09-18T03:05:52+00:00",
+    "text": "Este Vapi + n8n Voice Agent ganhou US\\$ 5.000 em apenas 21 dias\n\nNeste vídeo, vamos explorar a submissão vencedora do nosso primeiro hackathon da comunidade, onde o prêmio principal foi de US\\$ 5.000.\nEntre centenas de participantes, o vencedor foi @Azim K, um estudante do ensino médio que vinha experimentando com IA e ferramentas de automação por apenas cerca de seis meses.\n\nNa entrevista, Azim nos mostra o aplicativo web de saúde mental que ele desenvolveu, utilizando o Vapi para o agente de voz, o n8n para os fluxos de trabalho de back-end e o Bolt.new para o aplicativo web no front-end.\nEle explica como abordou o desafio, as decisões por trás da construção e o que planeja fazer em seguida.\n\nEssa conversa é ao mesmo tempo inspiradora e prática, mostrando o que é possível quando se combina criatividade com o poder da automação de IA.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14329,
+    "author": "INEMA",
+    "date": "2025-09-18T03:05:25+00:00",
+    "text": "=========================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14328,
+    "author": "INEMA",
+    "date": "2025-09-18T03:05:06+00:00",
+    "text": "=========================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14327,
+    "author": "INEMA",
+    "date": "2025-09-18T03:05:01+00:00",
+    "text": "Agosto - Azim K\n\n\nO tema do Hackathon de agosto foi **agentes de voz**. Azeem conquistou o primeiro lugar e ganhou o prêmio em dinheiro de **US\\$ 5.000** ao criar um aplicativo web completo com agente de voz e back-end em n8n para ajudar pessoas com saúde mental e terapia assistida por IA.\n\n---\n\n### Bolt.new Project\n\n* Vídeo Tutorial\n* Download: **\"Bolt Project Zip\"**\n\n---\n\n### Vapi Inbound Assistant\n\n* Vídeo Tutorial\n* Download: **\"n8n Inbound Assistant\"**\n\n#### Configuração das Ferramentas do Vapi Inbound Assistant\n\nSão 4 ferramentas:\n\n1. **bookCalendar**\n\n   * Descrição: Agenda uma consulta com um terapeuta licenciado após verificar disponibilidade e confirmar com o usuário.\n   * Parâmetros:\n\n     * notes: Observações ou tópicos que o usuário deseja discutir\n     * requestedTime: Data/hora solicitada (formato YYYY-MM-DDTHH\\:mm)\n     * therapistGender: Gênero preferido do terapeuta (masculino, feminino, sem preferência)\n   * Server URL: Webhook do n8n\n\n2. **checkAvailability**\n\n   * Descrição: Verifica disponibilidade no calendário para marcar uma consulta.\n   * Parâmetros:\n\n     * preferredTime: Data/hora preferida (formato YYYY-MM-DDTHH\\:mm)\n   * Server URL: Webhook do n8n\n\n3. **suggestActivities**\n\n   * Descrição: Sugere atividades relevantes e personalizadas com base nos interesses e localização do usuário.\n   * Parâmetros:\n\n     * sending: Se deve enviar atividades e como (SMS ou e-mail)\n     * location: Cidade/país do usuário\n     * interests: Interesses, hobbies ou atividades mencionadas pelo usuário\n     * emailAddress: Endereço de e-mail para receber sugestões\n   * Server URL: Webhook do n8n\n\n4. **answerFaq**\n\n   * Descrição: Responde perguntas do usuário e fornece recursos/conselhos simples não clínicos.\n   * Parâmetros:\n\n     * query: Pergunta ou necessidade do usuário\n   * Server URL: Webhook do n8n\n\n---\n\n### 9 Workflows no n8n\n\n* Vídeo Tutorial\n* Download: **\"n8n Workflows Zip\"**\n\n---\n\n### Links Úteis de IA\n\n* **Vapi Voice Agents**: [https://vapi.ai/?aff=azim](https://vapi.ai/?aff=azim)\n* **Modelos de Chat Gratuitos**: Google AI Studio → aistudio.google.com\n* **Microsoft Azure OpenAI API** (US\\$ 1000+ em créditos): [https://portal.startups.microsoft.com/signup](https://portal.startups.microsoft.com/signup)\n* **OpenRouter** (acesso a vários modelos): [https://openrouter.ai/](https://openrouter.ai/)\n* **OpenAI API** (simples e comum): [https://openai.com/api/](https://openai.com/api/)\n\n---\n\nParabéns @Azim K!!\n\n### Recursos\n\n* Bolt Project Zip\n* n8n Inbound Assistant\n* n8n Workflows Zip\n\n---",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14326,
+    "author": "INEMA",
+    "date": "2025-09-18T03:03:59+00:00",
+    "text": "============================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14325,
+    "author": "INEMA",
+    "date": "2025-09-18T03:03:54+00:00",
+    "text": "Aqui está o resumo estruturado do vídeo **“I Built a Voice AI Web App In 2 Weeks (Nate Herk's Hackathon)”**:\n\n---\n\n### Contexto\n\n* Criador desenvolveu o app **Salassium** em menos de 2 semanas para um hackathon.\n* Objetivo: oferecer **apoio em saúde mental** acessível através de agentes de voz personalizados.\n\n---\n\n### Funcionalidades principais do Salassium\n\n* **Companheiro de IA personalizado**, que aprende e adapta-se ao longo das conversas.\n* **Quatro modos de suporte**:\n\n  1. Chamadas sob demanda\n  2. Check-ins matinais\n  3. Reflexões noturnas\n  4. Ligações aos domingos\n* Usuário pode escolher:\n\n  * Gênero da voz do agente\n  * Preferências de suporte (ex.: motivação matinal, reflexão noturna)\n  * Áreas de foco (ansiedade, estresse, humor etc.)\n\n---\n\n### Demonstração ao vivo\n\n* Usuário cria conta, confirma e-mail e responde **5 perguntas de onboarding**.\n* Teste de ligação sob demanda:\n\n  * Agente de voz conversa sobre **sono, estresse e meditação**.\n  * Faz exercícios simples de respiração e meditação guiada.\n  * Demonstra tom **humano, empático e natural**.\n\n---\n\n### Estrutura técnica\n\n* **Bolt.new** para front-end customizado.\n* **9 workflows no n8n** integrando:\n\n  * Webhooks\n  * Checagem de segurança (crises/emergências)\n  * Gestão de perfil no Google Sheets\n  * Criação/atualização de agentes no **Vapi**\n  * Controle de números de telefone disponíveis\n  * Registro de chamadas, transcrição e resumos\n* **Google Sheets** usado para armazenar perfis, histórico e IDs de agentes.\n\n---\n\n### Funcionalidades extras\n\n* **Agente de voz inbound**: qualquer pessoa pode ligar para um número e:\n\n  * Receber sugestões de atividades (via Perplexity + envio por SMS/e-mail)\n  * Marcar consultas com terapeutas licenciados (integrado ao Google Calendar)\n  * Tirar dúvidas (FAQ + RAG com recursos e conselhos simples)\n\n---\n\n### Impacto e visão\n\n* Mostra que **IA pode democratizar o acesso à saúde mental**.\n* Salassium poderia funcionar como **projeto sem fins lucrativos**, oferecendo suporte gratuito.\n* Todos os **9 workflows, o projeto Bolt e os recursos** estão disponíveis para consulta.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14324,
+    "author": "INEMA",
+    "date": "2025-09-18T03:02:48+00:00",
+    "text": "https://www.youtube.com/watch?v=zLQyCSunKGI",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14323,
+    "author": "INEMA",
+    "date": "2025-09-18T03:01:54+00:00",
+    "text": "[This Vapi + n8n Voice Agent Won $5,000 in J\nust 21 Day](https://www.youtube.com/watch?v=7siRW0My05o)s",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14322,
+    "author": "INEMA",
+    "date": "2025-09-18T03:01:22+00:00",
+    "text": "====================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14321,
+    "author": "INEMA",
+    "date": "2025-09-18T03:01:07+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14321_025.jpg"
+  },
+  {
+    "id": 14320,
+    "author": "INEMA",
+    "date": "2025-09-18T02:59:16+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14320_026.jpg"
+  },
+  {
+    "id": 14319,
+    "author": "INEMA",
+    "date": "2025-09-18T02:58:22+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14319_027.jpg"
+  },
+  {
+    "id": 14318,
+    "author": "INEMA",
+    "date": "2025-09-18T02:57:36+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14318_028.jpg"
+  },
+  {
+    "id": 14317,
+    "author": "INEMA",
+    "date": "2025-09-18T02:56:35+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14317_029.jpg"
+  },
+  {
+    "id": 14316,
+    "author": "INEMA",
+    "date": "2025-09-18T02:55:35+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14316_030.jpg"
+  },
+  {
+    "id": 14315,
+    "author": "INEMA",
+    "date": "2025-09-18T02:54:41+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14315_031.jpg"
+  },
+  {
+    "id": 14314,
+    "author": "INEMA",
+    "date": "2025-09-18T02:53:44+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14314_032.jpg"
+  },
+  {
+    "id": 14313,
+    "author": "INEMA",
+    "date": "2025-09-18T02:52:47+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14313_033.jpg"
+  },
+  {
+    "id": 14312,
+    "author": "INEMA",
+    "date": "2025-09-18T02:52:01+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14312_034.jpg"
+  },
+  {
+    "id": 14311,
+    "author": "INEMA",
+    "date": "2025-09-18T02:46:26+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "project-bolt-sb1-ffthe2qc (1).zip"
+  },
+  {
+    "id": 14310,
+    "author": "INEMA",
+    "date": "2025-09-18T02:46:26+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Inbound Assistant (1).json"
+  },
+  {
+    "id": 14309,
+    "author": "INEMA",
+    "date": "2025-09-18T02:46:26+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "All_n8n_Workflow_Blueprints.zip"
+  },
+  {
+    "id": 14307,
+    "author": "INEMA",
+    "date": "2025-09-18T02:39:49+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14307_038.jpg"
+  },
+  {
+    "id": 14306,
+    "author": "INEMA",
+    "date": "2025-09-18T02:39:44+00:00",
+    "text": "ap62 - Vapi Inbound Assistent - Mental Assistente",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14305,
+    "author": "INEMA",
+    "date": "2025-09-18T02:39:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14304,
+    "author": "INEMA",
+    "date": "2025-09-18T02:39:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14303,
+    "author": "INEMA",
+    "date": "2025-09-18T02:39:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14302,
+    "author": "INEMA",
+    "date": "2025-09-18T02:39:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14301,
+    "author": "INEMA",
+    "date": "2025-09-18T02:39:43+00:00",
+    "text": "https://chatgpt.com/c/68cb6da2-9310-832a-8e1d-0e27b2393966",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14300,
+    "author": "INEMA",
+    "date": "2025-09-18T02:39:42+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14299,
+    "author": "INEMA",
+    "date": "2025-09-18T02:39:37+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

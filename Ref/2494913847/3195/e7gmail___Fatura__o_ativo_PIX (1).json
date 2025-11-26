@@ -1,0 +1,3006 @@
+{
+  "name": "e7gmail - Faturação ativo PIX",
+  "nodes": [
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "id": "3dfc2258-58c7-4002-9706-27eceb879e67",
+      "name": "Wait1",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        -624,
+        -940
+      ],
+      "webhookId": "0f6b0a04-3b44-4bb9-9d38-5b7c53edf091",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cloud.llamaindex.ai/api/parsing/upload",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer llx-QRzI15kwCv30PpQUIziCYyWmBiJynqiZrBdt1ugPaC6CDj2a"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "attachment_0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "59561b45-0f77-4a1f-9233-be99d83a9cf1",
+      "name": "Subir archivo",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1240,
+        -1300
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        -376,
+        -945
+      ],
+      "id": "cb5c2783-5b63-46a9-80d0-daa4249bd345",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account nei14"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"titulo\": \"Mensal/Anual\",\n  \"tipo\": \"cartão/PIX/outros\",\n  \"valor\": \"100,00\",\n  \"transacao\": {\n    \"data_pgto\": {\n      \"valor\": \"2025-05-20\",\n      \"formato\": \"YYYY-MM-DD\"\n    },\n    \"horario\": \"23h50\",\n    \"id_transacao\": \"E00416968202505110250y5d7pOXZMCo\"\n  },\n  \"destino\": {\n    \"nome\": \"Inema Tds LTDA\",\n    \"cpf_cnpj\": \"56.626.676/0001-31\",\n    \"instituicao\": \"Nu Pagamentos Ip\"\n\n  },\n  \"pagante\": {\n    \"nome\": \"JORGE MATZ\",\n    \"cpf_cnpj\": \"##*999.744-**\",\n    \"instituicao\": \"Banco Inter S.A.\"\n\n  }\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -256,
+        -945
+      ],
+      "id": "759a1fad-b508-4a01-a770-a61a3939e795",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.markdown }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Você é um assistente especialista em extração e processamento de dados de documentos, com especialização em identificar com precisão os detalhes essenciais de uma nota fiscal ou recibo de pagamento.\n"
+            },
+            {
+              "type": "HumanMessagePromptTemplate",
+              "message": "=\nVocê é um assistente especialista em leitura e extração de dados de comprovantes bancários brasileiros (pagamentos por PIX, cartão ou outros).\n\nSua tarefa é analisar o texto de um comprovante bancário fornecido (pode ser convertido de imagem, PDF ou texto plano) e retornar **apenas um JSON** com as informações detalhadas abaixo, com precisão total e sem explicações adicionais.\n\n---\n\n### INSTRUÇÕES DE EXTRAÇÃO:\n\n1. Extraia e estruture os seguintes campos obrigatórios:\n\n```json\n{\n  \"titulo\": \"Mensal/Anual\", // ou outro título relevante do pagamento, se identificado\n  \"tipo\": \"cartão/PIX/outros\", // tipo do pagamento identificado no comprovante\n  \"valor\": \"100,00\", // valor da transação, no formato com vírgula (ex: \"250,90\")\n  \"transacao\": {\n    \"data_pgto\": {\n      \"valor\": \"2025-05-20\", // formato obrigatório: \"YYYY-MM-DD\"\n      \"formato\": \"YYYY-MM-DD\"\n    },\n    \"horario\": \"23h50\", // horário no formato \"HHhMM\"\n    \"id_transacao\": \"E00416968202505110250y5d7pOXZMCo\" // código único da transação\n  },\n  \"destino\": {\n    \"nome\": \"Inema Tds LTDA\", // nome do recebedor\n    \"cpf_cnpj\": \"56.626.676/0001-31\", // CPF ou CNPJ do recebedor\n    \"instituicao\": \"Nu Pagamentos Ip\" // banco ou instituição financeira do recebedor\n  },\n  \"pagante\": {\n    \"nome\": \"JORGE MATZ\", // nome do pagador\n    \"cpf_cnpj\": \"999.744.999-99\", // CPF ou CNPJ do pagador (pode estar mascarado)\n    \"instituicao\": \"Banco Inter S.A.\" // banco ou instituição do pagador\n  }\n}\n```\n\n---\n\n### REGRAS DE FORMATAÇÃO:\n\n* O campo **valor** deve conter **vírgula como separador decimal** (ex: \"500,00\").\n* A **data de pagamento** deve estar obrigatoriamente no formato `\"YYYY-MM-DD\"`.\n* O **horário** deve ser extraído como texto no formato `\"HHhMM\"` (ex: \"15h27\").\n* O campo **tipo** deve conter exatamente o nome do meio de pagamento: `PIX`, `cartão`, `TED`, `boleto`, etc.\n* O campo **titulo** deve vir do contexto ou nome do pagamento (mensalidade, anuidade, etc.). Se não houver, use `\"-\"`.\n\n---\n\n### OUTRAS DIRETRIZES:\n\n* Se algum campo estiver ausente, preencha com `\"null\"` (como string) ou `\"--\"` onde for apropriado.\n* O campo `cpf_cnpj` pode estar mascarado parcialmente. Retorne exatamente como estiver no comprovante.\n* Não traduza, explique ou adicione texto fora do JSON.\n\n---\n\n### EXEMPLO DE SAÍDA (somente para referência):\n\n```json\n{\n  \"titulo\": \"Assinatura Pro\",\n  \"tipo\": \"PIX\",\n  \"valor\": \"100,00\",\n  \"transacao\": {\n    \"data_pgto\": {\n      \"valor\": \"2025-05-20\",\n      \"formato\": \"YYYY-MM-DD\"\n    },\n    \"horario\": \"23h50\",\n    \"id_transacao\": \"E00416968202505110250y5d7pOXZMCo\"\n  },\n  \"destino\": {\n    \"nome\": \"Inema Tds LTDA\",\n    \"cpf_cnpj\": \"56.626.676/0001-31\",\n    \"instituicao\": \"Nu Pagamentos Ip\"\n  },\n  \"pagante\": {\n    \"nome\": \"JORGE MATZ\",\n    \"cpf_cnpj\": \"##*999.744-**\",\n    \"instituicao\": \"Banco Inter S.A.\"\n  }\n}\n```\n\n\n\n"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        -400,
+        -1160
+      ],
+      "id": "96de7c29-62c3-43fb-a2d8-56ad1bd2c369",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"data_atual\": \"{{ new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) }}\",\n  \"hora_atual\": \"{{ new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' }) }}\"\n}\n",
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -28,
+        -1165
+      ],
+      "id": "b1c7ef6c-ee48-45ff-9b78-1d00dfb6b883",
+      "name": "set",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "SUCCESS",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "SUCCESS"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "PENDING",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "PENDING"
+            }
+          ]
+        },
+        "options": {
+          "allMatchingOutputs": false
+        }
+      },
+      "id": "48af307d-27ee-44e4-8cd5-f3c33064485e",
+      "name": "Esta pronto?",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        -844,
+        -1115
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "url": "=https://api.cloud.llamaindex.ai/api/parsing/job/{{ $('Obter info').item.json.id }}/result/markdown",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer llx-QRzI15kwCv30PpQUIziCYyWmBiJynqiZrBdt1ugPaC6CDj2a"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -624,
+        -1165
+      ],
+      "id": "d8278a46-828e-45f5-9237-15f6d0e29cb0",
+      "name": "Descarregar info"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.cloud.llamaindex.ai/api/parsing/job/{{ $('Subir archivo').item.json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer llx-QRzI15kwCv30PpQUIziCYyWmBiJynqiZrBdt1ugPaC6CDj2a"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "17a12f58-e024-4422-8b8d-3b24acd90e7f",
+      "name": "Obter info",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1064,
+        -1040
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8",
+          "mode": "list",
+          "cachedResultName": "planilha_transacao",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 925886341,
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit#gid=925886341"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "[REMOVED]",
+            "dtReg": "={{ $json.data_atual }}-{{ $json.hora_atual }}",
+            "titulo": "={{ $('Basic LLM Chain').item.json.output.titulo }}",
+            "tipo": "={{ $('Basic LLM Chain').item.json.output.tipo }}",
+            "valor": "={{ $('Basic LLM Chain').item.json.output.valor }}",
+            "data_pagamento": "=\n{{ $json.output.transacao.data_pgto.valor }}",
+            "formato_data": "={{ $('Basic LLM Chain').item.json.output.transacao.data_pgto.formato }}",
+            "horario": "={{ $('Basic LLM Chain').item.json.output.transacao.horario }}",
+            "destino_nome": "={{ $('Basic LLM Chain').item.json.output.destino.nome }}",
+            "destino_cpf_cnpj": "={{ $('Basic LLM Chain').item.json.output.destino.cpf_cnpj }}",
+            "destino_instituicao": "={{ $('Basic LLM Chain').item.json.output.destino.instituicao }}",
+            "pagante_nome": "={{ $('Basic LLM Chain').item.json.output.pagante.nome\n }}",
+            "pagante_cpf_cnpj": "={{ $('Basic LLM Chain').item.json.output.pagante.cpf_cnpj }}",
+            "pagante_instituicao": "={{ $('Basic LLM Chain').item.json.output.pagante.instituicao }}",
+            "mensagem": "={{ $('Gmail Trigger2').item.json.text }}",
+            "id_transacao": "={{ $('Basic LLM Chain').item.json.output.transacao.id_transacao }}",
+            "email": "={{ $('Gmail Trigger2').item.json.from.value[0].address }}",
+            "fone": "="
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "dtReg",
+              "displayName": "dtReg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "valor",
+              "displayName": "valor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "data_pagamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "formato_data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "horario",
+              "displayName": "horario",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "id_transacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "destino_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "destino_cpf_cnpj",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "destino_instituicao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "pagante_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "pagante_cpf_cnpj",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "pagante_instituicao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fone",
+              "displayName": "fone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        192,
+        -1165
+      ],
+      "id": "78cf01b0-80e8-4528-9b5b-1e70b0cfa008",
+      "name": "Atualizar bbdd",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account INEMATDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Gmail Trigger2').item.json.id }}",
+        "message": "Recebemos seu email e estamos processando ele.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -1284,
+        -940
+      ],
+      "id": "f0ab73f8-0e5a-4c20-91fa-16abd432c84f",
+      "name": "Gmail1",
+      "webhookId": "1f576f4e-bff5-483a-b93c-c71e99a278e6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail PIX"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if message contains attachments\nconst hasAttachments = item => {\n  // Check if attachments array exists and has entries\n  if (item.json.attachments && Array.isArray(item.json.attachments) && item.json.attachments.length > 0) {\n    return true;\n  }\n  \n  // Also check for binary data that could contain attachments\n  if (item.binary) {\n    const binaryKeys = Object.keys(item.binary);\n    for (const key of binaryKeys) {\n      if (item.binary[key].mimeType !== 'text/plain' && item.binary[key].mimeType !== 'text/html') {\n        return true;\n      }\n    }\n  }\n  \n  return false;\n};\n\n// Get attachment type if exists\nconst getAttachmentTypes = (item) => {\n  const types = new Set();\n  \n  // Check explicit attachments array\n  if (item.json.attachments && Array.isArray(item.json.attachments)) {\n    item.json.attachments.forEach(attachment => {\n      if (attachment.contentType) {\n        types.add(attachment.contentType.split('/')[0]);\n      }\n    });\n  }\n  \n  // Check binary data\n  if (item.binary) {\n    const binaryKeys = Object.keys(item.binary);\n    for (const key of binaryKeys) {\n      if (item.binary[key].mimeType !== 'text/plain' && item.binary[key].mimeType !== 'text/html') {\n        const mainType = item.binary[key].mimeType.split('/')[0];\n        types.add(mainType);\n      }\n    }\n  }\n  \n  return Array.from(types);\n};\n\nconst inputItems = $input.all();\nconst outputItems = [];\n\nfor (const item of inputItems) {\n  // Determine if the message has attachments\n  const hasAttachment = hasAttachments(item);\n  \n  // Get types of attachments if any\n  const attachmentTypes = hasAttachment ? getAttachmentTypes(item) : [];\n  \n  const newItem = {\n    json: {\n      ...item.json,\n      hasAttachment,\n      attachmentTypes,\n      // Create simple flags for common attachment types\n      hasImageAttachment: attachmentTypes.includes('image'),\n      hasPdfAttachment: attachmentTypes.some(type => item.json.attachments?.some(a => a.contentType === 'application/pdf') || \n                                              (item.binary && Object.values(item.binary).some(b => b.mimeType === 'application/pdf'))),\n      hasDocumentAttachment: attachmentTypes.includes('application') || \n                             (item.binary && Object.values(item.binary).some(b => \n                               b.mimeType.includes('document') || \n                               b.mimeType.includes('msword') || \n                               b.mimeType.includes('officedocument'))),\n      attachmentNames: item.json.attachments ? item.json.attachments.map(a => a.filename) : \n                      (item.binary ? Object.values(item.binary).map(b => b.fileName).filter(name => name) : []),\n      // Create a user-friendly summary\n      attachmentSummary: hasAttachment ? \n        `Email contains ${attachmentTypes.length} type(s) of attachments: ${attachmentTypes.join(', ')}` : \n        'Email has no attachments'\n    }\n  };\n  \n  // Keep binary data intact\n  if (item.binary) {\n    newItem.binary = item.binary;\n  }\n  \n  outputItems.push(newItem);\n}\n\nreturn outputItems;"
+      },
+      "id": "4bb6bc03-8ac6-43a6-9ecb-3b837c09988e",
+      "name": "Analyze Attachments1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2760,
+        -1040
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.hasAttachment }}",
+              "value2": "={{true}}"
+            }
+          ]
+        }
+      },
+      "id": "c1beee48-f5ac-496f-9cad-4f4ce4b373c1",
+      "name": "Has Attachments?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -2540,
+        -1040
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.hasImageAttachment }}",
+              "value2": "={{true}}"
+            }
+          ]
+        }
+      },
+      "id": "0fbccbe8-77cd-43b1-a4cf-816b2220a746",
+      "name": "Is Image?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -2320,
+        -1240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.hasPdfAttachment }}",
+              "value2": "={{true}}"
+            }
+          ]
+        }
+      },
+      "id": "29f305f2-cd2a-447a-93c1-bcc5acb5a103",
+      "name": "Is PDF?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -2020,
+        -1240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process image attachment\nconst item = $input.item;\nreturn {\n  json: {\n    ...item.json,\n    message: \"Processing image attachment(s)\",\n    imageAttachments: item.json.attachmentNames.filter(name => {\n      const ext = name.split('.').pop().toLowerCase();\n      return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'tiff'].includes(ext);\n    })\n  },\n  binary: item.binary\n};"
+      },
+      "id": "1ce602b2-0775-4d63-ac87-fc9cb7dd2768",
+      "name": "Process Image1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1980,
+        -1440
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process PDF attachment\nconst item = $input.item;\nreturn {\n  json: {\n    ...item.json,\n    message: \"Processing PDF attachment(s)\",\n    pdfAttachments: item.json.attachmentNames.filter(name => name.toLowerCase().endsWith('.pdf'))\n  },\n  binary: item.binary\n};"
+      },
+      "id": "bc0e06dd-c919-4e8f-ab2e-48d1d504a6d3",
+      "name": "Process PDF1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1740,
+        -1320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.hasDocumentAttachment }}",
+              "operation": "equals",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "id": "60d55972-40d8-48c1-97b8-c65baf7f8e03",
+      "name": "Is Document?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1724,
+        -1140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process document attachment\nconst item = $input.item;\nreturn {\n  json: {\n    ...item.json,\n    message: \"Processing document attachment(s)\",\n    documentAttachments: item.json.attachmentNames.filter(name => {\n      const ext = name.split('.').pop().toLowerCase();\n      return ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'rtf', 'odt', 'ods', 'odp'].includes(ext);\n    })\n  },\n  binary: item.binary\n};"
+      },
+      "id": "05d87191-d6fb-463b-ae16-e5a627f23a01",
+      "name": "Process Document1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1504,
+        -1140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process for no attachments case\nconst item = $input.item;\nreturn {\n  json: {\n    ...item.json,\n    message: \"Email has no attachments\"\n  }\n};"
+      },
+      "id": "cb3454a0-bd21-455f-8963-2b2864bf5987",
+      "name": "No Attachments1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2300,
+        -740
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "4db0a1e9-3065-45e5-b29b-2a0c60879555",
+      "name": "Merge1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        -1480,
+        -1420
+      ]
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -4020,
+        -1340
+      ],
+      "id": "6b54f593-e983-459a-bedf-4cdd090b725e",
+      "name": "Gmail Trigger2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail PIX"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8",
+          "mode": "list",
+          "cachedResultName": "planilha_transacao",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1762533429,
+          "mode": "list",
+          "cachedResultName": "Mensagens_Resumo",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit#gid=1762533429"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "mensagem": "={{ $json.message.content }}",
+            "email": "={{ $('Gmail Trigger2').item.json.from.value[0].address }}",
+            "nome": "={{ $('Gmail Trigger2').item.json.from.value[0].name }}",
+            "tipo": "mensagem vip",
+            "dtEmail": "={{ $('Gmail Trigger2').item.json.date }}",
+            "assunto ": "={{ $('Gmail Trigger2').item.json.subject }}",
+            "destino": "={{ $('Gmail Trigger2').item.json.to.value[0].address }}",
+            "id": "[REMOVED]"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "dtReg",
+              "displayName": "dtReg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "dtEmail",
+              "displayName": "dtEmail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "assunto ",
+              "displayName": "assunto ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resposta",
+              "displayName": "resposta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "destino",
+              "displayName": "destino",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -1720,
+        -740
+      ],
+      "id": "6f3ef963-01fc-4fec-acb4-c76ffe40183d",
+      "name": "Atualizar bbdd1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account INEMATDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8",
+          "mode": "list",
+          "cachedResultName": "planilha_transacao",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2129219648,
+          "mode": "list",
+          "cachedResultName": "mensagens",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit#gid=2129219648"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "[REMOVED]",
+            "dtReg": "=",
+            "tipo": "mensagem",
+            "mensagem": "={{ $('Gmail Trigger2').item.json.text }}",
+            "email": "={{ $('Gmail Trigger2').item.json.from.value[0].address }}",
+            "dtEmail": "={{ $('Gmail Trigger2').item.json.date }}",
+            "assunto ": "={{ $('Gmail Trigger2').item.json.subject }}",
+            "destino": "={{ $('Gmail Trigger2').item.json.to.value[0].address }}",
+            "nome": "={{ $('Gmail Trigger2').item.json.from.value[0].name }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "dtReg",
+              "displayName": "dtReg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "dtEmail",
+              "displayName": "dtEmail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "assunto ",
+              "displayName": "assunto ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "resposta",
+              "displayName": "resposta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "destino",
+              "displayName": "destino",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -1520,
+        -740
+      ],
+      "id": "cb08db82-98d3-44f0-a763-3104b009043a",
+      "name": "Atualizar bbdd2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account INEMATDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=resuma o assunto em 5 palavras  {{ $('Gmail Trigger2').item.json.textAsHtml }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -2100,
+        -740
+      ],
+      "id": "50d29eb0-5c8d-4d5e-b0f6-004d730da21f",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account nei14"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Gmail Trigger2').item.json.id }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -2720,
+        -1940
+      ],
+      "id": "c9d9f2aa-deaf-44c2-9aca-af70c7e434ca",
+      "name": "Gmail",
+      "webhookId": "30e492df-0d97-4c22-ae48-1d7be27d8228",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail PIX"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "messageId": "={{ $('Gmail Trigger2').item.json.id }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -2580,
+        -1940
+      ],
+      "id": "5fc48aa7-6980-4beb-ad12-00a156a7165c",
+      "name": "delete",
+      "webhookId": "4e82b5ec-7746-4de6-bf3c-38e65886f02d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail PIX"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Gmail Trigger2').item.json.id }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -1280,
+        -740
+      ],
+      "id": "5c3bd309-307f-427f-a8bf-cac463c3b73b",
+      "name": "Gmail3",
+      "webhookId": "b134e573-da39-4bf0-a617-d9945a12f7ed",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail PIX"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.from.value[0].address }}",
+                    "rightValue": "no-reply",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "[REMOVED]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "no-reply"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.from.value[0].address }}",
+                    "rightValue": "todomundo@nubank.com.br",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "nubank"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.from.value[0].address }}",
+                    "rightValue": "inema.vip@gmail.com",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "INEMAVIP"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.from.value[0].address }}",
+                    "rightValue": "inemapix@gmail.com",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "INEMAPIX"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "outros"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -3240,
+        -1300
+      ],
+      "id": "51d294b9-8f8c-4aa2-9a0a-b987bc696da6",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        -1480,
+        -1720
+      ],
+      "id": "60f496b9-69f1-4cfb-977d-41ff788ba49c",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account nei14"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"valor\": \"100.00\",\n  \"nome\": \"FELIPE HAAS CAMPOS\",\n  \"data\": \"2025-05-12\",\n  \"horario\": \"16:55\",\n  \"id_transferencia\": \"awyt8jyj8it4e3egni7jij3ttfgasby\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -1320,
+        -1680
+      ],
+      "id": "1d850ab9-b13b-417b-85d2-767ed546a7c6",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensagemLimpa }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Você é um assistente especialista em extração de dados de transferências bancárias.\n\nSeu trabalho é retornar **apenas um JSON** com as seguintes chaves:\n\n- valor → valor recebido, apenas números e vírgulas (ex: \"100,00\")\n- nome → nome do remetente (ex: \"FELIPE HAAS CAMPOS\")\n- data → no formato **\"YYYY_MM_DD\"** (ex: \"2025-05-14\") \n   - Se o ano não estiver presente no texto, assuma automaticamente o ano atual (2025).\n- horario → no formato **\"HH:MM\"** (ex: \"16:55\")\n- id_transferencia → apenas a string que identifica a transação Pix (normalmente aparece no fim do e-mail, ex: \"awyt8jyj8it4e3egni7jij3ttfgasby\")\n\nIMPORTANTE:\n- Não inclua explicações ou comentários.\n- Retorne **apenas o JSON puro**, exatamente neste formato:\n\n```json\n{\n  \"valor\": \"100,00\",\n  \"nome\": \"FELIPE HAAS CAMPOS\",\n  \"data\": \"2025-05-14\",\n  \"horario\": \"16:55\",\n  \"id_transferencia\": \"awyt8jyj8it4e3egni7jij3ttfgasby\"\n}"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        -1500,
+        -1940
+      ],
+      "id": "a2cb3dcd-05ae-46cb-9bf8-70e3b156fd30",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"data_atual\": \"{{ new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) }}\",\n  \"hora_atual\": \"{{ new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' }) }}\"\n}\n",
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1120,
+        -1940
+      ],
+      "id": "9281c5ae-8967-41bd-b739-5664a6e0daa2",
+      "name": "set1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8",
+          "mode": "list",
+          "cachedResultName": "planilha_transacao",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 615934784,
+          "mode": "list",
+          "cachedResultName": "nubank",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit#gid=615934784"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "titulo": "recebimento PIX",
+            "tipo": "PIX",
+            "valor": "={{ $json.output.valor }}",
+            "data_pagamento": "={{ $json.output.data }}",
+            "horario": "={{ $json.output.horario }}",
+            "id_transacao": "={{ $json.output.id_transferencia }}",
+            "destino_nome": "inema.vip",
+            "pagante_nome": "={{ $json.output.nome }}",
+            "id": "[REMOVED]",
+            "dtReg": "={{ $json.data_atual }} - {{ $json.hora_atual }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "dtReg",
+              "displayName": "dtReg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "valor",
+              "displayName": "valor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "data_pagamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "formato_data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "horario",
+              "displayName": "horario",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "id_transacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "destino_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "destino_cpf_cnpj",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "destino_instituicao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "pagante_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "pagante_cpf_cnpj",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "pagante_instituicao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fone",
+              "displayName": "fone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -900,
+        -1940
+      ],
+      "id": "38201397-29a6-43a1-966d-cac751b68845",
+      "name": "Atualizar bbdd4",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account INEMATDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega a mensagem completa\nlet textoOriginal = $('Gmail Trigger2').first().json.text || '';\n\n// Limpeza básica\nlet textoLimpo = textoOriginal\n  .replace(/\\n+/g, '\\n')\n  .replace(/[‌‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍]+/g, '')\n  .replace(/\\s{2,}/g, ' ')\n  .trim();\n\n// Recorte até \"Abraços,\"\nconst marcador = 'Abraços,';\nconst index = textoLimpo.indexOf(marcador);\nif (index !== -1) {\n  textoLimpo = textoLimpo.substring(0, index + marcador.length);\n}\n\n// Retorno com novo campo\nreturn [{\n  json: {\n    ...$json,\n    mensagemLimpa: textoLimpo\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2000,
+        -1940
+      ],
+      "id": "dd5a4faf-8382-4dd9-9fbc-c9ce0c9814d4",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 5,
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -3580,
+        -780
+      ],
+      "id": "de768505-2854-4732-92c0-38f28202208a",
+      "name": "Gmail4",
+      "webhookId": "1ea40000-9db9-44b3-b15e-e52d43a7f66a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail PIX"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3840,
+        -760
+      ],
+      "id": "b50dc654-a66d-44d9-9bab-6c03ed52b6f4",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"name\": \"Gmail Trigger2\",\n  \"type\": \"n8n-nodes-base.set\",\n  \"typeVersion\": 1,\n  \"position\": [\n    600,\n    300\n  ],\n  \"parameters\": {\n    \"keepOnlySet\": true,\n    \"values\": {\n      \"string\": [\n        {\n          \"name\": \"text\",\n          \"value\": \"={{ $json.snippet }}\"\n        },\n        {\n          \"name\": \"textAsHtml\",\n          \"value\": \"={{ Buffer.from($json.payload.parts.find(p => p.mimeType === 'text/html')?.body?.data || '', 'base64').toString('utf8') }}\"\n        },\n        {\n          \"name\": \"messageId\",\n          \"value\": \"={{ $json.id }}\"\n        },\n        {\n          \"name\": \"subject\",\n          \"value\": \"={{ $json.payload.headers.find(h => h.name === 'Subject')?.value || '' }}\"\n        },\n        {\n          \"name\": \"from\",\n          \"value\": \"={{ $json.payload.headers.find(h => h.name === 'From')?.value || '' }}\"\n        },\n        {\n          \"name\": \"to\",\n          \"value\": \"={{ $json.payload.headers.find(h => h.name === 'To')?.value || '' }}\"\n        }\n      ]\n    }\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3460,
+        -1140
+      ],
+      "id": "877a5b82-f206-4090-8cd8-a645aff31f49",
+      "name": "Gmail Trigger",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Gmail Trigger2').item.json.id }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -540,
+        -1940
+      ],
+      "id": "9f972631-1cda-4f91-a476-1bb36104f14a",
+      "name": "Gmail5",
+      "webhookId": "04a871ee-14a4-4ff5-94e0-b58973091dcb",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail PIX"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8",
+          "mode": "list",
+          "cachedResultName": "planilha_transacao",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 615934784,
+          "mode": "list",
+          "cachedResultName": "nubank",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit#gid=615934784"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "pagante_nome",
+              "lookupValue": "={{ $json.pagante_nome }}"
+            },
+            {
+              "lookupColumn": "valor",
+              "lookupValue": "={{ $json.valor }}"
+            },
+            {
+              "lookupColumn": "data_pagamento",
+              "lookupValue": "={{ $json.data_pagamento.replace(/\\n/g, '') }}"
+            }
+          ]
+        },
+        "combineFilters": "",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        600,
+        -1520
+      ],
+      "id": "2cd7f672-0814-4ad7-80f0-d06a8adc9fa8",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account INEMATDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8",
+          "mode": "list",
+          "cachedResultName": "planilha_transacao",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 615934784,
+          "mode": "list",
+          "cachedResultName": "nubank",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit#gid=615934784"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json.row_number }}",
+            "situacao": "localizado",
+            "email": "={{ $('Atualizar bbdd').item.json.email }}",
+            "pagante_cpf_cnpj": "={{ $('Atualizar bbdd').item.json.pagante_cpf_cnpj }}",
+            "pagante_instituicao": "={{ $('Atualizar bbdd').item.json.pagante_instituicao }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "dtReg",
+              "displayName": "dtReg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "valor",
+              "displayName": "valor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "situacao",
+              "displayName": "situacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "data_pagamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "formato_data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "horario",
+              "displayName": "horario",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "id_transacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "destino_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "destino_cpf_cnpj",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "destino_instituicao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "pagante_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "pagante_cpf_cnpj",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "pagante_instituicao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fone",
+              "displayName": "fone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        860,
+        -1600
+      ],
+      "id": "73545818-fa54-494f-afc0-d7135e8ba995",
+      "name": "Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account INEMATDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.temDados }}",
+              "rightValue": "={{true}}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        800,
+        -920
+      ],
+      "id": "a627f679-4beb-416a-9bab-ed16811dde9c",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8",
+          "mode": "list",
+          "cachedResultName": "planilha_transacao",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 615934784,
+          "mode": "list",
+          "cachedResultName": "nubank",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit#gid=615934784"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json.row_number }}",
+            "situacao": "localizado",
+            "email": "={{ $('Atualizar bbdd').item.json.email }}",
+            "pagante_cpf_cnpj": "={{ $('Atualizar bbdd').item.json.pagante_cpf_cnpj }}",
+            "pagante_instituicao": "={{ $('Atualizar bbdd').item.json.pagante_instituicao }}",
+            "formato_data": "={{ $json.data_atual }}-{{ $json.hora_atual }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "dtReg",
+              "displayName": "dtReg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "valor",
+              "displayName": "valor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "situacao",
+              "displayName": "situacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "data_pagamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "formato_data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "horario",
+              "displayName": "horario",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "id_transacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "destino_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "destino_cpf_cnpj",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "destino_instituicao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "pagante_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "pagante_cpf_cnpj",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "pagante_instituicao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fone",
+              "displayName": "fone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        -1180
+      ],
+      "id": "81a467f5-c231-4d3f-8f4c-d60de0e97500",
+      "name": "Google Sheets3",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account INEMATDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = items[0]?.json || {};\nconst temDados = Object.keys(item).length > 0;\n\nreturn [{\n  json: {\n    ...item,\n    temDados\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        -920
+      ],
+      "id": "99a0725a-4e46-4f24-8d7d-33d1d3edafa9",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8",
+          "mode": "list",
+          "cachedResultName": "planilha_transacao",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 615934784,
+          "mode": "list",
+          "cachedResultName": "nubank",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit#gid=615934784"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "pagante_nome",
+              "lookupValue": "={{ $json.pagante_nome }}"
+            },
+            {
+              "lookupColumn": "valor",
+              "lookupValue": "={{ $json.valor }}"
+            },
+            {
+              "lookupColumn": "data_pagamento",
+              "lookupValue": "={{ $json.data_pagamento.replace(/\\n/g, '') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        500,
+        -920
+      ],
+      "id": "6f1b6ca2-4401-4c5b-9452-e02de98a2f9a",
+      "name": "Google Sheets4",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account INEMATDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8",
+          "mode": "list",
+          "cachedResultName": "planilha_transacao",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1449159856,
+          "mode": "list",
+          "cachedResultName": "SemNubank",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1QB4S_KBs3zc30HCRgM4-TGTC9HwSG0FqHp45pqQflu8/edit#gid=1449159856"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "pagante_nome": "={{ $('set').item.json.output.pagante.nome }}",
+            "pagante_cpf_cnpj": "={{ $('set').item.json.output.pagante.cpf_cnpj }}",
+            "pagante_instituicao": "={{ $('set').item.json.output.pagante.instituicao }}",
+            "dtReg": "={{ $('set').item.json.data_atual }}-{{ $('set').item.json.hora_atual }}",
+            "tipo": "={{ $('set').item.json.output.tipo }}",
+            "valor": "={{ $('set').item.json.output.valor }}",
+            "situacao": "semNubank",
+            "email": "={{ $('Atualizar bbdd').item.json.email }}",
+            "data_pagamento": "={{ $('set').item.json.output.transacao.data_pgto.valor }}",
+            "formato_data": "={{ $('set').item.json.output.transacao.data_pgto.formato }}",
+            "horario": "={{ $('set').item.json.output.transacao.horario }}",
+            "id_transacao": "={{ $('set').item.json.output.transacao.id_transacao }}",
+            "destino_nome": "={{ $('set').item.json.output.destino.nome }}",
+            "destino_cpf_cnpj": "={{ $('set').item.json.output.destino.cpf_cnpj }}",
+            "destino_instituicao": "={{ $('set').item.json.output.destino.instituicao }}",
+            "mensagem": "={{ $('Atualizar bbdd').item.json.mensagem }}",
+            "titulo": "pagto ok",
+            "id": "[REMOVED]",
+            "fone": "={{ $('Atualizar bbdd').item.json.fone }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "dtReg",
+              "displayName": "dtReg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "valor",
+              "displayName": "valor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "situacao",
+              "displayName": "situacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "data_pagamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "formato_data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "horario",
+              "displayName": "horario",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "id_transacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "destino_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "destino_cpf_cnpj",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "destino_instituicao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "pagante_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "pagante_cpf_cnpj",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "pagante_instituicao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fone",
+              "displayName": "fone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1040,
+        -640
+      ],
+      "id": "855546d3-2248-4aa3-ac48-add0c7669b68",
+      "name": "Google Sheets2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account INEMATDS"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Obter info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subir archivo": {
+      "main": [
+        [
+          {
+            "node": "Obter info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set": {
+      "main": [
+        [
+          {
+            "node": "Atualizar bbdd",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esta pronto?": {
+      "main": [
+        [
+          {
+            "node": "Descarregar info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descarregar info": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obter info": {
+      "main": [
+        [
+          {
+            "node": "Esta pronto?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar bbdd": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Sheets4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail1": {
+      "main": [
+        [
+          {
+            "node": "Obter info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Attachments1": {
+      "main": [
+        [
+          {
+            "node": "Has Attachments?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Attachments?1": {
+      "main": [
+        [
+          {
+            "node": "Is Image?1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Attachments1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Image?1": {
+      "main": [
+        [
+          {
+            "node": "Process Image1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is PDF?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is PDF?1": {
+      "main": [
+        [
+          {
+            "node": "Process PDF1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Document?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Image1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process PDF1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Is Document?1": {
+      "main": [
+        [
+          {
+            "node": "Process Document1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger2": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Subir archivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Attachments1": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar bbdd1": {
+      "main": [
+        [
+          {
+            "node": "Atualizar bbdd2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Atualizar bbdd1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "main": [
+        [
+          {
+            "node": "delete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar bbdd2": {
+      "main": [
+        []
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [],
+        [
+          {
+            "node": "Analyze Attachments1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "set1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set1": {
+      "main": [
+        [
+          {
+            "node": "Atualizar bbdd4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail4": {
+      "main": [
+        [
+          {
+            "node": "Gmail Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Gmail4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar bbdd4": {
+      "main": [
+        []
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Sheets2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets4": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ecac3e89-476c-4eb3-b967-0cbc10c2a014",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "zuhi7zs4EBE7Bfp4",
+  "tags": []
+}

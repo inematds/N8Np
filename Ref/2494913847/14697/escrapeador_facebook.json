@@ -1,0 +1,1528 @@
+{
+  "name": "escrapeador_facebook",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c515d85d-988d-4b0b-b1c3-e2858aea9e3d",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -1296,
+        496
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.snapshot.videos[0].video_sd_url }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Video"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.snapshot.images[0].original_image_url }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Text"
+        }
+      },
+      "id": "0bd8e2db-e8fa-4463-b579-3d496366a3fa",
+      "name": "Switch By Type",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        -240,
+        496
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "41793dfd-29a6-4f2c-8cc8-86cfd803e97d",
+      "name": "Loop Over Videos",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        -16,
+        192
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.snapshot.videos[0].video_sd_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "dc5473b3-88ce-41c8-bb6d-23c8cb0e2d62",
+      "name": "Download Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        208,
+        192
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/upload/v1beta/files?key={{ $('Variables de Configuración').item.json.gemini_api_key }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "video/mp4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "747883ce-c817-4955-8420-26f66ec59c19",
+      "name": "Upload Video to Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        432,
+        192
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $('Variables de Configuración').item.json.prompt_sistema }}",
+              "role": "system"
+            },
+            {
+              "content": "={{ $('Variables de Configuración').item.json.instrucciones_analisis }}\n\n{{ $json.contexto_anuncio }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "id": "7707fd81-57ac-4fc8-abc1-1af4618cff48",
+      "name": "Generate Video Summary",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        1472,
+        192
+      ],
+      "typeVersion": 1.8,
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "prueba"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "2f0a4b94-af9c-4d39-a317-329127e50c86",
+      "name": "Loop Over Images",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        64,
+        672
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $('Variables de Configuración').first().json.prompt_sistema }}",
+              "role": "system"
+            },
+            {
+              "content": "={{ $('Variables de Configuración').first().json.instrucciones_analisis }}\n\n{{ $json.full_contexto }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "7f0c139d-f207-41aa-a982-7d13493b922a",
+      "name": "Generate Image Summary",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        880,
+        672
+      ],
+      "typeVersion": 1.8,
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "prueba"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "id": "ec5eed44-312c-40f5-9ead-39cd3d9aea47",
+      "name": "Wait Between Images",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        1360,
+        672
+      ],
+      "webhookId": "image-loop-wait",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "2fc55a8e-be67-4cc7-b938-875712e25f9d",
+      "name": "Loop Over Text Ads",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        -32,
+        1120
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $('Variables de Configuración').first().json.prompt_sistema }}",
+              "role": "system"
+            },
+            {
+              "content": "={{ $('Variables de Configuración').first().json.instrucciones_analisis }}\n\n{{ $json.contexto_anuncio }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "id": "4e24fdc1-54d4-44eb-ac3b-acf1f855f696",
+      "name": "Generate Text Summary",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        368,
+        1120
+      ],
+      "typeVersion": 1.8,
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "prueba"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1xaNsQXFai8cRYHxcRx1RkEaiJFtCiaOLQe4iJEgwhWk/edit?us",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ad_archive_id": "={{ $('Loop Over Text Ads').first().json.ad_archive_id }}",
+            "page_id": "={{ $('Loop Over Text Ads').first().json.page_id }}",
+            "type": "text",
+            "date_added": "={{ $now }}",
+            "page_name": "={{ $('Loop Over Text Ads').first().json.snapshot.page_name }}",
+            "page_url": "={{ $('Loop Over Text Ads').first().json.snapshot.page_profile_uri }}",
+            "summary": "={{ $json.message.content.summary }}",
+            "rewritten_ad_copy": "={{ $json.message.content.rewrittenAdCopy }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "ad_archive_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "page_id",
+              "displayName": "page_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_added",
+              "displayName": "date_added",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "page_name",
+              "displayName": "page_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "page_url",
+              "displayName": "page_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "rewritten_ad_copy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "image_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "video_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "seleccionado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "5d284709-3aa0-43f3-a8d0-b2d6387c029e",
+      "name": "Save Text Result",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        672,
+        1120
+      ],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets Iván"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "id": "26206fad-a001-4d86-9ebc-1b4e17a6616d",
+      "name": "Wait Between Text Ads",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        848,
+        1120
+      ],
+      "webhookId": "text-loop-wait",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "={{ $('Variables de Configuración').first().json.prompt_analisis_imagen }}",
+        "imageUrls": "={{ $('Loop Over Images').item.json.snapshot.images[0].original_image_url }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        480,
+        672
+      ],
+      "id": "1eba62bc-0e86-49b8-a21c-cecd5a1e6304",
+      "name": "Analyze an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "prueba2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1xaNsQXFai8cRYHxcRx1RkEaiJFtCiaOLQe4iJEgwhWk/edit?us",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1xaNsQXFai8cRYHxcRx1RkEaiJFtCiaOLQe4iJEgwhWk/edit?us",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ad_archive_id": "={{ $('escrapeador_facebook').first().json.ad_archive_id }}",
+            "page_id": "={{ $('filtro_likes').first().json.page_id }}",
+            "type": "imagen",
+            "page_name": "={{ $('filtro_likes').first().json.snapshot.page_name }}",
+            "date_added": "={{ $now }}",
+            "page_url": "={{ $('filtro_likes').first().json.snapshot.page_profile_uri }}",
+            "summary": "={{ $json.message.content.resumen }}",
+            "rewritten_ad_copy": "={{ $json.message.content.copiaReescrita }}",
+            "image_prompt": "={{ $('Analyze an image').first().json.content.parts[0].text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "ad_archive_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "page_id",
+              "displayName": "page_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_added",
+              "displayName": "date_added",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "page_name",
+              "displayName": "page_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "page_url",
+              "displayName": "page_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "rewritten_ad_copy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "image_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "video_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "seleccionado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "a416ec4e-77af-4a78-851b-3d74ff65cfa0",
+      "name": "Save Image Result",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1168,
+        672
+      ],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets Iván"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $json.advertiser.ad_library_page_info.page_info.likes }}",
+              "rightValue": "={{ $('Variables de Configuración').item.json.minimo_likes }}"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f8bf5ac3-2888-4e5f-a2fb-fe35f8591dbc",
+      "name": "filtro_likes",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        -464,
+        496
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "termino_busqueda",
+              "value": "shopify",
+              "type": "string"
+            },
+            {
+              "id": "country",
+              "name": "pais",
+              "value": "ES",
+              "type": "string"
+            },
+            {
+              "id": "min_likes",
+              "name": "minimo_likes",
+              "value": 1000,
+              "type": "number"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "maximo_resultados",
+              "value": 20,
+              "type": "number"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "apify_api_key",
+              "value": "apify_api_wUwKIyEkD0qVQlLlGJotO3BYaqOnkM4zKsLo",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "gemini_api_key",
+              "value": "AIzaSyDBzRB77lhjPAcvILeEzLEPeTOXibZxq0E",
+              "type": "string"
+            },
+            {
+              "id": "sheet_id",
+              "name": "sheet_id",
+              "value": "1Cgm0DfKQxgtsjdw6h2LFVBtZnLAioTntzdXgfJCJIqo",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "prompt_sistema",
+              "value": "Eres un analista experto en publicidad de ecommerce y productos Shopify. Tu especialidad es analizar anuncios de Facebook/Instagram para tiendas online, identificando estrategias de venta, propuestas de valor y técnicas de conversión. Debes proporcionar resultados en formato JSON: {\"resumen\":\"\",\"copiaReescrita\":\"\"}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "prompt_analisis_video",
+              "value": "Analiza este video publicitario de producto/tienda Shopify con máximo detalle. Enfócate en:\n\n**PRODUCTO Y OFERTA:**\n- ¿Qué producto/servicio se promociona?\n- Precio visible o estructura de oferta (descuentos, bundles, envío gratis)\n- Propuesta de valor única (USP)\n- Beneficios vs características mostradas\n\n**ELEMENTOS VISUALES:**\n- Primeros 3 segundos (hook visual)\n- Demostración del producto en uso\n- Before/After o prueba social\n- Calidad de producción (UGC vs profesional)\n- Textos en pantalla y CTAs visuales\n\n**ESTRATEGIA DE MENSAJE:**\n- Problema que resuelve\n- Emociones activadas (urgencia, deseo, FOMO, aspiración)\n- Público objetivo implícito (edad, género, intereses)\n- Estilo del copy (directo, storytelling, educativo)\n\n**ELEMENTOS DE CONVERSIÓN:**\n- Call-to-action principal\n- Urgencia o escasez mencionada\n- Garantías o reducción de riesgo\n- Testimonios o prueba social\n\nSé extremadamente detallado y analítico.",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "prompt_analisis_imagen",
+              "value": "Analiza esta imagen publicitaria de producto/tienda Shopify de forma exhaustiva. Examina:\n\n**COMPOSICIÓN Y PRODUCTO:**\n- Producto principal y cómo se presenta\n- Ángulos y contexto (lifestyle vs product shot)\n- Elementos de comparación (before/after, vs competencia)\n\n**ELEMENTOS DE TEXTO:**\n- Headlines y su estructura emocional\n- Oferta destacada (%, €, beneficio)\n- Call-to-action visible\n- Badges de confianza (garantía, envío, reviews)\n\n**DISEÑO Y PSICOLOGÍA:**\n- Paleta de colores y su impacto emocional\n- Jerarquía visual (qué llama la atención primero)\n- Uso de contraste para CTAs\n- Estética general (minimalista, cargada, premium, económica)\n\n**ESTRATEGIA DE VENTA:**\n- Tipo de targeting implícito (edad, género, poder adquisitivo)\n- Emociones que busca activar\n- Prueba social visible (reviews, cantidad vendida)\n- Elementos de urgencia o escasez\n\nProporciona un análisis profundo orientado a ecommerce.",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "instrucciones_analisis",
+              "value": "**INSTRUCCIONES DE ANÁLISIS:**\n\n**Enfoque ecommerce/Shopify:**\n- Identifica patrones de venta directa (dropshipping, marca propia, POD)\n- Analiza la estructura de pricing y ofertas\n- Evalúa la madurez del funnel (TOFU vs BOFU)\n- Detecta si es producto ganador o test\n\n**Estilo de escritura:**\n- Análisis preciso, directo y accionable\n- Usa lenguaje de marketing digital (CTR, AOV, CVR cuando sea relevante)\n- Sin rodeos ni ambigüedades\n- Identifica ventajas competitivas específicas\n\n**Formato del resumen:**\n- Empieza con el tipo de producto y nicho\n- Estrategia principal identificada\n- Elementos más efectivos del anuncio\n- Puntos débiles o mejorables\n- Estimación de público objetivo\n\n**Copia reescrita:**\n- Mantén el core de la propuesta de valor\n- Mejora el hook si es necesario\n- Optimiza para conversión\n- Adapta al mercado español si el original es anglófono\n- Incluye variaciones de headlines",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a6d05e7d-35ab-4fcc-8120-664daacc41a9",
+      "name": "Variables de Configuración",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -1088,
+        496
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/XtaWFhbtfxyzqrFmd/run-sync-get-dataset-items",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Variables de Configuración').item.json.apify_api_key }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"count\": {{ $('Variables de Configuración').item.json.maximo_resultados }},\n  \"period\": \"last7d\",\n  \"scrapeAdDetails\": true,\n  \"scrapePageAds.activeStatus\": \"active\",\n  \"urls\": [\n    {\n      \"url\": \"{{ $json.search_url }}\",\n      \"method\": \"GET\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "5d0ea099-ece8-4722-ae10-12a896ceb8db",
+      "name": "escrapeador_facebook",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -688,
+        496
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "search_url",
+              "name": "search_url",
+              "value": "=https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country={{ $json.pais }}&is_targeted_country=false&media_type=all&q={{ $json.termino_busqueda }}&search_type=keyword_exact_phrase",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "680cc170-b1ee-4691-a1a0-447fe0a0eeb7",
+      "name": "url_facebook",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -896,
+        496
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "file_name",
+              "name": "nombre_archivo",
+              "value": "={{ $json.file.name }}",
+              "type": "string"
+            },
+            {
+              "id": "file_uri",
+              "name": "url_archivo",
+              "value": "={{ $json.file.uri }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fd0bcab9-47b2-4f60-81a1-206b32818a4a",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        640,
+        192
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "url": "=https://generativelanguage.googleapis.com/v1beta/{{ $json.nombre_archivo }}?key={{ $('Variables de Configuración').item.json.gemini_api_key }}",
+        "options": {}
+      },
+      "id": "c15e6b1b-6c6c-4d7c-8063-0b1ec8323d9b",
+      "name": "comprobar_estado_archivo",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        864,
+        192
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.state }}",
+              "rightValue": "ACTIVE"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d2dad8a6-f72f-42bb-ae87-75b6eb40781b",
+      "name": "archivo_listo?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1008,
+        400
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $('Variables de Configuración').first().json.gemini_api_key }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": {{ JSON.stringify($('Variables de Configuración').first().json.prompt_analisis_video) }}\n        },\n        {\n          \"file_data\": {\n            \"mime_type\": \"{{ $json.mimeType }}\",\n            \"file_uri\": \"{{ $json.uri }}\"\n          }\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "7c0d76c2-afd6-4bab-b1ed-1b97592e91a2",
+      "name": "analizar_video",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1136,
+        192
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "contexto_anuncio",
+              "value": "=Texto Anuncio: {{ $('Loop Over Videos').item.json.snapshot.body?.text || 'N/A' }}\nTitulo: {{ $('Loop Over Videos').item.json.snapshot.cards?.[0]?.title || 'N/A' }}\nSubtitulo: {{ $('Loop Over Videos').item.json.snapshot.page_name }}\nURL: {{ $('Loop Over Videos').item.json.snapshot.page_profile_uri }}\n\nDescripcion Video:\n{{ $json.candidates[0].content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "15b04b00-8d2a-4d5c-8387-0f38c18f034d",
+      "name": "preparar_contexto_video",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1296,
+        192
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1xaNsQXFai8cRYHxcRx1RkEaiJFtCiaOLQe4iJEgwhWk/edit?us",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ad_archive_id": "={{ $('Download Video').first().json.ad_archive_id }}",
+            "page_id": "={{ $('Download Video').first().json.page_id }}",
+            "type": "video",
+            "page_name": "={{ $('Download Video').first().json.snapshot.page_name }}",
+            "date_added": "={{ $now }}",
+            "page_url": "={{ $('Download Video').first().json.snapshot.page_profile_uri }}",
+            "summary": "={{ $json.message.content.resumen }}",
+            "rewritten_ad_copy": "={{ $json.message.content.copiaReescrita }}",
+            "video_prompt": "={{ $('analizar_video').first().json.candidates[0].content.parts[0].text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "ad_archive_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "page_id",
+              "displayName": "page_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_added",
+              "displayName": "date_added",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "page_name",
+              "displayName": "page_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "page_url",
+              "displayName": "page_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "rewritten_ad_copy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "image_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "video_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "seleccionado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "b2c59e58-cfaf-49c5-96c8-a3ec6014066a",
+      "name": "guardar_resultado_video",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1744,
+        192
+      ],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets Iván"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "id": "b14eea58-1dde-44e7-b466-085075754727",
+      "name": "Wait1",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        1968,
+        192
+      ],
+      "webhookId": "video-loop-wait",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "contexto_anuncio",
+              "value": "=Texto Anuncio: {{ $json.snapshot.body?.text || 'N/A' }}\nTitulo: {{ $json.snapshot.cards?.[0]?.title || 'N/A' }}\nSubtitulo: {{ $json.snapshot.page_name }}\nURL perfil: {{ $json.snapshot.page_profile_uri }}\nURL Imagen: {{ $json.snapshot.images[0].original_image_url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fbe6bf84-c17f-4989-aaa5-89da824d99ff",
+      "name": "extraer_data_imagen",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        288,
+        672
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "full_contexto",
+              "value": "={{ $('extraer_data_imagen').item.json.contexto_anuncio }}\n\nImage Analysis:\n{{ $json.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "805047bb-59d4-4734-8c07-1333e64e3edb",
+      "name": "preparar_contexto_imagen",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        688,
+        672
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "contexto_anuncio",
+              "value": "=Texto anuncio: {{ $json.snapshot.body?.text || 'N/A' }}\nTitutlo: {{ $json.snapshot.cards?.[0]?.title || 'N/A' }}\nDescripcion: {{ $json.snapshot.cards?.[0]?.body || 'N/A' }}\nLink: {{ $json.snapshot.link_description || 'N/A' }}\nNombre_pagina: {{ $json.snapshot.page_name }}\nURL perfil: {{ $json.snapshot.page_profile_uri }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b3c91f85-1c0a-433b-9d6e-b318bde934c0",
+      "name": "extraer_datos_texto",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        192,
+        1120
+      ],
+      "typeVersion": 3.4
+    }
+  ],
+  "pinData": {
+    "Manual Trigger": [
+      {
+        "json": {}
+      }
+    ]
+  },
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Variables de Configuración",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch By Type": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Videos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Images",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Text Ads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Videos": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video": {
+      "main": [
+        [
+          {
+            "node": "Upload Video to Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Video to Gemini": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video Summary": {
+      "main": [
+        [
+          {
+            "node": "guardar_resultado_video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Images": {
+      "main": [
+        [],
+        [
+          {
+            "node": "extraer_data_imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image Summary": {
+      "main": [
+        [
+          {
+            "node": "Save Image Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Between Images": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Text Ads": {
+      "main": [
+        [],
+        [
+          {
+            "node": "extraer_datos_texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Text Summary": {
+      "main": [
+        [
+          {
+            "node": "Save Text Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Text Result": {
+      "main": [
+        [
+          {
+            "node": "Wait Between Text Ads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Between Text Ads": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Text Ads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze an image": {
+      "main": [
+        [
+          {
+            "node": "preparar_contexto_imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Image Result": {
+      "main": [
+        [
+          {
+            "node": "Wait Between Images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filtro_likes": {
+      "main": [
+        [
+          {
+            "node": "Switch By Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Variables de Configuración": {
+      "main": [
+        [
+          {
+            "node": "url_facebook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "escrapeador_facebook": {
+      "main": [
+        [
+          {
+            "node": "filtro_likes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "url_facebook": {
+      "main": [
+        [
+          {
+            "node": "escrapeador_facebook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "comprobar_estado_archivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "comprobar_estado_archivo": {
+      "main": [
+        [
+          {
+            "node": "archivo_listo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "archivo_listo?": {
+      "main": [
+        [
+          {
+            "node": "analizar_video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Videos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "analizar_video": {
+      "main": [
+        [
+          {
+            "node": "preparar_contexto_video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "preparar_contexto_video": {
+      "main": [
+        [
+          {
+            "node": "Generate Video Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "guardar_resultado_video": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Videos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extraer_data_imagen": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "preparar_contexto_imagen": {
+      "main": [
+        [
+          {
+            "node": "Generate Image Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extraer_datos_texto": {
+      "main": [
+        [
+          {
+            "node": "Generate Text Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e9d629c4-c0e1-4f16-a7e5-0629548f81eb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "53e6d5dabe5a8cc9594bae9b5704bfc831c12a985b649d6d062a707f2c602cad"
+  },
+  "id": "Cc3ianJLnPZZzkxa",
+  "tags": []
+}

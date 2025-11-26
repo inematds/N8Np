@@ -1,0 +1,260 @@
+{
+  "name": "BFAI: Check Availability",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1ed4158d-76f1-4f19-820e-8022c6e2c139",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        600,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "response",
+              "value": "={{ $json.message.content.Availability }}\nScreenshot 1:{{ $json.message.content.Screenshot }}\nScreenshot 2:{{ $json.message.content['Screenshot 2'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3a5bdf82-8a07-4091-9f39-106fec2d25d1",
+      "name": "Respond to Agent",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1620,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "response",
+              "value": "No query was given, please try again",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d36167b4-1976-45b5-9855-4d845ecede4c",
+      "name": "Retry",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1100,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "id": "c4352ac8-7656-4c8c-9acd-2a8b2bc7969d",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1060,
+        420
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.query}}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Good"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{$json.query}}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notExists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Bad"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "08c9e5b6-b440-44ef-a6af-8b897f59172d",
+      "name": "Check for Query",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        840,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Take the incoming availability data. Pass along everything before \"Screenshots:\" in a field called \"Availability\".\n\nHere is the current date: {{ $now }}\n\nTake the incoming availability data and return the screenshot URLs for the month or month's requested by the user in a field called \"Screenshot\". Here is the dates requested by the user: {{ $('Execute Workflow Trigger').item.json.query }}\n\nIn the incoming data, \"This month\" will be the current month. \"Next month\" will be the following month and so on.\n\n*Example*\n- If the user asks for January and it is currently November, you will return the URL for \"Month 3\"\n- If the user asks for December and it is currently November, you will return the URL for \"Next month\"\n\n\n*NOTES*\nIf the user requests dates across multiple months, please return URLs for BOTH months. You should do each URL in a separate field. \nExample: If the user asks for January and December, return January's URL in a field called \"Screenshot\" and return December's URL in a field called \"Screenshot 2\"",
+              "role": "system"
+            },
+            {
+              "content": "=Here is the incoming availability data: {{ $json.data }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "id": "ea3cd075-8172-422a-96be-02cf593c0d13",
+      "name": "Grabbing Correct Screenshots",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.5,
+      "position": [
+        1280,
+        420
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Execute Workflow Trigger": [
+      {
+        "json": {
+          "query": "please check availability for January and December"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check for Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Grabbing Correct Screenshots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for Query": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Retry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grabbing Correct Screenshots": {
+      "main": [
+        [
+          {
+            "node": "Respond to Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2ce8651c-08ab-4e92-81dc-96e5743d25aa",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c1b6c67795880a3fbc84416c0e0be9b6936317370c92491eb656bfc8db6f2a2e"
+  },
+  "id": "jHHMnAou61QngLrx",
+  "tags": []
+}

@@ -1,0 +1,256 @@
+{
+  "name": "nm57 - webhook Blog",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "cf1f235f-7e64-440b-8cf0-df2061294098",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        600,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "entry-blog",
+        "options": {}
+      },
+      "id": "886af245-90e0-49ed-b1c5-16c4845f035d",
+      "name": "incoming data",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        620,
+        120
+      ],
+      "webhookId": "blogging-webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "topic",
+              "name": "topic",
+              "value": "={{ $json.body.topicDetails }}",
+              "type": "string"
+            },
+            {
+              "id": "style",
+              "name": "style",
+              "value": "={{ $json.body.writingStyle }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $json.body.articleTitle }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ea60eff6-ffcc-44a2-9d86-581dadac14b9",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        840,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=User Topic: {{ $json.topic }}\n\nUser Style: {{ $json.style }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a provocative, unapologetically confident blogging agent that crafts bold, minimalist natural health posts. This agent fearlessly dismantles conventional medical narratives, exposes the failures of our disease-management system, and challenges readers to abandon the broken status quo in favor of radical wellness approaches.\n\nTONE & ATTITUDE:\n• Write with unwavering confidence – present natural health solutions as obviously superior to conventional medicine\n• Be brazenly critical of current medical practices, calling them outdated, profit-driven, or fundamentally flawed\n• Challenge the medical establishment – question why we accept rising disease rates as normal when solutions exist\n• Use provocative language that makes readers uncomfortable with the status quo\n• Express frustration with how the medical system has failed patients\n\nCONTENT STRUCTURE:\n• Begin with a relatable, conversational hook that immediately questions conventional wisdom\n• Use short, punchy paragraphs (no more than 2-3 sentences) to maintain minimalist style\n• Pose critical questions that expose the absurdity of established medical practices and statistics\n• Blend anecdote or metaphor for a human touch while maintaining edge\n• Highlight key takeaways or warnings in bold or \"Important note\" callouts\n• Keep tone curious, irreverent, and unapologetically confident in natural alternatives\n• End with an open-ended prompt or action step encouraging readers to abandon conventional approaches\n\nCORE MESSAGING THEMES:\n• Medical system profiteering – highlight how the industry benefits from chronic illness\n• Rising disease statistics – emphasize how modern medicine is failing despite advances\n• Contrast natural solutions with pharmaceutical failures\n• Use confident assertions: \"The truth is...\", \"What they don't tell you...\", \"The real solution...\"\n\nEXAMPLE INPUT:\nTopic: Rising heart disease in young adults\nStyle: Theoretical\n\nEXAMPLE OUTPUT:\nIt's absolutely insane that we're normalizing heart attacks in 30-year-olds. What used to shock entire communities now barely makes local news. The medical establishment shrugs, hands out another statin prescription, and calls it progress.\n\n**Important note:** The cardiovascular medication market is worth $150 billion annually. Curing heart disease would crash that economy overnight.\n\nWe're living through the greatest medical failure in human history. Despite billions in research funding, advanced surgical techniques, and an army of cardiologists, heart disease rates in young adults have skyrocketed 25% in the last decade. The emperor has no clothes, and we're all pretending otherwise.\n\n**Why isn't anyone asking the obvious questions?**\nWhen did we decide that drugging symptoms was better than preventing disease? When did we accept that a 35-year-old needing blood pressure medication was \"normal\"? The medical system has trained us to expect failure and call it healthcare.\n\n**The truth they don't want you to know:**\nHeart disease is almost entirely preventable through lifestyle. Countries with traditional diets – think Mediterranean villages or Japanese fishing communities – have virtually zero heart disease. Yet American cardiologists act like it's an unsolvable mystery.\n\n**What actually works:**\n• Whole food, plant-rich diets (but there's no patent on broccoli)\n• Daily movement (can't monetize walking)\n• Stress reduction (meditation doesn't need a prescription)\n• Quality sleep (Big Pharma can't bottle 8 hours of rest)\n\n**The medical industry's dirty secret:**\nThey know lifestyle interventions work better than medications.\n\n**Stop being complicit in your own destruction.**\nEvery prescription you fill, every procedure you undergo, every \"chronic condition\" you accept as permanent – you're feeding the machine that profits from your suffering.\n\n**Your health is not a commodity to be managed – it's your birthright to be reclaimed.**\n\n**What will you stop accepting as \"normal\" today?**\n\nOUTPUT FORMAT:\nOutput each blog with ONLY the blog in JSON object format like:\n{\"blog\": \"[FULL BLOG POST HERE]\"}"
+        }
+      },
+      "id": "0c0f720e-5b08-426f-b286-adaecada307b",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        1060,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "a33b1d32-a800-4de3-b339-d887dc2f1b06",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        360
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\"blog\": \"[FULL BLOG POST HERE]\"}"
+      },
+      "id": "3eeb04b0-ee77-4966-9a3f-a17833b32527",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $('Edit Fields').item.json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "content",
+              "name": "content",
+              "value": "={{ $json.blog }}",
+              "type": "string"
+            },
+            {
+              "id": "author",
+              "name": "author",
+              "value": "HealthMinimalistBlogger",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "94d57c79-b1e7-4cbf-93a3-b9087ab84a00",
+      "name": "Edit Fields 2",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1420,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "909fad43-09ba-48b2-91da-257734a51ac0",
+      "name": "respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1640,
+        120
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "incoming data": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields 2": {
+      "main": [
+        [
+          {
+            "node": "respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1bfc4563-676f-48b0-bb87-dbc0c263af1c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "gF3BF4VUiDa7Mt59",
+  "tags": []
+}

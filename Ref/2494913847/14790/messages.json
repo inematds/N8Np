@@ -1,0 +1,140 @@
+[
+  {
+    "id": 14806,
+    "author": "INEMA",
+    "date": "2025-10-03T04:08:00+00:00",
+    "text": "evitar repetições (memória)\n\n* Exemplo: tabela simples no Airtable com IDs de histórias.\n* Pergunta: e se o Poppy sugerir a mesma história?\n\n  * Resposta: filtre pela tabela antes de pedir a nova criação.\n\n7. modularize o fluxo\n\n* Exemplo: 4 nós n8n: trigger → research → call Poppy → postprocessing (+ imagem).\n* Pergunta: isso complica?\n\n  * Resposta: não — facilita manutenção e escalabilidade.\n\n8. aplicar experts ao seu produto\n\n* Exemplo: “Com base no vídeo X de Hormozi, escreva uma seção de vendas para produto Y.”\n* Pergunta: é ético usar conteúdo de terceiros?\n\n  * Resposta: use como inspiração e parafraseie; cite fontes quando apropriado.\n\n9. resumo intermediário para reduzir custo\n\n* Exemplo: gerar um “one-pager” com os 5 pontos-chave e usar isso como referência.\n* Pergunta: perda de nuance?\n\n  * Resposta: pouca, se o resumo for bem feito; teste qualidade e ajuste.\n\n10. testes A/B no n8n\n\n* Exemplo: enviar variação A e B para 5% da lista cada e medir CTR.\n* Pergunta: como automatizar análise?\n\n  * Resposta: capture métricas e use um nó que compare resultados e atue conforme vencedor.\n\n11. metadados no prompt\n\n* Exemplo de prompt curto: público=45+; objetivo=conversão; tom=empático; CTA=link afiliado.\n* Pergunta: prompt muito longo atrapalha?\n\n  * Resposta: inclua apenas metadados essenciais; seja direto.\n\n12. fluxo completo script→vídeo→post\n\n* Exemplo: Poppy escreve roteiro de 30s → HeyGen gera avatar → n8n agenda no YouTube/TikTok.\n* Pergunta: precisa de revisão humana?\n\n  * Resposta: idealmente sim — revisão final aumenta qualidade e reduz riscos.\n\n---\n\nPrompt de exemplo rápido (para usar no HTTP do n8n — versão enxuta)\n\n```{\n  \"prompt\": \"Aqui está a pesquisa (resumo) e o guia de estilo. Crie uma newsletter HTML com 3 blocos (story, explicação, oferta), inclua links para AG1 e Neurogum e finalize com um PS atraente. Apenas retorne o HTML, sem explicações.\",\n  \"model\": \"sonnet\"\n}```\n\nPerguntas frequentes rápidas\n\n* Poppy é imprescindível?\n\n  * Não. Poppy facilita muito por centralizar fontes e gerar assistentes; mas é possível com outros stacks (GPTs + embeddings). Vale pela velocidade de setup e UX visual.\n* Como controlar custo?\n\n  * Use resumos/style-guides, limite modelos, controle frequência dos gatilhos e filtre fontes antes de enviar.\n* Dá para usar múltiplos modelos?\n\n  * Sim — troque o campo model na chamada API conforme a necessidade (qualidade vs custo).\n* E a parte de imagens/mídia?\n\n  * Gere roteiros/descrições no Poppy e deixe n8n chamar ferramentas de vídeo/imagem (HeyGen, UGC generators) em sequência.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14805,
+    "author": "INEMA",
+    "date": "2025-10-03T04:08:00+00:00",
+    "text": "**hacks práticos** extraídos do vídeo, em português, diretos ao ponto para você aplicar agora com Poppy + n8n. Depois dos hacks coloquei uma lista com exemplos e respostas rápidas para as perguntas mais comuns.\n\n1. agrupe fontes por objetivo\n\n* Hack: crie grupos (boards) no Poppy: ex. “storytelling”, “produtos”, “estilo youtube”.\n* Por que: facilita treinar assistentes especializados e evita reprocessar tudo sempre.\n\n2. gere um style-guide condensado e use-o como fonte\n\n* Hack: peça ao Poppy um guia de estilo (da sua voz) e salve o texto como bloco.\n* Por que: reduz tokens e mantém consistência sem reprocessar 10 vídeos toda vez.\n\n3. faça pesquisa prévia no n8n antes de chamar o Poppy\n\n* Hack: no fluxo, rode um nó que colecione tendências (Tavly, RSS, scraping) e envie só o resumo ao Poppy.\n* Por que: você controla contexto e custo; Poppy recebe apenas o que interessa.\n\n4. automatize saída HTML pronta para envio\n\n* Hack: pedir “apenas output em HTML estilizado” no prompt e armazenar o retorno direto como email/newsletter.\n* Por que: menos edição manual — só revisar e disparar.\n\n5. use o endpoint API do Poppy com corpo JSON (prompt + model)\n\n* Hack: no n8n HTTP Request envie { \"prompt\": \"...\", \"model\": \"sonnet\" }.\n* Por que: integrações fáceis e repetíveis.\n\n6. proteja contra repetições (memória simples)\n\n* Hack: mantenha um log com títulos/IDs das histórias já usadas e filtre antes de enviar pesquisa ao Poppy.\n* Por que: evita prometer “na próxima semana” sem conteúdo novo; torna newsletters frescas.\n\n7. modularize o fluxo: pesquisar → criar → enriquecer → publicar\n\n* Hack: split de responsabilidades em nós (research → Poppy → mídia → scheduler → publicação).\n* Por que: depuração e melhorias incrementais.\n\n8. troque fontes de especialistas para aplicar técnicas deles ao seu negócio\n\n* Hack: adicione 1–3 vídeos de experts (ex.: Alex Hormozi) ao grupo e peça “aplique as estratégias deste autor ao meu produto X”.\n* Por que: transforma conteúdo alheio em copy prática adaptada.\n\n9. reduza custo com “resumos intermediários”\n\n* Hack: transforme várias transcrições em um resumo (ou style guide) e use esse resumo em vez das transcrições completas.\n* Por que: menor consumo de tokens sem perda de identidade.\n\n10. testes A/B rápidos no n8n\n\n* Hack: crie dois caminhos paralelos que chamem o Poppy com pequenas variações de prompt (ex.: tom A = mais direto; tom B = mais storytelling) e compare CTRs.\n* Por que: otimiza performance de envio.\n\n11. preencha o prompt com metadados úteis\n\n* Hack: inclua contexto curto no prompt: público, objetivo (conversão/engajamento), call-to-action, limite de palavras.\n* Por que: respostas mais alinhadas ao objetivo.\n\n12. automações de mídia completas (script → vídeo → publicação)\n\n* Hack: Poppy cria roteiros; n8n envia para agente de vídeo (HeyGen/UGC generator) → agenda publicação.\n* Por que: fluxo end-to-end sem tocar manualmente.\n\n---\n\nLista com exemplos e respostas rápidas (por hack)\n\n1. agrupe fontes por objetivo\n\n* Exemplo: grupo “storytelling” com 3 vídeos + 2 artigos.\n* Pergunta: preciso criar grupos?\n\n  * Resposta: sim, facilita treinar assistentes e reaproveitar contextos.\n\n2. gere um style-guide condensado\n\n* Exemplo: pegar 4 vídeos, pedir “resuma meu tom em 12 frases” e salvar.\n* Pergunta: como reduzir tokens?\n\n  * Resposta: use o style-guide como input em vez dos vídeos originais.\n\n3. pesquisa prévia no n8n\n\n* Exemplo: nó de pesquisa diário → resumo (5 links) → enviar ao Poppy.\n* Pergunta: quando usar n8n antes do Poppy?\n\n  * Resposta: sempre que quiser filtrar, agregar ou executar lógica antes de treinar a geração.\n\n4. saída HTML pronta\n\n* Exemplo de prompt curto: criar newsletter HTML com 3 seções, CTA para AG1, links já inclusos.\n* Pergunta: dá pra enviar direto ao Mailer?\n\n  * Resposta: sim — salve HTML e passe ao nó do serviço de envio.\n\n5. usar endpoint API (prompt + model)\n\n* Exemplo de corpo: { \"prompt\": \"…pesquisa…\", \"model\": \"sonnet\" }\n* Pergunta: preciso de autenticação extra?\n\n  * Resposta: geralmente Poppy fornece uma URL de chat; siga docs do plano (chave/endpoint).\n\n6.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14804,
+    "author": "INEMA",
+    "date": "2025-10-03T04:05:45+00:00",
+    "text": "============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14803,
+    "author": "INEMA",
+    "date": "2025-10-03T04:05:42+00:00",
+    "text": "## Resumo do vídeo: \"How to Automate ANY Content with Poppy and n8n (no code)\"\n\nO vídeo mostra como integrar o **Poppy AI** com o **n8n** para automatizar a criação de conteúdo de forma prática e sem código.\n\n### O que é o Poppy\n\n* Ferramenta visual no-code que permite criar assistentes de IA personalizados.\n* Aceita praticamente qualquer fonte de dados: vídeos do YouTube, TikToks, Reels, artigos, sites, PDFs, planilhas, imagens, arquivos locais etc.\n* O usuário pode treinar um assistente em vários blocos de conteúdo, adicionar notas e depois interagir via chat ou API.\n\n### Diferença em relação a GPTs/Claude\n\n* Ao invés de criar múltiplos GPTs/projetos separados, o Poppy centraliza várias fontes de dados e permite conectar cada conjunto a assistentes especializados.\n* Pode ser integrado ao n8n por API para criar fluxos de automação mais complexos (pesquisa, geração de textos, distribuição de conteúdo, etc).\n\n### Exemplos de uso prático\n\n1. **Newsletter automatizada**\n\n   * No n8n: criar um gatilho diário → buscar tendências de saúde → enviar para um assistente no Poppy treinado em storytelling, e-mail marketing e produtos.\n   * Resultado: um **newsletter em HTML estilizado**, já pronto para enviar com storytelling, recomendações de produtos e links.\n\n2. **Guia de estilo pessoal**\n\n   * Alimentar o Poppy com vídeos do YouTube e posts do LinkedIn → gerar um guia de estilo de comunicação (linguagem, valores, frases típicas).\n   * Reduz tokens e custos ao substituir dezenas de transcrições por um resumo que mantém o estilo.\n\n3. **Conteúdo aplicado a experts**\n\n   * Inserir vídeos de especialistas (ex. Alex Hormozi, TED Talks) → aplicar seu conhecimento ao negócio do usuário.\n   * Gerar posts para LinkedIn ou roteiros de vídeos no estilo do próprio criador.\n\n4. **Automação completa com n8n**\n\n   * Fluxo que coleta TikToks/IG Reels → envia para Poppy criar roteiros → gera vídeos UGC/avatares → agenda e posta automaticamente.\n\n### Benefícios\n\n* Criação rápida de conteúdos consistentes e alinhados à marca.\n* Menos complexidade que construir múltiplos agentes manualmente.\n* Possibilidade de usar em agências de automação ou oferecer como serviço para clientes.\n\n### Comunidade e descontos\n\n* O criador oferece descontos no Poppy para membros da comunidade.\n* Também possui cursos de como montar uma agência de automação com IA usando Poppy + n8n.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14802,
+    "author": "INEMA",
+    "date": "2025-10-03T04:04:21+00:00",
+    "text": "===============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14801,
+    "author": "INEMA",
+    "date": "2025-10-03T04:04:16+00:00",
+    "text": "Como automatizar QUALQUER conteúdo com Poppy e n8n (sem código)\n\nNeste vídeo, eu mostro como usar o Poppy AI com o n8n para automatizar completamente o seu processo de criação de conteúdo.\n\nO Poppy permite que você crie assistentes de IA especializados que podem ser treinados em praticamente qualquer coisa: vídeos do YouTube, TikToks, posts do Instagram, sites ou até mesmo seus próprios arquivos locais. Basta arrastar e soltar a mídia, e o seu assistente Poppy pode usá-la para ficar mais inteligente.\n\nA partir daí, você pode conectar o Poppy com o n8n para automatizar pesquisas, geração de conteúdo ou qualquer parte do seu fluxo criativo. A melhor parte é que tudo isso é sem código, tornando simples e poderoso para qualquer pessoa começar a criar sistemas de conteúdo movidos por IA.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14800,
+    "author": "INEMA",
+    "date": "2025-10-03T04:03:07+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14800_007.jpg"
+  },
+  {
+    "id": 14799,
+    "author": "INEMA",
+    "date": "2025-10-03T04:02:35+00:00",
+    "text": "https://www.youtube.com/watch?v=FgP_AEfnfok",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14798,
+    "author": "INEMA",
+    "date": "2025-10-03T04:02:09+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14798_009.jpg"
+  },
+  {
+    "id": 14797,
+    "author": "INEMA",
+    "date": "2025-10-03T04:02:04+00:00",
+    "text": "ap65 - Poppy  e N8N",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14796,
+    "author": "INEMA",
+    "date": "2025-10-03T04:01:44+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14795,
+    "author": "INEMA",
+    "date": "2025-10-03T04:01:44+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14794,
+    "author": "INEMA",
+    "date": "2025-10-03T04:01:44+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14793,
+    "author": "INEMA",
+    "date": "2025-10-03T04:01:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14792,
+    "author": "INEMA",
+    "date": "2025-10-03T04:01:43+00:00",
+    "text": "https://chatgpt.com/c/68df4a48-4a3c-8321-acc2-7eb95409c484",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14791,
+    "author": "INEMA",
+    "date": "2025-10-03T04:01:42+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14790,
+    "author": "INEMA",
+    "date": "2025-10-03T04:01:38+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

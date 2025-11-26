@@ -1,0 +1,918 @@
+{
+  "name": "RAG Semantico con topicos",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// ✅ Paso 1: Obtener el texto desde la variable de entrada JSON.\n// Si no existe, usamos un string vacío para evitar errores.\nconst text = $json.text || '';\n\n// ✅ Paso 2: Limpiar el texto para facilitar el procesamiento.\n// - normalize(\"NFD\"): separa letras y tildes (ej. \"á\" -> \"a\" + tilde).\n// - replace: elimina saltos de línea (\\n), retornos (\\r), tabulaciones (\\t) y espacios duplicados.\nconst cleanText = text.normalize(\"NFD\")\n  .replace(/[\\n\\r\\t]+/g, ' ')\n  .replace(/\\s{2,}/g, ' ');\n\n// ✅ Paso 3: Dividir el texto en frases.\n// Usamos una expresión regular que detecta final de frase (., ?, ! seguidos de espacio).\nconst sentences = cleanText.split(/(?<=[.?!])\\s+/);\n\n// ✅ Paso 4: Preparar variables\nconst chunks = [];         // Aquí guardaremos los fragmentos resultantes\nlet currentChunk = [];     // Acumula frases hasta llegar al límite\nlet charCursor = 0;        // Nos ayuda a encontrar la posición exacta del fragmento en el texto original\n\n// ✅ Paso 5: Recorrer todas las frases una a una\nfor (let i = 0; i < sentences.length; i++) {\n  const sentence = sentences[i];\n  currentChunk.push(sentence); // Añadir frase al bloque actual\n\n  // Si el bloque tiene al menos 3 frases y supera los 500 caracteres, lo cortamos aquí\n  if (currentChunk.length >= 3 || currentChunk.join(\" \").length > 500) {\n    const chunkText = currentChunk.join(\" \");           // Convertimos el bloque en texto completo\n    const searchText = chunkText.slice(0, 30);          // Cogemos los primeros 30 caracteres para buscarlo en el texto original\n    const matchPos = cleanText.indexOf(searchText, charCursor); // Buscamos el fragmento en el texto original desde la última posición\n\n    const startIndex = matchPos > -1 ? matchPos : null; // Si lo encontramos, guardamos la posición\n\n    // Guardamos el bloque en la lista de chunks\n    chunks.push({\n      chunk: chunkText,\n      startIndex: startIndex,\n    });\n\n    // Avanzamos el cursor si encontramos la posición\n    if (matchPos > -1) charCursor = matchPos + chunkText.length;\n\n    // Reseteamos el bloque actual para seguir con el siguiente\n    currentChunk = [];\n  }\n}\n\n// ✅ Paso 6: Guardar el último fragmento que haya quedado pendiente\nif (currentChunk.length) {\n  const chunkText = currentChunk.join(\" \");\n  const searchText = chunkText.slice(0, 30);\n  const matchPos = cleanText.indexOf(searchText, charCursor);\n  const startIndex = matchPos > -1 ? matchPos : null;\n\n  chunks.push({\n    chunk: chunkText,\n    startIndex: startIndex,\n  });\n}\n\n// ✅ Paso 7: Devolver los resultados en el formato que espera n8n\n// Cada fragmento se envuelve dentro de un objeto { json: ... }\nreturn chunks.map(c => ({ json: c }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        -20
+      ],
+      "id": "fb6f9089-79d1-4f09-9bc0-69b69f9f8fd3",
+      "name": "Semantic Chunker"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://aasupabaseaa.vps.rubikmarketing.com.co/rest/v1/documents_RAG_Semantico",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"{{ $('Code').item.json.chunk.replaceAll('\\\"','') }}\",\n  \"metadata\": {\n    \"file_name\": \"{{ $('Google Drive1').item.json.message.content.title.replaceAll('\\\"','') }}\",\n    \"title\": \"{{ $('Code').item.json.originalInput.message.content.title }}\",\n    \"section\": \"{{ $('Code').item.json.originalInput.message.content.section }}\",\n    \"subsection\": \"{{ $('Code').item.json.originalInput.message.content.subsection }}\",\n    \"pages\": \"{{ $('Extract from File1').item.json.numpages }}\",\n    \"id_file\": \"{{ $('Google Drive').item.json.id }}\"\n  },\n  \"embedding\": {{ JSON.stringify($json.data[0].embedding) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2520,
+        60
+      ],
+      "id": "89ed00c3-8200-4c9e-8e08-0d1c589d2a1b",
+      "name": "HTTP Request2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1400,
+        -20
+      ],
+      "id": "58e45e49-5d93-4b93-88be-867e072d2799",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -500,
+        -20
+      ],
+      "id": "63b3145a-1a54-49b8-a649-cb7bae56dbf6",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        40,
+        -20
+      ],
+      "id": "073e1482-0797-4aa6-bdee-b0c2e7f32028",
+      "name": "Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        300,
+        -20
+      ],
+      "id": "fc1c3664-f710-418e-ab04-85ca8ebaae97",
+      "name": "Extract from File1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Analiza este documento y devuélveme un resumen jerárquico en JSON de su estructura. Para cada bloque, identifica:\n\n- `title`: título general del documento\n- `section`: sección principal\n- `subsection`: subtítulo o parte específica\n- `start`: índice del texto donde inicia esa sección\n- `end`: índice del texto donde termina\n\n_ Siempre debes arrancar por el primer caracter\nTexto completo:\n{{ $('Extract from File1').item.json.text }}\n"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        480,
+        -20
+      ],
+      "id": "e67330b0-3876-4fd2-ac42-fbd9a21f21c4",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Tienes la estructura de una base de conocimiento que contiene:\n\n- Un único título general.\n- Varias secciones y subsecciones.\n- Cada sección y subsección tiene un rango de posiciones (`start`, `end`) que indican el lugar del texto completo donde aparecen.\n\nA continuación, se te proporciona un fragmento de texto (`chunk`) con su índice de inicio (`startIndex`) respecto al texto original.\n\nTu tarea es: analizar el contenido del `chunk` y su posición (`startIndex`) y devolver exactamente a cuál sección y subsección le corresponde, según la estructura.\n\n✅ Devuelve solo un JSON en este formato:\n\n{\n  \"title\": \"Título exacto\",\n  \"section\": \"Nombre exacto de la sección\",\n  \"subsection\": \"Nombre exacto de la subsección o null si no aplica\"\n}\n\n❗ Usa **los nombres exactos** que aparecen en la estructura. No inventes nuevos.\n\n---\n\n📄 Estructura (JSON):\n\n{{ $('OpenAI').item.json.message.content.toJsonString() }}\n\n---\n\n🧩 Chunk:\n\n{{ $('Semantic Chunker').item.json.chunk }}\n\n🧭 startIndex del chunk: {{ $('Semantic Chunker').item.json.startIndex }}\n"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1640,
+        60
+      ],
+      "id": "41481e7b-3645-4b0f-8597-5a03c1be8819",
+      "name": "OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Obtener todos los items de entrada desde el nodo anterior\nconst items = $input.all();\n\n// 2. Inicializar el array de salida\nconst outputItems = [];\n\n// 3. Procesar cada item\nfor (const item of items) {\n  try {\n    const inputJson = item.json;\n\n    // Asegurarse de que el campo input existe y tiene la estructura esperada\n    if (!inputJson || !inputJson.message || typeof inputJson.message.content !== 'string') {\n      throw new Error(\"La estructura 'message.content' no se encontró o no es un string.\");\n    }\n\n    // Parsear el contenido JSON de 'message.content'\n    const parsedContent = JSON.parse(inputJson.message.content);\n\n    // Obtener el valor original del campo 'chunk' (puede venir de un nodo anterior)\n    const originalChunk = inputJson.chunk !== undefined ? inputJson.chunk : null;\n\n    // Construir el nuevo objeto JSON de salida\n    const newOutputJson = {\n      ...parsedContent,\n      chunk: originalChunk\n    };\n\n    // Añadirlo al array de salida\n    outputItems.push({ json: newOutputJson });\n\n  } catch (error) {\n    // Capturar errores y generar una salida de error clara\n    outputItems.push({\n      json: {\n        error: \"Fallo al procesar el item\",\n        details: error.message,\n        originalInput: item.json\n      }\n    });\n  }\n}\n\n// 4. Devolver todos los objetos transformados\nreturn outputItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        60
+      ],
+      "id": "0f2ef5ec-fb4c-4263-9494-bde6b218db6e",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ✅ 1) Función para limpiar texto antes de enviarlo a la API\n// Esta función se asegura de que el chunk no tenga símbolos extraños, comillas problemáticas o caracteres invisibles.\nconst cleanText = (text) => {\n  if (typeof text !== 'string') return ''; // Si no es un string, devolvemos vacío\n\n  return text\n    .replace(/[\\n\\r\\t]+/g, ' ')             // Elimina saltos de línea, retornos y tabulaciones\n    .replace(/[\"\"«»'']/g, ' ')              // Reemplaza comillas dobles, comillas angulares y simples\n    .replace(/[–—]/g, '-')                  // Reemplaza guiones largos por guiones normales\n    .replace(/[•·]/g, '-')                  // Reemplaza bullets por guiones\n    .replace(/\\s{2,}/g, ' ')                // Reemplaza espacios múltiples por un solo espacio\n    .replace(/\\\\(?=[^\"\\\\/bfnrtu])|\\\\$/g, '')// Elimina barras invertidas inválidas en JSON\n    .trim();                                // Quita espacios al principio y al final\n};\n\n// ✅ 2) Recorremos cada item del flujo (cada chunk generado anteriormente)\nreturn items.map(item => {\n  // Obtenemos el chunk crudo desde el nodo anterior llamado \"Loop Over Items\"\n  const rawChunk = $node[\"Loop Over Items\"].json.chunk;\n\n  // ✅ 3) Limpiamos el chunk usando la función anterior\n  const cleaned = cleanText(rawChunk);\n\n  // ✅ 4) Escapamos el texto para que sea válido en JSON:\n  // - JSON.stringify escapa todo (comillas, saltos, etc.)\n  // - Luego le quitamos las comillas exteriores que JSON.stringify añade al principio y final\n  const escaped = JSON.stringify(cleaned).slice(1, -1);\n\n  // ✅ 5) Guardamos el texto limpio y escapado en el campo `chunk` del item actual\n  item.json.chunk = escaped;\n\n  // Devolvemos el item actualizado\n  return item;\n});\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        60
+      ],
+      "id": "fb4cbafe-e63d-4134-a9f4-dde47d3de115",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "returnAll": true,
+        "filter": {
+          "driveId": {
+            "mode": "list",
+            "value": "My Drive"
+          },
+          "folderId": {
+            "__rl": true,
+            "value": "1_bPUq_IIlsQYwSFUd_cZOpqSK6NDSYzp",
+            "mode": "list",
+            "cachedResultName": "RAG test",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1_bPUq_IIlsQYwSFUd_cZOpqSK6NDSYzp"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -240,
+        -20
+      ],
+      "id": "09f77b6a-0b9e-4cc1-81da-9319badde3f4",
+      "name": "Google Drive2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        -20
+      ],
+      "id": "7da1f7ad-6922-464a-9551-9c986a7990fa",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Google Drive').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        820,
+        -20
+      ],
+      "id": "55fa4050-cffc-446d-ac82-bfb909a3bd7c",
+      "name": "Google Drive1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## RAG semantico",
+        "height": 540,
+        "width": 3280,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        -180
+      ],
+      "id": "ce9b9c4d-9114-4556-bae1-8e00e85a2e3a",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        20,
+        580
+      ],
+      "id": "720046c4-2609-458e-848f-56f44863bc43",
+      "name": "Google Drive3",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        280,
+        580
+      ],
+      "id": "908fc9e3-c453-48ab-80e3-29dd62785043",
+      "name": "Extract from File2"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "returnAll": true,
+        "filter": {
+          "driveId": {
+            "mode": "list",
+            "value": "My Drive"
+          },
+          "folderId": {
+            "__rl": true,
+            "value": "1_bPUq_IIlsQYwSFUd_cZOpqSK6NDSYzp",
+            "mode": "list",
+            "cachedResultName": "RAG test",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1_bPUq_IIlsQYwSFUd_cZOpqSK6NDSYzp"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -260,
+        580
+      ],
+      "id": "9a99490d-5928-4cef-be78-f6fad935ce8a",
+      "name": "Google Drive4",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents_RAG_tradicional",
+          "mode": "list",
+          "cachedResultName": "documents_RAG_tradicional"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.1,
+      "position": [
+        500,
+        580
+      ],
+      "id": "a5ae8467-5ac5-4f2b-a394-80c1e066ebd6",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        800
+      ],
+      "id": "03b94526-5bf4-4ea4-a37f-3f223820975f",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.text }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "ID_documento",
+                "value": "={{ $('Google Drive3').item.json.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        640,
+        800
+      ],
+      "id": "ab8bef6d-4b06-43da-aaf6-b77ea6e76227",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 100,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        740,
+        1020
+      ],
+      "id": "6dba068a-e59b-43f7-bd97-af82ce0a60aa",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "content": "## RAG Tradicional",
+        "height": 700,
+        "width": 1540,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        480
+      ],
+      "id": "9997f0ef-e21b-42b9-9c6a-b1479bac9c8e",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/embeddings",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "input",
+              "value": "={{ $('Loop Over Items').item.json.chunk }}"
+            },
+            {
+              "name": "model",
+              "value": "text-embedding-3-small"
+            },
+            {
+              "name": "encoding_format",
+              "value": "float"
+            },
+            {
+              "name": "dimensions",
+              "value": "={{1536}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2340,
+        60
+      ],
+      "id": "c98ff643-92f5-4809-80a9-cae804b7a5bc",
+      "name": "Tranformar embedding",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Tavili 2"
+        },
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "HTTP Request1": [
+      {
+        "json": {
+          "videoTitle": "Social Planner",
+          "url": "https://www.youtube.com/watch?v=8E90SpU2Jw8",
+          "channelName": "Angel Aparicio | Inteligencia Artificial",
+          "views": "No views",
+          "videoPostDate": "Apr 20, 2025",
+          "channelSubscription": "11.1K subscribers",
+          "transcript": "bienvenido a Wixin hoy veremos la sección de Social Planner nos vamos a marketing y Social Planner aquí vemos una vista lista también lo podemos ver en calendario vemos que el día 24 de septiembre como vemos aquí eh se van a están todas eh programadas lo podemos ver también en calendario ¿vale todas estas han sido publicadas y estas están calendarizadas ¿vale a partir de ahí otras cosas eh importantes a tener en cuenta si somos una agencia y gestionamos las redes sociales de varios clientes eh es importante meterlos por grupos ¿vale damos new grupo y le pones el nombre del del de tu cliente tendrás que configurar las redes sociales pues eh Instagram aquí meter Instagram de todas las cuentes que estés gestionando igual en Facebook LinkedIn ¿vale puedes poner de manera ilimitada todas las redes sociales una vez hagas eso es muy importante ¿vale para para que esté bien ordenado y te puedas planificar bien crear grupos ¿vale vamos a ver cómo se sube contenido damos al más por ejemplo desde la vista calendario y a partir de aquí cogemos al cliente de nuevo ¿vale y se nos ha cargado todas empresarios sin filtros ¿vale facebook Instagram LinkedIn Twitter TikTok y YouTube a partir de aquí a mí me eh puedes poner un texto breve ¿vale o podrías customizar para cada canal si lo customizas para canal deberías escribir aquí el texto vamos a hacer un ejemplo ¿vale y podrías ponerlo para cada canal aquí decimos que es formato real y luego lo que es importante subimos el vídeo por ejemplo una vez se carga ¿vale ahí vale nos vamos a Instagram damos a reels ya veis que se arregla el error linkedin bien entonces iríamos poniendo el texto en cada parte ponemos el título esto es un short tiktok bueno vamos a empezar por hacerlo más corto una vez tenemos todo Facebook Instagram LinkedIn Twitter TikTok y YouTube lo que hacemos es podemos postearlo si lo queremos hacer inmediatamente o podemos programar una publicación pues que lo vamos a poner el viernes y la hora o si tenemos un community manager que gestiona le daríamos a enviar para aprobar vale y el aprobador pondríamos Alfonso Bello y X listo"
+        }
+      }
+    ],
+    "OpenAI2": [
+      {
+        "json": {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": {
+              "title": "Gestión de Publicaciones en Redes Sociales con Wixin Social Planner",
+              "sections": [
+                {
+                  "section": "Introducción y Acceso al Social Planner",
+                  "start": 0,
+                  "end": 62,
+                  "subsections": [
+                    {
+                      "subsection": "Vista y Navegación del Social Planner",
+                      "start": 0,
+                      "end": 62,
+                      "tools": [
+                        "Social Planner de Wixin"
+                      ],
+                      "steps": [
+                        "Ir a la sección de Marketing y seleccionar Social Planner.",
+                        "Visualizar publicaciones en 'vista lista' y en 'vista calendario'.",
+                        "Revisar publicaciones programadas y publicadas por fecha."
+                      ],
+                      "insights": "El Social Planner permite ver fácilmente el estado de las publicaciones (publicadas o calendarizadas) a través de diferentes vistas, facilitando la planificación del marketing en redes sociales."
+                    }
+                  ]
+                },
+                {
+                  "section": "Configuración para Agencias y Organización de Clientes",
+                  "start": 63,
+                  "end": 186,
+                  "subsections": [
+                    {
+                      "subsection": "Gestión por Grupos de Clientes",
+                      "start": 63,
+                      "end": 128,
+                      "tools": [
+                        "Función de creación de grupos en Social Planner"
+                      ],
+                      "steps": [
+                        "Crear nuevos grupos asignando el nombre del cliente.",
+                        "Configurar las redes sociales asociadas a cada grupo (Instagram, Facebook, LinkedIn, etc.)."
+                      ],
+                      "insights": "Para agencias, organizar los clientes por grupos ayuda a mantener orden y permite una planificación eficiente cuando se gestionan varias cuentas y redes."
+                    },
+                    {
+                      "subsection": "Configuración de Redes Sociales Asociadas",
+                      "start": 129,
+                      "end": 186,
+                      "tools": [
+                        "Integraciones de redes sociales en Social Planner"
+                      ],
+                      "steps": [
+                        "Agregar cuentas de Instagram, Facebook, LinkedIn y otras redes sociales de manera ilimitada en cada grupo creado."
+                      ],
+                      "insights": "La posibilidad de asociar ilimitadamente redes sociales a los grupos facilita la gestión centralizada de múltiples canales por cliente."
+                    }
+                  ]
+                },
+                {
+                  "section": "Creación y Programación de Publicaciones",
+                  "start": 187,
+                  "end": 499,
+                  "subsections": [
+                    {
+                      "subsection": "Subida y Personalización de Contenidos",
+                      "start": 187,
+                      "end": 365,
+                      "tools": [
+                        "Vista calendario",
+                        "Función de carga de contenido en Social Planner"
+                      ],
+                      "steps": [
+                        "Acceder a la vista calendario.",
+                        "Seleccionar el cliente/grupo para el que se va a publicar.",
+                        "Visualizar las redes sociales del cliente (Facebook, Instagram, LinkedIn, Twitter, TikTok, YouTube).",
+                        "Redactar un texto general o personalizar el mensaje para cada canal.",
+                        "Seleccionar el formato de publicación (ejemplo: formato real).",
+                        "Subir el vídeo u otro contenido a publicar."
+                      ],
+                      "insights": "La personalización por canal permite adaptar el mensaje según las características de cada red social. El proceso es ágil, facilitando la carga y edición de contenidos multimedia."
+                    },
+                    {
+                      "subsection": "Ajustes por Canal y Corrección de Errores",
+                      "start": 366,
+                      "end": 457,
+                      "tools": [
+                        "Función de ajuste y selección de canal en Social Planner"
+                      ],
+                      "steps": [
+                        "Seleccionar la red y el tipo de publicación (por ejemplo, reels en Instagram).",
+                        "Verificar que no haya errores de formato o texto en los distintos canales.",
+                        "Actualizar los textos individuales si es necesario (ejemplo: escribir un título específico para Shorts de TikTok)."
+                      ],
+                      "insights": "Confirmar que la publicación se adapta correctamente a cada red reduce errores y mejora el impacto de la comunicación."
+                    },
+                    {
+                      "subsection": "Programación y Flujos de Aprobación",
+                      "start": 458,
+                      "end": 499,
+                      "tools": [
+                        "Función de programación",
+                        "Función de envío para aprobación"
+                      ],
+                      "steps": [
+                        "Seleccionar si se desea publicar inmediatamente o programar la publicación para un día y hora específicos.",
+                        "Si corresponde, enviar la publicación a un community manager para su revisión y aprobación.",
+                        "Asignar al aprobador (ejemplo: Alfonso Bello y X) antes de finalizar el flujo."
+                      ],
+                      "insights": "El flujo de aprobación mejora el control de calidad y permite la colaboración entre distintos miembros del equipo antes de que el contenido sea publicado."
+                    }
+                  ]
+                }
+              ]
+            },
+            "refusal": null,
+            "annotations": []
+          },
+          "logprobs": null,
+          "finish_reason": "stop"
+        }
+      }
+    ],
+    "HTTP Request3": [
+      {
+        "json": {
+          "videoTitle": "Social Planner",
+          "url": "https://www.youtube.com/watch?v=8E90SpU2Jw8",
+          "channelName": "Angel Aparicio | Inteligencia Artificial",
+          "views": "No views",
+          "videoPostDate": "Apr 20, 2025",
+          "channelSubscription": "11.1K subscribers",
+          "transcript": "bienvenido a Wixin hoy veremos la sección de Social Planner nos vamos a marketing y Social Planner aquí vemos una vista lista también lo podemos ver en calendario vemos que el día 24 de septiembre como vemos aquí eh se van a están todas eh programadas lo podemos ver también en calendario ¿vale todas estas han sido publicadas y estas están calendarizadas ¿vale a partir de ahí otras cosas eh importantes a tener en cuenta si somos una agencia y gestionamos las redes sociales de varios clientes eh es importante meterlos por grupos ¿vale damos new grupo y le pones el nombre del del de tu cliente tendrás que configurar las redes sociales pues eh Instagram aquí meter Instagram de todas las cuentes que estés gestionando igual en Facebook LinkedIn ¿vale puedes poner de manera ilimitada todas las redes sociales una vez hagas eso es muy importante ¿vale para para que esté bien ordenado y te puedas planificar bien crear grupos ¿vale vamos a ver cómo se sube contenido damos al más por ejemplo desde la vista calendario y a partir de aquí cogemos al cliente de nuevo ¿vale y se nos ha cargado todas empresarios sin filtros ¿vale facebook Instagram LinkedIn Twitter TikTok y YouTube a partir de aquí a mí me eh puedes poner un texto breve ¿vale o podrías customizar para cada canal si lo customizas para canal deberías escribir aquí el texto vamos a hacer un ejemplo ¿vale y podrías ponerlo para cada canal aquí decimos que es formato real y luego lo que es importante subimos el vídeo por ejemplo una vez se carga ¿vale ahí vale nos vamos a Instagram damos a reels ya veis que se arregla el error linkedin bien entonces iríamos poniendo el texto en cada parte ponemos el título esto es un short tiktok bueno vamos a empezar por hacerlo más corto una vez tenemos todo Facebook Instagram LinkedIn Twitter TikTok y YouTube lo que hacemos es podemos postearlo si lo queremos hacer inmediatamente o podemos programar una publicación pues que lo vamos a poner el viernes y la hora o si tenemos un community manager que gestiona le daríamos a enviar para aprobar vale y el aprobador pondríamos Alfonso Bello y X listo"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Semantic Chunker": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "OpenAI1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Google Drive2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Google Drive1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI1": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Tranformar embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive2": {
+      "main": [
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Semantic Chunker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive1": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive3": {
+      "main": [
+        [
+          {
+            "node": "Extract from File2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive4": {
+      "main": [
+        [
+          {
+            "node": "Google Drive3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File2": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tranformar embedding": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3388b18a-aa28-4d3f-a138-5cd0082948db",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "qX1f1pfNUpyN5Pc6",
+  "tags": []
+}

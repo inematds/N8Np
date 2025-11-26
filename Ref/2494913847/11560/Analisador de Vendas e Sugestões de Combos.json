@@ -1,0 +1,503 @@
+{
+  "name": "Analisador de Vendas e Sugestões de Combos",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📊 Analisador de Vendas iFood\n\n**Fluxo de Automação:**\n1. Lê dados de vendas do Google Sheets\n2. Analisa produtos mais vendidos (últimos 7 dias)\n3. Identifica correlações entre produtos\n4. Gera sugestões de combos com desconto\n5. Envia sugestões via Telegram\n6. Registra logs na planilha\n\n**Configurações Necessárias:**\n- Credenciais do Google Sheets\n- Bot Token do Telegram\n- Chat ID do Telegram",
+        "color": 5
+      },
+      "id": "note1-2345-6789-abcd-ef1234567890",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        50,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "readRows",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $json.spreadsheetId }}",
+          "mode": "id"
+        }
+      },
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Ler Vendas Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        700,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "1",
+          "name": "Google Sheets Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 🔑 Configurar Credenciais\n\n**Google Sheets:**\n- Autorize acesso à sua conta Google\n- Localize o ID da planilha \"Vendas iFood\"\n- Certifique-se que a planilha tem as colunas corretas\n\n**Campos esperados:**\n- Produto\n- Quantidade Vendida\n- Valor Unitário\n- Data do Pedido\n- Status do Pedido",
+        "color": 3
+      },
+      "id": "note2-3456-7890-bcde-f12345678902",
+      "name": "Sticky Note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        450,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filtrar vendas dos últimos 7 dias\nconst hoje = new Date();\nconst seteDiasAtras = new Date(hoje);\nseteDiasAtras.setDate(hoje.getDate() - 7);\n\nconst vendasFiltradas = [];\n\nfor (const item of $input.all()) {\n  const dataVenda = new Date(item.json['Data do Pedido']);\n  \n  if (dataVenda >= seteDiasAtras && item.json['Status do Pedido'] === 'Concluído') {\n    vendasFiltradas.push({\n      produto: item.json['Produto'],\n      quantidade: parseInt(item.json['Quantidade Vendida']),\n      valor: parseFloat(item.json['Valor Unitário']),\n      data: item.json['Data do Pedido']\n    });\n  }\n}\n\n// Agrupar vendas por produto\nconst vendasPorProduto = {};\nvendasFiltradas.forEach(venda => {\n  if (!vendasPorProduto[venda.produto]) {\n    vendasPorProduto[venda.produto] = {\n      produto: venda.produto,\n      quantidadeTotal: 0,\n      valor: venda.valor,\n      aparicoes: []\n    };\n  }\n  vendasPorProduto[venda.produto].quantidadeTotal += venda.quantidade;\n  vendasPorProduto[venda.produto].aparicoes.push(venda.data);\n});\n\n// Filtrar produtos com mais de 5 vendas\nconst produtosRelevantes = Object.values(vendasPorProduto)\n  .filter(p => p.quantidadeTotal >= 5)\n  .sort((a, b) => b.quantidadeTotal - a.quantidadeTotal);\n\nreturn produtosRelevantes.map(p => ({ json: p }));"
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-012345678903",
+      "name": "Filtrar e Agrupar Vendas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📈 Análise de Dados\n\n**Processo de Filtragem:**\n- Considera apenas últimos 7 dias\n- Status do pedido = \"Concluído\"\n- Remove produtos com < 5 vendas\n- Agrupa vendas por produto\n- Ordena por quantidade vendida",
+        "color": 4
+      },
+      "id": "note3-4567-8901-cdef-012345678904",
+      "name": "Sticky Note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        650,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ JSON.stringify($json) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Você é um especialista em análise de vendas de restaurantes. Com base nos dados de vendas fornecidos, crie sugestões de combos inteligentes.\n\nRegras:\n1. Cada combo deve ter no máximo 3 itens\n2. Priorize combos com pelo menos 1 bebida + 1 prato principal\n3. O preço do combo deve ter 10% de desconto sobre a soma dos valores individuais\n4. Gere no máximo 3 sugestões de combos\n5. Cada combo precisa de um nome criativo e atrativo\n6. Forneça uma justificativa baseada nos dados de vendas\n\nAnalise os produtos fornecidos e identifique padrões de compra que justifiquem as combinações sugeridas."
+        }
+      },
+      "id": "d4e5f6a7-b8c9-0123-defa-123456789005",
+      "name": "AI Agent - Gerar Combos",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai:gpt-4o-mini",
+        "options": {
+          "maxTokens": "[REMOVED]",
+          "temperature": 0.7
+        }
+      },
+      "id": "e5f6a7b8-c901-2345-efab-234567890106",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        520
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "2",
+          "name": "OpenRouter API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"combos\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"nome\": {\n            \"type\": \"string\",\n            \"description\": \"Nome criativo e atrativo do combo\"\n          },\n          \"itens\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"string\"\n            },\n            \"description\": \"Lista de itens incluídos no combo (máximo 3)\"\n          },\n          \"precoOriginal\": {\n            \"type\": \"number\",\n            \"description\": \"Soma dos valores individuais dos itens\"\n          },\n          \"precoCombo\": {\n            \"type\": \"number\",\n            \"description\": \"Preço do combo com 10% de desconto\"\n          },\n          \"justificativa\": {\n            \"type\": \"string\",\n            \"description\": \"Explicação baseada nos dados de vendas\"\n          }\n        },\n        \"required\": [\"nome\", \"itens\", \"precoOriginal\", \"precoCombo\", \"justificativa\"]\n      }\n    },\n    \"semSugestoes\": {\n      \"type\": \"boolean\",\n      \"description\": \"True se não há dados suficientes para sugestões\"\n    }\n  },\n  \"required\": [\"combos\"]\n}"
+      },
+      "id": "f6a7b8c9-d012-3456-fabc-345678901207",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🤖 Configuração da IA\n\n**Modelo:** GPT-4 Mini via OpenRouter\n**Temperatura:** 0.7 (criatividade balanceada)\n\n**Saída Estruturada:**\n- Array de combos sugeridos\n- Cada combo com nome, itens, preços e justificativa\n- Flag para casos sem dados suficientes",
+        "color": 6
+      },
+      "id": "note4-5678-9012-fabc-345678901208",
+      "name": "Sticky Note 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        850,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.semSugestoes }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a7b8c9d0-e123-4567-abcd-456789012309",
+      "name": "Verificar Se Há Sugestões",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.1,
+      "position": [
+        1500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const combos = $json.combos || [];\nconst mensagens = [];\n\ncombos.forEach((combo, index) => {\n  const mensagem = `📊 *Sugestão de Combo Novo!*\n\nNome: ${combo.nome}\nItens: ${combo.itens.join(', ')}\nPreço original: R$ ${combo.precoOriginal.toFixed(2)}\nPreço sugerido: R$ ${combo.precoCombo.toFixed(2)}\nMotivo: ${combo.justificativa}\n\nDeseja cadastrar este combo no sistema? ✅`;\n  \n  mensagens.push({\n    json: {\n      mensagem: mensagem,\n      combo: combo,\n      dataHora: new Date().toISOString()\n    }\n  });\n});\n\nreturn mensagens;"
+      },
+      "id": "b8c9d0e1-f234-5678-bcde-567890123410",
+      "name": "Formatar Mensagens Telegram",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1720,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "abc123",
+              "name": "mensagem",
+              "value": "Sem sugestões no momento",
+              "type": "string"
+            },
+            {
+              "id": "def456",
+              "name": "dataHora",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c9d0e1f2-a345-6789-cdef-678901234511",
+      "name": "Mensagem Sem Sugestões",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1720,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 💬 Formatação Telegram\n\n**Mensagem de Sucesso:**\n- Formatação Markdown\n- Emojis para melhor visualização\n- Informações claras do combo\n- Call-to-action para cadastro\n\n**Mensagem de Falha:**\n- Aviso simples quando não há dados suficientes"
+      },
+      "id": "note5-6789-0123-cdef-678901234512",
+      "name": "Sticky Note 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.telegramChatId }}",
+        "text": "={{ $json.mensagem }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "d0e1f2a3-b456-789a-defa-789012345613",
+      "name": "Enviar para Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1940,
+        300
+      ],
+      "webhookId": "bd03db6f-2a76-4c7a-b815-1d2e2a1edae9"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $vars.spreadsheetId }}",
+          "mode": "id"
+        },
+        "sheetName": "Sugestões",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Data/Hora": "={{ $json.dataHora }}",
+            "Nome Combo": "={{ $json.combo?.nome || 'N/A' }}",
+            "Itens": "={{ $json.combo?.itens?.join(', ') || 'N/A' }}",
+            "Preço Original": "={{ $json.combo?.precoOriginal || 0 }}",
+            "Preço Combo": "={{ $json.combo?.precoCombo || 0 }}",
+            "Justificativa": "={{ $json.combo?.justificativa || $json.mensagem }}",
+            "Status": "={{ $json.combo ? 'Sugerido' : 'Sem Dados' }}"
+          }
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "id": "e1f2a3b4-c567-890b-efab-890123456714",
+      "name": "Registrar Log Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2160,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "1",
+          "name": "Google Sheets Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 📝 Registro de Logs\n\n**Aba \"Sugestões\" deve conter:**\n- Data/Hora da análise\n- Nome do Combo sugerido\n- Itens incluídos\n- Preço original e com desconto\n- Justificativa da sugestão\n- Status (Sugerido/Sem Dados)\n\n**Importante:** Criar a aba se não existir",
+        "color": 2
+      },
+      "id": "note6-7890-1234-efab-890123456715",
+      "name": "Sticky Note 6",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1650,
+        100
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "f2a3b4c5-d678-901c-fabc-901234567816",
+      "name": "Configurar Variáveis",
+      "type": "n8n-nodes-base.setVariables",
+      "typeVersion": 1,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ⚠️ CONFIGURAÇÃO OBRIGATÓRIA\n\n**Antes de executar:**\n\n1. **Google Sheets ID:**\n   - Abra sua planilha no Google Sheets\n   - Copie o ID da URL (entre /d/ e /edit)\n   - Cole no nó \"Configurar Variáveis\"\n\n2. **Telegram Chat ID:**\n   - Obtenha o ID do chat/canal\n   - Cole no nó \"Configurar Variáveis\"\n\n3. **Credenciais:**\n   - Configure Google OAuth2\n   - Configure Telegram Bot Token\n   - Configure OpenRouter API Key",
+        "height": 280,
+        "color": 7
+      },
+      "id": "note7-8901-2345-fabc-901234567817",
+      "name": "Sticky Note 7",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        50,
+        450
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Configurar Variáveis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configurar Variáveis": {
+      "main": [
+        [
+          {
+            "node": "Ler Vendas Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ler Vendas Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Filtrar e Agrupar Vendas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar e Agrupar Vendas": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Gerar Combos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Gerar Combos": {
+      "main": [
+        [
+          {
+            "node": "Verificar Se Há Sugestões",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - Gerar Combos",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent - Gerar Combos",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Se Há Sugestões": {
+      "main": [
+        [
+          {
+            "node": "Formatar Mensagens Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensagem Sem Sugestões",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Mensagens Telegram": {
+      "main": [
+        [
+          {
+            "node": "Enviar para Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem Sem Sugestões": {
+      "main": [
+        [
+          {
+            "node": "Enviar para Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar para Telegram": {
+      "main": [
+        [
+          {
+            "node": "Registrar Log Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "errorWorkflow": "",
+    "timezone": "America/Sao_Paulo"
+  },
+  "versionId": "030d6aa4-ab2a-4792-b931-0ca8ff1c23ac",
+  "meta": {
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "cVvNsyq64QCI5yFq",
+  "tags": []
+}

@@ -1,0 +1,1308 @@
+{
+  "name": "Tracking de productos",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -700,
+        560
+      ],
+      "id": "5a80c372-9738-4a3b-b156-8af1fd0664d9",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json['Enlace producto'] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        0
+      ],
+      "id": "2c47e57d-94f8-4f47-9b20-97235fa82c5f",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "html": "={{ $json.data }}",
+        "options": {
+          "ignore": "img"
+        }
+      },
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        480,
+        0
+      ],
+      "id": "11d537ec-faf3-4ffa-94ed-7604c593109e",
+      "name": "Markdown"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Markdown').item.json.data }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Eres un extractor de precios de clase mundial. Tu tarea es analizar la página web extraída y devolver exclusivamente el precio del perfume en su presentación de 100ml.\n\nInstrucciones:\n\nDevuelve únicamente el número del precio en formato decimal con coma como separador (por ejemplo, 54,75 en lugar de 54.75).\nNo añadas símbolos, texto adicional ni resúmenes.\nSi hay varias presentaciones del producto, extrae únicamente la de 100ml.\nSi el precio no está disponible, responde con null."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        700,
+        0
+      ],
+      "id": "ba2beac6-cf26-4c8f-af7b-65de04106ac1",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"Precio\": \"\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        860,
+        200
+      ],
+      "id": "4d627098-c45c-4ba8-a1be-6d5cf5126fd7",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw",
+          "mode": "list",
+          "cachedResultName": "Perfumes competencia",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 165199681,
+          "mode": "list",
+          "cachedResultName": "Perfumeria.com",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit#gid=165199681"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nombre producto": "={{ $('Perfumeria.com').item.json['Nombre producto'] }}",
+            "Precio del procucto": "={{ $json.output.Precio }}"
+          },
+          "matchingColumns": [
+            "Nombre producto"
+          ],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "Enlace producto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Nombre producto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Precio del procucto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1060,
+        0
+      ],
+      "id": "f8c20acf-c7dc-4854-9dc1-9fe82ea199f4",
+      "name": "Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.data.markdown }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Eres un extractor de precios de clase mundial. Tu tarea es analizar la página web extraída y devolver exclusivamente el precio del perfume en su presentación de 100ml.\n\nInstrucciones:\n\nDevuelve únicamente el número del precio en formato decimal con coma como separador (por ejemplo, 54,75 en lugar de 54.75).\nNo añadas símbolos, texto adicional ni resúmenes.\nSi hay varias presentaciones del producto, extrae únicamente la de 100ml.\nSi el precio no está disponible, responde con null."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1120,
+        460
+      ],
+      "id": "0a5c40b5-0886-45e4-ba18-1b6f3ec2a24c",
+      "name": "Basic LLM Chain2"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"Precio\": \"\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        660
+      ],
+      "id": "6c87b5fa-2393-43d5-b027-3945199b2a2c",
+      "name": "Structured Output Parser2"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        640
+      ],
+      "id": "0374a286-88a4-41a6-b904-d19ae38ea67a",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2540,
+        640
+      ],
+      "id": "b4f5f2b1-5c13-4840-b5ed-523597cdf275",
+      "name": "Wait1",
+      "webhookId": "996bb585-bf08-4813-8782-d56903daed20"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "['Enlace producto']",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        240,
+        460
+      ],
+      "id": "e5a3204f-1a4b-4df0-a16d-4b52efa71fa7",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $('Basic LLM Chain2').item.json.output.Precio.replace(\",\",\".\").toNumber() }}",
+              "rightValue": "={{ $('Buscar perfumerias').item.json['Precio del procucto'] }}",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2000,
+        460
+      ],
+      "id": "b8588dfe-bccb-44ef-bde2-dbea94d729ba",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        660,
+        200
+      ],
+      "id": "0b9968d1-f694-471d-af74-e81df70f3400",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.firecrawl.dev/v1/scrape",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer fc-6b5f19c187004714b691585c8a7da1d4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n        \"url\": \"{{ $('Druni').item.json['Enlace producto'] }}\",\n\t\t\"formats\": [ \"markdown\" ]\n\t}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        780,
+        480
+      ],
+      "id": "86e9ba63-2a2c-4627-9064-40b83abd60ac",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "532278873304599",
+        "recipientPhoneNumber": "‪34722324719‬",
+        "textBody": "=*🚨Cambio de precio*\n\nEl precio de *{{ $('Buscar perfumerias').item.json['Nombre producto'] }}* ha bajado en un competidor a *{{ $('Buscar perfumerias').item.json['Precio del procucto'] }}€*\nEnlace: {{ $('Buscar perfumerias').item.json['Enlace producto'] }}",
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        2540,
+        220
+      ],
+      "id": "d060ee9f-c419-4639-b22a-120e14fd8744",
+      "name": "WhatsApp Business Cloud",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "[REMOVED]",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.data.markdown }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Eres un extractor de precios de clase mundial. Tu tarea es analizar la página web extraída y devolver exclusivamente el precio del perfume en su presentación de 100ml.\n\nInstrucciones:\n\nDevuelve únicamente el número del precio en formato decimal con coma como separador (por ejemplo, 54,75 en lugar de 54.75).\nNo añadas símbolos, texto adicional ni resúmenes.\nSi hay varias presentaciones del producto, extrae únicamente la de 100ml.\nSi el precio no está disponible, responde con null."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1140,
+        1120
+      ],
+      "id": "b02bc10d-2cb1-40d3-ab7c-6e2b773e3a10",
+      "name": "Basic LLM Chain3"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"Precio\": \"\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        1300
+      ],
+      "id": "119d66c6-3754-4044-95ce-e691eedd1006",
+      "name": "Structured Output Parser3"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        1300
+      ],
+      "id": "1e488e40-68d6-4620-ad44-32d53146114f",
+      "name": "Google Gemini Chat Model3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2600,
+        1340
+      ],
+      "id": "65137966-e1fb-47cc-8f4a-5cf0b67064ea",
+      "name": "Wait",
+      "webhookId": "996bb585-bf08-4813-8782-d56903daed20"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "['Precio del procucto']",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        260,
+        1100
+      ],
+      "id": "e96ac644-9244-4aa4-9344-4ed579cd4489",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.firecrawl.dev/v1/scrape",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer fc-6b5f19c187004714b691585c8a7da1d4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n        \"url\": \"{{ $('Primor').item.json['Enlace producto'] }}\",\n\t\t\"formats\": [ \"markdown\" ]\n\t}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        760,
+        1120
+      ],
+      "id": "36b7362c-1d3e-4b26-a73c-5a7d0fc3ba49",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw",
+          "mode": "list",
+          "cachedResultName": "Perfumes competencia",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1484037296,
+          "mode": "list",
+          "cachedResultName": "Primor",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit#gid=1484037296"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        20,
+        1100
+      ],
+      "id": "0f740faa-42ac-418b-adca-500e60b7ef45",
+      "name": "Primor",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "532278873304599",
+        "recipientPhoneNumber": "‪34722324719‬",
+        "textBody": "=*🚨Cambio de precio*\n\nEl precio de *{{ $('Buscar perfumerias1').item.json['Nombre producto'] }}* ha bajado en un competidor a *{{ $('Buscar perfumerias1').item.json['Precio del procucto'] }}€*\nEnlace: {{ $('Buscar perfumerias1').item.json['Enlace producto'] }}",
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        2540,
+        860
+      ],
+      "id": "82a9a35f-455c-4286-9cd5-7d6990653ce7",
+      "name": "WhatsApp Business Cloud1",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "[REMOVED]",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw",
+          "mode": "list",
+          "cachedResultName": "Perfumes competencia",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 165199681,
+          "mode": "list",
+          "cachedResultName": "Perfumeria.com",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit#gid=165199681"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "95f66f28-0253-4778-8c03-a50061e40c24",
+      "name": "Perfumeria.com",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw",
+          "mode": "list",
+          "cachedResultName": "Perfumes competencia",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Druni",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        0,
+        460
+      ],
+      "id": "10fc2de4-f009-47e3-a1df-0e48a46f2430",
+      "name": "Druni",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw",
+          "mode": "list",
+          "cachedResultName": "Perfumes competencia",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Druni",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nombre producto": "={{ $('Druni').item.json['Nombre producto'] }}",
+            "Precio del procucto": "={{ $json.output.Precio }}"
+          },
+          "matchingColumns": [
+            "Nombre producto"
+          ],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "Enlace producto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Nombre producto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Precio del procucto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1500,
+        460
+      ],
+      "id": "a6cd6b35-b5b4-4425-b2a8-02e5ebd6a7fe",
+      "name": "Actualizar Druni",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw",
+          "mode": "list",
+          "cachedResultName": "Perfumes competencia",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 165199681,
+          "mode": "list",
+          "cachedResultName": "Perfumeria.com",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit#gid=165199681"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Nombre producto",
+              "lookupValue": "={{ $json['Nombre producto'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1740,
+        460
+      ],
+      "id": "8a2533bf-52a2-4af8-8113-7e397add8bad",
+      "name": "Buscar perfumerias",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw",
+          "mode": "list",
+          "cachedResultName": "Perfumes competencia",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1484037296,
+          "mode": "list",
+          "cachedResultName": "Primor",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit#gid=1484037296"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nombre producto": "={{ $('Primor').item.json['Nombre producto'] }}",
+            "Precio del procucto": "={{ $json.output.Precio }}"
+          },
+          "matchingColumns": [
+            "Nombre producto"
+          ],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "Enlace producto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Nombre producto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Precio del procucto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1520,
+        1120
+      ],
+      "id": "d7e5b3a8-bd5e-4085-90e6-bb3d72165909",
+      "name": "Actualizar primor",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw",
+          "mode": "list",
+          "cachedResultName": "Perfumes competencia",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 165199681,
+          "mode": "list",
+          "cachedResultName": "Perfumeria.com",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KjJtxV3YNvE_LcU2vM7RiYHBhdclUHaf4e5uqTZL-sw/edit#gid=165199681"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Nombre producto",
+              "lookupValue": "={{ $json['Nombre producto'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1720,
+        1120
+      ],
+      "id": "b6a11f52-5b32-4aa1-abb7-0ef813ecb82f",
+      "name": "Buscar perfumerias1",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $('Basic LLM Chain3').item.json.output.Precio.replace(\",\",\".\").toNumber() }}",
+              "rightValue": "={{ $json['Precio del procucto'] }}",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2020,
+        1120
+      ],
+      "id": "038eb422-f9c7-41a4-86cf-1b894688d0ca",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        480,
+        460
+      ],
+      "id": "d9c09513-511d-4fef-8a50-cf99375bd6ba",
+      "name": "Loop"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        520,
+        1100
+      ],
+      "id": "d85404b6-cbc0-4277-9a00-b1d8b5101841",
+      "name": "Loop1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Druni",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Perfumeria.com",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Primor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain2": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Druni",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Business Cloud",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Business Cloud": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain3": {
+      "main": [
+        [
+          {
+            "node": "Actualizar primor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser3": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Primor": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Business Cloud1": {
+      "main": [
+        [
+          {
+            "node": "Loop1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Perfumeria.com": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Druni": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar Druni": {
+      "main": [
+        [
+          {
+            "node": "Buscar perfumerias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar perfumerias": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar primor": {
+      "main": [
+        [
+          {
+            "node": "Buscar perfumerias1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar perfumerias1": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Business Cloud1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a2bd2942-db00-461e-8131-24d4e8579b19",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e0e4b720cb3656009f5ca7014be06f1fbe69abfc54f93aa2cc3ca2098ff666d6"
+  },
+  "id": "XUG32B6MF29uuqsT",
+  "tags": []
+}

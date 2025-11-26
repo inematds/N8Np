@@ -1,0 +1,174 @@
+{
+  "name": "Modelos LLM dinámicos",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=Eres un agente de IA cuya única responsabilidad es seleccionar el modelo de lenguaje más adecuado para responder a una solicitud del usuario. Tu elección debe basarse únicamente en las fortalezas específicas de cada modelo. No expliques tu decisión ni proporciones texto adicional.\n\n---\n\n### 📋 Instrucciones\n\n1. **Analiza detenidamente la solicitud del usuario.**\n2. **Determina la naturaleza de la tarea** (por ejemplo, conversación ligera, redacción avanzada, análisis complejo, automatización, etc.).\n3. **Selecciona el modelo más idóneo** basándote solo en las fortalezas indicadas abajo.\n4. **Devuelve exclusivamente el identificador exacto del modelo.**\n5. **No añadas ningún texto adicional, explicación, puntuación ni formato.**\n\n---\n\n### 🤖 Modelos Disponibles y sus Fortalezas\n\n- `google/gemini-2.0-flash-001`  \n  → Modelo multimodal ultrarrápido y eficiente, ideal para tareas ligeras, consultas rápidas, conversaciones generales y resúmenes simples. Soporta una ventana de contexto de hasta 1 millón de tokens.\n\n- `openai/gpt-4o-mini`  \n  → Modelo compacto y rentable, adecuado para tareas que requieren procesamiento de texto y una ventana de contexto de 128K tokens.\n\n- `openai/gpt-4.1`  \n  → Modelo insignia optimizado para seguimiento avanzado de instrucciones, ingeniería de software del mundo real y razonamiento de contexto largo. Soporta una ventana de contexto de 1 millón de tokens\n\n- `openai/gpt-4.1-mini`  \n  → Modelo de tamaño medio que ofrece un rendimiento competitivo con una ventana de contexto de 1 millón de tokens adecuado para aplicaciones interactivas con restricciones de rendimiento.\n\n- `anthropic/claude-sonnet-4`  \n  → Ideal para redacción profesional, generación de contenido estructurado y tareas que requieren comprensión de alto contexto.\n\n- `openai/gpt-4o-mini-search-preview`  \n  → Modelo especializado en búsquedas web. Ideal para tareas que requieren información actualizada o acceso a datos en tiempo real.\n\n\n---\n\n### ✅ Formato de salida (obligatorio)  \nDevuelve solo uno de los siguientes identificadores:\n\ngoogle/gemini-2.0-flash-001\nopenai/gpt-4o-mini\nopenai/gpt-4.1\nopenai/gpt-4.1-mini\nanthropic/claude-sonnet-4\nopenai/gpt-4o-mini-search-preview\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        820,
+        180
+      ],
+      "id": "9a8d6e39-8b43-42ef-894b-aa9f7a573fcc",
+      "name": "Selector de Modelo"
+    },
+    {
+      "parameters": {
+        "model": "=google/gemini-2.0-flash-001",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1220,
+        400
+      ],
+      "id": "3f254130-68cf-491a-9f23-589057f7ec33",
+      "name": "Procesador Dinámico",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        908,
+        400
+      ],
+      "id": "f0321854-87ab-4b48-a03a-e5f5643061b4",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        600,
+        180
+      ],
+      "id": "4bef18b4-9271-458e-a178-9d8755974197",
+      "name": "When chat message received",
+      "webhookId": "66d71646-3c39-4a08-b3e2-a6d831e7e197"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('When chat message received').item.json.sessionId }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1344,
+        400
+      ],
+      "id": "b393b60e-eddb-44ba-90c4-780275d0c56b",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('When chat message received').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=Eres un asistente inteligente que va a ayudar al usuario en aquello que este pida.\n\nDia y hora: {{ $now }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1200,
+        180
+      ],
+      "id": "230cde17-48f7-48c6-987c-2feb6e245f61",
+      "name": "AI Agent"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Selector de Modelo",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Selector de Modelo": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesador Dinámico": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Selector de Modelo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7379c0cf-b484-45bc-9735-8871d5624ce5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "mmn37gg0G5iH8m8a",
+  "tags": []
+}

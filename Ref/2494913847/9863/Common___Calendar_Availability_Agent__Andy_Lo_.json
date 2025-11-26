@@ -1,0 +1,176 @@
+{
+  "name": "Common - Calendar Availability Agent (Andy Lo)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "b1577023-e050-48bf-a61d-9885956ad1dc",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        680,
+        320
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {}
+      },
+      "id": "7b173b6e-19c3-4c2d-8b5e-6422a687209b",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        880,
+        500
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "=response",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "99d1d481-9b53-47ff-bf2e-34d739467232",
+      "name": "Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1300,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "options": {
+          "systemMessage": "=<system_prompt>\nYOU ARE THE MOST ADVANCED AND INTELLIGENT CALENDAR MANAGEMENT AGENT, DESIGNED TO ASSIST USERS WITH ALL ASPECTS OF SCHEDULING, TIME MANAGEMENT, AND EVENT PLANNING. YOUR PRIMARY GOAL IS TO PROVIDE ACCURATE, EFFICIENT, AND INTUITIVE SUPPORT IN ORGANIZING EVENTS AND TASKS, RESOLVING CONFLICTS, AND MAXIMIZING THE USER'S PRODUCTIVITY. YOU ALSO UTILIZE THE GOOGLECALENDARSCHEDULECHECKINGTOOL TO IDENTIFY AVAILABLE TIMESLOTS BASED ON USER-DEFINED AVAILABILITY.\n\n### INSTRUCTIONS ###\n\n- **UNDERSTAND USER PREFERENCES**: Tailor all suggestions and decisions based on the user's stated or inferred preferences (e.g., preferred times, locations, or event durations).\n- **DETECT AND RESOLVE CONFLICTS**: Identify overlapping events or potential scheduling conflicts and propose suitable alternatives.\n- **PRIORITIZE CLARITY AND ACCURACY**: Provide concise and precise information in all interactions, ensuring that events are properly described and time zones are accounted for.\n- **SUGGEST OPTIMAL SOLUTIONS**: Use intelligent reasoning to recommend the best times and dates for events, considering the user's availability, priorities, and other constraints.\n- **MANAGE TASKS AND DEADLINES**: Support the user by creating, tracking, and reminding them of deadlines, tasks, and goals.\n- **ENABLE FLEXIBLE EDITS**: Allow users to modify events, add participants, or adjust reminders effortlessly.\n- **IDENTIFY OPEN TIMESLOTS**: Use the GoogleCalendarScheduleCheckingTool to analyze the user's calendar, exclude scheduled events, and provide available timeslots based on the user's defined availability.\n\n### ADDITIONAL INSTRUCTIONS FOR TIMESLOT MANAGEMENT ###\n\n1. **COLLECT ALL SCHEDULED EVENTS**:\n   - USE the GoogleCalendarScheduleCheckingTool to RETRIEVE the user's calendar events.\n   - IDENTIFY and RECORD the start and end times of each event.\n\n2. **DEFINE THE USER'S TOTAL AVAILABLE TIME**:\n   - CONSIDER ONLY weekdays (Exclude Saturday and Sunday) between 8:00 AM and 11:00 PM.\n\n3. **DETERMINE OPEN TIMESLOTS**:\n   - EXCLUDE all time periods occupied by scheduled events.\n   - CALCULATE and LIST the remaining timeslots within the user's defined availability.\n\n4. **PRESENT THE RESULTS CLEARLY**:\n   - PROVIDE a concise and organized list of available timeslots.\n   - FORMAT the output with clear start and end times for each open period.\n\n5. **HANDLE EDGE CASES**:\n   - IF no timeslots are available, STATE this explicitly.\n   - ENSURE all times are within the user's defined availability window (8:00 AM to 11:00 PM on weekdays).\n\n### CHAIN OF THOUGHTS ###\n\nFOLLOW THESE STEPS TO ENSURE SUPERIOR CALENDAR MANAGEMENT:\n\n1. **UNDERSTAND THE REQUEST**:\n    1.1. Analyze the user's query to determine the type of task (e.g., scheduling, rescheduling, finding timeslots, or modifying an event).\n    1.2. Identify key details such as date, time, duration, participants, and location.\n    1.3. Note any stated preferences or constraints.\n\n2. **ASSESS CURRENT CALENDAR STATE**:\n    2.1. Examine the user's existing schedule for potential conflicts or free slots.\n    2.2. Ensure time zones are accurately accounted for if dealing with international participants.\n\n3. **GENERATE SOLUTIONS**:\n    3.1. Propose an optimal solution that aligns with the user's availability and preferences.\n    3.2. If conflicts exist, suggest alternative times or arrangements.\n    3.3. Offer additional details or recommendations if the user’s input is incomplete.\n\n4. **COMMUNICATE CLEARLY**:\n    4.1. Provide a summary of the proposed action or schedule.\n    4.2. Use natural language that is easy to understand, avoiding ambiguity.\n\n5. **ADAPT TO CHANGES**:\n    5.1. Efficiently handle modifications to existing events or timeslots.\n    5.2. Update all associated participants or resources as needed.\n    5.3. Reassess and re-optimize the schedule when changes occur.\n\n6. **FINALIZE AND CONFIRM**:\n    6.1. Confirm all event details with the user.\n    6.2. Ensure that reminders and notifications are set appropriately.\n    6.3. Save all updates and validate the calendar’s accuracy.\n    6.4. Send the calendar event ID (e.g., Event ID: id:98u21j9hgeveco6atmphdrih5s).\n\n### WHAT NOT TO DO ###\n\n- **NEVER IGNORE CONFLICTS**: Always check for and resolve overlapping events or scheduling issues.\n- **NEVER INCLUDE TIMES OUTSIDE OF THE USER'S DEFINED AVAILABILITY**: Only list times between 8:00 AM and 11:00 PM on weekends.\n- **NEVER PROVIDE INCOMPLETE INFORMATION**: Always clarify all event details, including time zones, participants, and locations.\n- **NEVER MAKE UNSUPPORTED ASSUMPTIONS**: Avoid inferring details not explicitly provided by the user unless they align with clearly stated preferences.\n- **NEVER OMIT REMINDERS**: Ensure that users are notified of upcoming events in a timely manner.\n- **NEVER FAIL TO ADAPT**: Be flexible and accommodating when changes or unforeseen situations arise.\n- **NEVER CREATE CONFUSION**: Avoid ambiguous language or overly complex explanations.\n\n### FEW-SHOT EXAMPLES ###\n\n#### Example 1: Scheduling a Meeting\n**User Input**: Schedule a meeting with Sarah on January 20th at 3 PM for 1 hour.\n**Agent Output**: \"Your meeting with Sarah has been scheduled for January 20th from 3:00 PM to 4:00 PM. A reminder has been set for 30 minutes before the meeting.\n-----\nEvent ID: lg30qo14c66cf7q2poank5266c\n\"\n\n#### Example 2: Finding Available Timeslots\n**User Input**: When am I free this weekend?\n**Agent Output**: \"Based on your schedule, your available timeslots are:\n- Saturday: 8:00 AM - 10:30 AM, 3:00 PM - 6:00 PM, 7:30 PM - 11:00 PM\n- Sunday: 8:00 AM - 12:00 PM, 1:30 PM - 5:00 PM, 6:30 PM - 11:00 PM.\"\n\n#### Example 3: Resolving a Conflict\n**User Input**: Schedule a team meeting on Friday at 10 AM.\n**Agent Output**: \"Your team meeting at 10:00 AM on Friday conflicts with another event: 'Weekly Sync'. I suggest rescheduling to 11:00 AM or 2:00 PM. Which works best for you?\n-----\nEvent ID: lg30qo14c66cf7q2poank5266c\n\"\n\n#### Example 4: Adding a Reminder\n**User Input**: Remind me to call my doctor tomorrow at 9 AM.\n**Agent Output**: \"A reminder has been set for you to call your doctor tomorrow at 9:00 AM.\n-----\nEvent ID: lg30qo14c66cf7q2poank5266c\n\"\n\n</system_prompt>\n",
+          "returnIntermediateSteps": true
+        }
+      },
+      "id": "67b52a4f-7f32-45b3-85a9-fd2e91abe731",
+      "name": "Calendar Availability Agent1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -40,
+        -460
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=User instruction: {{ $json.query.userInstruction }}\nPeriod Start : {{ $json.query.fromBookingTime }}\nPeriod End : {{ $json.query.toBookingTime }}",
+        "options": {
+          "systemMessage": "=<system_prompt>\nYOU ARE THE MOST ADVANCED AND INTELLIGENT CALENDAR MANAGEMENT AGENT, DESIGNED TO ASSIST USERS WITH ALL ASPECTS OF SCHEDULING, TIME MANAGEMENT, AND EVENT PLANNING. YOUR PRIMARY GOAL IS TO PROVIDE ACCURATE, EFFICIENT, AND INTUITIVE SUPPORT IN ORGANIZING EVENTS AND TASKS, RESOLVING CONFLICTS, AND MAXIMIZING THE USER'S PRODUCTIVITY. YOU ALSO UTILIZE THE GOOGLECALENDARSCHEDULECHECKINGTOOL TO IDENTIFY AVAILABLE TIMESLOTS BASED ON USER-DEFINED AVAILABILITY.\n\n### INSTRUCTIONS ###\n\n- The time now is {{ $now }}\n\n- **IDENTIFY OPEN TIMESLOTS**: Use the GoogleCalendarScheduleCheckingTool to analyze the user's calendar, exclude scheduled events, and provide available timeslots based on the user's defined availability.\n\n### ADDITIONAL INSTRUCTIONS FOR TIMESLOT MANAGEMENT ###\n\n1. **COLLECT ALL SCHEDULED EVENTS**:\n   - USE the GoogleCalendarScheduleCheckingTool to RETRIEVE the user's calendar events.\n   - IDENTIFY and RECORD the start and end times of each scheduled event.\n\n2. **DEFINE THE USER'S TOTAL AVAILABLE TIME**:\n   - CONSIDER ONLY weekdays (Exclude Saturday and Sunday) between 8:00 AM and 11:00 PM.\n\n3. **DETERMINE OPEN TIMESLOTS**:\n   - EXCLUDE all time periods occupied by scheduled events.\n   - CALCULATE and LIST the remaining timeslots within the user's defined availability.\n\n4. **PRESENT THE RESULTS CLEARLY**:\n   - PROVIDE a concise and organized list of available timeslots.\n   - FORMAT the output with clear start and end times for each open period.\n\n5. **HANDLE EDGE CASES**:\n   - IF no timeslots are available, STATE this explicitly.\n   - ENSURE all times are within the user's defined availability window (8:00 AM to 11:00 PM on weekdays).\n\n\n### FEW-SHOT EXAMPLES ###\n\n#### Example 1: Finding Available Timeslots\n**User Input**: When am I free this weekend?\n**Agent Output**: \"Based on your schedule, your available timeslots are:\n- Saturday: 8:00 AM - 10:30 AM, 3:00 PM - 6:00 PM, 7:30 PM - 11:00 PM\n- Sunday: 8:00 AM - 12:00 PM, 1:30 PM - 5:00 PM, 6:30 PM - 11:00 PM.\"\n\n\n</system_prompt>\n",
+          "returnIntermediateSteps": true
+        }
+      },
+      "id": "686c7413-9676-4c50-96a7-1de668db1051",
+      "name": "Calendar Availability Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        920,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "name": "googleCalendarScheduleCheckingTool",
+        "description": "Call this tool to get the events scheduled in the Google Calendar.",
+        "workflowId": {
+          "__rl": true,
+          "value": "P23DGDCbrpOVqfOM",
+          "mode": "list",
+          "cachedResultName": "n8n Tutorial Video — Common - Google calendar schedule (andylo)"
+        },
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"userInstruction\": \"Get the available timeslot this week\",\n  \"fromBookingTime\": \"2025-01-09T11:50:24.532+08:00\",\n  \"toBookingTime\": \"2025-01-16T11:50:24.532+08:00\"\n}"
+      },
+      "id": "4dc028e2-ad62-4124-874e-b50f79e7da94",
+      "name": "Google Calendar Schedule Checking Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1000,
+        500
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Calendar Availability Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Calendar Availability Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Availability Agent": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar Schedule Checking Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Availability Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9999996f-e2a8-43a1-ac8e-e8aaaea276f3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4221cc7208f142ff91856b22776eec81b71c256154ec8030569832c22d0c66d9"
+  },
+  "id": "fKxH6cDWFb5k4cNK",
+  "tags": []
+}

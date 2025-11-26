@@ -1,0 +1,1031 @@
+{
+  "name": "drive",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -176,
+        -48
+      ],
+      "id": "ac5b8a7d-ae8a-44af-b1a5-dcc09b716553",
+      "name": "Bucle"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "año",
+              "value": "={{ DateTime.fromFormat($json.fecha_emision, 'dd/MM/yyyy').toFormat('yyyy') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "numeroMes",
+              "value": "={{ DateTime.fromFormat($json.fecha_emision, 'dd/MM/yyyy').toFormat('MM') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "nombreMes",
+              "value": "={{\n['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][parseInt($json['fecha_emision'].split('/')[1]) - 1]\n}}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "nombreArchivo",
+              "value": "={{ $json.emisor_nombre }} - {{ $json['fecha_emision'].replace(/\\//g, '-') }}.pdf",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        -32
+      ],
+      "id": "2eee9e98-1710-47ad-9b39-ad3b23f7db58",
+      "name": "preparar variables"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "=name='{{ $json.año }}' and parents in '1upNCxoSmoKMzsAs8i-usZRmgZGM3hzIa' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+        "limit": 1,
+        "filter": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -48,
+        208
+      ],
+      "id": "8ff3a6e9-881c-47e3-bc5f-074dbc62b014",
+      "name": "buscar carpeta año",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive Iván"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('preparar variables').item.json['año'] }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1upNCxoSmoKMzsAs8i-usZRmgZGM3hzIa",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        272,
+        256
+      ],
+      "id": "71c8b9b2-bfb0-42f0-982e-54cf87029725",
+      "name": "crear carpeta año",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive Iván"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $items('buscar carpeta año').length === 1 && Object.keys($items('buscar carpeta año').json || {}).length === 0 }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        128,
+        208
+      ],
+      "id": "da4f1845-b64b-4396-8cf6-d1eab970da70",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        416,
+        208
+      ],
+      "id": "6d67ebe8-9304-4e42-91b2-2ae4ef3cbd76",
+      "name": "unir ramas año"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "=name='{{ $('preparar variables').item.json.nombreMes }}' and parents in '{{ $json.id }}' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+        "limit": 1,
+        "filter": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        592,
+        208
+      ],
+      "id": "597bed9b-6177-4fb6-b53c-817f01dfef38",
+      "name": "buscar carpeta mes",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive Iván"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $items('buscar carpeta mes').length === 1 && Object.keys($items('buscar carpeta mes').json || {}).length === 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        752,
+        208
+      ],
+      "id": "b40d66c5-6f72-436d-9d49-06863d04a799",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('preparar variables').item.json['nombreMes'] }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('unir ramas año').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        896,
+        256
+      ],
+      "id": "9dc50901-a771-4d0a-9e76-a208c0a701c5",
+      "name": "crear carpeta mes",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive Iván"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1040,
+        208
+      ],
+      "id": "db400a2d-703d-45cc-b132-0e7094b0f451",
+      "name": "unir ramas mes"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{$json.id}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        48,
+        -32
+      ],
+      "id": "059dc7d0-68f3-4c99-b4dd-c3c756eb3de1",
+      "name": "descarga documento",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive Iván"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1upNCxoSmoKMzsAs8i-usZRmgZGM3hzIa",
+          "mode": "list",
+          "cachedResultName": "Facturas",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1upNCxoSmoKMzsAs8i-usZRmgZGM3hzIa"
+        },
+        "event": "fileCreated",
+        "options": {
+          "fileType": "all"
+        }
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        -48
+      ],
+      "id": "ceb8bb8a-783c-438f-be06-248bb9ac5f30",
+      "name": "subir documento",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive Iván"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "JsonString",
+              "value": "={{JSON.parse($json.candidates[0].content.parts[0].text)}}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        528,
+        -32
+      ],
+      "id": "83bbaf94-6ef1-47f0-b34a-f096875067c6",
+      "name": "parse json"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "newUpdatedFileName": "={{ $('preparar variables').item.json.nombreArchivo }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        16,
+        416
+      ],
+      "id": "aff7ee3b-64d4-4a06-9d2f-d066b10afcdd",
+      "name": "renombrar pdf",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive Iván"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -304,
+        224
+      ],
+      "id": "384feb21-221c-4bec-9505-e399b2a8dda2",
+      "name": "espera",
+      "webhookId": "36f04452-fb73-4e94-9647-8583c4d2b01a"
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('descarga documento').item.json.id }}",
+          "mode": "id"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -176,
+        416
+      ],
+      "id": "9fc6eb77-cc0f-47c7-b25e-14eafb8aaccf",
+      "name": "mover documento",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive Iván"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "=POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "AIzaSyAv7VbafGNOojN1Xh_pjd8rK59RAHhLkDU"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"inlineData\": {\n            \"mimeType\": \"{{ $('subir documento').item.json.mimeType }}\",\n            \"data\": \"{{ $('convertir a base64').item.json.base64 }}\"\n          }\n        },\n        {\n          \"text\": \"Mi empresa es (NOMBRE DE TU EMPRESA), que es el receptor de la factura.\\n\\nA partir del documento de factura proporcionado, extrae los siguientes campos y devuelve un objeto JSON con los campos en el orden exacto listado a continuación:\\n\\n⸻\\n• Emisor: Nombre de la empresa o persona que emitió la factura. Siempre devuélvelo en MAYÚSCULAS, aunque en la factura esté en minúsculas o combinación de mayúsculas y minúsculas\\n\\n• Número de Factura: El identificador único de la factura, tal como aparece en el documento. Puede ser numérico, alfanumérico o incluir guiones/prefijos (ejemplos: \\\"F2025-123\\\", \\\"A-45\\\", \\\"000123\\\"). Devuélvelo siempre como texto (string), incluso si contiene solo números, para conservar los ceros a la izquierda en Google Sheets\\n\\n• Fecha de la Factura: La fecha en que se emitió la factura. Formato: DD/MM/AAAA (ej. 15/11/2025)\\n\\n• Categoría: Clasifica el gasto en una de las siguientes categorías predefinidas:\\n • Vinos\\n • Quesos\\n • Aceites\\n • Otros productos gourmet\\n • Embalajes y envases\\n • Material publicitario impreso\\n • Transporte y mensajería\\n • Suministros y oficina\\n • Servicios profesionales\\n\\n• Importe (sin IVA) de la base imponible:\\n • Identifica este valor como el subtotal antes de aplicar IVA o impuestos.\\n • Puede aparecer con nombres como \\\"Base imponible\\\", \\\"Subtotal\\\", \\\"Importe neto\\\", \\\"Total sin IVA\\\" o similares.\\n • Quita símbolos de moneda (€, $, EUR, USD).\\n • Usa coma como separador decimal (10.90 → 10,90).\\n • Ejemplo: \\\"1200,00\\\"\\n\\n• IVA %:\\n • Coma como separador decimal, sin %\\n • Ejemplo: \\\"21,0\\\"\\n • Si no aplica IVA, escribe \\\"0,0\\\"\\n\\n• Importe del IVA:\\n • Quita símbolos de moneda (€, $, EUR, USD)\\n • Coma como separador decimal (10.90 → 10,90)\\n • Ejemplo: \\\"312,00\\\"\\n\\n• Total:\\n • Importe total incluido el importe de la base imponible y del IVA\\n • Coma como separador decimal\\n • Ejemplo: \\\"1500,00\\\"\\n\\n• Moneda: Unidad monetaria en mayúsculas (EUR, USD, etc.)\\n\\n• Forma de Pago: Método de pago indicado en la factura. Reconoce expresiones como \\\"Transferencia bancaria\\\", \\\"Giro a 30 días\\\", \\\"Tarjeta\\\", \\\"Efectivo\\\", \\\"Domiciliación bancaria\\\", \\\"Cuenta bancaria\\\", \\\"IBAN\\\", o similares. Devuélvelo tal cual aparezca, estandarizado en texto claro. Si no aparece de forma explícita, devuélvelo como vacío (\\\"\\\")\\n\\n⸻\\n\\n✅ Asegúrate de:\\n• Formato consistente en todos los campos\\n• Cumplimiento estricto del orden y estructura indicados\"\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"temperature\": 0,\n    \"topK\": 1,\n    \"topP\": 0.95,\n    \"maxOutputTokens\": 1024,\n    \"responseMimeType\": \"application/json\"\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        368,
+        -32
+      ],
+      "id": "96fb05c8-6fdc-4a36-96d3-0643c5ea22be",
+      "name": "extraer información"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "destinationKey": "base64",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        208,
+        -32
+      ],
+      "id": "10cb115a-6904-440c-af84-49c8b1ba6f97",
+      "name": "convertir a base64"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "facturas_academia",
+          "mode": "list",
+          "cachedResultName": "facturas_academia"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "total_factura": "={{ $json.JsonString[0].Total }}",
+            "numero_factura": "={{ $json.JsonString[0]['Número de Factura'] }}",
+            "fecha_emision": "={{ $json.JsonString[0]['Fecha de la Factura'] }}",
+            "emisor_nombre": "={{ $json.JsonString[0].Emisor }}",
+            "tipo_factura": "={{ $json.JsonString[0]['Categoría'] }}",
+            "porcentaje_iva": "={{ $json.JsonString[0]['IVA %'] }}",
+            "cuota_iva": "={{ $json.JsonString[0]['Importe del IVA'] }}",
+            "base_imponible": "={{ $json.JsonString[0]['Importe (sin IVA) de la base imponible'] }}",
+            "receptor_nif": "29523111N",
+            "receptor_nombre": "Iván Soto Bautista",
+            "metodo_pago": "={{ $json.JsonString[0]['Forma de Pago'] }}",
+            "estado_procesamiento": "={{ $json.JsonString[0]['Forma de Pago'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "numero_factura",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "fecha_emision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "emisor_nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "emisor_nif",
+              "displayName": "emisor_nif",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "receptor_nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "receptor_nif",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "base_imponible",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "porcentaje_iva",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cuota_iva",
+              "displayName": "cuota_iva",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "total_factura",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "tipo_factura",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "descripcion_concepto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "metodo_pago",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "estado_procesamiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "archivo_original",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        688,
+        -32
+      ],
+      "id": "9555f7b2-dc8c-4a7f-9619-4463c465fe77",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "subir documento": [
+      {
+        "json": {
+          "parents": [
+            "1upNCxoSmoKMzsAs8i-usZRmgZGM3hzIa"
+          ],
+          "lastModifyingUser": {
+            "displayName": "Ivan Soto Bautista",
+            "kind": "drive#user",
+            "me": true,
+            "permissionId": "05527568080087432161",
+            "emailAddress": "sotobautistaivan@gmail.com",
+            "photoLink": "https://lh3.googleusercontent.com/a/ACg8ocKa_xwJ7uLNNNcmOB2lpnePPRzvqWc6kO7rMdmWf_Y6-X3rfH6E=s64"
+          },
+          "owners": [
+            {
+              "displayName": "Ivan Soto Bautista",
+              "kind": "drive#user",
+              "me": true,
+              "permissionId": "05527568080087432161",
+              "emailAddress": "sotobautistaivan@gmail.com",
+              "photoLink": "https://lh3.googleusercontent.com/a/ACg8ocKa_xwJ7uLNNNcmOB2lpnePPRzvqWc6kO7rMdmWf_Y6-X3rfH6E=s64"
+            }
+          ],
+          "permissions": [
+            {
+              "kind": "drive#permission",
+              "id": "05527568080087432161",
+              "type": "user",
+              "emailAddress": "sotobautistaivan@gmail.com",
+              "role": "owner",
+              "displayName": "Ivan Soto Bautista",
+              "photoLink": "https://lh3.googleusercontent.com/a/ACg8ocKa_xwJ7uLNNNcmOB2lpnePPRzvqWc6kO7rMdmWf_Y6-X3rfH6E=s64",
+              "deleted": false,
+              "pendingOwner": false
+            }
+          ],
+          "spaces": [
+            "drive"
+          ],
+          "capabilities": {
+            "canAcceptOwnership": false,
+            "canAddChildren": false,
+            "canAddMyDriveParent": false,
+            "canChangeCopyRequiresWriterPermission": true,
+            "canChangeItemDownloadRestriction": true,
+            "canChangeSecurityUpdateEnabled": false,
+            "canChangeViewersCanCopyContent": true,
+            "canComment": true,
+            "canCopy": true,
+            "canDelete": true,
+            "canDisableInheritedPermissions": false,
+            "canDownload": true,
+            "canEdit": true,
+            "canEnableInheritedPermissions": true,
+            "canListChildren": false,
+            "canModifyContent": true,
+            "canModifyContentRestriction": true,
+            "canModifyEditorContentRestriction": true,
+            "canModifyOwnerContentRestriction": true,
+            "canModifyLabels": false,
+            "canMoveChildrenWithinDrive": false,
+            "canMoveItemIntoTeamDrive": true,
+            "canMoveItemOutOfDrive": true,
+            "canMoveItemWithinDrive": true,
+            "canReadLabels": false,
+            "canReadRevisions": true,
+            "canRemoveChildren": false,
+            "canRemoveContentRestriction": false,
+            "canRemoveMyDriveParent": true,
+            "canRename": true,
+            "canShare": true,
+            "canTrash": true,
+            "canUntrash": true
+          },
+          "permissionIds": [
+            "05527568080087432161"
+          ],
+          "linkShareMetadata": {
+            "securityUpdateEligible": false,
+            "securityUpdateEnabled": true
+          },
+          "downloadRestrictions": {
+            "itemDownloadRestriction": {
+              "restrictedForReaders": false,
+              "restrictedForWriters": false
+            },
+            "effectiveDownloadRestrictionWithContext": {
+              "restrictedForReaders": false,
+              "restrictedForWriters": false
+            }
+          },
+          "kind": "drive#file",
+          "id": "1r5vh3kFwgmQ_Jsy5PMS8EaqCcrfi_DzG",
+          "name": "Invoice-OP4U0O8N-0003 (1) (1).pdf",
+          "mimeType": "application/pdf",
+          "starred": false,
+          "trashed": false,
+          "explicitlyTrashed": false,
+          "version": "4",
+          "webContentLink": "https://drive.google.com/uc?id=1r5vh3kFwgmQ_Jsy5PMS8EaqCcrfi_DzG&export=download",
+          "webViewLink": "https://drive.google.com/file/d/1r5vh3kFwgmQ_Jsy5PMS8EaqCcrfi_DzG/view?usp=drivesdk",
+          "iconLink": "https://drive-thirdparty.googleusercontent.com/16/type/application/pdf",
+          "hasThumbnail": true,
+          "thumbnailLink": "https://lh3.googleusercontent.com/drive-storage/AJQWtBPFEoAqOAh-az8uxtpaH6YG-4e9wqp1A7AB4DFA46Rk-v1f3sdxdqOBK2YmskxwqWFhCJispD854keQXns2UEbRc1YZrhJa4M2Kgkfi7qW8vQ=s220",
+          "thumbnailVersion": "1",
+          "viewedByMe": false,
+          "createdTime": "2025-09-23T15:48:05.084Z",
+          "modifiedTime": "2025-09-23T15:48:05.957Z",
+          "modifiedByMeTime": "2025-09-23T15:48:05.957Z",
+          "modifiedByMe": true,
+          "shared": false,
+          "ownedByMe": true,
+          "viewersCanCopyContent": true,
+          "copyRequiresWriterPermission": false,
+          "writersCanShare": true,
+          "originalFilename": "Invoice-OP4U0O8N-0003 (1) (1).pdf",
+          "fullFileExtension": "pdf",
+          "fileExtension": "pdf",
+          "md5Checksum": "45020fc30bb57bfd17adff9f9e59bb1a",
+          "sha1Checksum": "79a63070dd433753f88c239a0a4c175f307c5d94",
+          "sha256Checksum": "88638b6e8e373df845a993e478e63bc2451911445edfe5d0d91b51f4e816f19c",
+          "size": "32020",
+          "quotaBytesUsed": "32020",
+          "headRevisionId": "0B7nUfACz8f-uL3d2eUdhWUxwcnFOS0VwQ0l4VmFLazhhWjBnPQ",
+          "isAppAuthorized": true,
+          "inheritedPermissionsDisabled": false
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Bucle": {
+      "main": [
+        [],
+        [
+          {
+            "node": "descarga documento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "preparar variables": {
+      "main": [
+        [
+          {
+            "node": "buscar carpeta año",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "buscar carpeta año": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "unir ramas año",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "crear carpeta año",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "crear carpeta año": {
+      "main": [
+        [
+          {
+            "node": "unir ramas año",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "unir ramas año": {
+      "main": [
+        [
+          {
+            "node": "buscar carpeta mes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "buscar carpeta mes": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "unir ramas mes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "crear carpeta mes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "crear carpeta mes": {
+      "main": [
+        [
+          {
+            "node": "unir ramas mes",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "descarga documento": {
+      "main": [
+        [
+          {
+            "node": "convertir a base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "subir documento": {
+      "main": [
+        [
+          {
+            "node": "Bucle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parse json": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "unir ramas mes": {
+      "main": [
+        [
+          {
+            "node": "mover documento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "espera": {
+      "main": [
+        [
+          {
+            "node": "Bucle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "renombrar pdf": {
+      "main": [
+        [
+          {
+            "node": "espera",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mover documento": {
+      "main": [
+        [
+          {
+            "node": "renombrar pdf",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extraer información": {
+      "main": [
+        [
+          {
+            "node": "parse json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "convertir a base64": {
+      "main": [
+        [
+          {
+            "node": "extraer información",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "preparar variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9625ba8e-2cfa-4431-a3f9-f67a089e0586",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "53e6d5dabe5a8cc9594bae9b5704bfc831c12a985b649d6d062a707f2c602cad"
+  },
+  "id": "5trKRHcFPscQ9sQH",
+  "tags": []
+}

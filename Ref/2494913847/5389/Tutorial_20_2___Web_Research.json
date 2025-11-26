@@ -1,0 +1,209 @@
+{
+  "name": "Tutorial 20.2 - Web Research",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c0463ab9-715f-4b3e-af23-5a00cca746ba",
+      "name": "SERP Search Engine",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        280,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return { data: $input.all()[0].json.message.content\n  .replace(\"```\", \"\")\n  .replace(\"\\n\", \"\")}"
+      },
+      "id": "8ac927f8-ff41-4746-b5ee-39d7a1d6b621",
+      "name": "URL Clean Up",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('OpenAI Search URL Preparation').item.json.message.content }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        -40
+      ],
+      "id": "324bee08-60fe-40eb-94e3-7d80406a2784",
+      "name": "HTTP Request To Serper",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Serper Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return { response: $input.all() };"
+      },
+      "id": "9bddabdc-3f5f-45ca-8224-28a7f8cc3c6c",
+      "name": "Result Parser",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a SERP searcher, you have following API to use:\n\nGeneral Search Tool: https://google.serper.dev/search\nImage Search Tool: https://google.serper.dev/images\nVideo Search Tool: https://google.serper.dev/videos\nPlaces Search Tool: https://google.serper.dev/places // Dont use it\nMaps Search Tool: https://google.serper.dev/maps\nReviews Search Tool: https://google.serper.dev/reviews\nNews Search Tool: https://google.serper.dev/news\nShopping Search Tool: https://google.serper.dev/shopping\nVisual Search Tool: https://google.serper.dev/lens\nAcademic Search Tool: https://google.serper.dev/scholar\nPatent Search Tool: https://google.serper.dev/patents\nSearch Suggestion Tool: https://google.serper.dev/autocomplete\n\nAnd folllowing query string options:\n{\n  \"q\": \"apple inc\",\n  \"location\": \"United States\",\n  \"num\": 20,\n  \"tbs\": \"qdr:w\"\n}\n\nRule of search:\n1. Choose the correct tool for user enquiry.\n2. When preparing the query, try to use keywords to search if it is possible.\n3. If user has specific requirement like \"site\", use Google Search Operators to make it accurate\n4. Base on user's question, prepare the full URL for searching the result.\n5. Only pass the URL to call without any explaination and ``` and \\n:\n\nUser Question:\n{{ $json.query }}\n\n\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e4985a59-5e71-4cfb-a002-3f030011fb8e",
+      "name": "OpenAI Search URL Preparation",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        420,
+        -40
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "response",
+              "value": "={{ $json.response }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ad253509-424f-4cda-b53e-cbd6361a5cf5",
+      "name": "Return Value",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1180,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Web Research",
+        "height": 240,
+        "width": 1120,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -100
+      ],
+      "id": "19cbaa23-b22a-4d29-974f-eaef7002bbfe",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "SERP Search Engine": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Search URL Preparation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "URL Clean Up": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request To Serper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request To Serper": {
+      "main": [
+        [
+          {
+            "node": "Result Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Result Parser": {
+      "main": [
+        [
+          {
+            "node": "Return Value",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Search URL Preparation": {
+      "main": [
+        [
+          {
+            "node": "URL Clean Up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "174a2b99-5d69-414d-a188-e72fd035eb96",
+  "meta": {
+    "instanceId": "224d837a28e1c0aaf099fa81928d4d2db95b91b450d34302ac21b661ba89b550"
+  },
+  "id": "ubJhFU0C5edc5RfC",
+  "tags": []
+}

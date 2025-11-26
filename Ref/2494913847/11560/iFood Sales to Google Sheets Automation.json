@@ -1,0 +1,454 @@
+{
+  "name": "iFood Sales to Google Sheets Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "c4a3f8e9-2b1d-4f5c-8a7b-9d6e3c2f1a8b",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        680
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🔐 Autenticação iFood\n\n**Configure as credenciais OAuth2 para iFood:**\n- Client ID\n- Client Secret\n- Authorization URL\n- Access Token URL\n- Scope necessário para leitura de pedidos\n\n⚠️ **Importante:** Configure o refresh token para renovação automática",
+        "height": 200,
+        "width": 300,
+        "color": 5
+      },
+      "id": "n1a2b3c4-5d6e-7f8g-9h0i-1j2k3l4m5n6o",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        220,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://merchant-api.ifood.com.br/order/v1.0/orders",
+        "authentication": "oAuth2",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "createdAt",
+              "value": "={{ $now.minus(7, 'days').toISO() }}"
+            },
+            {
+              "name": "size",
+              "value": "100"
+            },
+            {
+              "name": "page",
+              "value": "0"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "d5e6f7a8-9b0c-1d2e-3f4g-5h6i7j8k9l0m",
+      "name": "Get iFood Orders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        440,
+        680
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📊 Estrutura de Dados iFood\n\n**Campos esperados da API:**\n- `id`: ID do pedido\n- `customer.name`: Nome do cliente\n- `items[]`: Array de produtos\n  - `name`: Nome do produto\n  - `quantity`: Quantidade\n  - `unitPrice`: Preço unitário\n- `total.orderAmount`: Valor total\n- `createdAt`: Data/hora\n- `status`: Status do pedido",
+        "height": 250,
+        "width": 320,
+        "color": 4
+      },
+      "id": "o7p8q9r0-1s2t-3u4v-5w6x-7y8z9a0b1c2d",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        440,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "e3f4g5h6-7i8j-9k0l-1m2n-3o4p5q6r7s8t",
+      "name": "Split Orders",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        660,
+        405
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Vendas iFood"
+        },
+        "sheetName": "Sheet1",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID Pedido": "={{ $json.id }}",
+            "Data/Hora": "={{ DateTime.fromISO($json.createdAt).toFormat('dd/MM/yyyy HH:mm:ss') }}",
+            "Cliente": "={{ $json.customer.name }}",
+            "Produto": "={{ $json.items.map(item => item.name).join(', ') }}",
+            "Qtd": "={{ $json.items.map(item => item.quantity).reduce((a, b) => a + b, 0) }}",
+            "Preço Unitário": "={{ $json.items.map(item => 'R$ ' + item.unitPrice.toFixed(2)).join(', ') }}",
+            "Valor Total": "={{ 'R$ ' + $json.total.orderAmount.toFixed(2) }}",
+            "Status": "={{ $json.status }}"
+          }
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "id": "u9v0w1x2-3y4z-5a6b-7c8d-9e0f1g2h3i4j",
+      "name": "Check Existing Order",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        1015
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## ✅ Validação de Duplicados\n\n**Antes de gravar:**\n1. Busca todos os IDs existentes na planilha\n2. Compara com o ID do pedido atual\n3. Ignora se já existir\n4. Adiciona se for novo\n\n💡 **Dica:** Considere criar uma coluna auxiliar com hash único",
+        "height": 180,
+        "width": 280,
+        "color": 3
+      },
+      "id": "k5l6m7n8-9o0p-1q2r-3s4t-5u6v7w8x9y0z",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1300,
+        780
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Vendas iFood"
+        },
+        "sheetName": "Sheet1",
+        "options": {}
+      },
+      "id": "a1b2c3d4-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+      "name": "Read Existing Orders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        180
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Read Existing Orders').all().map(row => row.json['ID Pedido']) }}",
+              "rightValue": "={{ $json.id }}",
+              "operator": {
+                "type": "array",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "q7r8s9t0-1u2v-3w4x-5y6z-7a8b9c0d1e2f",
+      "name": "Filter New Orders",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Vendas iFood"
+        },
+        "sheetName": "Sheet1",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID Pedido": "={{ $json.id }}",
+            "Data/Hora": "={{ DateTime.fromISO($json.createdAt).toFormat('dd/MM/yyyy HH:mm:ss') }}",
+            "Cliente": "={{ $json.customer.name }}",
+            "Produto": "={{ $json.items.map(item => item.name).join(', ') }}",
+            "Qtd": "={{ $json.items.map(item => item.quantity).reduce((a, b) => a + b, 0) }}",
+            "Preço Unitário": "={{ $json.items.map(item => 'R$ ' + item.unitPrice.toFixed(2)).join(', ') }}",
+            "Valor Total": "={{ 'R$ ' + $json.total.orderAmount.toFixed(2) }}",
+            "Status": "={{ $json.status }}"
+          }
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "id": "g3h4i5j6-7k8l-9m0n-1o2p-3q4r5s6t7u8v",
+      "name": "Append to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        330
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 🚨 Tratamento de Erros\n\n**Configurar nó de erro para:**\n- Capturar erros de autenticação\n- Detectar limite de API excedido\n- Aguardar 60 segundos\n- Retentar automaticamente\n\n**Logs importantes:**\n- Total de pedidos processados\n- Pedidos ignorados (duplicados)\n- Erros encontrados",
+        "height": 200,
+        "width": 300
+      },
+      "id": "w9x0y1z2-3a4b-5c6d-7e8f-9g0h1i2j3k4l",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "m5n6o7p8-9q0r-1s2t-3u4v-5w6x7y8z9a0b",
+      "name": "Success Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        880,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 60000,
+        "unit": "ms"
+      },
+      "id": "c1d2e3f4-5g6h-7i8j-9k0l-1m2n3o4p5q6r",
+      "name": "Wait 60 seconds",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        755
+      ],
+      "webhookId": "29647de9-4d49-4b7d-a969-8abc2ff18fee"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "s7t8u9v0-1w2x-3y4z-5a6b-7c8d9e0f1g2h",
+      "name": "Error Handler",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        660,
+        680
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📋 Criação da Planilha\n\n**Se a planilha não existir:**\n1. Use o nó Google Drive para criar\n2. Nome: \"Vendas iFood\"\n3. Adicione cabeçalhos na primeira linha\n4. Configure formatação adequada\n\n**Estrutura:**\n| ID Pedido | Data/Hora | Cliente | Produto | Qtd | Preço Unitário | Valor Total | Status |",
+        "height": 180,
+        "width": 320,
+        "color": 6
+      },
+      "id": "i3j4k5l6-7m8n-9o0p-1q2r-3s4t5u6v7w8x",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1640,
+        540
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get iFood Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get iFood Orders": {
+      "main": [
+        [
+          {
+            "node": "Split Orders",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Orders": {
+      "main": [
+        [
+          {
+            "node": "Read Existing Orders",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Success Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Existing Orders": {
+      "main": [
+        [
+          {
+            "node": "Filter New Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter New Orders": {
+      "main": [
+        [
+          {
+            "node": "Append to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Split Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Handler": {
+      "main": [
+        [
+          {
+            "node": "Wait 60 seconds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 60 seconds": {
+      "main": [
+        [
+          {
+            "node": "Get iFood Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "errorWorkflow": "",
+    "timezone": "America/Sao_Paulo"
+  },
+  "versionId": "16b5a884-27ee-44ed-9be0-22f0086b5591",
+  "meta": {
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "5rRLHoKj7bBdmkDT",
+  "tags": []
+}

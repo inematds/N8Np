@@ -1,0 +1,247 @@
+[
+  {
+    "id": 8713,
+    "author": "Pablo",
+    "date": "2025-06-04T15:54:09+00:00",
+    "text": "a biblioteca",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 8712,
+    "author": "Pablo",
+    "date": "2025-06-04T15:54:02+00:00",
+    "text": "consegui instalar na minha vps o ffm",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 8702,
+    "author": "Pablo",
+    "date": "2025-06-04T08:38:13+00:00",
+    "text": "mas se tiver a dica chave ai nos queremos kkkkk",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 8701,
+    "author": "Pablo",
+    "date": "2025-06-04T08:37:52+00:00",
+    "text": "eu tb estou interessado em saber, mas pela logica ai oq o n8n precisa é um BD para armazenar, e na vps, nao sei no caso de vcs, o meu BD é o minio, entao eu acho que é mais configuração mesmo",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 8365,
+    "author": "@Rafael",
+    "date": "2025-05-26T19:22:33+00:00",
+    "text": "tbm quero saber como faço pra usar ele na vps",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 7169,
+    "author": "Fabio",
+    "date": "2025-05-05T13:33:44+00:00",
+    "text": "tem como usar o n8n ja na minha vps sem precisar instalar ele localmente? @INEMAtds",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 7000,
+    "author": "INEMA",
+    "date": "2025-05-01T03:03:06+00:00",
+    "text": "onde teve probelmas?",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 6993,
+    "author": "Wendel",
+    "date": "2025-04-30T20:02:45+00:00",
+    "text": "Alguem conseguiu rodar essa automação?",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5810,
+    "author": "..",
+    "date": "2025-04-15T11:53:29+00:00",
+    "text": "Tudo bem? Deu certo?",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5809,
+    "author": "..",
+    "date": "2025-04-15T11:53:16+00:00",
+    "text": "@RubinhoMedina bom dia",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5096,
+    "author": "INEMA",
+    "date": "2025-04-09T05:40:04+00:00",
+    "text": "https://www.youtube.com/watch?v=YmTp0P4RsMs",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 5095,
+    "author": "INEMA",
+    "date": "2025-04-09T05:39:48+00:00",
+    "text": "Aqui está o **passo a passo detalhado** para você montar sua **ferramenta de recorte automático de vídeos com IA no n8n (Localhost)**, conforme o tutorial citado:\n\n---\n\n### 1. **Preparação do Ambiente Local**\n\n**Requisitos:**\n- Docker Desktop (Windows ou Mac)\n- n8n rodando localmente via Docker\n- FFMPEG instalado (será incluído no Dockerfile)\n\n**Passos:**\n1. Instale o Docker Desktop.\n2. Crie um diretório local com um `Dockerfile` contendo as dependências necessárias (FFMPEG, Python etc.).\n3. Suba o container:\n   ```   docker build -t n8n-ai-clipper .\n   docker run -it -p 5678:5678 n8n-ai-clipper\n   ```\n4. Acesse o n8n: http://localhost:5678\n\n---\n\n### 2. **Fluxo no n8n - Download de Mídia**\n\n**Objetivo:** Baixar vídeos e áudios do YouTube (gameplay, podcast e música de fundo).\n\n**Nós usados:**\n- **Edit Fields Node**: cole os links dos vídeos.\n- **Execute Command Node (yt-dlp)**:\n  - Baixar gameplay (MP4)\n  - Baixar música de fundo (MP3)\n  - Baixar podcast (MP4)\n\n---\n\n### 3. **Transcrição de Podcast com Whisper**\n\n**Objetivo:** Extrair o áudio do podcast e gerar transcrição com IA.\n\n**Nós usados:**\n- **Execute Command**: Extrai áudio MP3 do podcast com FFMPEG.\n- **Read Binary File**: Lê o áudio extraído.\n- **HTTP Request (OpenAI Whisper)**:\n  - Faz upload do áudio e retorna o transcript.\n  - Define os timestamps (início/fim de cada trecho falado).\n\n---\n\n### 4. **Análise do Transcript para Seleção de Trechos**\n\n**Objetivo:** Identificar trechos impactantes com IA.\n\n**Nós usados:**\n- **OpenAI (ChatGPT ou similar)**:\n  - Prompts para detectar \"momentos chave\", como:\n    > \"Analise a transcrição e destaque trechos com valor informacional ou emocional.\"\n- **JSON Parse e Split**: divide os trechos marcados (start/end index).\n\n---\n\n### 5. **Criação dos Vídeos Curtos (Highlight Segments)**\n\n**Objetivo:** Unir os trechos selecionados e gerar vídeos curtos.\n\n**Nós usados:**\n- **Loop over Segments**\n- **Execute Command (FFMPEG)**:\n  - Usa os `start` e `duration` para cortar os trechos.\n  - Junta todos os cortes em um novo arquivo MP4.\n- **Concatenação via list.txt**\n\n---\n\n### 6. **Upload dos Arquivos para a Nuvem (Google Cloud)**\n\n**Objetivo:** Armazenar os arquivos em buckets e gerar URLs para uso posterior.\n\n**Nós usados:**\n- **Google Cloud Storage Node (ou HTTP API)**\n  - Bucket: `ending-end-clip`\n  - Upload: podcast (áudio), gameplay (vídeo) e música\n\n---\n\n### 7. **Criação do Vídeo Final com API Externa (opcional)**\n\n**Objetivo:** Combinar podcast + gameplay + música + legendas em um clipe final\n\n**Nós usados:**\n- **HTTP Request (API externa como AnyNotCode)**:\n  - Envia JSON com:\n    - `clip_url`\n    - `gameplay_url`\n    - `background_music_url`\n    - `transcript`\n  - Espera resposta com URL do vídeo final\n\n---\n\n### 8. **Geração Automática de Título e Legenda**\n\n**Objetivo:** Criar título chamativo e legenda para redes sociais\n\n**Prompt usado:**\n> \"Analise a transcrição e gere um título curto e atrativo para YouTube Shorts (com até 60 caracteres, emojis e impacto).\"\n\n---\n\n### 9. **Atualização de Planilha Google Sheets**\n\n**Objetivo:** Armazenar os dados do vídeo final\n\n**Dados salvos:**\n- Título\n- Legenda\n- URL do vídeo\n- Data/Hora de postagem\n- Status (Postado/Pendente)\n\n---\n\n### 10. **Upload Automático para o YouTube**\n\n**Objetivo:** Publicar vídeos direto pelo n8n\n\n**Nós usados:**\n- **HTTP Request (YouTube API)**:\n  - Configurar OAuth 2.0 com credenciais da conta\n  - Enviar `title`, `description`, `status`\n  - Upload binário (video/webm)\n- **Espera + verificação de status**\n- Atualizar a planilha com o link do vídeo\n\n---\n\n### Resultado Final:\n\nVocê terá uma automação local que:\n- Baixa e analisa vídeos automaticamente\n- Extrai os melhores trechos com IA\n- Gera vídeos curtos prontos para redes sociais\n- Publica diretamente no seu canal do YouTube\n- Mantém o controle de tudo via Google Sheets\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5094,
+    "author": "INEMA",
+    "date": "2025-04-09T05:39:26+00:00",
+    "text": "=========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5093,
+    "author": "INEMA",
+    "date": "2025-04-09T05:39:24+00:00",
+    "text": "===========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5092,
+    "author": "INEMA",
+    "date": "2025-04-09T05:39:20+00:00",
+    "text": "**Resumo do vídeo: \"Build Your Own FREE AI Video Clipping Tool with n8n (Localhost)\"**\n\nEste tutorial ensina como criar uma ferramenta gratuita de automação de recortes de vídeos com inteligência artificial, utilizando **n8n** em um ambiente **localhost**, junto com **OpenAI Whisper** para transcrição de áudio e **FFMPEG** para edição de vídeo.\n\n**Etapas principais explicadas no vídeo:**\n\n1. **Demonstração do resultado final**  \n   - Recortes automáticos são criados a partir de vídeos como podcasts e gameplays, gerando vídeos curtos ideais para YouTube Shorts, TikTok e Instagram Reels.\n   - Os dados gerados (título, legenda, URL, horário de postagem) são organizados em uma planilha do Google Sheets.\n\n2. **Ambiente de instalação**  \n   - Utiliza **Docker Desktop** para rodar o n8n localmente.\n   - Dois cenários são abordados: instalação do zero e uso de um n8n já instalado.\n   - Um Dockerfile com as bibliotecas necessárias (como FFMPEG) é fornecido pela comunidade.\n\n3. **Fluxo n8n criado:**  \n   - **Download dos vídeos** (gameplay, música de fundo e podcast).\n   - **Extração de áudio** do podcast e **transcrição automática** com OpenAI Whisper.\n   - **Análise do transcript:**  \n     - Identifica momentos de valor informacional e impacto emocional.  \n     - Cria os trechos para serem usados nos vídeos curtos.\n   - **Geração e combinação de vídeos:**  \n     - Usa FFMPEG para unir os trechos e formar o vídeo final.\n     - Exporta os vídeos em formato MP4, e os áudios em MP3.\n\n4. **Upload na nuvem e no YouTube:**  \n   - Armazena os arquivos no Google Cloud Storage.\n   - Faz upload automático para o canal do YouTube.\n   - Gera título e legenda com base na transcrição (inclui emojis e é otimizado para engajamento).\n\n5. **Automação de postagens com agendamento:**  \n   - Usa n8n para agendar uploads e preencher automaticamente a planilha com os dados de cada vídeo.\n   - Tudo é integrado com Google Sheets e YouTube API.\n\n6. **Disponibilidade do Template:**  \n   - O modelo completo está disponível para download ao entrar na comunidade do AnyNotCode, com suporte técnico e mais de 15 templates.\n\n---\n\n**Exemplos de aplicações práticas:**\n- Criar automaticamente cortes de podcasts para redes sociais.\n- Gerar Shorts a partir de entrevistas longas.\n- Fazer curadoria de conteúdos sem edição manual.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5091,
+    "author": "INEMA",
+    "date": "2025-04-09T05:36:56+00:00",
+    "text": "Crie Sua Própria Ferramenta GRATUITA de Recorte de Vídeos com IA usando n8n (Localhost)\n\nComo automatizar o recorte de vídeos com o n8n e agilizar a criação de conteúdo. \n\nUtilizando o OpenAI Whisper e o FFMPEG, esse sistema extrai momentos-chave a partir das transcrições e gera vídeos curtos de forma automática \n\n— perfeito para YouTube Shorts, TikToks e Reels do Instagram!",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5090,
+    "author": "INEMA",
+    "date": "2025-04-09T05:36:06+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Clip Video Schedule.xlsx"
+  },
+  {
+    "id": 5089,
+    "author": "INEMA",
+    "date": "2025-04-09T05:36:06+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "script.txt"
+  },
+  {
+    "id": 5088,
+    "author": "INEMA",
+    "date": "2025-04-09T05:36:06+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Dockerfile"
+  },
+  {
+    "id": 5087,
+    "author": "INEMA",
+    "date": "2025-04-09T05:35:49+00:00",
+    "text": "al4",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Tutorial_14_1___Auto_Clip_Video__Local_Host__Public (1).json"
+  },
+  {
+    "id": 5086,
+    "author": "INEMA",
+    "date": "2025-04-09T05:35:34+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_5086_021.jpg"
+  },
+  {
+    "id": 5085,
+    "author": "INEMA",
+    "date": "2025-04-09T05:33:26+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5084,
+    "author": "INEMA",
+    "date": "2025-04-09T05:33:24+00:00",
+    "text": "al4 - Cortes de Video com N8N",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5083,
+    "author": "INEMA",
+    "date": "2025-04-09T05:33:21+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5082,
+    "author": "INEMA",
+    "date": "2025-04-09T05:33:20+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5081,
+    "author": "INEMA",
+    "date": "2025-04-09T05:33:20+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5080,
+    "author": "INEMA",
+    "date": "2025-04-09T05:33:20+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5079,
+    "author": "INEMA",
+    "date": "2025-04-09T05:33:20+00:00",
+    "text": "https://chatgpt.com/c/67f60659-9084-8009-98ea-9ac7a3fa6ae0",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 5078,
+    "author": "INEMA",
+    "date": "2025-04-09T05:33:19+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5077,
+    "author": "INEMA",
+    "date": "2025-04-09T05:33:03+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

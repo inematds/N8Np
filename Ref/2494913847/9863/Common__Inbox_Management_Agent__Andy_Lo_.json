@@ -1,0 +1,429 @@
+{
+  "name": "Common- Inbox Management Agent (Andy Lo)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "UNREAD"
+          ]
+        },
+        "options": {}
+      },
+      "id": "c5bc484e-5a6a-43b2-af48-0034bc51e7ea",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        320
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail - andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "2f3c52c3-a20e-4bf9-bc36-e38bcc5490f4",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        480
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "labelIds": [
+          "Label_3039880490179792429"
+        ]
+      },
+      "id": "835a577e-58fe-4358-a8ee-d934742e8450",
+      "name": "Meeting",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1440,
+        -120
+      ],
+      "webhookId": "65f6950d-7449-485c-abc7-58d689d5de9a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail - andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "labelIds": [
+          "Label_6413894798608043855"
+        ]
+      },
+      "id": "ee297454-36c3-437e-981c-abd2dc1d5fb9",
+      "name": "Inquiry",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1440,
+        160
+      ],
+      "webhookId": "65f6950d-7449-485c-abc7-58d689d5de9a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail - andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "googleCalendarScheduleCheckingTool",
+        "description": "Call this tool to get the events scheduled in the Google Calendar.",
+        "workflowId": {
+          "__rl": true,
+          "value": "P23DGDCbrpOVqfOM",
+          "mode": "list",
+          "cachedResultName": "n8n Tutorial Video — Common - Google calendar schedule (andylo)"
+        },
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"fromBookingTime\": \"2025-01-09T11:50:24.532+08:00\",\n  \"toBookingTime\": \"2025-01-16T11:50:24.532+08:00\"\n}"
+      },
+      "id": "6fa84cd4-b9d4-4dce-989b-ce6383d5290d",
+      "name": "Google Calendar Schedule Checking Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1780,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=Re: {{ $('Gmail Trigger').item.json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.choices[0].message.content.replace(/\\n/g, \"<br />\\n\") }}",
+        "options": {
+          "threadId": "={{ $('Gmail Trigger').item.json.threadId }}",
+          "sendTo": "={{ $('Gmail Trigger').item.json.headers.from }}"
+        }
+      },
+      "id": "ed56bb74-8532-4339-a24a-9df5b2f03146",
+      "name": "Draft Meeting Invitation Email",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        380,
+        -860
+      ],
+      "typeVersion": 2.1,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail - andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "labelIds": [
+          "Label_3383956171047356047"
+        ]
+      },
+      "id": "4508396f-1115-40b1-b51b-fd28f7cab8bb",
+      "name": "Partnerships",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1440,
+        320
+      ],
+      "webhookId": "65f6950d-7449-485c-abc7-58d689d5de9a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail - andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "labelIds": [
+          "Label_7861989403291296172"
+        ]
+      },
+      "id": "d4468089-c0b1-4824-a5f9-f7c531c250c5",
+      "name": "Accounting",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1440,
+        480
+      ],
+      "webhookId": "65f6950d-7449-485c-abc7-58d689d5de9a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail - andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "756212738",
+        "text": "=HI Andy, I have already drafted an email for your meeting schedule:\n\n{{ $json.choices[0].message.content }}\n\n-----\nthreadId: {{ $('Gmail Trigger').first().json.threadId }}\nfrom {{ $('Gmail Trigger').first().json.from.value[0].name }}\n-----\n\nWould you like me to send it?",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "0120c62e-76a0-4c94-970e-44be9b5e2d53",
+      "name": "Send to Telegram for review",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1960,
+        -120
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram - PAforAndyBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "756212738",
+        "text": "=Hi Andy, you have an inquiry email from {{ $('Gmail Trigger').item.json.from.text }}\n\nSubject: {{ $('Gmail Trigger').item.json.subject }}\n\nContent:\n{{ $('Gmail Trigger').item.json.text }}\n\nThread ID: \n{{ $('Gmail Trigger').item.json.id }}\n\nHow would you like me to reply?\n\n",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "7c6d6a89-b5b3-43cd-9152-adda5fd53194",
+      "name": "Send to Telegram for review1",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1660,
+        160
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram - PAforAndyBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=- CURRENT DATE: `{{ $now.format('DD') }}`.\n- CURRENT WEEKDAY: `{{ $now.toFormat('cccc') }}`\n- The start of a new week is Sunday.\n- Inquiry: {{ $('Gmail Trigger').item.json.text }}"
+            },
+            {
+              "content": "=<system_prompt>\nYOU ARE A HIGHLY PROFESSIONAL EXECUTIVE ASSISTANT SPECIALIZING IN APPOINTMENT SETTING. YOUR PRIMARY TASK IS TO DRAFT WELL-STRUCTURED, POLISHED, AND PROFESSIONAL EMAILS IN RESPONSE TO MEETING REQUESTS WHILE ENSURING CALENDAR AVAILABILITY AND TIMEZONE ACCURACY. THE FINAL OUTPUT MUST BE A FULLY FORMATTED EMAIL READY FOR IMMEDIATE USE.\n\n###CONTEXT###\n- CURRENT DATE: `{{ $now.format('DD') }}`.\n- CURRENT WEEKDAY: `{{ $now.toFormat('cccc') }}`\n- The start of a new week is Sunday.\n- EMAIL CONTENT: {{ $('Gmail Trigger').item.json.text }}\n- EMAIL SENDER TIMEZONE: DERIVED FROM {{ $('Gmail Trigger').item.json.headers.date }}\n- EMAIL SENDER NAME: {{ $('Gmail Trigger').item.json.from.value[0].name }}, get the first name\n- MY NAME: Andy\n\n###TOOLS AT YOUR DISPOSAL###\n1. **googleCalendarScheduleCheckingTool**:\n   - TASK: Fetch scheduled events based on provided ISO8601 timestamps.\n   - FORMAT: \n     ```\n     [\n       {\n         \"query\": {\n           \"fromBookingTime\": \"<ISO8601 timestamp>\",\n           \"toBookingTime\": \"<ISO8601 timestamp>\"\n         }\n       }\n     ]\n     ```\n\n###INSTRUCTIONS###\n\n#### CONDITION 1: IF SPECIFIC MEETING TIMESLOT IS SUGGESTED IN THE EMAIL\n1. **VERIFY TIMEZONE**: Confirm the sender's timezone using the email header date.\n2. **FETCH SCHEDULED EVENTS**: \n   - Use **googleCalendarScheduleAndy** to retrieve all relevant calendar events for the proposed timeslot.\n3. **EVALUATE AVAILABILITY**:\n   - Check if the proposed timeslot overlaps with our calendar availability (adjusted to the sender's timezone).\n4. **DRAFT RESPONSE**:\n   - IF THE TIMESLOT IS AVAILABLE:\n     - Draft an email confirming the proposed meeting time. Offer to send a calendar invite or confirm if the sender prefers to send it.\n     - INCLUDE A POLITE AND PROFESSIONAL TONE.\n   - IF THE TIMESLOT IS UNAVAILABLE:\n     - Propose the top 3 alternative timeslots (in GMT+8 timezone) based on our availability. ONLY provide timeslots during WEEKDAYS.\n     - Ensure the tone is courteous and accommodating.\n\n#### CONDITION 2: IF NO SPECIFIC MEETING TIMESLOT IS SUGGESTED IN THE EMAIL\n1. **VERIFY TIMEZONE**: Confirm the sender's timezone using the email header date.\n2. **FETCH SCHEDULED EVENTS**:\n   - Use **googleCalendarScheduleAndy** to identify available slots from our calendar.\n3. **DRAFT RESPONSE**:\n   - Provide the top 3 available timeslots (in GMT+8 timezone) in a polite and professional email. ONLY provide timeslots during WEEKDAYS.\n   - Request the sender to confirm their preferred option.\n\n###OUTPUT FORMAT###\n- ALWAYS RETURN A DRAFT EMAIL IN THE FOLLOWING FORMAT:\n\nDear [firstName],\n\n[Insert appropriate greeting based on email tone.]\n\n[Respond to the sender's meeting request. Confirm or propose alternative times based on the conditions above.]\n\nPlease let me know if you would like me to send a calendar invite or if you will send one. Looking forward to your confirmation.\n\nBest regards, \nAndy\n\n\n###WHAT NOT TO DO###\n- NEVER OMIT OR MISINTERPRET THE TIMEZONE INFORMATION.\n- NEVER PROVIDE TIMESLOTS THAT OVERLAP WITH EXISTING SCHEDULED EVENTS.\n- NEVER DRAFT UNPROFESSIONAL OR CASUAL EMAILS.\n- NEVER IGNORE THE SENDER'S REQUEST OR FAIL TO ADDRESS THE MEETING PURPOSE.\n- NEVER INCLUDE TIMESLOTS OUTSIDE GMT+8 WITHOUT INSTRUCTION.\n- NEVER PROVIDE TIMESLOTS DURING WEEKENDS (i.e. SATURDAYS & SUNDAYS).\n- NEVER GENERATE SUBJECT.\n- NEVER SCHEDULE MEETINGS OUT OF WORKING HOURS (i.e. from 9AM to 6PM).\n\n###CHAIN OF THOUGHT###\n1. ANALYZE the email content to determine if a specific timeslot is suggested.\n2. VERIFY the sender's timezone based on the email headers.\n3. RETRIEVE scheduled events using **googleCalendarScheduleAndy**.\n4. DETERMINE availability for the proposed timeslot (Condition 1) or propose top 3 alternatives in different days (Condition 2). The proposed timeslot can be a wider range of timeslot. For example, from 2:00 PM to 5:00 PM. The range can be more than 1 hours. Put different timeslots on the SAME day in the SAME sentence.\n5. FORMAT the response into a polished, professional email.\n6. DOUBLE-CHECK the output for clarity, professionalism, and adherence to the sender's request.\n\n###FEW-SHOT EXAMPLES###\n\n#### CONDITION 1: SPECIFIC TIMESLOT IS AVAILABLE\n**Email Output Example:**\nDear Alex,\n\nThank you for your email. The proposed meeting time on January 12th, 2025, from 10:00 AM to 10:30 AM (GMT+8) works perfectly for us. Please let me know if you would like me to send a calendar invite or if you will send one.\n\nLooking forward to your confirmation.\n\nBest regards,  \nAndy\n\n#### CONDITION 2: SPECIFIC TIMESLOT IS UNAVAILABLE\n**Email Output Example:**\nDear Alex,\n\nThank you for your email. Unfortunately, the proposed time on January 12th, 2025, from 10:00 AM to 10:30 AM (GMT+8) is unavailable. However, here are three alternative times that work for us:  \n- January 13th, 2025 (Mon), from 2:00 PM to 5:00 PM (GMT+8)  \n- January 14th, 2025 (Tue), from 10:00 AM to 2:00 PM (GMT+8) and from 3:00 PM to 6:00 PM (GMT+8)\n- January 15th, 2025 (Wed), from 3:00 PM to 6:00 PM (GMT+8)\n\nPlease let me know which time works best for you, and I’ll be happy to send a calendar invite.\n\nLooking forward to your reply.\n\nBest regards,  \nAndy\n\n#### CONDITION 3: NO TIMESLOT IS PROVIDED\n**Email Output Example:**\nDear Alex,\n\nThank you for reaching out. Here are three available times for a meeting:  \n- January 13th, 2025 (Mon), from 2:00 PM to 5:00 PM (GMT+8)  \n- January 14th, 2025 (Tue), from 10:00 AM to 2:00 PM (GMT+8) and from 3:00 PM to 6:00 PM (GMT+8)\n- January 15th, 2025 (Wed), from 3:00 PM to 6:00 PM (GMT+8)\n\n\nPlease let me know which time works best for you, and I’ll be happy to send a calendar invite.\n\nLooking forward to your reply.\n\nBest regards,  \nAndy\n\n</system_prompt>",
+              "role": "system"
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {}
+      },
+      "id": "ede81287-8cd0-401a-bcb3-42164ac513e9",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        1620,
+        -120
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.text }} ",
+        "categories": {
+          "categories": [
+            {
+              "category": "Meeting",
+              "description": "=Messages related to scheduling, organizing, or discussing meetings and appointments."
+            },
+            {
+              "category": "Inquiry",
+              "description": "=Messages containing questions, requests for information, or clarifications."
+            },
+            {
+              "category": "Partnerships",
+              "description": "Messages focused on partnerships and collaborations."
+            },
+            {
+              "category": "Accounting",
+              "description": "Messages concerning accounting matters such as payments, billing, or budget discussions."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "755d4ce2-532c-43d5-bfac-381132d263e0",
+      "name": "Text Classifier",
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        320
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meeting": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inquiry": {
+      "main": [
+        [
+          {
+            "node": "Send to Telegram for review1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar Schedule Checking Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Send to Telegram for review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Meeting",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Inquiry",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Partnerships",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Accounting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a4c70452-8fc8-486a-8256-e558f78216eb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4221cc7208f142ff91856b22776eec81b71c256154ec8030569832c22d0c66d9"
+  },
+  "id": "bMcmBMZovPuhFEtR",
+  "tags": []
+}

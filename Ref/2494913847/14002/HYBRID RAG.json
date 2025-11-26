@@ -1,0 +1,420 @@
+{
+  "name": "HYBRID RAG",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/query",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "21885ba0-6137-441b-be4e-8c3ee992620e",
+      "name": "Query Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1296,
+        -32
+      ],
+      "webhookId": "4af7c851-d074-4f0a-a42b-30c32798deb2"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "edb8be60-ba21-436a-882a-6ee062d73bae",
+      "name": "Document Ingestion Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1296,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.example.com/documents",
+        "options": {}
+      },
+      "id": "93dffd8c-ce7d-4098-9804-d2e05275295c",
+      "name": "Fetch Documents",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -808,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "id": "8a2ec9f5-5bd7-48bc-80cf-cfa4b6b0e027",
+      "name": "Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        1096
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": []
+          }
+        }
+      },
+      "id": "e6e4254b-8b36-46ad-8a63-052585db8235",
+      "name": "Document Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -320,
+        888
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "3bc05dbe-d798-4e6d-bdd1-8e07432a9365",
+      "name": "OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -992,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "id": "d677adfc-221f-4c67-abbc-99efc1da0dc4",
+      "name": "Supabase Vector Store Insert",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -312,
+        664
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "tableName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "<UNKNOWN>"
+        },
+        "topK": 5,
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "similarity_threshold",
+                "value": "0.8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "0f284066-d59e-4270-b010-a059c0639792",
+      "name": "Supabase Vector Store Retrieval",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -1072,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "1dcfee91-c8f2-4634-bcb5-17ebbd5084d1",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -656,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "filterType": "none"
+      },
+      "id": "7ef03d5e-d857-4d6f-88f2-471ba2b0ce45",
+      "name": "Supabase Database Tool",
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        -784,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a helpful AI assistant with access to multiple search capabilities: 1) Vector search for semantic similarity 2) Keyword search for exact matches and full-text search 3) Database queries for structured data. Use the most appropriate search method or combine multiple methods for comprehensive answers. Always explain which search methods you used.",
+          "maxIterations": 5
+        }
+      },
+      "id": "029852c4-fe5a-439d-ab53-07083f2296f7",
+      "name": "Hybrid RAG Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -792,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "cdc4f778-b38b-40b7-bc17-8b5e8a6a9414",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -248,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "indexId": "documents",
+        "options": {
+          "query": {
+            "bool": {
+              "should": [
+                {
+                  "match": {
+                    "_all": {
+                      "query": "={{ $fromAI('search_query') }}",
+                      "fuzziness": "AUTO"
+                    }
+                  }
+                },
+                {
+                  "multi_match": {
+                    "query": "={{ $fromAI('search_query') }}",
+                    "fields": [
+                      "*"
+                    ],
+                    "fuzziness": "AUTO"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "id": "8d7f14c6-820e-4a00-a81f-3e7409e473bc",
+      "name": "Elasticsearch Keyword Search",
+      "type": "n8n-nodes-base.elasticsearchTool",
+      "typeVersion": 1,
+      "position": [
+        -528,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "indexId": "documents",
+        "dataToSend": "autoMapInputData",
+        "additionalFields": {},
+        "options": {
+          "bulkOperation": true,
+          "refresh": "wait_for"
+        }
+      },
+      "id": "e20bd6a1-1178-4908-8a10-3ec5eb095e5a",
+      "name": "Index Documents to Elasticsearch",
+      "type": "n8n-nodes-base.elasticsearch",
+      "typeVersion": 1,
+      "position": [
+        -248,
+        264
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Document Ingestion Schedule": {
+      "main": [
+        [
+          {
+            "node": "Fetch Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Documents": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store Insert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Index Documents to Elasticsearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Document Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store Insert",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store Insert",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Supabase Vector Store Retrieval",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store Retrieval": {
+      "ai_tool": [
+        [
+          {
+            "node": "Hybrid RAG Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Database Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Hybrid RAG Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Hybrid RAG Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Webhook": {
+      "main": [
+        [
+          {
+            "node": "Hybrid RAG Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hybrid RAG Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Elasticsearch Keyword Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Hybrid RAG Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fe0ac87e-2fe1-4432-bf57-eb27dc02b185",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aaadb797535f05587ee95b776c942a7c3f7a46fd7aa0c9b6a9d64e1e595f8af1"
+  },
+  "id": "e2pZRjOBbvvZbb2E",
+  "tags": []
+}

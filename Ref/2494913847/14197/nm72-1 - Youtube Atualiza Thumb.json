@@ -1,0 +1,976 @@
+{
+  "name": "nm72-1 - Youtube Atualiza Thumb",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "6b99f697-bb65-47bb-9126-b37b75dae034",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1936,
+        -1296
+      ],
+      "webhookId": "99568cdb-f600-41ef-9497-f3845dec2e68"
+    },
+    {
+      "parameters": {
+        "url": "=https://youtube.googleapis.com/youtube/v3/search",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "channelId",
+              "value": "=UC2QbQDyPKuHk93dwo5iq3Sw"
+            },
+            {
+              "name": "order",
+              "value": "date"
+            },
+            {
+              "name": "type",
+              "value": "video"
+            },
+            {
+              "name": "part",
+              "value": "snippet"
+            },
+            {
+              "name": "maxResults",
+              "value": "50"
+            },
+            {
+              "name": "pageToken",
+              "value": "={{ $json?.nextPageToken || '' }}"
+            },
+            {
+              "name": "eventType",
+              "value": "completed"
+            },
+            {
+              "name": "publishedBefore",
+              "value": "={{ new Date(Date.now()).toISOString().split('.')[0] + 'Z' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c2c4eecc-a5c1-4e3a-9d58-2826d6b77b2f",
+      "name": "Fetch Videos Page2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1488,
+        -880
+      ],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "[REMOVED]",
+          "name": "Query Auth yt API TDS"
+        },
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/videos",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $('Split Out').item.json.id.videoId }}"
+            },
+            {
+              "name": "part",
+              "value": "snippet,statistics"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "7fa28fc8-14eb-412b-89f3-663fd505a44e",
+      "name": "Get Video Info",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -80,
+        -1008
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1GMBiD_JrTTTIGzRnpXiob2lp4FCRwIA2cqYvq2CXs2k",
+          "mode": "list",
+          "cachedResultName": "testes1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GMBiD_JrTTTIGzRnpXiob2lp4FCRwIA2cqYvq2CXs2k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1615933911,
+          "mode": "list",
+          "cachedResultName": "YoutubeThumb",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GMBiD_JrTTTIGzRnpXiob2lp4FCRwIA2cqYvq2CXs2k/edit#gid=1615933911"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID",
+              "lookupValue": "={{ $('Split Out').item.json.id.videoId }}"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": false
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -576,
+        -960
+      ],
+      "id": "f1eaf18d-eebe-4ef4-9e20-eef8abb80eca",
+      "name": "Google Sheets2",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account INEMATDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ !!((($json.items && $json.items[0] && $json.items[0].snippet && $json.items[0].snippet.description) ? $json.items[0].snippet.description : '').trim().length) }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        368,
+        -1056
+      ],
+      "id": "c81ec6db-8976-40f6-8ea8-d518abd0980f",
+      "name": "Erro da Transcricao"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.ID }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -368,
+        -976
+      ],
+      "id": "770acfb2-33e3-49b0-a182-cc9e83b0917d",
+      "name": "Existe?",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -96,
+        -800
+      ],
+      "id": "d5dc080f-af13-4098-b76b-7bf9478877f7",
+      "name": "Wait Rate Limit",
+      "webhookId": "66b2cbc4-3079-4a2f-8479-d4e9d8289fde"
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        -768
+      ],
+      "id": "0f4edac0-3b34-434a-bedc-70ebf7ee01ac",
+      "name": "Wait Rate Limit2",
+      "webhookId": "836f11ad-38b9-450e-9e60-9afcda23e084"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "videoid",
+              "value": "={{ $json.id.videoId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -816,
+        -944
+      ],
+      "id": "208847fa-b7df-4246-b0f4-fd7c320e3d93",
+      "name": "video",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "items",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -1248,
+        -1088
+      ],
+      "id": "8207b74e-68a9-4635-ba8d-25f0b43a4433",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -976,
+        -1120
+      ],
+      "id": "4de90d2b-a39b-43bd-abc4-894fa973c0cd",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "url": "https://youtube-transcriptor.p.rapidapi.com/transcript",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "video_id",
+              "value": "={{ $('video').item.json.videoid }}"
+            },
+            {
+              "name": "lang",
+              "value": "pt"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "youtube-transcriptor.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "afe98f8fc6msh146f25b7df07527p176f69jsn0d1c3b037194"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "d3dae508-d80b-4de4-a325-0b4d1c98cd89",
+      "name": "Get Transcript3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -464,
+        -1856
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "https://youtube-transcript-subtitles-captions.p.rapidapi.com/subtitle",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "videoId",
+              "value": "Zym2iDvArWw"
+            },
+            {
+              "name": "lang",
+              "value": "pt"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "youtube-transcript-subtitles-captions.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "a0c1b6a92dmsha3ce54fca5282dap1b6601jsnf3b4108dbd35"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "82a135db-72ed-4db3-ae28-9cfd1ff4d895",
+      "name": "Get Transcript4",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -160,
+        -1904
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 12
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1936,
+        -864
+      ],
+      "id": "21e8a837-b9ea-404f-84da-958fae4c8501",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrair dados dos nós anteriores\nconst summaryData = $node[\"AI Agent\"].json;\nconst videoData = $node[\"Get Video Info\"].json.items[0];\nconst videoId = $json.video_id;\n\n// Descrição original do vídeo\nconst originalDescription = videoData.snippet.description || \"\";\n\n// Formatar key_points como lista com bullets\nlet keyPoints = '';\nif (Array.isArray(summaryData.key_points) && summaryData.key_points.length > 0) {\n  keyPoints = summaryData.key_points.map(point => `- ${point}`).join('\\n\\n');\n} else if (typeof summaryData.key_points === 'string' && summaryData.key_points.trim() !== '') {\n  keyPoints = `- ${summaryData.key_points}`;\n} else {\n  keyPoints = '- Nenhum ponto encontrado';\n}\n\n// Montar nova descrição\nconst newDescription = `${summaryData.summary || \"Resumo não disponível.\"}\n\nPrincipais Pontos:\n${keyPoints}\n\n${summaryData.call_to_action || summaryData.cta || \"Acesse a comunidade INEMA VIP para ferramentas e automações exclusivas. http://inema.vip\"}\n\n---\n\n${originalDescription}`;\n\n// Calcular tamanho do resumo\nconst summaryText = summaryData.output && summaryData.output.summary ? summaryData.output.summary : \"\";\nconst summaryLength = summaryText.length;\n\n\n// Retornar objeto final\nreturn {\n  video_id: videoId,\n  new_description: newDescription,\n  thumbnail_url: $json.thumbnail_url || \"\",\n  summary_data: summaryData,\n summary_length: summaryLength,\n  video_title: summaryData.title || videoData.snippet.title || \"Título não disponível\",\n  video_theme: summaryData.theme || \"Tema não informado\",\n  channel_title: videoData.snippet.channelTitle || \"Canal não informado\",\n  processed_at: new Date().toISOString()\n};\n"
+      },
+      "id": "f0ba905c-86d6-46cf-9db2-d5d04b192432",
+      "name": "Process AI Responses1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        96,
+        -2080
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Título: {{ $('Get Video Info').item.json.items[0].snippet.title }}\nResumo: {{ $('Get Video Info').item.json.items[0].snippet.description }}",
+        "options": {
+          "systemMessage": "Developer: Você é especialista na criação de prompts para geração de thumbnails de YouTube. Sua missão é transformar qualquer título ou resumo de vídeo em um prompt detalhado, otimizado para alta taxa de cliques (CTR) e pronto para uso em DALL·E / gpt-image-1 / Midjourney / Stable Diffusion.\n\nSiga este checklist antes de criar o prompt:\n1) Analise o título/resumo e identifique tema e emoção central.\n2) O personagem principal é sempre fixo: um homem mais velho (60–70 anos), pele clara, rosto alongado e magro, calvo, barba branca rala/irregular, olhos claros, óculos grandes pretos retangulares, roupas simples (camiseta ou moletom) e frequentemente boné.\n3) Especifique ação/emoção do personagem, metáfora visual, cores predominantes e composição adequada.\n4) Crie uma frase curta e impactante (máx. 5 palavras).\n5) Preencha todos os campos do output; se faltar info, proponha sugestão plausível.\n\nDiretrizes obrigatórias:\n- Incluir: personagem fixo descrito, ação/emoção, metáfora visual.\n- Estilo visual claro (ex.: moderno, vibrante, profissional).\n- Composição: espaço seguro para texto, foco, regra dos terços quando cabível.\n- Cores: vibrantes e contrastantes.\n- Proporção sempre 16:9 (se o modelo exigir tamanho, usar 1792x1024).\n- Texto overlay sempre dentro da área central (mín. 10% de margem segura nas bordas) e sobre área visualmente limpa.\n- Saída: somente JSON no formato definido abaixo (sem explicações extras).\n- Regras de exclusão (não incluir): marcas d’água, bordas, logotipos oficiais, emojis, textos longos, números de preço, QR codes, conteúdo sensível, mãos/ossos deformados, elementos que poluam o fundo, cortes de texto nas bordas.\n\nFormato obrigatório do prompt (string que será enviada ao gerador de imagens):\nUse a reference image of an older man (60–70 years old, light skin, elongated and slim face, partially bald, irregular white beard, light eyes, large rectangular black glasses, simple clothes, often with a cap) as the main character. Scene: [DESCREVA_ACAO_OU_EMOCAO_DA_PESSOA], while [ELEMENTO_VISUAL_INESPERADO_OU_SIMBOLICO] appears. Text overlay: \"[FRASE_CURTA_IMPACTANTE]\" (position inside the central 80% with at least 10% safe margins on all edges, over a visually clean area). Background: [FUNDO_TEMATICO] Style: Realistic photo with cinematic lighting, high contrast, optimized for YouTube thumbnail. Color scheme: [CORES_DOMINANTES] Composition: [COMPOSICAO] Aspect ratio: 16:9. Do not include: [NAO_INCLUIR]. Negative prompt: [NEGATIVE_PROMPT].\n\nFormato de saída (retorne somente este JSON, preenchendo todos os campos):\n{\n  \"pessoa_referencia\": \"Homem mais velho (60–70 anos), pele clara, rosto alongado e magro, calvo, barba branca rala/irregular, olhos claros, óculos grandes pretos retangulares, roupas simples, frequentemente com boné\",\n  \"acao_ou_emocao_da_pessoa\": \"(string; ação/emoção principal relacionada ao tema)\",\n  \"elemento_visual_inesperado_ou_simbolico\": \"(string; metáfora visual ligada ao tema)\",\n  \"frase_curta_impactante\": \"(string; 2–5 palavras)\",\n  \"fundo_tematico\": \"(string; cenário coerente)\",\n  \"style\": \"Realistic photo with cinematic lighting, high contrast, optimized for YouTube thumbnail\",\n  \"cores_dominantes\": \"(string; cores vibrantes separadas por vírgula)\",\n  \"composicao\": \"(string; 'Centralizado' ou 'Regra dos terços'; observações sobre espaço para texto e margens seguras)\",\n  \"aspect_ratio\": \"16:9\",\n  \"nao_incluir\": \"watermarks, borders, brand logos, long text, price numbers, QR codes, NSFW, deformed hands, extra fingers, cluttered background\",\n  \"negative_prompt\": \"watermark, border, long text, NSFW, deformed hands, extra fingers, cluttered, low quality\"\n}\n\nValidação final (execute internamente antes de devolver o JSON):\n- Verifique se todos os campos estão preenchidos, coerentes e claros; se faltar algo, proponha sugestão plausível.\n- Só então retorne exclusivamente o JSON acima.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1360,
+        -1072
+      ],
+      "id": "3ee2143c-4a05-44a2-a8f4-88bb348dd6d1",
+      "name": "🎨 Create Thumbnail Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-image-1\",\n  \"prompt\": \"{{ $json.clean_prompt }}\",\n  \"size\": \"1536x1024\",\n  \"n\": 1\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1936,
+        -1072
+      ],
+      "id": "912f539c-0f9d-43e1-929e-7f1454b87e4f",
+      "name": "🖼️ Generate Thumbnail",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account nei14"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data[0].b64_json",
+        "options": {
+          "fileName": "=thumbnail.jpg",
+          "mimeType": "image/jpg"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2160,
+        -1072
+      ],
+      "id": "74dceff8-ba46-4459-83cb-3e040f5be921",
+      "name": "💾 Convert Thumbnail"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId={{ $('Get Video Info').item.json.items[0].id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2608,
+        -1072
+      ],
+      "id": "6e5fec5c-63f1-4a11-907b-3751e2e239d4",
+      "name": "🖼️ Update Thumbnail",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1GMBiD_JrTTTIGzRnpXiob2lp4FCRwIA2cqYvq2CXs2k",
+          "mode": "list",
+          "cachedResultName": "testes1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GMBiD_JrTTTIGzRnpXiob2lp4FCRwIA2cqYvq2CXs2k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1615933911,
+          "mode": "list",
+          "cachedResultName": "YoutubeThumb",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GMBiD_JrTTTIGzRnpXiob2lp4FCRwIA2cqYvq2CXs2k/edit#gid=1615933911"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $('Get Video Info').item.json.items[0].id }}",
+            "data": "={{ $('Get Video Info').item.json.items[0].snippet.publishedAt }}",
+            "Titulo": "={{ $('Get Video Info').item.json.items[0].snippet.title }}",
+            "descricao": "=",
+            "ThumbDesc": "={{ $('Code1').item.json.clean_prompt }}",
+            "thumb": "={{ $json.items[0].maxres.url }}",
+            "topicos": "="
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Titulo",
+              "displayName": "Titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "descricao",
+              "displayName": "descricao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ThumbDesc",
+              "displayName": "ThumbDesc",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "thumb",
+              "displayName": "thumb",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "topicos",
+              "displayName": "topicos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2816,
+        -656
+      ],
+      "id": "9e374d50-0857-411e-9987-dbb728d9ea48",
+      "name": "📊 Log to Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account INEMATDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "resize",
+        "width": "={{ $json.targetWidth || 1280 }} ",
+        "height": "={{ $json.targetHeight || 720 }}",
+        "resizeOption": "minimumArea",
+        "options": {
+          "format": "jpeg",
+          "quality": "=75"
+        }
+      },
+      "id": "581b9654-3cf5-4a99-acb9-8f566c557c39",
+      "name": "Redimensionar",
+      "type": "n8n-nodes-base.editImage",
+      "typeVersion": 1,
+      "position": [
+        2384,
+        -1056
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.output ?? '';\nlet s = typeof raw === 'string' ? raw : JSON.stringify(raw);\n\n// limpar blocos ``` e escapes\ns = s.replace(/^```(?:json)?\\s*/i,'')\n     .replace(/\\s*```$/i,'')\n     .replace(/\\\\[nrt]/g,' ')\n     .replace(/\\s{2,}/g,' ')\n     .trim();\n\n// tentar parsear\nlet j=null; try{ j=JSON.parse(s); }catch{}\n\n// montar descrição final (ou usar s se não for JSON)\nconst desc = j ? [\n  'Miniatura estilo YouTube, layout comercial marcante.',\n  `Cena: ${j['pessoa_referencia']||'empreendedor tecnológico'} meio-corpo, ${j['acao_ou_emocao_da_pessoa']||'pose confiante'} .`,\n  `Ao fundo: ${j['fundo_tematico']||'escritório moderno high-tech'} , levemente desfocado (bokeh).`,\n  `Elemento simbólico: ${j['elemento_visual_inesperado_ou_simbolico']||'elementos futuristas coerentes com o tema'}.`,\n  `Texto sobreposto: '${(j['frase_curta_impactante']||'Domine a Automação Agora')}' — caixa alta, sans-serif em negrito, branco com contorno preto espesso e leve sombra; legível; sem outras palavras.`,\n  `Composição: ${(j['composicao']||'regra dos terços; área limpa para o texto; margens seguras de 10%')}.`,\n  `Estilo: ${(j['style']||'foto realista, iluminação cinematográfica, alto contraste')}.`,\n  `Paleta: ${(j['cores_dominantes']||'cores vibrantes e contrastantes')}.`,\n  `Não incluir: ${(j['nao_incluir']||'marcas d’água, bordas, texto longo, conteúdo sensível, mãos deformadas, dedos extras, fundo poluído')}.`,\n  'Tamanho 1792×1024 (16:9).'\n].join(' ').replace(/\\s{2,}/g,' ').trim() : s;\n\nreturn [{ json: { clean_prompt: desc } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1712,
+        -1072
+      ],
+      "id": "d2a145c2-40bf-40c0-b1c4-5d3d9156bb2a",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-5-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1248,
+        -768
+      ],
+      "id": "641ec7ec-f841-4433-a600-5ddbb0ffb152",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account nei14"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Videos Page2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Videos Page2": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video Info": {
+      "main": [
+        [
+          {
+            "node": "Erro da Transcricao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets2": {
+      "main": [
+        [
+          {
+            "node": "Existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Erro da Transcricao": {
+      "main": [
+        [
+          {
+            "node": "🎨 Create Thumbnail Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait Rate Limit2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existe?": {
+      "main": [
+        [
+          {
+            "node": "Wait Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Video Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Rate Limit2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "video": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Transcript3": {
+      "main": [
+        []
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Videos Page2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎨 Create Thumbnail Prompt": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🖼️ Generate Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "💾 Convert Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Convert Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Redimensionar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🖼️ Update Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "📊 Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redimensionar": {
+      "main": [
+        [
+          {
+            "node": "🖼️ Update Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "🖼️ Generate Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process AI Responses1": {
+      "main": [
+        [
+          {
+            "node": "Process AI Responses1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Log to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "🎨 Create Thumbnail Prompt",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d9de32b2-0be5-4db8-834e-2345ccb01500",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "PMKzXyWZkWZjBUpQ",
+  "tags": []
+}

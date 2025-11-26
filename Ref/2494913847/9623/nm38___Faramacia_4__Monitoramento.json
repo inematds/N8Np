@@ -1,0 +1,482 @@
+{
+  "name": "nm38 - Faramacia 4  Monitoramento",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "fe99ed52-6794-4229-8870-8ed23626e565",
+      "name": "Schedule Health Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "d0f5fd65-a584-4c92-9ae9-e9e5b5f29509",
+      "name": "Schedule Queue Monitor",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.EVOLUTION_API_URL}}/instance/connectionState/{{$env.EVOLUTION_INSTANCE}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "90c66288-8355-4480-adc0-2415c999e6d2",
+      "name": "Check WhatsApp Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        20,
+        0
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT version() as postgres_version, current_database() as database_name, pg_database_size(current_database()) as database_size;",
+        "options": {}
+      },
+      "id": "cd76e93f-7ddf-4775-8c5d-ee0f5075517a",
+      "name": "Check Database Status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        20,
+        200
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "5f741a4b-dfa5-4bee-a68c-a593e622421e",
+      "name": "Check Email Connection",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [
+        20,
+        400
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Analisa status dos serviços\nconst items = $input.all();\nconst services = {\n  whatsapp: {\n    status: 'unknown',\n    message: '',\n    error: null\n  },\n  database: {\n    status: 'unknown',\n    message: '',\n    error: null\n  },\n  email: {\n    status: 'unknown',\n    message: '',\n    error: null\n  }\n};\n\n// WhatsApp Status\nconst whatsappData = items[0]?.json;\nif (whatsappData?.instance?.state === 'open') {\n  services.whatsapp.status = 'healthy';\n  services.whatsapp.message = 'WhatsApp conectado e operacional';\n} else if (whatsappData?.error) {\n  services.whatsapp.status = 'error';\n  services.whatsapp.message = 'Erro ao conectar com WhatsApp';\n  services.whatsapp.error = whatsappData.error.message || 'Erro desconhecido';\n} else {\n  services.whatsapp.status = 'warning';\n  services.whatsapp.message = 'WhatsApp desconectado ou em estado inválido';\n}\n\n// Database Status\nconst dbData = items[1]?.json;\nif (dbData?.postgres_version) {\n  services.database.status = 'healthy';\n  services.database.message = `PostgreSQL operacional - ${dbData.database_name}`;\n  services.database.details = {\n    version: dbData.postgres_version,\n    size: (parseInt(dbData.database_size) / 1024 / 1024).toFixed(2) + ' MB'\n  };\n} else if (dbData?.error) {\n  services.database.status = 'error';\n  services.database.message = 'Erro ao conectar com banco de dados';\n  services.database.error = dbData.error.message || 'Erro desconhecido';\n} else {\n  services.database.status = 'warning';\n  services.database.message = 'Status do banco desconhecido';\n}\n\n// Email Status\nconst emailData = items[2]?.json;\nif (emailData && !emailData.error) {\n  services.email.status = 'healthy';\n  services.email.message = 'Conexão IMAP operacional';\n} else if (emailData?.error) {\n  services.email.status = 'error';\n  services.email.message = 'Erro ao conectar com servidor de email';\n  services.email.error = emailData.error.message || 'Erro desconhecido';\n} else {\n  services.email.status = 'warning';\n  services.email.message = 'Status do email desconhecido';\n}\n\n// Status geral\nconst hasError = Object.values(services).some(s => s.status === 'error');\nconst hasWarning = Object.values(services).some(s => s.status === 'warning');\n\nconst overallStatus = hasError ? 'error' : hasWarning ? 'warning' : 'healthy';\nconst timestamp = new Date().toISOString();\n\nreturn {\n  timestamp: timestamp,\n  overallStatus: overallStatus,\n  services: services,\n  requiresAlert: hasError || hasWarning\n};"
+      },
+      "id": "5727c344-0df3-4783-b2a5-65fd42e16345",
+      "name": "Analyze Health Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.requiresAlert}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "ff3b62ef-296d-4ae7-bdd3-6afdc939936e",
+      "name": "Should Alert?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        460,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "text": ":warning: *Alerta de Monitoramento*",
+        "otherOptions": {}
+      },
+      "id": "ca6fe9ad-8b2b-43c0-8193-286c02d5aa9e",
+      "name": "Alert Slack Health",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        680,
+        0
+      ],
+      "webhookId": "833ae868-a0f3-4c0f-99a1-7a4e41c8726b"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Monitora pedidos pendentes\nWITH pending_orders AS (\n  SELECT \n    order_id,\n    client_name,\n    created_at,\n    status,\n    EXTRACT(EPOCH FROM (NOW() - created_at))/60 as minutes_waiting\n  FROM receitas\n  WHERE status IN ('received', 'medications_extracted', 'budget_ready')\n  AND created_at >= NOW() - INTERVAL '48 hours'\n),\nstuck_orders AS (\n  SELECT * FROM pending_orders\n  WHERE \n    (status = 'received' AND minutes_waiting > 30) OR\n    (status = 'medications_extracted' AND minutes_waiting > 20) OR\n    (status = 'budget_ready' AND minutes_waiting > 2880)\n),\nexpiring_orders AS (\n  SELECT \n    order_id,\n    client_name,\n    created_at,\n    total_amount,\n    2880 - EXTRACT(EPOCH FROM (NOW() - created_at))/60 as minutes_remaining\n  FROM receitas\n  WHERE status = 'budget_ready'\n  AND created_at < NOW() - INTERVAL '44 hours'\n  AND created_at >= NOW() - INTERVAL '48 hours'\n)\nSELECT \n  (SELECT COUNT(*) FROM pending_orders) as total_pending,\n  (SELECT COUNT(*) FROM stuck_orders) as total_stuck,\n  (SELECT COUNT(*) FROM expiring_orders) as total_expiring,\n  CASE WHEN COUNT(DISTINCT stuck_orders.*) > 0 THEN json_agg(DISTINCT stuck_orders.*) ELSE '[]'::json END as stuck_orders,\n  CASE WHEN COUNT(DISTINCT expiring_orders.*) > 0 THEN json_agg(DISTINCT expiring_orders.*) ELSE '[]'::json END as expiring_orders\nFROM stuck_orders, expiring_orders;",
+        "options": {}
+      },
+      "id": "4ea54e68-a54c-406e-9115-8151f6c22f64",
+      "name": "Check Pending Orders",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        20,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Analisa filas e pedidos pendentes\nconst data = $input.first().json;\nconst alerts = [];\n\n// Pedidos travados\nif (data.total_stuck > 0) {\n  const stuckOrders = Array.isArray(data.stuck_orders) ? data.stuck_orders : [];\n  alerts.push({\n    type: 'stuck_orders',\n    severity: 'high',\n    title: '🚨 Pedidos Travados',\n    message: `${data.total_stuck} pedido(s) estão parados há muito tempo`,\n    details: stuckOrders.map(o => ({\n      orderId: o.order_id,\n      client: o.client_name,\n      status: o.status,\n      waitingTime: Math.round(o.minutes_waiting) + ' minutos'\n    }))\n  });\n}\n\n// Pedidos expirando\nif (data.total_expiring > 0) {\n  const expiringOrders = Array.isArray(data.expiring_orders) ? data.expiring_orders : [];\n  alerts.push({\n    type: 'expiring_orders',\n    severity: 'medium',\n    title: '⏰ Orçamentos Expirando',\n    message: `${data.total_expiring} orçamento(s) expirarão em breve`,\n    details: expiringOrders.map(o => ({\n      orderId: o.order_id,\n      client: o.client_name,\n      value: 'R$ ' + parseFloat(o.total_amount || 0).toFixed(2),\n      expiresIn: Math.round(o.minutes_remaining) + ' minutos'\n    }))\n  });\n}\n\n// Fila alta\nif (data.total_pending > 10) {\n  alerts.push({\n    type: 'high_queue',\n    severity: 'low',\n    title: '📊 Fila Alta',\n    message: `${data.total_pending} pedidos pendentes no sistema`,\n    details: null\n  });\n}\n\nreturn {\n  timestamp: new Date().toISOString(),\n  hasAlerts: alerts.length > 0,\n  alertCount: alerts.length,\n  alerts: alerts,\n  metrics: {\n    totalPending: data.total_pending,\n    totalStuck: data.total_stuck,\n    totalExpiring: data.total_expiring\n  }\n};"
+      },
+      "id": "898fb07b-89e7-4288-9788-d49bb8d4cb2b",
+      "name": "Analyze Queue Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.hasAlerts}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "3f772bd9-d82b-4cd7-813d-39a99332a357",
+      "name": "Has Queue Alerts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        460,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formata alertas para Slack\nconst data = $input.first().json;\nconst alerts = data.alerts || [];\n\nconst attachments = alerts.map(alert => {\n  const color = alert.severity === 'high' ? '#dc3545' : \n                alert.severity === 'medium' ? '#ffc107' : '#17a2b8';\n  \n  let text = alert.message;\n  \n  if (alert.details && alert.details.length > 0) {\n    if (alert.type === 'stuck_orders') {\n      text += '\\n\\n*Pedidos:*\\n';\n      text += alert.details.map(d => \n        `• \\`${d.orderId}\\` - ${d.client} (${d.status}) - ${d.waitingTime}`\n      ).join('\\n');\n    } else if (alert.type === 'expiring_orders') {\n      text += '\\n\\n*Orçamentos:*\\n';\n      text += alert.details.map(d => \n        `• \\`${d.orderId}\\` - ${d.client} - ${d.value} - Expira em ${d.expiresIn}`\n      ).join('\\n');\n    }\n  }\n  \n  return {\n    color: color,\n    title: alert.title,\n    text: text,\n    footer: 'Sistema de Monitoramento',\n    ts: Date.now() / 1000\n  };\n});\n\nconst mainText = data.alertCount === 1 \n  ? ':warning: *1 Alerta Detectado*'\n  : `:warning: *${data.alertCount} Alertas Detectados*`;\n\nreturn {\n  mainText: mainText,\n  attachments: attachments\n};"
+      },
+      "id": "2e279d2d-066e-4bc6-accd-95d29b7fb8bc",
+      "name": "Format Queue Alerts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "text": "={{$json.mainText}}",
+        "otherOptions": {}
+      },
+      "id": "533964a6-dbd9-4d7a-bd14-e92440276b39",
+      "name": "Alert Slack Queue",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        900,
+        660
+      ],
+      "webhookId": "3aae9ee9-6c0d-4f23-b299-029b9914c597"
+    },
+    {
+      "parameters": {
+        "schema": "public",
+        "table": "monitoring_logs",
+        "options": {}
+      },
+      "id": "3cf42c05-fa40-4556-8760-c2d7ef60fcad",
+      "name": "Log Health Check",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "schema": "public",
+        "table": "monitoring_logs",
+        "options": {}
+      },
+      "id": "a34bd2a0-ce7f-4614-9f9f-0867debd07f8",
+      "name": "Log Queue Check",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        660
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Tenta reconectar WhatsApp se desconectado\nconst status = $json.services?.whatsapp?.status;\n\nif (status === 'error' || status === 'warning') {\n  return {\n    shouldReconnect: true,\n    reason: 'WhatsApp desconectado ou com erro'\n  };\n}\n\nreturn {\n  shouldReconnect: false,\n  reason: 'WhatsApp já está conectado'\n};"
+      },
+      "id": "ea209bd3-7b72-4f9b-98b3-4d3e204ff4aa",
+      "name": "Check Reconnect WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.shouldReconnect}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "253f23d6-5ca3-48dd-ac91-e53955d2f395",
+      "name": "Should Reconnect?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        900,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.EVOLUTION_API_URL}}/instance/restart/{{$env.EVOLUTION_INSTANCE}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "7005ab0e-6b99-4ab5-9ef1-b86ac705f99a",
+      "name": "Reconnect WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        200
+      ],
+      "continueOnFail": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Health Check": {
+      "main": [
+        [
+          {
+            "node": "Check WhatsApp Status",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check Database Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Queue Monitor": {
+      "main": [
+        [
+          {
+            "node": "Check Pending Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check WhatsApp Status": {
+      "main": [
+        [
+          {
+            "node": "Analyze Health Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Database Status": {
+      "main": [
+        [
+          {
+            "node": "Analyze Health Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Email Connection": {
+      "main": [
+        [
+          {
+            "node": "Analyze Health Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Health Status": {
+      "main": [
+        [
+          {
+            "node": "Should Alert?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Health Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Alert?": {
+      "main": [
+        [
+          {
+            "node": "Alert Slack Health",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check Reconnect WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Pending Orders": {
+      "main": [
+        [
+          {
+            "node": "Analyze Queue Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Queue Status": {
+      "main": [
+        [
+          {
+            "node": "Has Queue Alerts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Queue Alerts?": {
+      "main": [
+        [
+          {
+            "node": "Format Queue Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Queue Alerts": {
+      "main": [
+        [
+          {
+            "node": "Alert Slack Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert Slack Queue": {
+      "main": [
+        [
+          {
+            "node": "Log Queue Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Reconnect WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Should Reconnect?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Reconnect?": {
+      "main": [
+        [
+          {
+            "node": "Reconnect WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "24b88395-7b7a-4edc-ad90-aabd8750a7e7",
+  "meta": {
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "n7wlRY7QGfVWjRI3",
+  "tags": []
+}

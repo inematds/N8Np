@@ -1,0 +1,391 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# Local Image to Video with Sound Effect",
+        "height": 572,
+        "width": 904,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        208,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "45cc2ad5-ba4b-4c00-bbf4-38dc09ded058",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "prompt_video",
+              "value": "=A sharp knife smoothly cuts downward through the center of a {{ $json.Texture }} {{ $json.Object }}, splitting it cleanly in half from top to bottom. Slow-motion focus on the slicing action, with glowing embers or subtle sparks as the knife passes through. High detail, cinematic lighting.",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "prompt_sound",
+              "value": "=An ASMR sound effect of cutting {{ $json.Object }} with {{ $json.Texture }} texture",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        352
+      ],
+      "id": "3c3021cf-d6bd-4b4e-87e0-484cb0ff03dd",
+      "name": "Prepare Prompt"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        304,
+        352
+      ],
+      "id": "d600b4a7-9706-4a23-b3b8-392e412ea3a2",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1P14ZfK0fv8ckpehYJrAtClEa-ulyBI0H6ARLUYUGUBI",
+          "mode": "list",
+          "cachedResultName": "n8n-video",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P14ZfK0fv8ckpehYJrAtClEa-ulyBI0H6ARLUYUGUBI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 687302396,
+          "mode": "list",
+          "cachedResultName": "asmr-local",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P14ZfK0fv8ckpehYJrAtClEa-ulyBI0H6ARLUYUGUBI/edit#gid=687302396"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Pending"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        496,
+        352
+      ],
+      "id": "98ee9d78-58a5-4109-ae41-63b2188c0651",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Get row(s) in sheet').item.json.Image }}",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        912,
+        352
+      ],
+      "id": "d633550c-af5c-4dea-a1e4-c7e5f49fddcf",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/workspace/{{ $('Get row(s) in sheet').item.json.row_number }}.png",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        288,
+        592
+      ],
+      "id": "34d78149-8456-4a07-8bdb-88db555eb671",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "command": "=python /workspace/MMAudio/demo.py \\\n--duration=5 \\\n--video=\"/workspace/{{ $('Get row(s) in sheet').item.json.row_number }}.mp4\" \\\n--prompt \"{{ $('Prepare Prompt').item.json.prompt_sound }}\" \\\n--output \"/workspace/{{ $('Get row(s) in sheet').item.json.row_number }}_final\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        704,
+        592
+      ],
+      "id": "dc9ef6de-9a81-4de2-bebb-535f0142de5d",
+      "name": "Generate Audio"
+    },
+    {
+      "parameters": {
+        "command": "=python /workspace/i2v.py \\\n  --prompt \"{{ $json.prompt_video }}\" \\\n  --image \"{{ $json.fileName }}\" \\\n  --output \"{{ $('Get row(s) in sheet').item.json.row_number }}.mp4\" \\\n  --guidance-scale 7.0"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        496,
+        592
+      ],
+      "id": "acdadbd9-5f14-4f9f-a0f1-8ac6fc05881a",
+      "name": "Generate Video"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1P14ZfK0fv8ckpehYJrAtClEa-ulyBI0H6ARLUYUGUBI",
+          "mode": "list",
+          "cachedResultName": "n8n-video",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P14ZfK0fv8ckpehYJrAtClEa-ulyBI0H6ARLUYUGUBI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 687302396,
+          "mode": "list",
+          "cachedResultName": "asmr-local",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P14ZfK0fv8ckpehYJrAtClEa-ulyBI0H6ARLUYUGUBI/edit#gid=687302396"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "Completed",
+            "row_number": "={{ $('Get row(s) in sheet').item.json.row_number }}",
+            "Output": "=/workspace/{{ $('Get row(s) in sheet').item.json.row_number }}_final"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Object",
+              "displayName": "Object",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Texture",
+              "displayName": "Texture",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Image",
+              "displayName": "Image",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Output",
+              "displayName": "Output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        912,
+        592
+      ],
+      "id": "d4a115e3-e09a-4a41-88e4-947ce7b98ef2",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# 🅰🅽🅳🆈🅽🅾🅲🅾🅳🅴 𝔸𝕀 𝔸𝕔𝕒𝕕𝕖𝕞𝕪\n\n",
+        "height": 80,
+        "width": 600,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        208,
+        144
+      ],
+      "id": "6afa2bd2-cc24-4739-930e-cb80772e05f7",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Prepare Prompt": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Prepare Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Generate Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video": {
+      "main": [
+        [
+          {
+            "node": "Generate Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Audio": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "645113ef-1c96-4e2e-b772-b13208ab778b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3cf6203158af41d9296223c070d7dc941042796ce04c606c8353554438d4d8ba"
+  },
+  "id": "5cjxlETEnCuePBVB",
+  "tags": []
+}

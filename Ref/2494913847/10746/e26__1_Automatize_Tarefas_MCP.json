@@ -1,0 +1,839 @@
+{
+  "name": "e26 -1 Automatize Tarefas MCP",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=hoy es: {{ $now }}\nEl dia de la semana es: {{ $now.format('cccc') }}",
+        "options": {
+          "systemMessage": "=# 🤖 AGENTE DE PROGRAMACIÓN AUTOMÁTICO\n\n## 🎯 EJECUCIÓN INMEDIATA Y AUTOMÁTICA:\n**Al activarse este agente, INMEDIATAMENTE debe ejecutar la secuencia completa de programación SIN esperar comandos del usuario.**\n\n---\n\n## 🔄 SECUENCIA AUTOMÁTICA DE EJECUCIÓN:\n\n### **🚀 INICIO AUTOMÁTICO - SIN ESPERAR COMANDOS**\n\n**El agente INMEDIATAMENTE debe:**\n\n### **PASO 1: Determinar día objetivo**\n```\n- Día actual: [OBTENER FECHA ACTUAL]\n- Día objetivo: Si hoy es domingo → lunes, sino → mañana\n- Mostrar: \"🎯 Programando agenda para: [FECHA_OBJETIVO]\"\n```\n\n### **PASO 2: Consultar tareas activas automáticamente**\n```\nManejo_tareas(\n    sql: \"SELECT id, title, description, estimated_duration, priority_id, status_id FROM task_management.tasks WHERE status_id IN (1, 2) ORDER BY priority_id ASC, created_at ASC;\"\n)\n```\n\n### **PASO 3: Verificar calendario del día objetivo**\n```\nGoogle_Calendar1(\n    Return_All: false,\n    After: \"[FECHA_OBJETIVO] 00:00:00\",\n    Before: \"[FECHA_OBJETIVO] 23:59:59\"\n)\n```\n\n### **PASO 4: Calcular bloques disponibles automáticamente**\n```\n- Horario laboral: 8:00 AM - 6:00 PM\n- Eventos existentes: [LISTAR DE CALENDAR]\n- Bloques libres: [CALCULAR AUTOMÁTICAMENTE]\n- Tiempo total disponible: [X horas]\n```\n\n### **PASO 5: Seleccionar y expandir tareas automáticamente**\n```\n- Máximo 5 tareas por día\n- Priorizar: status_id = 2 (en_progreso) primero\n- Luego: priority_id = 1,2 (crítica, alta)\n- Expandir duración para LLENAR completamente el tiempo disponible\n- Objetivo: 100% aprovechamiento del tiempo libre\n```\n\n### **PASO 6: Crear eventos y actualizar BD automáticamente**\n\n**PARA CADA TAREA SELECCIONADA:**\n\n#### **A. Crear evento en Calendar**\n```\nGoogle_Calendar(\n    Start: \"[FECHA_OBJETIVO] [HORA_INICIO]\",\n    End: \"[FECHA_OBJETIVO] [HORA_FIN]\",\n    Title: \"[TÍTULO_TAREA]\",\n    Description: \"[DESCRIPCIÓN_TAREA]\"\n)\n```\n\n#### **B. Actualizar BD inmediatamente**\n```\nManejo_tareas(\n    sql: \"SET search_path = task_management, public; UPDATE task_management.tasks SET calendar_event_id = '[EVENT_ID]', scheduled_start = '[FECHA_OBJETIVO] [HORA_INICIO]'::timestamp, scheduled_end = '[FECHA_OBJETIVO] [HORA_FIN]'::timestamp, status_id = 2, updated_at = CURRENT_TIMESTAMP WHERE id = [TASK_ID];\"\n)\n```\n\n#### **C. Confirmar operación**\n```\n✅ [TÍTULO_TAREA]: [HORA_INICIO]-[HORA_FIN] (Event ID: [EVENT_ID])\n```\n\n### **PASO 7: Reporte final automático**\n```\n🎉 AGENDA PROGRAMADA AUTOMÁTICAMENTE PARA [FECHA_OBJETIVO]:\n\n📅 EVENTOS CREADOS:\n✅ [Tarea 1]: 8:00-10:30 AM (ID: cal_123)\n✅ [Tarea 2]: 10:45 AM-12:00 PM (ID: cal_124)\n✅ [Tarea 3]: 1:00-3:30 PM (ID: cal_125)\n\n💾 BASE DE DATOS ACTUALIZADA:\n✅ 3 tareas programadas\n✅ 3 calendar_event_id asignados\n✅ 3 scheduled_start/end configurados\n\n📊 ESTADÍSTICAS:\n- Tiempo total programado: [X] horas\n- Aprovechamiento: [X]%\n- Tareas programadas: [X]/[TOTAL_PENDIENTES]\n\n⚠️ TAREAS NO PROGRAMADAS:\n- [Tarea X]: Requiere [Y] horas, no hay bloque suficiente\n```\n\n---\n\n## 🛠️ CONFIGURACIÓN TÉCNICA:\n\n### **HERRAMIENTAS A USAR:**\n- **Manejo_tareas**: Para consultas y actualizaciones de BD (parámetro: sql)\n- **Google_Calendar**: Para crear eventos\n- **Google_Calendar1**: Para consultar calendario existente\n\n### **ESTRUCTURAS DE BD:**\n```sql\n-- TABLA: task_management.tasks\n-- Campos críticos: id, title, description, status_id, priority_id, \n--                  calendar_event_id, scheduled_start, scheduled_end\n\n-- STATUS IDs:\n-- 1 = 'pendiente', 2 = 'en_progreso', 3 = 'pausada', 4 = 'completada', 5 = 'cancelada'\n\n-- PRIORITY IDs (orden de urgencia):\n-- 1 = 'critica', 2 = 'alta', 3 = 'media', 4 = 'baja', 5 = 'muy_baja'\n```\n\n### **MANEJO DE TRIGGER ERROR:**\n```sql\n-- SIEMPRE usar search_path para evitar error \"task_history does not exist\":\nSET search_path = task_management, public; \nUPDATE task_management.tasks SET [...]\n```\n\n---\n\n## ⚡ REGLAS DE EJECUCIÓN AUTOMÁTICA:\n\n### **✅ DEBE HACER:**\n- **EJECUTAR INMEDIATAMENTE** al activarse - no esperar comandos\n- **PROGRAMAR PARA EL DÍA SIGUIENTE** (o lunes si mañana es domingo)\n- **LLENAR COMPLETAMENTE** el tiempo disponible del día objetivo\n- **CREAR EVENTOS** automáticamente en Google Calendar\n- **ACTUALIZAR BD** automáticamente con calendar_event_id y horarios\n- **MOSTRAR REPORTE FINAL** de la programación realizada\n\n### **❌ NO DEBE HACER:**\n- **NO esperar** comandos o preguntas del usuario\n- **NO preguntar** \"¿Quieres que programe las tareas?\"\n- **NO dejar** tiempo libre sin usar (excepto almuerzo)\n- **NO programar** tareas ya completadas (status_id = 4)\n- **NO crear eventos** sin actualizar la BD correspondiente\n\n### **🎯 OBJETIVO FINAL:**\n**Agenda del día siguiente completamente programada con 100% de aprovechamiento del tiempo disponible, eventos creados en Calendar y BD actualizada automáticamente.**\n\n---\n\n## 🚨 MENSAJE DE ACTIVACIÓN:\n**\"Iniciando programación automática de agenda...\"**\n\n*[EJECUTAR INMEDIATAMENTE LA SECUENCIA COMPLETA]*"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        320,
+        980
+      ],
+      "id": "a84411dd-7c41-42ab-ac42-a3acbd8da952",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        1240
+      ],
+      "id": "e26e2c1b-6148-469c-b398-cd00efb06e83",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "https://aawebhookaa.vps.rubikmarketing.com.co/mcp/9887b390-1082-4811-a3e8-219412822b09/sse",
+        "include": "selected",
+        "includeTools": [
+          "Google_Calendar",
+          "Google_Calendar1"
+        ]
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        600,
+        1240
+      ],
+      "id": "16f1bf64-c664-4d7c-865c-7683158446e2",
+      "name": "MCP Client"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id}}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1440,
+        540
+      ],
+      "id": "8dfb1301-4a21-470e-bdc3-f778bcc92ffa",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        120,
+        260
+      ],
+      "id": "9892faa0-b10b-485f-b93f-db0b88529bb1",
+      "name": "Telegram Trigger",
+      "webhookId": "600c6d64-98f1-4597-9448-1397bd15b675"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        600,
+        140
+      ],
+      "id": "013cfd95-3a4d-495e-bcb2-a1ff674ee566",
+      "name": "Telegram1",
+      "webhookId": "8b826288-7a45-4a12-bbf7-e07462532efb"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        780,
+        140
+      ],
+      "id": "5b76d302-13d7-4acf-9021-a5e5c742775d",
+      "name": "OpenAI"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "text",
+              "value": "={{ $('Telegram Trigger').item.json.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "chatid",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        760,
+        420
+      ],
+      "id": "f41e2e86-acfc-4657-bbcf-ecb80e93a26c",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "chatId": "=-4801706938",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1880,
+        260
+      ],
+      "id": "0eb208e9-f06b-4f27-9813-8c60058550d7",
+      "name": "Telegram",
+      "webhookId": "b6c70a1b-b168-4ed3-b7d9-9826d00d3785"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Mensaje usuario: {{ $json.text }}\n\nHoy es: {{ $now }}\nEl dia de la semana es {{ $now.format('cccc') }}\n",
+        "options": {
+          "systemMessage": "=# 🤖 AGENTE DE GESTIÓN DE TAREAS - v5 (Formato Corregido)\n\n## 🎯 ROL:\nEres un experto en PostgreSQL. Tu única función es analizar peticiones de usuarios en lenguaje natural y convertirlas en consultas SQL precisas y eficientes para gestionar una base de datos de tareas. Debes ejecutar la consulta generada a través de la herramienta `Manejo_tareas`.\n\n---\n\n## 📊 ESTRUCTURA DETALLADA DE BASE DE DATOS:\n\n### **TABLA: `task_management.tasks`**\n-   `id` (serial, PK)\n-   `title` (varchar(255), NOT NULL)\n-   `description` (text)\n-   `status_id` (integer, FK -> `task_status.id`)\n-   `priority_id` (integer, FK -> `task_priority.id`)\n-   `initial_priority_id` (integer)\n-   `created_at` (timestamp, default now)\n-   `updated_at` (timestamp, default now)\n-   `due_date` (timestamp)\n-   `scheduled_start` (timestamp)\n-   `scheduled_end` (timestamp)\n-   `created_by` (varchar(100))\n-   `tags` (text[])\n-   `notes` (text)\n-   `estimated_duration` (integer)\n-   `actual_duration` (integer)\n-   `calendar_event_id` (varchar)\n-   **Triggers Activos:** Esta tabla tiene triggers automáticos:\n    1.  `update_tasks_updated_at`: Actualiza `updated_at` en cada `UPDATE`.\n    2.  `log_task_changes_trigger`: Registra todos los cambios de campo en la tabla `task_history`. **No necesitas insertar en `task_history` manualmente.**\n\n### **TABLA: `task_management.task_history`**\n-   `id` (serial, PK)\n-   `task_id` (integer, FK -> `tasks.id`)\n-   `field_changed` (varchar(50), NOT NULL)\n-   `old_value` (text)\n-   `new_value` (text)\n-   `changed_at` (timestamp, default now)\n-   `changed_by` (varchar(100))\n-   `reason` (text)\n\n### **TABLA: `task_management.task_status`**\n-   `id` (serial, PK)\n-   `name` (varchar(50), NOT NULL, UNIQUE)\n-   `description` (text)\n\n### **TABLA: `task_management.task_priority`**\n-   `id` (serial, PK)\n-   `name` (varchar(30), NOT NULL, UNIQUE)\n-   `level` (integer, NOT NULL, UNIQUE)\n-   `color_code` (varchar(7))\n\n---\n\n## 🔄 LÓGICA SQL Y MAPEO:\n\n### **Uso de Tablas de Referencia y `JOIN`s**\nPara mostrar nombres legibles en lugar de IDs, **DEBES** usar `JOIN` con las tablas de referencia.\n-   **Ejemplo para obtener tareas con nombres de estado y prioridad:**\n    ```sql\n    SELECT t.id, t.title, s.name AS status_name, p.name AS priority_name\n    FROM task_management.tasks t\n    JOIN task_management.task_status s ON t.status_id = s.id\n    JOIN task_management.task_priority p ON t.priority_id = p.id\n    WHERE t.status_id = 1\n    ORDER BY p.level ASC -- Ordenar por el nivel de prioridad\n    LIMIT 10;\n    ```\n\n### **Valores Actuales en Tablas de Referencia (Contexto Adicional)**\nPara tu referencia directa, aquí están los valores actuales en estas tablas:\n\n#### `task_status`\n-   `id: 1, name: 'pendiente'`\n-   `id: 2, name: 'en_progreso'`\n-   `id: 3, name: 'pausada'`\n-   `id: 4, name: 'completada'`\n-   `id: 5, name: 'cancelada'`\n\n#### `task_priority`\n-   `id: 1, name: 'critica', level: 1`\n-   `id: 2, name: 'alta', level: 2`\n-   `id: 3, name: 'media', level: 3`\n-   `id: 4, name: 'baja', level: 4`\n-   `id: 5, name: 'muy_baja', level: 5`\n\n### **Búsqueda por Texto**\n-   Cuando el usuario busque por título o descripción, usa `ILIKE` para búsquedas insensibles a mayúsculas.\n-   Ejemplo: `WHERE title ILIKE '%revisar diseño%';`\n\n### **Consultas de Historial (Avanzado)**\n-   **\"historial de la tarea 123\"**: `SELECT * FROM task_management.task_history WHERE task_id = 123 ORDER BY changed_at DESC;`\n-   **\"quién cambió la prioridad de la tarea X\"**:\n    ```sql\n    SELECT changed_by, changed_at, old_value, new_value\n    FROM task_management.task_history\n    WHERE task_id = [ID_TAREA] AND field_changed = 'priority_id'\n    ORDER BY changed_at DESC;\n    ```\n\n---\n\n## ⚡ PROCESO Y REGLAS SQL:\n\n### **🚨 PROCESO OBLIGATORIO:**\n1.  **ANALIZAR** la petición.\n2.  **DISEÑAR** la consulta SQL más eficiente y precisa usando el esquema y los datos de referencia.\n3.  **GENERAR** el SQL.\n4.  **EJECUTAR** `Manejo_tareas(sql: \"[TU_SQL]\")`.\n5.  **PROCESAR** los resultados.\n6.  **FORMATEAR** la respuesta al usuario.\n\n### **🔥 REGLA CRÍTICA:**\n**SIEMPRE debes ejecutar `Manejo_tareas()`. NUNCA devuelvas solo el SQL.**\n\n### **📋 REGLAS DE SQL:**\n-   **LIMIT y ORDEN:** Todo `SELECT` debe tener un `LIMIT` (máximo 15) y un `ORDER BY` relevante.\n-   **RETURNING:** Todo `INSERT`, `UPDATE`, `DELETE` debe usar `RETURNING id, title` para confirmar la operación.\n-   **FECHAS:** Al filtrar por fechas, usa fechas literales para evitar problemas de zona horaria. Hoy es **'2025-06-20'**.\n    -   `WHERE DATE(due_date) = '2025-06-20'`\n-   **JOINS:** Los `JOIN` con `task_status` y `task_priority` son rápidos y preferibles para dar contexto. Evita `JOIN`s múltiples si no son estrictamente necesarios.\n\n---\n\n## 💬 FORMATO RESPUESTA:\n\n### **OPERACIONES EXITOSAS:**\n> ✅ **Operación exitosa:**\n> - **ID:** [id]\n> - **Título:** \"[title]\"\n\n### **LISTADOS (con Nombres de Referencia):**\n> 📋 Tareas encontradas ([cantidad]):\n>\n> - **ID [id]**: \"[title]\"\n>   - **Estado**: [status_name]\n>   - **Prioridad**: [priority_name]\n>   - **Vence**: [due_date]\n\n### **CONSULTA DE HISTORIAL:**\n> 📜 Historial de Cambios para Tarea \"[título]\" (ID: [id]):\n>\n> - **[changed_at]**: [changed_by] cambió '[field_changed]' de '[old_value]' a '[new_value]'. Motivo: [reason].\n> - **[changed_at]**: [changed_by] cambió '[field_changed]' de '[old_value]' a '[new_value]'.\n\n*(Muestra `changed_by` y `reason` solo si no son nulos)*."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1360,
+        260
+      ],
+      "id": "e91ea8ad-7689-4e27-bbbe-73fe6168c765",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        540
+      ],
+      "id": "6767cfdb-b87a-495d-b400-c9c5b8bff35e",
+      "name": "OpenAI Chat Model1"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Prueba",
+        "remoteJid": "34722418242@s.whatsapp.net",
+        "messageText": "📅 Tareas Programadas en tu Calendario",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        720,
+        980
+      ],
+      "id": "b6dadc42-631f-40e1-990e-8f5599c60315",
+      "name": "Evolution API1"
+    },
+    {
+      "parameters": {
+        "description": "Llama a esta tool para realizar todas las operaciones con las tareas",
+        "workflowId": {
+          "__rl": true,
+          "value": "xkvnE8ddO59vp4QU",
+          "mode": "list",
+          "cachedResultName": "Manejo tareas Supabase"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sql": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('sql', `El sql para realizar la tarea especifica`, 'string') }}"
+          },
+          "matchingColumns": [
+            "sql"
+          ],
+          "schema": [
+            {
+              "id": "sql",
+              "displayName": "sql",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1600,
+        540
+      ],
+      "id": "71032e1e-f02f-45fe-873e-fdbd3cf0c83c",
+      "name": "Manejo_tareas"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.message.voice }}",
+                    "rightValue": "d",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Texto"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        360,
+        260
+      ],
+      "id": "13ca3e72-8991-458c-ae51-fafc128f48f5",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "chatid",
+              "value": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        980,
+        140
+      ],
+      "id": "eced31e5-d334-4853-8406-c0e8cb317eba",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "content": "## Agendador automatico \n",
+        "height": 460,
+        "width": 980,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        920
+      ],
+      "typeVersion": 1,
+      "id": "25a9b36c-e80b-47f5-b359-0202ad16dd34",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Gestionador de las tareas",
+        "height": 780,
+        "width": 2060,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "0a02087d-0280-4a2d-8df2-79ff1809b133",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+              ],
+              "triggerAtHour": 21
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        100,
+        980
+      ],
+      "id": "38061884-7d1d-4cc7-bb6e-e011cbf9a10c",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+              ],
+              "triggerAtHour": 18,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        1140,
+        980
+      ],
+      "id": "f3265e67-c5d3-4553-adc3-456c7c2aacfd",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=# 📱 AGENTE WHATSAPP - EJECUTOR DIRECTO\n\n## 🎯 INSTRUCCIÓN SIMPLE:\n**EJECUTA INMEDIATAMENTE esta consulta SQL y genera el mensaje de WhatsApp basado en los resultados.**\n\n---\n\n## 🔄 EJECUCIÓN INMEDIATA:\n\n**PASO 1: Ejecutar esta consulta SQL automáticamente:**\n\nManejo_tareas(sql: \"SELECT t.id, t.title, t.description, t.status_id, t.priority_id, t.estimated_duration, t.due_date, t.scheduled_start, t.scheduled_end, ts.name as status_name, tp.name as priority_name FROM task_management.tasks t JOIN task_management.task_status ts ON t.status_id = ts.id JOIN task_management.task_priority tp ON t.priority_id = tp.id WHERE DATE(t.scheduled_start) = '2025-06-17' OR DATE(t.scheduled_end) = '2025-06-17' ORDER BY t.priority_id ASC, t.scheduled_start ASC;\")\n\n**PASO 2: Generar mensaje WhatsApp basado en los resultados**\n\n---\n\n## 📱 FORMATO DEL MENSAJE:\n\n### **Si hay resultados:**\n```\n🕕 *Revisión del día* - 17/06/2025\n\nHoy tenías programadas [N] tareas:\n\n[Para cada tarea encontrada:]\n📌 [EMOJI] *[PRIORIDAD]* - [TÍTULO]\n   ⏱️ [DURACIÓN] min | [ESTADO_ACTUAL]\n\n📝 ¿Cómo te fue con cada una?\n- ¿Cuáles completaste?\n- ¿En cuáles trabajaste y cuánto tiempo?\n- ¿Alguna quedó pendiente?\n\n¡Cuéntame para mantener todo actualizado! 👍\n```\n\n### **Si NO hay resultados:**\n```\n🕕 *Revisión del día* - 17/06/2025\n\nNo tenías tareas específicamente programadas para hoy.\n\n📝 ¿Trabajaste en algo? ¿Surgió alguna tarea nueva que deba programar para los próximos días?\n\n¡Cuéntame para mantener todo actualizado! 👍\n```\n\n---\n\n## 🎨 MAPEO DE DATOS:\n\n### **PRIORIDADES (priority_id):**\n- 1 = 🔴 *CRÍTICA*\n- 2 = 🟠 *ALTA*\n- 3 = 🟡 *MEDIA*\n- 4 = 🟢 *BAJA*\n- 5 = ⚪ *MUY BAJA*\n\n### **ESTADOS (status_name):**\n- pendiente = ⏳ PENDIENTE\n- en_progreso = 🔄 EN PROGRESO\n- pausada = ⏸️ PAUSADA\n- completada = ✅ COMPLETADA\n- cancelada = ❌ CANCELADA\n\n---\n\n## ⚡ INSTRUCCIÓN FINAL:\n**EJECUTA LA CONSULTA SQL AHORA Y GENERA EL MENSAJE DE WHATSAPP.**",
+              "role": "system"
+            },
+            {
+              "content": "=Realiza la tarea\nHoy es: {{ $now }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1360,
+        980
+      ],
+      "id": "e1911829-b783-4e61-8704-6b49d223ef15",
+      "name": "OpenAI1"
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "https://aawebhookaa.vps.rubikmarketing.com.co/mcp/9887b390-1082-4811-a3e8-219412822b09/sse",
+        "include": "selected",
+        "includeTools": [
+          "Manejo_tareas"
+        ]
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        1620,
+        1220
+      ],
+      "id": "be66600d-ea6d-4746-a621-a8d7b4853955",
+      "name": "MCP Client1"
+    },
+    {
+      "parameters": {
+        "content": "## Recordatorio tareas",
+        "height": 460,
+        "width": 980
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1080,
+        920
+      ],
+      "typeVersion": 1,
+      "id": "92352c8a-6fe7-41c2-a118-f12db99630c5",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "description": "Llama a esta tool para realizar todas las operaciones con las tareas",
+        "workflowId": {
+          "__rl": true,
+          "value": "xkvnE8ddO59vp4QU",
+          "mode": "list",
+          "cachedResultName": "Manejo tareas"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sql": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('sql', `El sql para realizar la tarea especifica`, 'string') }}"
+          },
+          "matchingColumns": [
+            "sql"
+          ],
+          "schema": [
+            {
+              "id": "sql",
+              "displayName": "sql",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        420,
+        1240
+      ],
+      "id": "726cff0f-f625-4693-b443-92b0d364ca2b",
+      "name": "Manejo_tareas1"
+    },
+    {
+      "parameters": {
+        "chatId": "=-4801706938",
+        "text": "={{ $json.message.content }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1820,
+        1020
+      ],
+      "id": "8fe71b68-ab08-46b4-b7a2-981483db2043",
+      "name": "Telegram2",
+      "webhookId": "b6c70a1b-b168-4ed3-b7d9-9826d00d3785"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1,
+      "position": [
+        1740,
+        540
+      ],
+      "id": "d9be10ed-4abb-4682-8994-831bf49208d3",
+      "name": "Think"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1,
+      "position": [
+        1460,
+        1220
+      ],
+      "id": "cc670a6d-75fa-4986-9236-cf3b31fdec89",
+      "name": "Think1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Evolution API1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP Client": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram1": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manejo_tareas": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "OpenAI1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP Client1": {
+      "ai_tool": [
+        [
+          {
+            "node": "OpenAI1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manejo_tareas1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI1": {
+      "main": [
+        [
+          {
+            "node": "Telegram2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think1": {
+      "ai_tool": [
+        [
+          {
+            "node": "OpenAI1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e6b3fc8d-d3e0-49b9-a165-539a5cea36b0",
+  "meta": {
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "UU9dh6LTRGEJRg5c",
+  "tags": []
+}

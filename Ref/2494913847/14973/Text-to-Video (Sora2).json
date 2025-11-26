@@ -1,0 +1,411 @@
+{
+  "name": "Text-to-Video (Sora2)",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/jobs/createTask",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n    \"model\": \"sora-2-text-to-video\",\n    \"input\": {\n      \"prompt\": {{ JSON.stringify($('Start').item.json.video_prompt).length > 800 \n    ? JSON.stringify($json.video_prompt).slice(0,800) + '\"' \n    : JSON.stringify($json.video_prompt) }},\n  \"aspect_ratio\": \"{{ $('Start').item.json.formato === \"9:16\" ? \"portrait\" : ($('Start').item.json.formato === \"16:9\" ? \"landscape\" : $('Start').item.json.formato) }}\",\n   \"callBackUrl\": \"{{$execution.resumeUrl}}\",\n      \"quality\": \"hd\"\n    }\n}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -176,
+        272
+      ],
+      "id": "37d550f9-a189-4016-932a-d38716a6fdda",
+      "name": "Create Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        240
+      ],
+      "id": "45773432-8670-405e-9151-a72b791ee895",
+      "name": "Wait 2",
+      "webhookId": "f5f6f79f-6171-4402-a32b-85ff60de067f"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.kie.ai/api/v1/jobs/recordInfo?taskId={{ $('Create Video').item.json.data.taskId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        496,
+        224
+      ],
+      "id": "57540f98-dae0-4cbc-8398-ae0399afdbf0",
+      "name": "Get Video",
+      "alwaysOutputData": false,
+      "retryOnFail": false,
+      "waitBetweenTries": 5000,
+      "executeOnce": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "sora_video_result",
+              "value": "={{ JSON.parse($json.data.resultJson).resultUrls[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Titulo",
+              "value": "={{ $('Start').item.json.titulo }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        944,
+        320
+      ],
+      "id": "7f53007d-fab2-4605-82b1-acb796f21c40",
+      "name": "Return"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "video_prompt"
+            },
+            {
+              "name": "formato"
+            },
+            {
+              "name": "titulo"
+            }
+          ]
+        }
+      },
+      "id": "6dfd9c53-5265-4e6a-b227-4f5dcaf39bc0",
+      "typeVersion": 1.1,
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -400,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "success",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "[REMOVED]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "OK"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "fail",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Error generacion"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ ['queuing', 'waiting', 'generating'].includes(($json.data.state || '').toLowerCase()) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Loop"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        720,
+        304
+      ],
+      "id": "f36ef36f-47c9-4062-b0b8-d7e3a8f9ee21",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.code }}",
+              "rightValue": 500,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        48,
+        48
+      ],
+      "id": "acbf8f34-56da-4c2b-8bf9-92fe4b94fbd7",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        48
+      ],
+      "id": "55015fc5-daa7-4629-836f-4a3a5b600f39",
+      "name": "Wait",
+      "webhookId": "7a1282a4-4293-4162-b8a1-9b90d8e75d08"
+    }
+  ],
+  "pinData": {
+    "Get Video": [
+      {
+        "json": {
+          "code": 200,
+          "msg": "success",
+          "data": {
+            "taskId": "7b3de29e593a6d3636616050a36d2f7c",
+            "model": "sora-2-text-to-video",
+            "state": "success",
+            "param": "{\"input\":{\"aspect_ratio\":\"portrait\",\"callBackUrl\":\"https://aawebhookaa.vps.rubikmarketing.com.co/webhook-waiting/53333\",\"prompt\":\"Tres gatos vestidos de traje, sentados tras una pequeña mesa decorada, fingen ser jueces. Observan y reaccionan con expresivas miradas a otros gatos desfilando en miniatura por el escenario. Primeros planos divertidos de sus caras serias y patitas sobre la mesa. Luz teatral, ambiente cómico, estilo sketch TikTok.\",\"quality\":\"hd\"},\"model\":\"sora-2-text-to-video\"}",
+            "resultJson": "{\"resultUrls\":[\"https://videos.openai.com/vg-assets/assets%2Ftask_01k6nd082aejatspx1ggyrmmax%2Ftask_01k6nd082aejatspx1ggyrmmax_genid_bce7b1a1-c1ad-4941-b535-0e687e984594_25_10_03_16_07_389614%2Fvideos%2F00000_wm%2Fsrc.mp4?st=2025-10-03T14%3A52%3A13Z&se=2025-10-09T15%3A52%3A13Z&sks=b&skt=2025-10-03T14%3A52%3A13Z&ske=2025-10-09T15%3A52%3A13Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ffff87a-01f1-47c9-9090-32999d4d6380&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=cBZr8grxV2WmI6eAwlOz6%2FonqrouolCp0khJ3doS3QY%3D&az=oaivgprodscus\"]}",
+            "failCode": null,
+            "failMsg": null,
+            "costTime": 299,
+            "completeTime": 1759507688134,
+            "createTime": 1759507388984
+          }
+        }
+      }
+    ],
+    "Start": [
+      {
+        "json": {
+          "video_prompt": "@angelapa_ia camina lentamente por un salón elegante con candelabros y cortinas de seda. Se detiene frente a un espejo dorado, aplica unas gotas de perfume y susurra a cámara: \"Esencia que despierta los sentidos.\" Primeros planos de la botella, reflejos dorados, bruma suave, música ambiental sofisticada. Ultra realismo, tonos cálidos, enfoque vertical 9:16.",
+          "formato": "9:16",
+          "titulo": "Reflejos de Elegancia"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Create Video": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 2": {
+      "main": [
+        [
+          {
+            "node": "Get Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Create Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Return",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Create Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "30dd0755-72b3-4927-826c-31f5749bbd77",
+  "meta": {
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "TR2PFIG9lMZ0E1Aw",
+  "tags": []
+}

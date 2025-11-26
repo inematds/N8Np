@@ -1,0 +1,140 @@
+[
+  {
+    "id": 9472,
+    "author": "INEMA",
+    "date": "2025-06-12T22:21:46+00:00",
+    "text": "https://aistudio.google.com/u/1/apikey",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9452,
+    "author": "INEMA",
+    "date": "2025-06-12T20:39:08+00:00",
+    "text": "https://www.youtube.com/watch?v=acB2o6nwAn8",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9450,
+    "author": "INEMA",
+    "date": "2025-06-12T20:23:53+00:00",
+    "text": "Os **hacks** (dicas e truques avançados) mostrados no vídeo para usar **Google Gemini + n8n** de forma gratuita e eficiente para análise de vídeos são:\n\n---\n\n### 1. **Uso de Polling para Garantir Confiabilidade**\n\n* **Hack:** Esperar 5 segundos e fazer nova requisição para verificar se o vídeo foi processado.\n* **Por quê?** Se não esperar, o Gemini pode retornar erro porque o vídeo ainda está \"processing\".\n* **Aplicação:** Evita falhas, garante que o retorno da análise seja válido.\n\n---\n\n### 2. **Prompt Personalizado na Requisição**\n\n* **Hack:** Você pode **moldar o comportamento do Gemini** dizendo exatamente o que ele deve fazer com o vídeo.\n* **Exemplos:**\n\n  * \"Descreva o vídeo em detalhes\"\n  * \"Resuma em 3 frases\"\n  * \"Extraia os principais aprendizados\"\n  * \"Liste insights visuais e falas importantes\"\n* **Benefício:** Controle total sobre o tipo de análise que o Gemini vai retornar.\n\n---\n\n### 3. **Análise de Vídeos do YouTube sem Download**\n\n* **Hack:** Em vez de baixar o vídeo, Gemini aceita diretamente a URL do YouTube.\n* **Vantagem:** Mais rápido, sem ocupar armazenamento, nem necessidade de upload local.\n\n---\n\n### 4. **Reaproveitamento de API Key com Query Params**\n\n* **Hack:** Usa a autenticação via **query parameter**, com chave `key` no endpoint.\n* **Motivo:** Evita necessidade de configuração complexa de headers ou OAuth.\n\n---\n\n### 5. **Uso de Template JSON no n8n**\n\n* **Hack:** Autor fornece um **template pronto** para importar o fluxo completo no n8n.\n* **Como usar:** Baixar JSON, importar no n8n e só mudar a chave da API.\n\n---\n\n### 6. **Extração de Dados Binários com Precisão**\n\n* **Hack técnico:** Nomear o campo binário como `video` exatamente igual ao que Gemini espera.\n* **Erro comum evitado:** Nomes errados nos campos causam falhas silenciosas.\n\n---\n\n### 7. **Uso de \"Set Node\" para Visualizar Resultados Limpos**\n\n* **Hack:** Após receber a resposta, use um **\"Set\" node** para limpar e formatar o resultado.\n* **Vantagem:** Facilita a leitura e uso posterior do texto analisado.\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9449,
+    "author": "INEMA",
+    "date": "2025-06-12T20:23:44+00:00",
+    "text": "======",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9447,
+    "author": "INEMA",
+    "date": "2025-06-12T20:06:16+00:00",
+    "text": "Segue o **passo a passo completo** para configurar uma automação no **n8n** usando o **Google Gemini** para análise de vídeos gratuitamente:\n\n---\n\n### 1. **Obter a API Key do Google Gemini**\n\n* Acesse: [https://ai.google.dev](https://ai.google.dev/)\n* Clique em **\"Get API Key\"**\n* Copie a chave para usar no n8n\n\n---\n\n### 2. **Importar o Template JSON no n8n**\n\n* Baixe o template JSON fornecido no vídeo (ou crie manualmente)\n* No n8n, vá em **Importar workflow**\n* Carregue o arquivo `.json` do fluxo completo\n\n---\n\n### 3. **Configurar o Formulário Inicial (Upload Local)**\n\n* Crie um formulário com um campo para **upload de vídeo**\n* Ao enviar, o vídeo será salvo como **binary data**\n\n---\n\n### 4. **Enviar o Vídeo para o Google Gemini**\n\n* Crie um **HTTP Request Node**\n* Método: `POST`\n* URL do endpoint Gemini de upload de vídeo\n* Autenticação:\n\n  * Tipo: **Generic Auth**\n  * Forma: **Query**\n  * Nome: `key`\n  * Valor: sua API Key Gemini\n* Headers:\n\n  * `Content-Type`: `application/json`\n  * `Content-Length`: automático\n* Enviar o vídeo como **arquivo binário** com o nome do campo: `video`\n\n---\n\n### 5. **Aguardar o Processamento (Polling)**\n\n* Adicione um **\"Wait\" node** com 5 segundos\n* Em seguida, um novo **HTTP Request** para verificar o status\n\n  * Endpoint de status da análise\n  * Envie o `URI` retornado anteriormente no corpo da requisição\n  * Inclua novamente a API Key no formato de query\n* Verifique o campo `status == completed`\n\n---\n\n### 6. **Obter o Resultado da Análise**\n\n* Quando `status == completed`, o Gemini retornará o **texto com a análise completa do vídeo**\n* Use um **\"Set\" node** para exibir o conteúdo de forma limpa\n\n---\n\n### 7. **Analisar um Vídeo do YouTube (Alternativa)**\n\n* Use outro **HTTP Request Node**\n* Endpoint de Gemini para análise de **YouTube URL**\n* Corpo da requisição:\n\n  ```  {\n    \"video\": {\n      \"youtube_url\": \"https://www.youtube.com/watch?v=XXXX\"\n    },\n    \"prompt\": \"Please summarize this video in 3 sentences\"\n  }\n  ```\n* Adapte o prompt conforme desejar: resumos longos, insights, destaques, etc.\n\n---\n\n### 8. **Executar e Visualizar o Resultado**\n\n* Use um **Manual Trigger**\n* Clique em **\"Test Workflow\"**\n* Resultado será retornado em texto com a descrição ou resumo do vídeo\n\n---\n\n### 9. **Dicas Finais**\n\n* Sempre use polling com vídeos locais (aguarde o processamento antes de buscar resultado)\n* O Gemini pode analisar **elementos visuais** e **transcrição** dos vídeos\n* Pode ser usado para vídeos curtos ou longos",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9446,
+    "author": "INEMA",
+    "date": "2025-06-12T20:05:47+00:00",
+    "text": "Aqui está o resumo completo e estruturado  **\"The Simplest Setup for FREE AI Video Analysis (n8n + Google Gemini)\"**:\n\n### Visão Geral\n\nComo configurar uma automação com **n8n** e **Google Gemini** para analisar vídeos gratuitamente, usando arquivos locais ou URLs do YouTube — sem necessidade de código.\n\n---\n\n### Passo a Passo Explicado\n\n1. **Envio do Vídeo**\n\n   * O usuário seleciona um arquivo `.mp4` local e envia por um formulário.\n   * O n8n envia o arquivo ao Google Gemini via requisição HTTP com autenticação via query parameter (`API key`).\n\n2. **Processo de Análise**\n\n   * Gemini retorna um URI do vídeo e um status `processing`.\n   * O sistema faz *polling* (verificação em intervalos) para saber quando a análise estiver concluída.\n\n3. **Exemplo de Resultado**\n\n   * Análise descritiva de um vídeo com latas e garrafas de bebidas (Coca-Cola, Red Bull, Gatorade e Monster) transformadas em edifícios fictícios.\n\n4. **Manuseio de Erros**\n\n   * Mostra como o processo falha se não houver espera suficiente para o processamento do vídeo.\n   * Após alguns segundos, o processo pode ser reexecutado com sucesso.\n\n5. **Análise de Vídeo do YouTube**\n\n   * Também é possível usar uma URL do YouTube.\n   * Novo endpoint da API Gemini é usado para aceitar a URL e retornar um resumo em até 3 frases.\n   * Exemplo analisado: vídeo do canal Outdoor Boys com descrição detalhada da cena e do conteúdo.\n\n6. **Customização dos Prompts**\n\n   * Gemini pode ser instruído para:\n\n     * Resumir o vídeo.\n     * Descrever o conteúdo visual.\n     * Extrair conclusões principais.\n     * Identificar ferramentas ou tecnologias citadas no vídeo.\n\n---\n\n### Recursos Disponíveis\n\n* Template JSON gratuito com o fluxo de trabalho pode ser baixado da comunidade do autor.\n* A API Key do Gemini é obtida em: [Google AI for Developers](https://ai.google.dev/).\n* Cursos e comunidade pagos para aprofundamento:\n\n  * **Agent Zero**: fundamentos de IA e automação.\n  * **10 horas para 10 segundos**: foco em identificar, projetar e criar automações que economizam tempo.\n\n---\n\n### Conclusão\n\nA integração entre **n8n** e **Google Gemini** permite análises de vídeo altamente detalhadas, com flexibilidade para personalizar prompts e sem custo. A automação cobre desde o upload até o retorno do resultado — inclusive para vídeos do YouTube — com exemplos práticos e repetição segura por *polling*.",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9445,
+    "author": "INEMA",
+    "date": "2025-06-12T20:00:19+00:00",
+    "text": "A Configuração Mais Simples para Análise de Vídeo com IA Gratuita (n8n + Google Gemini)\n\n\nComo usar o Google Gemini no n8n, sem precisar programar, para analisar vídeos de forma gratuita — seja enviando um arquivo local ou apenas informando uma URL do YouTube.\n\nComo configurar toda a automação, incluindo como funciona o polling para garantir que a análise seja executada de forma confiável.\n\nTambém como fazer prompts específicos para o Gemini, permitindo que você controle exatamente como o vídeo será analisado — seja para resumir, extrair insights ou qualquer outra necessidade.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9444,
+    "author": "INEMA",
+    "date": "2025-06-12T19:59:17+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Analyze_Video (1).json"
+  },
+  {
+    "id": 9443,
+    "author": "INEMA",
+    "date": "2025-06-12T19:59:10+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_9443_009.jpg"
+  },
+  {
+    "id": 9442,
+    "author": "INEMA",
+    "date": "2025-06-12T19:59:07+00:00",
+    "text": "ap35 - Analise de Video",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9441,
+    "author": "INEMA",
+    "date": "2025-06-12T19:58:50+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9440,
+    "author": "INEMA",
+    "date": "2025-06-12T19:58:48+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9439,
+    "author": "INEMA",
+    "date": "2025-06-12T19:58:48+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9438,
+    "author": "INEMA",
+    "date": "2025-06-12T19:58:47+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9437,
+    "author": "INEMA",
+    "date": "2025-06-12T19:58:47+00:00",
+    "text": "https://chatgpt.com/c/684b2fc3-0d98-8009-8160-a4055f16e8ff",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9436,
+    "author": "INEMA",
+    "date": "2025-06-12T19:58:46+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9435,
+    "author": "INEMA",
+    "date": "2025-06-12T19:58:42+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

@@ -1,0 +1,124 @@
+[
+  {
+    "id": 11450,
+    "author": "INEMA",
+    "date": "2025-07-16T17:57:53+00:00",
+    "text": "## 🚀 Como o JWT funciona no cliente (passo a passo)\n\n### 1️⃣ **Cliente recebe o token JWT**\n\nQuando o usuário faz login (ou outro processo de autenticação inicial), o servidor **gera o token JWT** e envia de volta para o cliente.\n\n📦 Exemplo de resposta do servidor:\n\n```{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjMsInJvbGUiOiJhZG1pbiJ9.LZ0yGczYz1HkX9GVJvH6TxFX_VU6yF4bJ1v7hyLZ2Vg\"\n}```\n\n🔑 Esse token contém:\n\n* **Header**: tipo de token e algoritmo\n* **Payload**: dados do usuário (ex.: user\\_id, role, email)\n* **Signature**: assinatura com a chave secreta do servidor\n\n---\n\n### 2️⃣ **Cliente armazena o token**\n\nO cliente guarda o token para usar nas próximas requisições.\n\n📌 Onde armazenar:\n\n* **Web app (browser)**: `localStorage` ou `sessionStorage`\n* **App mobile**: armazenamento seguro (ex.: SecureStorage no iOS/Android)\n* **Aplicações desktop**: arquivo de configuração criptografado\n\n💻 Exemplo no browser:\n\n```localStorage.setItem('jwt_token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...');```\n\n---\n\n### 3️⃣ **Cliente envia o token nas próximas requisições**\n\nSempre que o cliente faz uma nova chamada à API protegida, ele **anexa o JWT no cabeçalho Authorization**.\n\n📡 Exemplo com `fetch` no JavaScript:\n\n```const token = localStorage.getItem('jwt_token');\n\nfetch('https://api.exemplo.com/user/profile', {\n  method: 'GET',\n  headers: {\n    'Authorization': 'Bearer ' + token,\n    'Content-Type': 'application/json'\n  }\n})\n.then(response => response.json())\n.then(data => console.log(data));```\n\n📡 Exemplo com `curl`:\n\n```curl -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\" \\\n     -H \"Content-Type: application/json\" \\\n     https://api.exemplo.com/user/profile```\n\n---\n\n### 4️⃣ **Servidor valida o JWT**\n\nO servidor:\n✅ Decodifica o token\n✅ Verifica a assinatura (para garantir que não foi alterado)\n✅ Lê os dados do payload (ex.: role, user\\_id)\n✅ Permite ou nega o acesso com base nas informações do token\n\n---\n\n### 5️⃣ **Controle de acesso com payload**\n\nComo o payload contém dados como o **papel do usuário (role)**, o cliente pode até adaptar a interface:\n\n👨‍💼 Exemplo (se o papel for admin):\n\n```const payload = JSON.parse(atob(token.split('.')[1]));\nif (payload.role === 'admin') {\n    showAdminPanel();\n} else {\n    showUserPanel();\n}```\n\n---\n\n### 🔥 Cenário real\n\n1. Você faz login com email e senha.\n2. O servidor responde com JWT.\n3. O cliente guarda o token.\n4. Cada chamada futura para a API inclui o token no cabeçalho.\n5. O servidor autentica e retorna os dados.\n\n---\n\n## 🎯 Resumão\n\n✅ Cliente **recebe o token** → **guarda localmente** → **anexa no cabeçalho Authorization** → servidor valida a cada requisição.\n✅ Tudo acontece sem necessidade de enviar usuário e senha novamente.\n✅ Seguro porque o servidor pode invalidar o token (com expiração ou blacklist).",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11449,
+    "author": "INEMA",
+    "date": "2025-07-16T17:57:08+00:00",
+    "text": "============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11448,
+    "author": "INEMA",
+    "date": "2025-07-16T17:57:02+00:00",
+    "text": "### 1. **Header Auth (Autenticação por Cabeçalho)**\n\n**O que é:**\nVocê cria uma chave personalizada (key-value) que deve ser enviada no cabeçalho da requisição HTTP. Apenas quem souber essa chave consegue acessar o webhook.\n\n**Como funciona:**\n\n* O servidor espera um cabeçalho com o nome e o valor exato configurados.\n* Se alguém tenta acessar sem o cabeçalho ou com chave errada, a requisição é rejeitada.\n\n**Exemplo:**\n\n* Chave configurada:\n\n  ```  Nome do cabeçalho: key\n  Valor: 12345\n  ```\n* Requisição com Postman:\n\n   ``` POST /webhook-endpoint\n  Headers:\n    key: 12345\n  Body:\n    {\n      \"message\": \"Olá\"\n    }\n  \n```* Resultado:\n  ✅ Acesso permitido e o webhook processa a mensagem.\n\nSe** enviar sem o cabeçalho correto:\n\n**PO```ST /webhook-endpoint\nHeaders:\n    (nenhum cabeçalho de autenticação)\nBody:\n    {\n      \"message\": \"Olá\"\n    }\n\n```❌ Acesso negado: \"Authorization data is wrong\".\n\n---\n\n### 2. Bas**ic Auth (Autenticação Básica)\n\nO** q**ue é:\nVo**cê define um usu**ário e senha. O** cliente precisa enviar esses dados no cabeçalho Authorization codificados em Base64.\n\nCom**o funciona:\n\n*** O cliente envia o cabeçalho Aut`horization: Basic base64(username:password)\n* `O servidor decodifica e verifica se o par usuário/senha está correto.\n\nExe**mplo:\n\n*** Usuário: tes`t\n* `Senha: 123`45\n* `Cabeçalho enviado:\n\n    A```uthorization: Basic dGVzdDoxMjM0NQ==\n  \n\n ``` *(onde dGVz`dDoxMjM0NQ== é t`est`:12345 em `Base64)*\n\nRequ**isição com Postman:\n\n* **Configuração:\n\n    Au```th Type: Basic Auth\n  Username: test\n  Password: 12345\n  \n* R```esultado:\n  ✅ Acesso permitido.\n\nSe en**viar sem autenticação ou com dados errados:\n❌ Ac**esso negado.\n\n---\n\n### 3. JWT (**JSON Web Token)\n\nO q**ue** é:\nUm t**oken assinado digitalmente que contém informações sobre o usuário e suas permissões. O servidor valida o token com uma chave secreta antes de permitir o acesso.\n\nComo **funciona:\n\n* O** cliente recebe um token JWT previamente gerado.\n* Esse token é enviado no cabeçalho Autho`rization: Bearer <token>.\n* O` servidor valida a assinatura e extrai dados do payload (ex.: nome, e-mail, papel).\n\nExemp**lo de payload JWT:\n\n{\n ** \"```name\": \"Nei\",\n  \"email\": \"nei@exemplo.com\",\n  \"role\": \"admin\"\n}\n\n* C```have secreta para assinatura: super`secret123\n* To`ken gerado (exemplo simplificado):\n\n    eyJ```hbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiTmVpIiwiZW1haWwiOiJuZWlAZXhlbXBsby5jb20iLCJyb2xlIjoiYWRtaW4ifQ.abc123xyz\n  \n\nReq```uis**ição com Postman:\n\nPOST** /```webhook-endpoint\nHeaders:\n    Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\nBody:\n    {\n      \"message\": \"Olá\"\n    }\n\n* Re```sultado:\n  ✅ Acesso permitido com dados do usuário extraídos do token.\n\nVantage**ns do JWT:\n\n* Per**mite saber quem es**tá a**cessando.\n* Dá para criar rotas diferentes por papel (admin, user).\n* Limitar número de requisições por usuário.\n* Revogar tokens comprometidos.\n\n---\n\n### Resumo Visual\n\n| Método      | Como Envia                  | Quando Usar                                         |\n| ----------- | --------------------------- | --------------------------------------------------- |\n| Header Auth | key: 12`345       `         | Simples, para APIs internas ou pequenos projetos    |\n| Basic Auth  | Authori`zation: Basic ...  | Sis`temas legados ou que já suportam Basic Auth      |\n| JWT         | Authori`zation: Bearer ... | APIs` públicas, multiusuário, controle de permissões |",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11447,
+    "author": "INEMA",
+    "date": "2025-07-16T17:56:44+00:00",
+    "text": "============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11445,
+    "author": "INEMA",
+    "date": "2025-07-16T17:55:24+00:00",
+    "text": "Resumo:\n\nExplico de forma prática como proteger webhooks para evitar abusos e garantir a segurança de dados e custos com IA. O autor destaca que, sem autenticação, qualquer pessoa pode enviar milhões de requisições a um webhook público, gerando custos inesperados e riscos. Ele apresenta **três métodos principais de autenticação**:\n\n1. **Header Auth** – Configura uma chave personalizada no cabeçalho da requisição (ex.: key: 12345). Só quem tem a chave consegue acessar.\n\n2. **Basic Auth** – Usa nome de usuário e senha, comum em sistemas legados.\n\n3. **JWT (JSON Web Token)** – Permite criar tokens únicos para cada usuário com informações como nome, e-mail e função. Dá flexibilidade para definir permissões (ex.: admin acessa mais recursos).\n\nCom **JWT**, também é possível:\n\n* Identificar quem acessou (e-mail, papel, etc.)\n* Limitar o número de requisições por usuário\n* Definir rotas diferentes para admins e usuários comuns\n\nEle demonstra cada método no Postman, mostrando como bloquear acessos sem autenticação e configurar as proteções. Finaliza reforçando a importância de implementar autenticação antes de expor webhooks em produção, especialmente quando há agentes de IA ou automações conectados.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11444,
+    "author": "INEMA",
+    "date": "2025-07-16T17:52:28+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Webhook Protection.json"
+  },
+  {
+    "id": 11443,
+    "author": "INEMA",
+    "date": "2025-07-16T17:52:02+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11443_007.jpg"
+  },
+  {
+    "id": 11442,
+    "author": "INEMA",
+    "date": "2025-07-16T17:51:36+00:00",
+    "text": "ap46 - Proteja se Webhook",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11441,
+    "author": "INEMA",
+    "date": "2025-07-16T17:51:35+00:00",
+    "text": ".....",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11440,
+    "author": "INEMA",
+    "date": "2025-07-16T17:51:34+00:00",
+    "text": "....",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11439,
+    "author": "INEMA",
+    "date": "2025-07-16T17:51:34+00:00",
+    "text": "...",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11438,
+    "author": "INEMA",
+    "date": "2025-07-16T17:51:34+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11437,
+    "author": "INEMA",
+    "date": "2025-07-16T17:51:31+00:00",
+    "text": "https://chatgpt.com/c/6877e5e4-58e4-8009-82dc-deac9c1ebc09",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11436,
+    "author": "INEMA",
+    "date": "2025-07-16T17:51:25+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11435,
+    "author": "INEMA",
+    "date": "2025-07-16T17:51:09+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

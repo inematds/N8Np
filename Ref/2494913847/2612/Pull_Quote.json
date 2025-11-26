@@ -1,0 +1,344 @@
+{
+  "name": "BFAI: Pull Quote",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "9320454a-291a-461a-b438-6c4b2b52f7b3",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        680,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.message.content['Check-In-Date'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.message.content['Check-Out-Date'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "79f23834-35a9-4f61-a0af-ab5be1ee0e4e",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1220,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "response",
+              "value": "Can't pull quote without required information: Check in and check out dates. *You must respond back to the client asking if they can provide more information*",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3289bda9-3337-4359-9765-8f4090257e06",
+      "name": "Need more information",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1500,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Good"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.data }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notExists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Try Again"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "75f05ef9-edd7-4d7f-81b3-ccca1a3e22bc",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1680,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "response",
+              "value": "Quoter failed. Please send the query again.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "bbf3bf23-560b-45bb-964f-800ba3fed56e",
+      "name": "Quoter Failed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1900,
+        620
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "response",
+              "value": "={{ $json.data }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "338173de-3b59-4cef-8022-f91e0f0db1c9",
+      "name": "Respond to Agent",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1900,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"Check-In-Date\": \"{{ $json.message.content['Check-In-Date'] }}\",\n  \"Check-Out-Date\": \"{{ $json.message.content['Check-Out-Date'] }}\",\n  \"Number-Of-Guests\": 1,\n  \"Number-Of-Adults\": 1,\n  \"Flex-Days-Before\": 0,\n  \"Flex-Days-After\": 0\n}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "e6aa6b82-2b6f-401f-8db3-59a8ddcdb654",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        420
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Your objective is to take an incoming query and output the parameters separately.\n\nHere are the parameters:\n\"Check-In-Date\": The date the guest wants to check in. this should always be formatted as 'year-month-day' like this '2024-10-20'\n\"Check-Out-Date\": The date the guest wants to check out. this should always be formatted as 'year-month-day' like this '2024-10-20'\n\"Number-Of-Guests\": Total number of guests\n\"Number-Of-Adults\": Total number of ADULTS\n\nExample:\nQ: can we check in 10/20 and check out 10/25. We have two adults and two kids.\nA:  \n\"Check-In-Date\": 2024-10-20\n\"Check-Out-Date\": 2024-10-25\n\"Number-Of-Guests\": 4\n\"Number-Of-Adults\": 2\n__________\n*Notes*\nIf number of adults isn't specified, it will be the same as the number of guests\nHere is the current date: {{ $now }}\n*If a year isn't specified, assume it is in the future. Never attempt to use a date that is in the past*",
+              "role": "system"
+            },
+            {
+              "content": "=Here is the user query:  {{ $json.query }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "id": "a0bbfdb0-d0c1-49b8-8e69-8b023b2debb5",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.5,
+      "position": [
+        840,
+        420
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Execute Workflow Trigger": [
+      {
+        "json": {
+          "query": "can we check in 10/20 and check out 10/25. It would be me and my two kids."
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Need more information",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Respond to Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Quoter Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8dc81074-0de2-4f55-a6ee-cfda4f297430",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c1b6c67795880a3fbc84416c0e0be9b6936317370c92491eb656bfc8db6f2a2e"
+  },
+  "id": "AsxzWu4Rf9auxWXg",
+  "tags": []
+}

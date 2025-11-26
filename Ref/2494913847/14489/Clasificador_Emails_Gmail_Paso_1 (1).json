@@ -1,0 +1,982 @@
+{
+  "name": "Clasificador Emails Gmail Paso 1",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1000,
+        2780
+      ],
+      "id": "72e12200-d845-4b11-9cb6-1dc2fbc741ad",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": true,
+        "simple": false,
+        "filters": {
+          "includeSpamTrash": false,
+          "readStatus": "both",
+          "receivedAfter": "={{ $now.minus(24, 'hours').toISO() }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -700,
+        2700
+      ],
+      "id": "208500ef-a1ca-4f07-8f67-43381fef11f5",
+      "name": "Gmail",
+      "webhookId": "3e1970ac-dca5-465a-bfb1-0f1b4b409361",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputText": "=Asunto: {{ $json.subject }}\nTexto: {{ $json.text }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "Códigos de seguridad",
+              "description": "=Emails con códigos de verificación o seguridad (login, 2FA, confirmaciones de cuenta)."
+            },
+            {
+              "category": "Notificaciones sociales",
+              "description": "Comentarios y avisos de redes sociales (YouTube, LinkedIn, Instagram, etc.)."
+            },
+            {
+              "category": "Promociones y ofertas",
+              "description": "Newsletters comerciales, descuentos, cupones y promociones de tiendas o servicios."
+            },
+            {
+              "category": "Actualizaciones de servicio",
+              "description": "Avisos de fallos, actualizaciones de automatizaciones (Make, Airtable, ChatGPT), releases de productos."
+            },
+            {
+              "category": "Reservas y viajes",
+              "description": "Confirmaciones, modificaciones o recordatorios de vuelos, hoteles y reservas."
+            },
+            {
+              "category": "Facturas y finanzas",
+              "description": "Extractos mensuales, facturas, informes de pagos o transacciones."
+            },
+            {
+              "category": "Calendarios e invitaciones",
+              "description": "Invitaciones a reuniones, webinars o eventos con enlaces de Zoom/Google Meet."
+            },
+            {
+              "category": "Soporte y consultas",
+              "description": "Solicitudes de ayuda técnica o preguntas de clientes y socios."
+            },
+            {
+              "category": "Newsletters y reportes",
+              "description": "Reportes de cumplimiento, newsletters de análisis y resúmenes semanales."
+            },
+            {
+              "category": "Compras y pedidos",
+              "description": "Confirmaciones o actualizaciones de pedidos y envíos."
+            },
+            {
+              "category": "Contenido Educativo",
+              "description": "=Invitaciones a clases en vivo, tutoriales y materiales formativos."
+            },
+            {
+              "category": "Personal",
+              "description": "Mensajes de contactos cercanos, compañeros de equipo o comunicaciones internas."
+            },
+            {
+              "category": "Spam / No deseado",
+              "description": "Correos publicitarios no solicitados o masivos de remitentes desconocidos."
+            }
+          ]
+        },
+        "options": {
+          "fallback": "other",
+          "enableAutoFixing": true
+        }
+      },
+      "id": "1c6e0ff0-283a-4452-bbd4-e65870ddb1a2",
+      "name": "Agente de Etiquetado AI1",
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1,
+      "position": [
+        -180,
+        2720
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        2980
+      ],
+      "id": "e9f23578-94ed-43dc-96a4-dfed9dc918cd",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -420,
+        2700
+      ],
+      "id": "5503d192-9b31-4424-859c-01084a6ddcaf",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_108528877110941136"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        1500
+      ],
+      "id": "1486237d-d462-4c98-81f2-b868c78e8028",
+      "name": "Códigos de seguridad",
+      "webhookId": "8eed07e6-4831-4399-90dd-3311adf52614",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_5748486376460056824"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        1700
+      ],
+      "id": "639d5bc0-9f13-41a7-9125-a9c448546cd1",
+      "name": "Notificaciones sociales",
+      "webhookId": "8eed07e6-4831-4399-90dd-3311adf52614",
+      "retryOnFail": false,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_7577521476002524472"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        1900
+      ],
+      "id": "adb516e9-2b24-4ca6-bfbe-59643b8ef09d",
+      "name": "Promociones y ofertas",
+      "webhookId": "8eed07e6-4831-4399-90dd-3311adf52614",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_5918798573086924537"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        2100
+      ],
+      "id": "49b74458-52c9-4b25-8b4b-5f6d3cd535ef",
+      "name": "Actualizaciones de servicio",
+      "webhookId": "8eed07e6-4831-4399-90dd-3311adf52614",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_3337185110032295070"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        2300
+      ],
+      "id": "ad7ececa-fc0d-45e9-b75b-845f29a16bdb",
+      "name": "Reservas y viajes",
+      "webhookId": "8eed07e6-4831-4399-90dd-3311adf52614",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_633207586246553958"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        2700
+      ],
+      "id": "2349c6aa-32b4-4a63-b479-029ca6b68a80",
+      "name": "Facturas y finanzas",
+      "webhookId": "8eed07e6-4831-4399-90dd-3311adf52614",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_2921105062354393271"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        2500
+      ],
+      "id": "41886642-4b72-45d6-9b11-37488801f8a5",
+      "name": "Calendarios e invitaciones",
+      "webhookId": "8eed07e6-4831-4399-90dd-3311adf52614",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_3390694751349308377"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        2900
+      ],
+      "id": "3c011225-16f8-452b-82d9-7fffc7615e0d",
+      "name": "Soporte y consultas",
+      "webhookId": "8eed07e6-4831-4399-90dd-3311adf52614",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_238853632381700196"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        3300
+      ],
+      "id": "aff4b497-cf1d-4e75-8554-172cd1feb723",
+      "name": "Newsletters y reportes",
+      "webhookId": "8eed07e6-4831-4399-90dd-3311adf52614",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_4755861574335896555"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        3500
+      ],
+      "id": "ce8efa36-6278-4334-bc2a-be0c6c826a17",
+      "name": "Compras y pedidos",
+      "webhookId": "8eed07e6-4831-4399-90dd-3311adf52614",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_8127329877605181140"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        3700
+      ],
+      "id": "864d18a0-197c-49d1-9ab1-8b34902e1757",
+      "name": "Contenido Educativo",
+      "webhookId": "8eed07e6-4831-4399-90dd-3311adf52614",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_1423077879882880864"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        3900
+      ],
+      "id": "231bb1e4-dec0-47f5-b8db-3fc0ac20a7d1",
+      "name": "Personal",
+      "webhookId": "8eed07e6-4831-4399-90dd-3311adf52614",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_8921278585692944566"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        4100
+      ],
+      "id": "1428fb20-1f3a-495c-be4e-ee9cda6cee90",
+      "name": "Spam / No deseado",
+      "webhookId": "8eed07e6-4831-4399-90dd-3311adf52614",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Loop Over Items').item.json.id }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1920,
+        2800
+      ],
+      "id": "be2f8e48-8d01-4a6d-809e-020ea5dc47b8",
+      "name": "Marcar leido",
+      "webhookId": "7636f1fd-e08b-4e0b-868b-e3eb56ff1931",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 20
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1000,
+        2600
+      ],
+      "id": "723cf1cf-39c3-42eb-b179-e73ec1885cad",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "messageId": "={{ $('Loop Over Items').item.json.id }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        3120
+      ],
+      "id": "d9e523b3-9b55-47f3-bc6f-09b64cd1b24c",
+      "name": "Eliminar",
+      "webhookId": "889b523c-7ca1-4824-956e-1679b6c51c37",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente de Etiquetado AI1": {
+      "main": [
+        [
+          {
+            "node": "Códigos de seguridad",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notificaciones sociales",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Promociones y ofertas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Actualizaciones de servicio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reservas y viajes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Facturas y finanzas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Calendarios e invitaciones",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Soporte y consultas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Newsletters y reportes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Compras y pedidos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Contenido Educativo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Personal",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Spam / No deseado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Eliminar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Eliminar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente de Etiquetado AI1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Agente de Etiquetado AI1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Códigos de seguridad": {
+      "main": [
+        [
+          {
+            "node": "Marcar leido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notificaciones sociales": {
+      "main": [
+        [
+          {
+            "node": "Marcar leido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Promociones y ofertas": {
+      "main": [
+        [
+          {
+            "node": "Marcar leido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compras y pedidos": {
+      "main": [
+        [
+          {
+            "node": "Marcar leido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spam / No deseado": {
+      "main": [
+        [
+          {
+            "node": "Marcar leido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizaciones de servicio": {
+      "main": [
+        [
+          {
+            "node": "Marcar leido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reservas y viajes": {
+      "main": [
+        [
+          {
+            "node": "Marcar leido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendarios e invitaciones": {
+      "main": [
+        [
+          {
+            "node": "Marcar leido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facturas y finanzas": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Soporte y consultas": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Newsletters y reportes": {
+      "main": [
+        [
+          {
+            "node": "Marcar leido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contenido Educativo": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Personal": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar leido": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eliminar": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b53722d0-aa71-41c4-8cb8-24a7c351866e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "8LruUXzlWOvCwj3o",
+  "tags": []
+}

@@ -1,0 +1,1662 @@
+{
+  "name": "YouTube Shorts SBS",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        -20
+      ],
+      "id": "51f06bd1-99a2-4da7-9a05-d2c705706704",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1DOxuN8KW2YttDtES87OwrWDueAmCA751a6IhxtKHMZg",
+          "mode": "list",
+          "cachedResultName": "YouTube Shorts Content Creation",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DOxuN8KW2YttDtES87OwrWDueAmCA751a6IhxtKHMZg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DOxuN8KW2YttDtES87OwrWDueAmCA751a6IhxtKHMZg/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "videoStatus",
+              "lookupValue": "To Do"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        0,
+        -120
+      ],
+      "id": "6f0d0370-3cd7-4d65-ad2d-052bc37435e4",
+      "name": "Grab Stories",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// N8N Text Splitter Code\n// This code splits an input text into 4 equal parts without cutting words in half.\n\n// Here n8n will provide an items array which contains the incoming data\n// The return value must be an array of items\nreturn items.map((item) => {\n  // Get the text from the item\n  let textToSplit = item.json.text || '';\n  \n  // Ensure we have text to process\n  if (typeof textToSplit !== 'string') {\n    textToSplit = String(textToSplit || '');\n  }\n  \n  // Function to find the nearest word boundary (space)\n  function findNearestWordBoundary(text, targetPosition) {\n    // If we're at the start or end, return that position\n    if (targetPosition <= 0) return 0;\n    if (targetPosition >= text.length) return text.length;\n    \n    // If target position is already at a space, return it\n    if (text[targetPosition] === ' ') return targetPosition;\n    \n    // Look forward and backward for the nearest space\n    let forwardPos = targetPosition;\n    let backwardPos = targetPosition;\n    \n    // Search forward\n    while (forwardPos < text.length && text[forwardPos] !== ' ') {\n      forwardPos++;\n    }\n    \n    // Search backward\n    while (backwardPos > 0 && text[backwardPos] !== ' ') {\n      backwardPos--;\n    }\n    \n    // If we found spaces in both directions, pick the closest one\n    if (forwardPos < text.length && backwardPos > 0) {\n      return (forwardPos - targetPosition) < (targetPosition - backwardPos) \n        ? forwardPos : backwardPos + 1; // +1 to start after the space\n    }\n    \n    // If we only found a space in one direction, use that\n    if (forwardPos < text.length) return forwardPos;\n    if (backwardPos > 0) return backwardPos + 1; // +1 to start after the space\n    \n    // If no space was found (rare case with very long words), default to target position\n    return targetPosition;\n  }\n  \n  // Calculate ideal split positions (these might cut words)\n  const textLength = textToSplit.length;\n  const idealPartLength = Math.ceil(textLength / 4);\n  \n  // Find actual split positions at word boundaries\n  const splitPos1 = findNearestWordBoundary(textToSplit, idealPartLength);\n  const splitPos2 = findNearestWordBoundary(textToSplit, splitPos1 + idealPartLength);\n  const splitPos3 = findNearestWordBoundary(textToSplit, splitPos2 + idealPartLength);\n  \n  // Split the text at the word boundaries\n  const parts = [\n    textToSplit.substring(0, splitPos1).trim(),\n    textToSplit.substring(splitPos1, splitPos2).trim(),\n    textToSplit.substring(splitPos2, splitPos3).trim(),\n    textToSplit.substring(splitPos3).trim()\n  ];\n  \n  // Create a new output item with all the original properties\n  const newItem = { ...item.json };\n  \n  // Add the parts to the output\n  newItem.part1 = parts[0];\n  newItem.part2 = parts[1];\n  newItem.part3 = parts[2];\n  newItem.part4 = parts[3];\n  newItem.parts = parts;\n  \n  // Return the new item in the format n8n expects\n  return {\n    json: newItem\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        -120
+      ],
+      "id": "2d19c1c5-6d60-4855-899d-d038432cdb3b",
+      "name": "Split Into Parts"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "parts",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        320,
+        -120
+      ],
+      "id": "e7e7ac54-b195-422c-b0ee-44ecb0186d05",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Incoming text: {{ $json.parts }}\n\nVideo style: {{ $('Grab Stories').item.json.style }}",
+        "options": {
+          "systemMessage": "=# Overview\nYou are an expert prompter for point of view video generation. Your task is to create rich, immersive videos based on the incoming text.\n\n## Setting\nEvery prompt should be in the style that is given. This is important so the videos match.\n\n## Prompt Sections\nEvery prompt has two sections:\n1) It must start with \"First person POV\"\n2) Describe the scenery and what is going on in the environment. \n\n## Important\n- The videos should be cinematic and detailed. The viewers should feel like they are in the scene.\n- Output 600 characters max"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        480,
+        -120
+      ],
+      "id": "79018316-d434-420a-9950-41a90bfa15a6",
+      "name": "Video Prompts"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "prompts",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        980,
+        -120
+      ],
+      "id": "45350440-6e0d-4a8e-b82d-b947a30a0659",
+      "name": "Set Prompts"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.piapi.ai/api/v1/task",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n    \"model\": \"kling\",\n    \"mode\": \"std\",\n    \"task_type\": \"video_generation\",\n    \"input\": {\n        \"prompt\": \"{{ $json.prompts }}\",\n        \"negative_prompt\": \"bad quality\",\n        \"cfg_scale\": 0.5,\n        \"duration\": 5,\n        \"aspect_ratio\": \"9:16\",\n        \"camera_control\": {\n            \"type\": \"simple\",\n            \"config\": {\n                \"horizontal\": 0,\n                \"vertical\": 0,\n                \"pan\": 0,\n                \"tilt\": 0,\n                \"roll\": 0,\n                \"zoom\": 0\n            }\n        },\n        \"mode\": \"std\"\n    },\n    \"config\": {}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        280
+      ],
+      "id": "3677514e-fa6d-4828-90fd-ddd4364cfa10",
+      "name": "Generate Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "piAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// N8N Code Node to remove all newline characters from previous node outputs\n\n// Process all items in the array\n// This will work regardless of whether we're running once for all items or once per item\nfor (let i = 0; i < items.length; i++) {\n  const currentItem = items[i];\n  \n  // Check if the item has an output property\n  if (currentItem.json && currentItem.json.output !== undefined) {\n    // Replace all newline characters with empty string\n    // Using a global regex to catch ALL instances of \\n\n    currentItem.json.output = currentItem.json.output.replace(/\\\\n/g, '');\n    \n    // Also replace actual newline characters if they exist\n    currentItem.json.output = currentItem.json.output.replace(/\\n/g, '');\n  }\n}\n\n// Return the processed items array\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        820,
+        -120
+      ],
+      "id": "242caccd-f8a4-4e38-8736-33a7ef6fdac6",
+      "name": "Remove \\n"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.piapi.ai/api/v1/task/{{ $('Generate Video').item.json.data.task_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        280
+      ],
+      "id": "b95cd41c-77ea-4b0f-883d-f12cf6cd9487",
+      "name": "Get Videos",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "piAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1DOxuN8KW2YttDtES87OwrWDueAmCA751a6IhxtKHMZg",
+          "mode": "list",
+          "cachedResultName": "YouTube Shorts Content Creation",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DOxuN8KW2YttDtES87OwrWDueAmCA751a6IhxtKHMZg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DOxuN8KW2YttDtES87OwrWDueAmCA751a6IhxtKHMZg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Grab Stories').first().json.row_number }}",
+            "videoStatus": "Created"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "story",
+              "displayName": "story",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "style",
+              "displayName": "style",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "videoStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "publishStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "videoLink",
+              "displayName": "videoLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        160,
+        560
+      ],
+      "id": "cb2da8fb-0138-4cc1-9b41-f9beac148507",
+      "name": "Video Status",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        0,
+        560
+      ],
+      "id": "eb7bdc5b-eeb6-46c5-90bf-ca398ef1b724",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/JBFqnCBsd6RMkjVDRZzb",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "output_format",
+              "value": "mp3_44100_128"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $('Grab Stories').first().json.text }}"
+            },
+            {
+              "name": "model_id",
+              "value": "eleven_multilingual_v2"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        560
+      ],
+      "id": "d777fb13-5c7f-4262-ab86-f015ced365b2",
+      "name": "Generate Audio",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "ElevenLabs"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Grab Stories').item.json.story }}.mp3",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1hhZhHBv0zm3adye9LE_sxwme7z7yUXw5",
+          "mode": "list",
+          "cachedResultName": "Audio Files",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1hhZhHBv0zm3adye9LE_sxwme7z7yUXw5"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        480,
+        560
+      ],
+      "id": "2438d392-e3bb-4c07-97ea-4eae257548c2",
+      "name": "Upload to Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "reader",
+            "type": "anyone",
+            "allowFileDiscovery": true
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        640,
+        560
+      ],
+      "id": "0d37d6e3-d2ad-4081-bd19-6d3d40dabaab",
+      "name": "Share File",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        940,
+        300
+      ],
+      "id": "91d09021-8521-4063-9c63-279e01afda22",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code to extract video URLs from JSON data in n8n\n// This handles various possible input structures\n\n// Function to extract video info if the object has the expected structure\nfunction extractVideoInfo(obj, index) {\n  if (obj && obj.code === 200 && \n      obj.data && obj.data.output && obj.data.output.video_url) {\n    return {\n      index: index,\n      taskId: obj.data.task_id,\n      videoUrl: obj.data.output.video_url,\n      prompt: obj.data.input.prompt\n    };\n  }\n  return null;\n}\n\n// Initialize results array\nconst videoUrls = [];\nlet currentIndex = 1;\n\n// n8n specific: loop through all items\nfor (const item of items) {\n  // Case 1: item.json is our array\n  if (Array.isArray(item.json)) {\n    item.json.forEach(entry => {\n      const videoInfo = extractVideoInfo(entry, currentIndex);\n      if (videoInfo) {\n        videoUrls.push(videoInfo);\n        currentIndex++;\n      }\n    });\n  } \n  // Case 2: item.json is a single object with our data\n  else if (typeof item.json === 'object') {\n    const videoInfo = extractVideoInfo(item.json, currentIndex);\n    if (videoInfo) {\n      videoUrls.push(videoInfo);\n      currentIndex++;\n    }\n    \n    // Case 3: item.json has a data property that is our array\n    if (Array.isArray(item.json.data)) {\n      item.json.data.forEach(entry => {\n        const videoInfo = extractVideoInfo(entry, currentIndex);\n        if (videoInfo) {\n          videoUrls.push(videoInfo);\n          currentIndex++;\n        }\n      });\n    }\n  }\n  \n  // Log what we're working with to help with debugging\n  console.log('Processing item:', JSON.stringify(item.json).substring(0, 200) + '...');\n}\n\n// Return the extracted URLs as the output\nreturn [{\n  json: {\n    totalVideos: videoUrls.length,\n    videos: videoUrls\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        300
+      ],
+      "id": "e033d7ce-aa2e-42ba-b4e2-ebe09bde540f",
+      "name": "Split Out Parts"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.creatomate.com/v1/renders",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 08bdf110b1e24496b3d8b673de41d04b4d1d5bc43f79164bd6d9712a199072669d9a33dc7ac2e82c21b335cf0b84663d"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"template_id\": \"2ef18adf-0e9c-46a7-bc4a-dd234344cce1\",\n  \"modifications\": {\n    \"Video-1.source\": \"{{ $json.videos[0].videoUrl }}\",\n    \"Video-2.source\": \"{{ $json.videos[1].videoUrl }}\",\n    \"Video-3.source\": \"{{ $json.videos[2].videoUrl }}\",\n    \"Video-4.source\": \"{{ $json.videos[3].videoUrl }}\",\n    \"Audio-Track.source\": \"{{ $('Upload to Drive').first().json.webContentLink }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1280,
+        300
+      ],
+      "id": "26b60f26-1165-4041-a428-0f93250f2183",
+      "name": "Render Video"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        940,
+        520
+      ],
+      "id": "3c1f3ae2-fc53-423a-b249-ca77e0ba7c4a",
+      "name": "Download Video"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Grab Stories').first().json.story }}",
+        "regionCode": "US",
+        "categoryId": "1",
+        "options": {
+          "description": "={{ $('Grab Stories').first().json.caption }}",
+          "privacyStatus": "unlisted"
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        520
+      ],
+      "id": "09053431-ff47-42bd-bd8e-800085b0b833",
+      "name": "Upload Video",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1DOxuN8KW2YttDtES87OwrWDueAmCA751a6IhxtKHMZg",
+          "mode": "list",
+          "cachedResultName": "YouTube Shorts Content Creation",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DOxuN8KW2YttDtES87OwrWDueAmCA751a6IhxtKHMZg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DOxuN8KW2YttDtES87OwrWDueAmCA751a6IhxtKHMZg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Grab Stories').first().json.row_number }}",
+            "publishStatus": "Processed",
+            "videoLink": "={{ $('Download Video').item.json.url }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "story",
+              "displayName": "story",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "style",
+              "displayName": "style",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "videoStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "publishStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "videoLink",
+              "displayName": "videoLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1280,
+        520
+      ],
+      "id": "af476dbc-1f97-4315-a7c3-8f9fdac70b71",
+      "name": "Update Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "nateherk88@gmail.com",
+        "subject": "=New Short Processed: {{ $('Grab Stories').first().json.story }}",
+        "emailType": "text",
+        "message": "=Nate,\n\nA new short, \"{{ $('Grab Stories').first().json.story }}\", has been processed and is awaiting your approval. \n\nYou can view the unlisted video here: https://studio.youtube.com/channel/UC2ojq-nuP8ceeHqiroeKhBA/videos/short?filter=%5B%5D&sort=%7B%22columnType%22%3A%22date%22%2C%22sortOrder%22%3A%22DESCENDING%22%7D\n\nCheers!",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1460,
+        520
+      ],
+      "id": "7e1dad7a-2ebb-4482-b795-3f52983ca10e",
+      "name": "Video Notification",
+      "webhookId": "13fa848c-bb87-435d-96d4-5a0e7b9c187f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        460,
+        120
+      ],
+      "id": "c05ad6b1-49b3-4066-80ae-52aebb367fe3",
+      "name": "GPT 4o",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 10,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        160,
+        280
+      ],
+      "id": "8f8046dc-c7c3-40c9-b964-7722e245e6aa",
+      "name": "10 Mins",
+      "webhookId": "b5f0a3fe-eb6b-47d9-9c8a-265b62067312"
+    },
+    {
+      "parameters": {
+        "amount": 25
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1460,
+        300
+      ],
+      "id": "e2f74507-c2c4-441d-a9fc-89aaa3892555",
+      "name": "25 Seconds",
+      "webhookId": "eb16de54-ce5f-4ad1-9847-50e318403ab7"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 4
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -280,
+        -200
+      ],
+      "id": "a3c85ffc-84c2-413f-9c7f-da99a3bd92f5",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "content": "# Generate Videos\n",
+        "height": 180,
+        "width": 880,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -380,
+        260
+      ],
+      "typeVersion": 1,
+      "id": "1789b231-5ed9-47aa-a1d2-efd685061625",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# Generate Audio\n\n",
+        "height": 200,
+        "width": 1160,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -380,
+        520
+      ],
+      "typeVersion": 1,
+      "id": "82db2738-646b-4277-be33-730340d01921",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# Render & Upload\n",
+        "height": 520,
+        "width": 820
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        820,
+        200
+      ],
+      "typeVersion": 1,
+      "id": "0365d9da-e5bd-4fe4-bf63-de6c65ef290b",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "# Generate Video Prompts",
+        "height": 460,
+        "width": 1560,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -380,
+        -300
+      ],
+      "typeVersion": 1,
+      "id": "3c033ef6-61eb-44b5-9a7a-a0e396e91470",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.piapi.ai/api/v1/task",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"model\": \"Qubico/flux1-dev\",\n    \"task_type\": \"txt2img\",\n    \"input\": {\n        \"prompt\": \"{{ $json.prompts }}\",\n        \"width\": 540, \n        \"height\": 960\n    } \n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        -200
+      ],
+      "id": "e0c6c721-3c73-4835-826e-54c501c91147",
+      "name": "Generate Image",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "piAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1520,
+        -200
+      ],
+      "id": "fad4f047-694b-4594-a6e3-6e4037cc7ae3",
+      "name": "Wait",
+      "webhookId": "6161659c-230a-44d5-91fc-61a307fbb074"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.piapi.ai/api/v1/task/{{ $json.data.task_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1700,
+        -200
+      ],
+      "id": "893e976c-7056-4266-a2d2-24884dfbe7c3",
+      "name": "Get Images",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "piAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Generate Images (Optional)\n",
+        "height": 280,
+        "width": 660,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1240,
+        -300
+      ],
+      "typeVersion": 1,
+      "id": "b6a45b8f-25f0-49c1-b3e8-ab14e0e07489",
+      "name": "Sticky Note4"
+    }
+  ],
+  "pinData": {
+    "Generate Image": [
+      {
+        "json": {
+          "code": 200,
+          "data": {
+            "task_id": "ebdda0e9-11a8-4c3c-a2ae-af0c5117ea68",
+            "model": "Qubico/flux1-dev",
+            "task_type": "txt2img",
+            "status": "pending",
+            "config": {
+              "service_mode": "",
+              "webhook_config": {
+                "endpoint": "",
+                "secret": ""
+              }
+            },
+            "input": {
+              "prompt": "First person view POV shot of hand reaching out to touch an antique mirror, foggy reflections swirling, a shadowy figure materializing from within the glass in the dark, eerie attic.",
+              "negative_prompt": "",
+              "image": "",
+              "width": 540,
+              "height": 960,
+              "guidance_scale": 0,
+              "denoise": 0,
+              "seed": 0,
+              "steps": 0,
+              "batch_size": 0,
+              "scale": 0,
+              "return_preprocessed_image": false,
+              "lora_settings": null,
+              "custom_settings": null
+            },
+            "output": null,
+            "meta": {
+              "created_at": "2025-03-09T03:49:35.081092878Z",
+              "started_at": "0001-01-01T00:00:00Z",
+              "ended_at": "0001-01-01T00:00:00Z",
+              "usage": {
+                "type": "llm",
+                "frozen": 0,
+                "consume": 150000
+              },
+              "is_using_private_pool": false
+            },
+            "detail": null,
+            "logs": [],
+            "error": {
+              "code": 0,
+              "raw_message": "",
+              "message": "",
+              "detail": null
+            }
+          },
+          "message": "success"
+        }
+      },
+      {
+        "json": {
+          "code": 200,
+          "data": {
+            "task_id": "5743cef0-9849-4a60-b807-b1e34de59bdb",
+            "model": "Qubico/flux1-dev",
+            "task_type": "txt2img",
+            "status": "pending",
+            "config": {
+              "service_mode": "",
+              "webhook_config": {
+                "endpoint": "",
+                "secret": ""
+              }
+            },
+            "input": {
+              "prompt": "First person view POV shot of hand gripping a wooden banister, knuckles white, in a dimly lit hallway, heart pounding. In the background, dark, eerie attic with an antique mirror, foggy reflections, shadowy figure emerging from the glass.",
+              "negative_prompt": "",
+              "image": "",
+              "width": 540,
+              "height": 960,
+              "guidance_scale": 0,
+              "denoise": 0,
+              "seed": 0,
+              "steps": 0,
+              "batch_size": 0,
+              "scale": 0,
+              "return_preprocessed_image": false,
+              "lora_settings": null,
+              "custom_settings": null
+            },
+            "output": null,
+            "meta": {
+              "created_at": "2025-03-09T03:49:35.105233321Z",
+              "started_at": "0001-01-01T00:00:00Z",
+              "ended_at": "0001-01-01T00:00:00Z",
+              "usage": {
+                "type": "llm",
+                "frozen": 0,
+                "consume": 150000
+              },
+              "is_using_private_pool": false
+            },
+            "detail": null,
+            "logs": [],
+            "error": {
+              "code": 0,
+              "raw_message": "",
+              "message": "",
+              "detail": null
+            }
+          },
+          "message": "success"
+        }
+      },
+      {
+        "json": {
+          "code": 200,
+          "data": {
+            "task_id": "1752bd70-889d-46d8-86bc-d5941e4be7df",
+            "model": "Qubico/flux1-dev",
+            "task_type": "txt2img",
+            "status": "pending",
+            "config": {
+              "service_mode": "",
+              "webhook_config": {
+                "endpoint": "",
+                "secret": ""
+              }
+            },
+            "input": {
+              "prompt": "First person view POV shot of hand throwing a white sheet over an antique mirror, dark, eerie attic with cobwebs, dust motes floating in the air, faint moonlight through cracks in the boarded-up windows.",
+              "negative_prompt": "",
+              "image": "",
+              "width": 540,
+              "height": 960,
+              "guidance_scale": 0,
+              "denoise": 0,
+              "seed": 0,
+              "steps": 0,
+              "batch_size": 0,
+              "scale": 0,
+              "return_preprocessed_image": false,
+              "lora_settings": null,
+              "custom_settings": null
+            },
+            "output": null,
+            "meta": {
+              "created_at": "2025-03-09T03:49:35.094476648Z",
+              "started_at": "0001-01-01T00:00:00Z",
+              "ended_at": "0001-01-01T00:00:00Z",
+              "usage": {
+                "type": "llm",
+                "frozen": 0,
+                "consume": 150000
+              },
+              "is_using_private_pool": false
+            },
+            "detail": null,
+            "logs": [],
+            "error": {
+              "code": 0,
+              "raw_message": "",
+              "message": "",
+              "detail": null
+            }
+          },
+          "message": "success"
+        }
+      },
+      {
+        "json": {
+          "code": 200,
+          "data": {
+            "task_id": "1e401b4c-7281-47e9-b9c4-3f1c756a89fa",
+            "model": "Qubico/flux1-dev",
+            "task_type": "txt2img",
+            "status": "pending",
+            "config": {
+              "service_mode": "",
+              "webhook_config": {
+                "endpoint": "",
+                "secret": ""
+              }
+            },
+            "input": {
+              "prompt": "First person view POV shot of hand reaching for a door knob, Dark bedroom, flickering lamp, distorted reflection in the mirror, figure mimicking movements but with sinister intent.",
+              "negative_prompt": "",
+              "image": "",
+              "width": 540,
+              "height": 960,
+              "guidance_scale": 0,
+              "denoise": 0,
+              "seed": 0,
+              "steps": 0,
+              "batch_size": 0,
+              "scale": 0,
+              "return_preprocessed_image": false,
+              "lora_settings": null,
+              "custom_settings": null
+            },
+            "output": null,
+            "meta": {
+              "created_at": "2025-03-09T03:49:35.121798106Z",
+              "started_at": "0001-01-01T00:00:00Z",
+              "ended_at": "0001-01-01T00:00:00Z",
+              "usage": {
+                "type": "llm",
+                "frozen": 0,
+                "consume": 150000
+              },
+              "is_using_private_pool": false
+            },
+            "detail": null,
+            "logs": [],
+            "error": {
+              "code": 0,
+              "raw_message": "",
+              "message": "",
+              "detail": null
+            }
+          },
+          "message": "success"
+        }
+      }
+    ],
+    "Get Images": [
+      {
+        "json": {
+          "code": 200,
+          "data": {
+            "task_id": "ebdda0e9-11a8-4c3c-a2ae-af0c5117ea68",
+            "model": "Qubico/flux1-dev",
+            "task_type": "txt2img",
+            "status": "completed",
+            "config": {
+              "service_mode": "",
+              "webhook_config": {
+                "endpoint": "",
+                "secret": ""
+              }
+            },
+            "input": {
+              "batch_size": 0,
+              "custom_settings": null,
+              "denoise": 0,
+              "guidance_scale": 0,
+              "height": 960,
+              "image": "",
+              "lora_settings": null,
+              "negative_prompt": "",
+              "prompt": "First person view POV shot of hand reaching out to touch an antique mirror, foggy reflections swirling, a shadowy figure materializing from within the glass in the dark, eerie attic.",
+              "return_preprocessed_image": false,
+              "scale": 0,
+              "seed": 0,
+              "steps": 0,
+              "width": 540
+            },
+            "output": {
+              "image_base64": "",
+              "image_url": "https://img.theapi.app/temp/edf8d933-7642-4a7a-b720-9f511008b709.png"
+            },
+            "meta": {
+              "created_at": "2025-03-09T03:49:35.081092878Z",
+              "started_at": "2025-03-09T03:49:35.768932927Z",
+              "ended_at": "2025-03-09T03:50:08.715076046Z",
+              "usage": {
+                "type": "llm",
+                "frozen": 0,
+                "consume": 150000
+              },
+              "is_using_private_pool": false
+            },
+            "detail": null,
+            "logs": [],
+            "error": {
+              "code": 0,
+              "raw_message": "",
+              "message": "",
+              "detail": null
+            }
+          },
+          "message": "success"
+        }
+      },
+      {
+        "json": {
+          "code": 200,
+          "data": {
+            "task_id": "5743cef0-9849-4a60-b807-b1e34de59bdb",
+            "model": "Qubico/flux1-dev",
+            "task_type": "txt2img",
+            "status": "completed",
+            "config": {
+              "service_mode": "",
+              "webhook_config": {
+                "endpoint": "",
+                "secret": ""
+              }
+            },
+            "input": {
+              "batch_size": 0,
+              "custom_settings": null,
+              "denoise": 0,
+              "guidance_scale": 0,
+              "height": 960,
+              "image": "",
+              "lora_settings": null,
+              "negative_prompt": "",
+              "prompt": "First person view POV shot of hand gripping a wooden banister, knuckles white, in a dimly lit hallway, heart pounding. In the background, dark, eerie attic with an antique mirror, foggy reflections, shadowy figure emerging from the glass.",
+              "return_preprocessed_image": false,
+              "scale": 0,
+              "seed": 0,
+              "steps": 0,
+              "width": 540
+            },
+            "output": {
+              "image_base64": "",
+              "image_url": "https://img.theapi.app/temp/52b21daf-472e-4ca3-a164-f8d86c0e886a.png"
+            },
+            "meta": {
+              "created_at": "2025-03-09T03:49:35.105233321Z",
+              "started_at": "2025-03-09T03:49:35.769273899Z",
+              "ended_at": "2025-03-09T03:50:08.199722597Z",
+              "usage": {
+                "type": "llm",
+                "frozen": 0,
+                "consume": 150000
+              },
+              "is_using_private_pool": false
+            },
+            "detail": null,
+            "logs": [],
+            "error": {
+              "code": 0,
+              "raw_message": "",
+              "message": "",
+              "detail": null
+            }
+          },
+          "message": "success"
+        }
+      },
+      {
+        "json": {
+          "code": 200,
+          "data": {
+            "task_id": "1752bd70-889d-46d8-86bc-d5941e4be7df",
+            "model": "Qubico/flux1-dev",
+            "task_type": "txt2img",
+            "status": "completed",
+            "config": {
+              "service_mode": "",
+              "webhook_config": {
+                "endpoint": "",
+                "secret": ""
+              }
+            },
+            "input": {
+              "batch_size": 0,
+              "custom_settings": null,
+              "denoise": 0,
+              "guidance_scale": 0,
+              "height": 960,
+              "image": "",
+              "lora_settings": null,
+              "negative_prompt": "",
+              "prompt": "First person view POV shot of hand throwing a white sheet over an antique mirror, dark, eerie attic with cobwebs, dust motes floating in the air, faint moonlight through cracks in the boarded-up windows.",
+              "return_preprocessed_image": false,
+              "scale": 0,
+              "seed": 0,
+              "steps": 0,
+              "width": 540
+            },
+            "output": {
+              "image_base64": "",
+              "image_url": "https://img.theapi.app/temp/27fd5988-4a8e-410b-b6f6-35fcbaa05547.png"
+            },
+            "meta": {
+              "created_at": "2025-03-09T03:49:35.094476648Z",
+              "started_at": "2025-03-09T03:49:35.769129122Z",
+              "ended_at": "2025-03-09T03:50:07.251689673Z",
+              "usage": {
+                "type": "llm",
+                "frozen": 0,
+                "consume": 150000
+              },
+              "is_using_private_pool": false
+            },
+            "detail": null,
+            "logs": [],
+            "error": {
+              "code": 0,
+              "raw_message": "",
+              "message": "",
+              "detail": null
+            }
+          },
+          "message": "success"
+        }
+      },
+      {
+        "json": {
+          "code": 200,
+          "data": {
+            "task_id": "1e401b4c-7281-47e9-b9c4-3f1c756a89fa",
+            "model": "Qubico/flux1-dev",
+            "task_type": "txt2img",
+            "status": "completed",
+            "config": {
+              "service_mode": "",
+              "webhook_config": {
+                "endpoint": "",
+                "secret": ""
+              }
+            },
+            "input": {
+              "batch_size": 0,
+              "custom_settings": null,
+              "denoise": 0,
+              "guidance_scale": 0,
+              "height": 960,
+              "image": "",
+              "lora_settings": null,
+              "negative_prompt": "",
+              "prompt": "First person view POV shot of hand reaching for a door knob, Dark bedroom, flickering lamp, distorted reflection in the mirror, figure mimicking movements but with sinister intent.",
+              "return_preprocessed_image": false,
+              "scale": 0,
+              "seed": 0,
+              "steps": 0,
+              "width": 540
+            },
+            "output": {
+              "image_base64": "",
+              "image_url": "https://img.theapi.app/temp/419d8a1e-b572-4126-ae27-55879672a46e.png"
+            },
+            "meta": {
+              "created_at": "2025-03-09T03:49:35.121798106Z",
+              "started_at": "2025-03-09T03:49:35.769383786Z",
+              "ended_at": "2025-03-09T03:50:08.089215026Z",
+              "usage": {
+                "type": "llm",
+                "frozen": 0,
+                "consume": 150000
+              },
+              "is_using_private_pool": false
+            },
+            "detail": null,
+            "logs": [],
+            "error": {
+              "code": 0,
+              "raw_message": "",
+              "message": "",
+              "detail": null
+            }
+          },
+          "message": "success"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Grab Stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grab Stories": {
+      "main": [
+        [
+          {
+            "node": "Split Into Parts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Into Parts": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Video Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video Prompts": {
+      "main": [
+        [
+          {
+            "node": "Remove \\n",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Prompts": {
+      "main": [
+        [
+          {
+            "node": "Generate Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video": {
+      "main": [
+        [
+          {
+            "node": "10 Mins",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove \\n": {
+      "main": [
+        [
+          {
+            "node": "Set Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Videos": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Video Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video Status": {
+      "main": [
+        [
+          {
+            "node": "Generate Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Audio": {
+      "main": [
+        [
+          {
+            "node": "Upload to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to Drive": {
+      "main": [
+        [
+          {
+            "node": "Share File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Share File": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Split Out Parts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Parts": {
+      "main": [
+        [
+          {
+            "node": "Render Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render Video": {
+      "main": [
+        [
+          {
+            "node": "25 Seconds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video": {
+      "main": [
+        [
+          {
+            "node": "Upload Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Video": {
+      "main": [
+        [
+          {
+            "node": "Update Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Sheet": {
+      "main": [
+        [
+          {
+            "node": "Video Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT 4o": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Video Prompts",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10 Mins": {
+      "main": [
+        [
+          {
+            "node": "Get Videos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "25 Seconds": {
+      "main": [
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Grab Stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "33d29d85-a7fc-487c-8ae0-42cc42a1a3f3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "95e5a8c2e51c83e33b232ea792bbe3f063c094c33d9806a5565cb31759e1ad39"
+  },
+  "id": "u33DJMWxN2rEjNpI",
+  "tags": []
+}

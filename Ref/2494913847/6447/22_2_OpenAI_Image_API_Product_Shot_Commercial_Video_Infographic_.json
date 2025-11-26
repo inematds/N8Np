@@ -1,0 +1,1491 @@
+{
+  "name": "22.2 - OpenAI Image API (Product Shot +Commercial Video & Infographic)",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/edits",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "image",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.image_prompt }}"
+            },
+            {
+              "name": "model",
+              "value": "gpt-image-1"
+            },
+            {
+              "name": "n",
+              "value": "4"
+            },
+            {
+              "name": "size",
+              "value": "1024x1024"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        120
+      ],
+      "id": "fbf05627-1283-4af7-b455-c69bd9f92d6d",
+      "name": "Generate Image",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs",
+          "mode": "list",
+          "cachedResultName": "OpenAI Image API",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Product Shot + Video",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -20,
+        120
+      ],
+      "id": "87ff3268-b5d7-4024-8a4e-1eb0e035bfd3",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets (andylo@proxa.cc)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.image_url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        180,
+        120
+      ],
+      "id": "6eb4e2e7-0e1a-4728-a78c-adda2eb4c10f",
+      "name": "Download Image"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "b64_json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        840,
+        120
+      ],
+      "id": "889297eb-8d92-4208-a640-e778e8087ac7",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        620,
+        120
+      ],
+      "id": "f434d089-7497-47d1-952f-0a3044b6a48e",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://blpxittjdrbenzczlmaa.supabase.co/storage/v1/object/n8n/{{ $now.format('yyyy-MM-dd_hhmmss')}}_{{ $('Google Sheets').item.json.row_number }}_{{ $itemIndex }}.png",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1060,
+        120
+      ],
+      "id": "5bd048f9-0baa-432f-9e4e-f62c7820c9b2",
+      "name": "Upload Image",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "=result_{{ $itemIndex }}",
+              "value": "=https://blpxittjdrbenzczlmaa.supabase.co/storage/v1/object/public/{{ $json.Key }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "row_number",
+              "value": "={{ $('Google Sheets').item.json.row_number }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1280,
+        120
+      ],
+      "id": "445f80cf-d74b-45ca-8a53-b3b416fd97eb",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "url": "=https://queue.fal.run/fal-ai/kling-video/requests/{{ $json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1060,
+        560
+      ],
+      "id": "e944b022-fe7b-4b7e-b343-edb671f69811",
+      "name": "Fal Get Video1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        760,
+        560
+      ],
+      "id": "dc9caf4f-fd57-44ea-b040-07642bcdf4e1",
+      "name": "Wait",
+      "webhookId": "36f1ac79-446c-4656-9d51-b42c1e507e1e"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://queue.fal.run/fal-ai/kling-video/v2/master/image-to-video",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ $json.prompt }}"
+            },
+            {
+              "name": "image_url",
+              "value": "={{ $json.selected_image }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        560
+      ],
+      "id": "0ddba044-055e-4ab3-a224-3de91ed9e615",
+      "name": "Fal Generate Video1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "selected_image",
+              "value": "={{ $json[`result_${$json.selection}`] }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "prompt",
+              "value": "={{ $json.image_prompt }}, {{ $json.extra_video_prompt }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        200,
+        560
+      ],
+      "id": "d757554d-4c7b-4b3c-9e2b-7c010cca3bdd",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "content": "## 1a. Product Shot Generation - Image\n\n- All configurations are managed directly in the Google Sheet. To trigger the workflow, provide the image_url and prompt, and leave result_0 blank.\n- Image size, quality, and other settings are controlled within the Generate Image node.\n- Due to the large size of the generated images, running the node individually may not work—n8n requires the entire workflow to run at once.\n- Generated images are uploaded automatically via Supabase.\n\n",
+        "height": 380,
+        "width": 2000
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        -60
+      ],
+      "id": "0508221c-b6f7-46ea-9777-8ba45a1d8b97",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## 1b. Product Shot Generation - Video\n\n- The workflow will use the first available empty video_0 row.\n- To render a video, input a selection (0 to 3) to choose which result to use.\n- During video generation, image_prompt and extra_video_prompt are combined.\n- Videos are not saved permanently—they remain temporarily stored on FAL AI.\n\n",
+        "height": 380,
+        "width": 2000,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        380
+      ],
+      "id": "c125619e-db8a-45f8-bb2c-1576602bd01f",
+      "name": "Sticky Note1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs",
+          "mode": "list",
+          "cachedResultName": "OpenAI Image API",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Product Shot + Video",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "row_number": "={{ $('Google Sheets').item.json.row_number }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "image_url",
+              "displayName": "image_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "image_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "extra_video_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "result_0",
+              "displayName": "result_0",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "result_1",
+              "displayName": "result_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "result_2",
+              "displayName": "result_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "result_3",
+              "displayName": "result_3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "selection",
+              "displayName": "selection",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "video_0",
+              "displayName": "video_0",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1500,
+        120
+      ],
+      "id": "8f0e0aa3-22f4-4119-8faa-685816215380",
+      "name": "Update Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets (andylo@proxa.cc)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs",
+          "mode": "list",
+          "cachedResultName": "OpenAI Image API",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Product Shot + Video",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -40,
+        560
+      ],
+      "id": "13a2949c-d717-4f7d-aaae-b7fae774a10f",
+      "name": "Google Sheets2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets (andylo@proxa.cc)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ $('Google Sheets1').item.json.image_prompt }}{{ $json.choices[0].message.content }}"
+            },
+            {
+              "name": "model",
+              "value": "gpt-image-1"
+            },
+            {
+              "name": "n",
+              "value": "={{ 4 }}"
+            },
+            {
+              "name": "size",
+              "value": "1024x1024"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        1020
+      ],
+      "id": "f68873a9-e48e-4fbb-97c0-f20f7c6d9dd6",
+      "name": "Generate Image1",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs",
+          "mode": "list",
+          "cachedResultName": "OpenAI Image API",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 432102807,
+          "mode": "list",
+          "cachedResultName": "Infographic",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs/edit#gid=432102807"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -40,
+        1020
+      ],
+      "id": "fc947909-aa68-406b-8568-ad322e4728ab",
+      "name": "Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets (andylo@proxa.cc)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "b64_json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        1020
+      ],
+      "id": "772eab3b-6ac8-4460-8ebf-9469b9132344",
+      "name": "Convert to File1"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        660,
+        1020
+      ],
+      "id": "31541eb3-da4c-44e6-81c1-e1d2204bee26",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://blpxittjdrbenzczlmaa.supabase.co/storage/v1/object/n8n/{{ $now.format('yyyy-MM-dd_hhmmss')}}_{{ $('Google Sheets1').item.json.row_number }}_{{ $itemIndex }}.png",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        1020
+      ],
+      "id": "69143a86-ad13-498f-9f84-02a11296763d",
+      "name": "Upload Image1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "=result_{{ $itemIndex }}",
+              "value": "=https://blpxittjdrbenzczlmaa.supabase.co/storage/v1/object/public/{{ $json.Key }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "row_number",
+              "value": "={{ $('Google Sheets1').item.json.row_number }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1340,
+        1020
+      ],
+      "id": "8f8c02fa-bee3-4237-a234-bb0bec18464f",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "content": "## 2. Infographic Generation\n\n- All configurations are managed directly in the Google Sheet. To trigger the workflow, provide the image_url and prompt, and leave result_0 blank.\n- Image size, quality, and other settings are controlled within the Generate Image node.\n- Due to the large size of the generated images, running the node individually may not work—n8n requires the entire workflow to run at once.\n- Generated images are uploaded automatically via Supabase.\n\n",
+        "height": 380,
+        "width": 2260,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        820
+      ],
+      "id": "26968e8d-04ed-475b-bcb0-37814b8c8ff3",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs",
+          "mode": "list",
+          "cachedResultName": "OpenAI Image API",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 432102807,
+          "mode": "list",
+          "cachedResultName": "Infographic",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs/edit#gid=432102807"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "row_number": "={{ $('Google Sheets1').item.json.row_number }}",
+            "research_result": "={{ $('Perplexity Research').item.json.choices[0].message.content }}",
+            "result_0": "={{ $json.result_0 }}",
+            "result_1": "={{ $json.result_1 }}",
+            "result_2": "={{ $json.result_2 }}",
+            "result_3": "={{ $json.result_3 }}",
+            "status": "Done"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "research_topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "research_result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "image_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "result_0",
+              "displayName": "result_0",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "result_1",
+              "displayName": "result_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "result_2",
+              "displayName": "result_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "result_3",
+              "displayName": "result_3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1560,
+        1020
+      ],
+      "id": "ee6bb162-b707-4ef6-80d3-35acda84105e",
+      "name": "Update Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets (andylo@proxa.cc)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        120
+      ],
+      "id": "7fdf826f-2400-44ad-8436-cbb23f41d036",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        1020
+      ],
+      "id": "68341610-4d35-45f1-8717-178e617b2a71",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs",
+          "mode": "list",
+          "cachedResultName": "OpenAI Image API",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Product Shot + Video",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Google Sheets2').item.json.row_number }}",
+            "video_0": "={{ $json.video.url }}",
+            "status": "Done"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "image_url",
+              "displayName": "image_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "image_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "extra_video_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "result_0",
+              "displayName": "result_0",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "result_1",
+              "displayName": "result_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "result_2",
+              "displayName": "result_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "result_3",
+              "displayName": "result_3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "selection",
+              "displayName": "selection",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "video_0",
+              "displayName": "video_0",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1380,
+        560
+      ],
+      "id": "fd63b585-ce9f-4ba5-b301-fd3161193747",
+      "name": "Update Google Sheets3",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets (andylo@proxa.cc)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.perplexity.ai/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"sonar\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a research assistant. Research data and summarize your findings.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Your research topic: {{ $json.research_topic }}. Summarize the pros and cons in 3 bullet points. Keep it short and precise.\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "0e832b24-f116-40a7-80a0-516dc6ad5697",
+      "name": "Perplexity Research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        1020
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Perplexity - info"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        560
+      ],
+      "id": "3263abfe-8292-44f2-bee9-6ad12c688ad5",
+      "name": "Schedule Trigger2"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs",
+          "mode": "list",
+          "cachedResultName": "OpenAI Image API",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 432102807,
+          "mode": "list",
+          "cachedResultName": "Infographic",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1qfpGSP4BkuC3msbUv18NFhaNYzc77c0D7r3VzrJvsJs/edit#gid=432102807"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json.row_number }}",
+            "status": "Done"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "research_topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "research_result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "image_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "result_0",
+              "displayName": "result_0",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "result_1",
+              "displayName": "result_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "result_2",
+              "displayName": "result_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "result_3",
+              "displayName": "result_3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1780,
+        1020
+      ],
+      "id": "2a3c62d6-1cdc-44db-a5e4-b53f6c0663cb",
+      "name": "Status Update",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets (andylo@proxa.cc)"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Generate Image": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "Generate Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Upload Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Image": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Update Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Fal Get Video1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fal Generate Video1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Fal Generate Video1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fal Get Video1": {
+      "main": [
+        [
+          {
+            "node": "Update Google Sheets3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image1": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets1": {
+      "main": [
+        [
+          {
+            "node": "Perplexity Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File1": {
+      "main": [
+        [
+          {
+            "node": "Upload Image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Image1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Update Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Google Sheets": {
+      "main": [
+        []
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Perplexity Research": {
+      "main": [
+        [
+          {
+            "node": "Generate Image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger2": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Google Sheets1": {
+      "main": [
+        [
+          {
+            "node": "Status Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1c293582-91cd-4e28-a286-f1ccb8ff1399",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1740c26791c747bf49d93178a26934eaaffaca5ab2d087ae7e06b06ed236dff6"
+  },
+  "id": "oAFGrle0YeKcpKkL",
+  "tags": []
+}

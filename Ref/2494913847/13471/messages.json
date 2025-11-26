@@ -1,0 +1,404 @@
+[
+  {
+    "id": 13526,
+    "author": "INEMA",
+    "date": "2025-08-28T20:02:55+00:00",
+    "text": "**Apêndice de Exemplos** — só os trechos técnicos (YAML, JSON, curl, expressões n8n) para você usar como referência rápida.\n\n---\n\n### Exemplo 1 – Prompt de Imagem (YAML simples, 16:9)\n\n```image_prompt: mulher jovem sorridente segurando um buquê em frente à floricultura\nstyle: realista, iluminação suave, lente 50mm\ncomposition: plano médio, foco no rosto e no produto\naspect_ratio: 16:9\nnegatives: mãos extras, distorções faciais, texto ilegível, logotipos reais```\n\n---\n\n### Exemplo 2 – Prompt de Vídeo (YAML multi-cena)\n\n```total_duration: 30\nscene_length: 8\nnum_scenes: 4\naspect_ratio: 16:9\nscenes:\n  - id: 1\n    prompt: a modelo apresenta a loja em plano médio\n    dialogue: \"Oi pessoal… nossa floricultura vai abrir na próxima semana!\"\n  - id: 2\n    prompt: close no buquê de flores em mãos\n    dialogue: \"Olha só que flores incríveis… tudo fresquinho.\"\n  - id: 3\n    prompt: plano geral da fachada da loja\n    dialogue: \"Estamos preparando um espaço muito especial…\"\n  - id: 4\n    prompt: a modelo sorri e acena na frente da loja\n    dialogue: \"Venha nos visitar e ganhe um presente exclusivo!\"```\n\n---\n\n### Exemplo 3 – cURL Nano Banana (criar imagem)\n\n```curl -X POST https://api.kie.ai/v1/images/create \\\n -H \"Authorization: Bearer SUA_KIE_API_KEY\" \\\n -H \"Content-Type: application/json\" \\\n -d '{\n   \"model\":\"nano-banana-edit\",\n   \"prompt\":\"mulher sorridente segurando buquê em floricultura, realista, 16:9\",\n   \"aspect_ratio\":\"16:9\",\n   \"image_urls\":[\"https://api.telegram.org/file/botSEU_TOKEN/FILE_PATH\"],\n   \"callback_url\":\"{{$execution.resumeUrl}}\"\n }'```\n\n---\n\n### Exemplo 4 – cURL Veo3 Fast (gerar cena de vídeo)\n\n```curl -X POST https://api.kie.ai/v1/videos/create \\\n -H \"Authorization: Bearer SUA_KIE_API_KEY\" \\\n -H \"Content-Type: application/json\" \\\n -d '{\n   \"model\":\"veo3-fast\",\n   \"prompt\":\"a modelo apresenta a floricultura sorrindo\",\n   \"dialogue\":\"Nossa loja abre semana que vem… estamos te esperando!\",\n   \"aspect_ratio\":\"16:9\",\n   \"reference_image_urls\":[\"https://meu-servidor.com/imagem_aprovada.jpg\"]\n }'```\n\n---\n\n### Exemplo 5 – cURL Fal.ai (merge vídeos)\n\n```curl -X POST https://api.fal.ai/v1/merge_videos \\\n -H \"Authorization: Bearer SUA_FAL_API_KEY\" \\\n -H \"Content-Type: application/json\" \\\n -d '{\n   \"video_urls\":[\"https://cdn.kie.ai/cena1.mp4\",\"https://cdn.kie.ai/cena2.mp4\"],\n   \"transitions\":\"none\"\n }'```\n\n---\n\n### Exemplo 6 – Expressão n8n (pegar última foto do Telegram)\n\n```{{$json[\"photo\"][$json[\"photo\"].length - 1].file_id}}```\n\n---\n\n### Exemplo 7 – Expressão n8n (parsear JSON de resposta)\n\n```{{ JSON.parse($json.data).image_url }}```\n\n---\n\n✅ Com esse apêndice, você tem:\n\n* Modelos prontos de prompts (imagem + vídeo).\n* Comandos cURL reais para testar fora do n8n.\n* Expressões típicas do n8n para lidar com Telegram e respostas de API.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13525,
+    "author": "INEMA",
+    "date": "2025-08-28T20:02:45+00:00",
+    "text": "==============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13524,
+    "author": "INEMA",
+    "date": "2025-08-28T20:02:44+00:00",
+    "text": "===============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13523,
+    "author": "INEMA",
+    "date": "2025-08-28T20:02:01+00:00",
+    "text": "**Hacks – ** (diretos, sem enrolar, só truques aplicáveis para turbinar o fluxo):\n\n---\n\n### Hacks de Consistência\n\n1. **Mais de uma imagem de referência** → passe 2–3 ângulos do rosto/produto para o Nano Banana → avatar fica idêntico em todas as variações.\n2. **Travar aspecto 16:9 em todos os pontos** → inclua `aspect_ratio: 16:9` tanto no prompt quanto no body da API → evita cortes.\n3. **Usar “negatives” sempre** → bloqueie distorções típicas: mãos extras, olhos tortos, texto ilegível.\n4. **Roupa-âncora** → sempre inclua uma peça fixa (ex.: jaqueta vermelha) → reforça consistência entre cenas.\n\n---\n\n### Hacks de Prompt\n\n5. **YAML/JSON curto** → menos campos = menos erro. Foco só em: `image_prompt, style, aspect_ratio, negatives`.\n6. **Diálogo UGC natural** → 25–30 palavras, tom de conversa com amigo, nunca tom de anúncio.\n7. **Cena = objetivo único** → cada cena mostra só 1 coisa: (apresentar, detalhe, call-to-action leve).\n\n---\n\n### Hacks de Telegram\n\n8. **Sempre pegar última foto do array** → é a de maior qualidade.\n9. **Teclado inline para respostas** → botões \\[Aprovar] \\[Gerar outra] → fluxo mais rápido e barato.\n10. **Feedback guiado** → se “Gerar outra”, peça campos fixos: “Trocar fundo / Ajustar luz / Mudar roupa” → menos tentativa e erro.\n\n---\n\n### Hacks de Automação (n8n)\n\n11. **Use `execution.resumeUrl`** → evite loops de checagem, mais barato e rápido.\n12. **Salvar task\\_id e urls em planilha** → facilita reuso, auditoria e suporte.\n13. **Retry exponencial simples** → 5s → 15s → 30s → evita falhas de rede sem gastar muito.\n\n---\n\n### Hacks de Custo e Escala\n\n14. **Gate obrigatório** → só gerar vídeo após aprovação da imagem → corta 70% de gasto desnecessário.\n15. **Cache de avatar** → se o mesmo usuário pedir de novo, reuse referência aprovada → custo quase zero para repetir rosto.\n16. **Fila simples** → limite 2–3 jobs por vez → evita rate-limit e travamentos.\n\n---\n\n### Hacks de Qualidade Extra\n\n17. **Feedback textual no loop** → se imagem não agradar, deixe o usuário digitar ajuste → IA melhora na próxima rodada.\n18. **Evitar “tom vendedor” no vídeo** → diálogo mais realista aumenta retenção (o público não pula).\n19. **Close-ups intercalados** → peça 1 cena de close no produto → aumenta impacto sem perder consistência.\n20. **Juntar áudio depois** → se usar TTS, processe separado e sincronize → voz mais limpa.\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13521,
+    "author": "INEMA",
+    "date": "2025-08-28T20:01:43+00:00",
+    "text": "=================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13520,
+    "author": "INEMA",
+    "date": "2025-08-28T20:01:42+00:00",
+    "text": "===============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13519,
+    "author": "INEMA",
+    "date": "2025-08-28T20:01:03+00:00",
+    "text": "**Passo 5 (Finalização e Entrega)** de forma direta e prática:\n\n---\n\n### Passo 5 — Finalização e Entrega\n\n1. **Unir todas as cenas em um só vídeo**\n\n   * Use um nó **HTTP Request (POST)** para o **Fal.ai**.\n   * Body:\n\n     ```     {\n       \"video_urls\": [\"{{urlCena1}}\",\"{{urlCena2}}\",\"{{urlCena3}}\",\"{{urlCena4}}\"],\n       \"transitions\": \"none\"\n     }\n     ```\n   * Resposta: `request_id` para acompanhar o processamento.\n\n2. **Esperar o merge terminar**\n\n   * Use **Wait (tempo fixo \\~30s)** ou **loop de checagem** no endpoint `get_result` do Fal.ai.\n   * Condição: `status = completed`.\n   * Saída: `final_video_url` (link do vídeo final em 16:9).\n\n3. **Enviar vídeo final pelo Telegram**\n\n   * Use **Telegram → SendVideo**.\n   * Input: `chat_id` do usuário + `final_video_url`.\n   * Mensagem de acompanhamento:\n     “Aqui está seu vídeo final! 🎬”\n\n4. **(Opcional) Salvar log do job**\n\n   * Em planilha ou DB (Supabase, Airtable, Google Sheets).\n   * Campos úteis: chat\\_id, legenda original, prompt usado, urls das cenas, url final, data/hora, custo estimado.\n\n---\n\n✅ **Resultado esperado do Passo 5:**\nO usuário recebe no Telegram um **vídeo único em 16:9**, com múltiplas cenas unidas, consistência visual mantida e pronto para uso em redes sociais.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13518,
+    "author": "INEMA",
+    "date": "2025-08-28T20:00:44+00:00",
+    "text": "===============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13517,
+    "author": "INEMA",
+    "date": "2025-08-28T20:00:41+00:00",
+    "text": "**Passo 4 (Criação do Vídeo)** de forma direta e prática:\n\n---\n\n### Passo 4 — Criação do Vídeo\n\n1. **Gerar roteiro multi-cena estilo UGC**\n\n   * Use um nó **OpenAI Chat (gpt-4.1)**.\n   * Entrada:\n\n     * Texto da legenda do usuário.\n     * Análise da imagem aprovada.\n     * URL da imagem final aprovada.\n   * Peça uma saída estruturada:\n\n     ```     total_duration: 30   # duração total em segundos\n     scene_length: 8      # duração de cada cena (~8s)\n     num_scenes: 4        # calculado = ceil(total/scene_length)\n     aspect_ratio: 16:9\n     scenes:\n       - id: 1\n         prompt: descrição da cena\n         dialogue: fala curta e natural, até 30 palavras\n       - id: 2\n         prompt: ...\n         dialogue: ...\n     ```\n\n2. **Separar cenas para loop**\n\n   * Use **Split In Batches** ou **Item Lists** no n8n.\n   * Cada item = 1 cena com `prompt` + `dialogue`.\n\n3. **Gerar cada cena com Veo3 Fast**\n\n   * Para cada cena, use um nó **HTTP Request (POST)** no KIE.ai.\n   * Body mínimo:\n\n     ```     {\n       \"model\": \"veo3-fast\",\n       \"prompt\": \"{{prompt_da_cena}}\",\n       \"dialogue\": \"{{dialogue_da_cena}}\",\n       \"aspect_ratio\": \"16:9\",\n       \"reference_image_urls\": [\"{{URL_IMAGEM_APROVADA}}\"]\n     }\n     ```\n   * Resultado: `task_id` de cada vídeo.\n\n4. **Esperar vídeos ficarem prontos**\n\n   * Use um **Wait (tempo fixo, ex. 60s)** ou um **loop de checagem** com o endpoint `record/info` do KIE.ai.\n   * Condição de saída: `status = success`.\n   * Guarde todas as `video_urls` em uma lista.\n\n---\n\n✅ **Resultado esperado do Passo 4:**\nVocê terá uma lista de clipes de 8–10s cada, em 16:9, todos com o mesmo avatar e estilo visual.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13516,
+    "author": "INEMA",
+    "date": "2025-08-28T20:00:17+00:00",
+    "text": "==============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13515,
+    "author": "INEMA",
+    "date": "2025-08-28T20:00:13+00:00",
+    "text": "**Passo 3 (Validação da Imagem)** de forma direta e prática:\n\n---\n\n### Passo 3 — Validação da Imagem\n\n1. **Gerar a imagem com Nano Banana**\n\n   * Use um nó **HTTP Request (POST)** para o KIE.ai.\n   * Modelo: `nano-banana-edit`.\n   * Body mínimo:\n\n     ```     {\n       \"model\": \"nano-banana-edit\",\n       \"prompt\": \"{{prompt_estruturado}}\",\n       \"aspect_ratio\": \"16:9\",\n       \"image_urls\": [\"{{URL_IMAGEM_TELEGRAM}}\"],\n       \"callback_url\": \"{{$execution.resumeUrl}}\"\n     }\n     ```\n   * O `callback_url` faz com que o KIE.ai avise o n8n quando terminar (sem precisar de loop de checagem).\n\n2. **Esperar o retorno**\n\n   * Adicione um nó **Wait** configurado em modo **On Webhook Call**.\n   * Assim que o KIE.ai terminar, o fluxo continua automaticamente.\n\n3. **Pegar a imagem final**\n\n   * Use um nó **HTTP Request (GET)** para o endpoint `record/info` do KIE.ai.\n   * Passe o `task_id` da criação.\n   * Extraia a URL da imagem gerada.\n\n4. **Enviar a imagem ao usuário para validação**\n\n   * Use um nó **Telegram SendPhoto**.\n   * Envie a imagem gerada + uma mensagem tipo:\n     “Aqui está a imagem gerada. Deseja aprovar ou gerar outra?”\n\n5. **Receber resposta do usuário**\n\n   * Use **Telegram → Send and wait for response**.\n   * Configure botões: \\[Aprovar] | \\[Gerar outra].\n\n6. **Tratar a resposta**\n\n   * Se \\[Aprovar] → segue para o próximo passo (roteiro do vídeo).\n   * Se \\[Gerar outra] → volte ao **Passo 2 (criar novo prompt)**.\n\n     * Opcional: permita que o usuário escreva o que quer mudar (ex.: “trocar fundo” ou “mais iluminação”) e inclua esse feedback no próximo prompt.\n\n---\n\n✅ **Resultado esperado do Passo 3:**\nO usuário aprova uma imagem 16:9 consistente, que servirá como base para o vídeo.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13514,
+    "author": "INEMA",
+    "date": "2025-08-28T19:59:53+00:00",
+    "text": "=================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13513,
+    "author": "INEMA",
+    "date": "2025-08-28T19:59:49+00:00",
+    "text": "**Passo 2 (Preparação da imagem)** detalhado de forma direta e prática:\n\n---\n\n### Passo 2 — Preparação da Imagem\n\n1. **Pegar a melhor versão da foto**\n\n   * No output do Telegram Trigger, a foto vem em um array `photo[]`.\n   * Sempre use a **última posição** (maior resolução).\n   * Expressão no n8n:\n\n     ```     {{$json[\"photo\"][$json[\"photo\"].length - 1].file_id}}\n     ```\n\n2. G**erar a URL direta da imagem\n**\n   * Use um nó H**TTP Request (Telegram getFile).**\n   * Endpoint:\n\n      ```    https://api.telegram.org/bot{{BOT_TOKEN}}/getFile?file_id={{file_id}}\n     \n```   * A resposta traz fi`le_path.\n`   * Monte a URL final:\n\n       ```   https://api.telegram.org/file/bot{{BOT_TOKEN}}/{{file_path}}\n     \n\n```3. Ana**lisar a imagem com IA\n\n **  * Use um nó Ope**nAI Chat (gpt-4.1).\n **  * Entrada: URL da imagem.\n   * Peça saída estruturada simples:\n\n     * pessoa\n     * roupa\n     * expressão\n     * cenário\n     * paleta de cores\n     * iluminação\n\n   Exemplo de instrução:\n\n      ```Analise a imagem enviada.  \n   Retorne JSON com: pessoa, roupa, expressão, cenário, paleta_cores, iluminação.\n   \n\n4```. Cria**r prompt de imagem 16:9\n\n  ** * Use outro Open**AI Chat (gpt-4.1).\n  ** * Combine:\n\n     * caption do usuário (texto que ele mandou)\n     * análise da imagem (resultado do passo anterior)\n   * Saída final (em YAML ou JSON):\n\n         ``` image_prompt: descrição objetiva da cena  \n     style: realista, iluminação suave, foco no rosto/produto  \n     composition: plano médio, enquadramento central  \n     aspect_ratio: 16:9  \n     negatives: mãos extras, distorção de rosto, logos reais\n     \n\n--```-\n\n✅ Resul**tado esperado do Passo 2:\nVocê** terá a URL d**ireta da foto do Telegram + um** promp**t estruturado 16:9 pron**to para enviar ao modelo Nano Banana.\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13512,
+    "author": "INEMA",
+    "date": "2025-08-28T19:59:27+00:00",
+    "text": "==============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13511,
+    "author": "INEMA",
+    "date": "2025-08-28T19:59:25+00:00",
+    "text": "**o Passo 1 (Entrada do usuário) **de forma direta, prática e útil para alguém configurar no n8n:\n\n---\n\n### Passo 1 — Entrada do usuário (Telegram)\n\n1. **Criar o bot no Telegram**\n\n   * Abra o Telegram e fale com o **@BotFather**.\n   * Use o comando `/newbot`, escolha nome e @username.\n   * Copie o **token do bot** que ele entregar (ex.: `123456:ABC-DEF...`).\n\n2. **Configurar o nó Telegram Trigger no n8n**\n\n   * Adicione um **Telegram Trigger Node**.\n   * Nas credenciais, cole o **token do bot** criado.\n   * Configure para ouvir **mensagens**.\n   * Ative **receber foto + legenda (caption)**.\n\n3. **Testar o gatilho**\n\n   * No Telegram, envie uma **foto** com uma **mensagem de texto na legenda** para o bot.\n   * No n8n, veja se o trigger capturou:\n\n     * `chat_id` (quem enviou)\n     * `caption` (texto da legenda)\n     * `photo[]` (array de versões da imagem em diferentes resoluções).\n\n---\n\nResultado esperado do Passo 1:\nVocê tem no n8n a entrada do usuário já estruturada, pronta para usar: **chat\\_id, caption e file\\_id da foto**.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13510,
+    "author": "INEMA",
+    "date": "2025-08-28T19:59:03+00:00",
+    "text": "==============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13509,
+    "author": "INEMA",
+    "date": "2025-08-28T19:57:54+00:00",
+    "text": "Beleza — em nível macro, o passo a passo se resume a 5 grandes etapas:\n\n1. **Entrada do usuário**\n   Receber foto + legenda pelo Telegram.\n\n2. **Preparação da imagem**\n   Analisar a foto, criar prompt estruturado e gerar a imagem consistente (16:9) com Nano Banana.\n\n3. **Validação**\n   Enviar a imagem para o usuário aprovar ou pedir ajustes.\n\n4. **Criação do vídeo**\n   Gerar roteiro multi-cena (UGC) e produzir os clipes com Veo3 Fast, mantendo consistência visual.\n\n5. **Finalização e entrega**\n   Unir as cenas no Fal.ai e devolver o vídeo final 16:9 ao usuário pelo Telegram.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13508,
+    "author": "INEMA",
+    "date": "2025-08-28T19:57:02+00:00",
+    "text": "================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13507,
+    "author": "INEMA",
+    "date": "2025-08-28T19:56:59+00:00",
+    "text": "Passo a passo enxuto (16:9, Telegram → vídeo final)\n\n1. Preparar contas e credenciais\n\n* Criar Bot no Telegram e copiar o token.\n* Criar conta no KIE.ai e Fal.ai; copiar as API keys.\n* No n8n: criar credenciais HTTP para KIE.ai e Fal.ai; conferir timezone America/Sao\\_Paulo.\n  Exemplo de uso: no n8n, selecione as credenciais salvas em cada nó HTTP.\n\n2. Receber foto e legenda pelo Telegram\n\n* Nó Telegram Trigger para mensagens com foto + caption.\n* Saída usada depois: chat\\_id, caption e o array photo\\[].\n  Exemplo de caption: Criar vídeo 30s anunciando a inauguração da floricultura. Tom natural, foco no sorriso.\n\n3. Obter a melhor versão da foto\n\n* Nó HTTP Request getFile do Telegram com o file\\_id da última posição de photo\\[] (é a maior resolução).\n* Montar URL direta do arquivo: [https://api.telegram.org/file/bot{TOKEN}/{file\\_path}](https://api.telegram.org/file/bot{TOKEN}/{file_path})\n  Exemplo de resultado: URL direta da imagem para usar como referência.\n\n4. Analisar a imagem\n\n* Nó LLM (gpt-4.1) para descrever pessoa, roupa, cores, cenário, iluminação, objetos.\n* Saída estruturada simples (lista de campos).\n  Exemplo de campos: pessoa, expressão, roupa, paleta\\_cores, cenário, iluminação.\n\n5. Criar o prompt de imagem em 16:9\n\n* Nó LLM combinando caption + análise da imagem.\n* Saída curta e estável, com campos: image\\_prompt, style, composition, negatives, aspect\\_ratio: 16:9.\n  Exemplo de saída: image\\_prompt descreve a cena e o produto; negatives evita mãos extras, distorções.\n\n6. Gerar imagem com Nano Banana usando callback\n\n* Nó HTTP Request para criar tarefa no KIE.ai (modelo nano-banana-edit) com:\n  prompt do passo 5, aspect\\_ratio 16:9, image\\_urls \\[URL do Telegram], callback\\_url = execução do n8n.\n* Nó Wait em modo On Webhook Call para liberar o fluxo quando KIE.ai chamar o callback.\n* Nó HTTP Record/Info do KIE.ai para pegar a url da imagem final.\n  Exemplo de resultado: URL da imagem 16:9 gerada e consistente.\n\n7. Validar a imagem no Telegram\n\n* Enviar a imagem para o usuário (SendPhoto).\n* Send and wait for response com botões: Aprovar | Gerar outra.\n* Se “Gerar outra”, coletar feedback curto (ex.: mudar fundo/luz/roupa) e voltar ao passo 5.\n  Exemplo de resposta esperada: usuário aprova a imagem antes de gastar com vídeo.\n\n8. Gerar roteiro de vídeo multi-cena 16:9\n\n* Nó LLM para criar estrutura com:\n  total\\_duration (ex.: 30), scene\\_length 8, num\\_scenes = ceil(total/8),\n  scenes\\[] com prompt e diálogo curto estilo UGC, mantendo o mesmo rosto/estética da imagem aprovada.\n  Exemplo: para 15s, 2 cenas; para 30s, 4 cenas.\n\n9. Gerar cada cena com Veo3 Fast\n\n* Dividir scenes\\[] em itens e, em loop:\n  criar vídeo no KIE.ai (modelo veo3-fast) com prompt/diálogo da cena, aspect\\_ratio 16:9 e reference\\_image\\_urls = \\[imagem aprovada].\n* Aguardar e consultar status até obter as video\\_urls de todas as cenas.\n  Exemplo de resultado: lista de URLs de clipes 16:9 prontos.\n\n10. Unir e entregar o vídeo final\n\n* Nó HTTP no Fal.ai para merge de video\\_urls na ordem das cenas; aguardar status completed.\n* Enviar vídeo final 16:9 ao usuário via Telegram SendVideo.\n* Opcional: salvar log (task\\_id, prompts, urls) em planilha/DB para histórico.\n  Exemplo de encerramento: bot responde com o vídeo final e um “pronto!” simples.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13506,
+    "author": "INEMA",
+    "date": "2025-08-28T19:55:18+00:00",
+    "text": "================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13503,
+    "author": "INEMA",
+    "date": "2025-08-28T19:53:41+00:00",
+    "text": "=====================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13502,
+    "author": "INEMA",
+    "date": "2025-08-28T19:52:13+00:00",
+    "text": "=======================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13497,
+    "author": "INEMA",
+    "date": "2025-08-28T19:49:53+00:00",
+    "text": "================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13496,
+    "author": "INEMA",
+    "date": "2025-08-28T19:49:49+00:00",
+    "text": "Resumo completo e estruturado do conteúdo:\n\n### Visão geral\n\nMostra como gerar imagens e vídeos hiper-realistas com **Nano Banana (Google)** e **Veo3 Fast**, integrados no **N8N** e controlados por **Telegram**. A ideia é criar avatares consistentes que podem promover produtos de forma automatizada e barata, com validação antes de gerar os vídeos.\n\n---\n\n### Principais pontos abordados\n\n1. **Avatares consistentes**\n\n   * Uma única foto gera várias variações realistas.\n   * O modelo Nano Banana mantém o mesmo rosto e estilo mesmo mudando cenário, roupas ou produto.\n\n2. **Processo da automação**\n\n   * Trigger do Telegram: o usuário envia imagem + legenda.\n   * IA analisa a foto (cores, roupas, objetos, contexto).\n   * GPT-4.1 gera prompt detalhado para Nano Banana.\n   * Nano Banana cria a imagem final.\n   * Validação via Telegram: aprovar ou pedir nova geração.\n   * Se aprovado → geração de prompt de vídeo multi-cena estilo UGC.\n   * Veo3 Fast cria cenas individuais (máx. 8s cada).\n   * Fal.ai junta os vídeos em um só.\n   * Bot envia o resultado final no Telegram.\n\n3. **Validação e consistência**\n\n   * Uso de `execution.resumeUrl` para evitar loops desnecessários.\n   * Aprovação obrigatória do usuário antes de criar vídeo.\n   * Possibilidade de feedback textual para ajustar a próxima geração.\n\n4. **Exemplos práticos mostrados**\n\n   * Floricultura com modelo fixo promovendo inauguração.\n   * Alteração de cenários (casa, estádio, bandeiras).\n   * Testes de consistência em roupas e cenários diferentes.\n\n5. **Resultados dos vídeos**\n\n   * Vídeos de 15–30 segundos criados juntando várias cenas de 8s.\n   * Ainda há limitações de qualidade no Veo3 Fast, mas tende a melhorar.\n\n---\n\n### Ferramentas usadas\n\n* N8N (orquestração)\n* Telegram Bot API (interação com usuário)\n* GPT-4.1 (geração de prompts estruturados)\n* Nano Banana (Google IA – geração de imagens realistas)\n* Veo3 Fast (vídeos rápidos)\n* Fal.ai (mesclar vídeos)\n\n---\n\n### Custos e vantagens\n\n* Nano Banana custa apenas **0,02 € por imagem** (muito barato comparado a outras soluções).\n* Elimina necessidade de modelos reais, estúdios ou edições complexas.\n* Fluxo pode ser adaptado para web ou formulário, permitindo cobrar por imagens/vídeos sob demanda.\n\n---\n\n### Futuro e melhorias\n\n* Criador vai mostrar em próximas aulas como manter **consistência entre vídeos longos**, reutilizando o último frame de um para iniciar o seguinte.\n* Isso permitirá transições perfeitas e vídeos de maior duração sem cortes perceptíveis.\n\n---\n\n### Conclusão\n\nO fluxo demonstra uma **automação poderosa, barata e escalável** para criar avatares consistentes em imagens e vídeos UGC. É aplicável para lojas, SaaS, agências, criadores de conteúdo e até influencers virtuais.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13495,
+    "author": "INEMA",
+    "date": "2025-08-28T19:48:39+00:00",
+    "text": "==================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13494,
+    "author": "INEMA",
+    "date": "2025-08-28T19:48:35+00:00",
+    "text": "e42. Nano Banana + Veo3: UGC espetacular\n\nVocê aprende a construir um sistema automatizado que permite gerar avatares personalizados e vídeos UGC hiper-realistas a partir de produtos, usando a nova IA do Google \"Nano Banana\" integrada no N8N. A automação foi desenhada para funcionar 100% via Telegram, incluindo validação da imagem antes de criar o vídeo final.\n\n🛠️ O que conseguimos com esta automação?\n\n* Gerar vídeos realistas com consistência visual extrema\n* Criar avatares personalizados com uma única imagem\n* Validar ou rejeitar imagens antes de gerar o vídeo\n* Economizar tempo e custos na produção de conteúdo\n* Evitar loops desnecessários usando webhooks inteligentes\n* Criar um fluxo replicável para SaaS, lojas ou criadores de conteúdo\n\n🧰 Estrutura do fluxo automatizado\n\n* Disparo por Telegram: o bot recebe uma imagem e uma legenda com instruções\n* Análise da imagem com IA (cores, pessoa, roupa, etc.)\n* Geração do prompt: combina as instruções da legenda com a análise da imagem\n* Criação da imagem final com Nano Banana (modo edição)\n* Validação via Telegram: envia a imagem e aguarda aprovação ou nova geração\n* Geração do prompt de vídeo: com estrutura multi-cena e estilo UGC\n* Criação de vídeos usando Veo3 Fast para cada cena\n* Agrupamento dos vídeos individuais em um só com Fal.ai\n* Envio final do vídeo ao usuário via Telegram\n\n🛠️ Ferramentas utilizadas\n\n* N8N\n* Telegram Bot API\n* GPT-4.1\n* Nano Banana (Google)\n* Veo3 Fast (para vídeo)\n* Fal.ai (para unir vídeos)\n\n🧠 Conselhos chave que aprendemos\n\n* Usar execution.resumeUrl permite evitar loops e fazer esperas eficientes\n* Sempre validar as imagens com o usuário antes de gerar o vídeo final\n* Trabalhar com prompts estruturados (YAML ou markdown) melhora a consistência\n* Aproveitar plataformas baratas (execuções a partir de 0,02€) para escalar sistemas UGC\n* Esse fluxo pode ser adaptado para formulário ou site e vendido como serviço\n\nResources\n\n* Blueprint vídeos longos\n* KIE.AI API VEO 3\n* Fal.ai Merge Videos",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13493,
+    "author": "INEMA",
+    "date": "2025-08-28T19:46:54+00:00",
+    "text": "https://fal.ai/models/fal-ai/ffmpeg-api/merge-videos",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 13492,
+    "author": "INEMA",
+    "date": "2025-08-28T19:46:28+00:00",
+    "text": "https://docs.kie.ai/veo3-api/generate-veo-3-video",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 13491,
+    "author": "INEMA",
+    "date": "2025-08-28T19:45:44+00:00",
+    "text": "======================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13490,
+    "author": "INEMA",
+    "date": "2025-08-28T19:45:40+00:00",
+    "text": "Consistência brutal! Nano Banana + Veo3 🧠⚡\n\nIsto é um antes e depois para qualquer pessoa que queira fazer imagens realistas de produtos ou marca pessoal. Anexo imagens e vídeo para que veja os resultados 😎\n\n📸 Com uma única imagem, esta automação cria um avatar hiper-realista e consistente que aparece promovendo seu produto...\n\n👁️‍🗨️ O incrível é a consistência visual:\n➡️ Sempre o mesmo modelo, mesmo rosto, mesma estética\n➡️ Mesmo que mude o fundo, a roupa ou o produto\n➡️ Em cada imagem e em cada cena do vídeo\n\nE como se não bastasse... 🔁 Juntamos múltiplas cenas para criar vídeos longos!\nAssim você pode gerar conteúdo de 15, 30 ou 60 segundos com o mesmo avatar.\n\n🚀 O que montamos nesta aula?\n✅ Imagens geradas com Nano Banana (a nova joia da Google IA)\n✅ Diálogos estilo UGC gerados com GPT-4.1\n✅ Vídeos multi-cena com Veo3 Fast\n✅ Agrupamento final com Fai.ai\n✅ Validação de imagem no Telegram antes de lançar o vídeo\n✅ Tudo automatizado com N8N\n\nIsso pode ser aplicado se você é marca, loja, SaaS, agência, consultor, influenciador ou vende na Amazon.\nAgora você pode ter seu próprio modelo de marca, em vídeo, dizendo o que quiser, quando quiser… por US\\$ 0,02 (imagem com Nano Banana).\n\n42. Nano Banana + Veo3: UGC espetacular",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13489,
+    "author": "INEMA",
+    "date": "2025-08-28T19:44:23+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13489_031.jpg"
+  },
+  {
+    "id": 13488,
+    "author": "INEMA",
+    "date": "2025-08-28T19:44:22+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13488_032.jpg"
+  },
+  {
+    "id": 13487,
+    "author": "INEMA",
+    "date": "2025-08-28T19:44:13+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13487_033.jpg"
+  },
+  {
+    "id": 13486,
+    "author": "INEMA",
+    "date": "2025-08-28T19:44:13+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13486_034.jpg"
+  },
+  {
+    "id": 13485,
+    "author": "INEMA",
+    "date": "2025-08-28T19:44:03+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "UGC Videos Largos.json"
+  },
+  {
+    "id": 13484,
+    "author": "INEMA",
+    "date": "2025-08-28T19:43:55+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13484_036.jpg"
+  },
+  {
+    "id": 13483,
+    "author": "INEMA",
+    "date": "2025-08-28T19:43:03+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13483_037.jpg"
+  },
+  {
+    "id": 13482,
+    "author": "INEMA",
+    "date": "2025-08-28T19:42:39+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13482_038.jpg"
+  },
+  {
+    "id": 13481,
+    "author": "INEMA",
+    "date": "2025-08-28T19:41:59+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13481_039.jpg"
+  },
+  {
+    "id": 13480,
+    "author": "INEMA",
+    "date": "2025-08-28T19:41:08+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13480_040.jpg"
+  },
+  {
+    "id": 13479,
+    "author": "INEMA",
+    "date": "2025-08-28T19:39:50+00:00",
+    "text": "e42 - Nano Banana + Veo3: UGC espetacular",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13478,
+    "author": "INEMA",
+    "date": "2025-08-28T19:39:49+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13477,
+    "author": "INEMA",
+    "date": "2025-08-28T19:39:49+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13476,
+    "author": "INEMA",
+    "date": "2025-08-28T19:39:48+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13475,
+    "author": "INEMA",
+    "date": "2025-08-28T19:39:48+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13474,
+    "author": "INEMA",
+    "date": "2025-08-28T19:39:48+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13473,
+    "author": "INEMA",
+    "date": "2025-08-28T19:39:47+00:00",
+    "text": "https://chatgpt.com/c/68b0afd2-4368-832a-9ffe-d8de28c9a426",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 13472,
+    "author": "INEMA",
+    "date": "2025-08-28T19:39:47+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13471,
+    "author": "INEMA",
+    "date": "2025-08-28T19:39:41+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

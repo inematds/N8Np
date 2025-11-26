@@ -1,0 +1,473 @@
+{
+  "name": "crear_imagen",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data[0].b64_json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -20,
+        360
+      ],
+      "id": "118d5ef4-6ad1-4f5b-9883-f8ac93610757",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "tituloImagen"
+            },
+            {
+              "name": "promptImagen"
+            },
+            {
+              "name": "chatID"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1020,
+        220
+      ],
+      "id": "7728367d-a0cb-4ca9-ac1b-5fbc887ec8aa",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "gpt-image-1"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.output.replace(/\"/g, '') }}"
+            },
+            {
+              "name": "size",
+              "value": "auto"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -380,
+        220
+      ],
+      "id": "d6b0d4b7-f900-42e3-b6a2-3cbcfb727126",
+      "name": "Generate Image",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Apify"
+        },
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4.1",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -760,
+        460
+      ],
+      "id": "6cc04a1f-8b2b-4dac-bacf-8b255bea7a46",
+      "name": "GPT 4.1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $('When Executed by Another Workflow').item.json.tituloImagen }}.png",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1PitK2tzc92vOpraovKDaR4IilRVWhmNY",
+          "mode": "list",
+          "cachedResultName": "Imagenes generadas",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1PitK2tzc92vOpraovKDaR4IilRVWhmNY"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        140,
+        360
+      ],
+      "id": "61e0502b-1f57-4541-96df-558f8442e661",
+      "name": "Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Prompt Imagen\n",
+        "height": 240,
+        "width": 360,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -820,
+        140
+      ],
+      "id": "8e196236-161f-4247-8c05-4165737b1d64",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "# Trigger\n",
+        "height": 240,
+        "width": 260,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1100,
+        140
+      ],
+      "id": "55fd9c64-4668-47e0-8e15-572a7fa2cf94",
+      "name": "Sticky Note5",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "# Generar Image\n",
+        "height": 240,
+        "width": 280,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -440,
+        140
+      ],
+      "id": "78758aff-71df-4b62-9cb7-63361f305eb2",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# Enviar Contenido",
+        "height": 240,
+        "width": 340,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        0
+      ],
+      "id": "e81b18ec-1eb1-4217-83c4-fc202ff7ffb1",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "# Subir archivo & actualizar tabla",
+        "height": 240,
+        "width": 600,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        280
+      ],
+      "id": "5659cbda-cd78-404e-9ca5-ecfb1c1b9335",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "marketing_team_log",
+          "mode": "list",
+          "cachedResultName": "marketing_team_log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "titulo": "={{ $('When Executed by Another Workflow').item.json.tituloImagen }}",
+            "requerimiento": "={{ $('When Executed by Another Workflow').item.json.promptImagen }}",
+            "file_id": "={{ $json.id }}",
+            "link": "={{ $json.webViewLink }}",
+            "tipo": "Imagen Creada"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "requerimiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "file_id",
+              "displayName": "file_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "post",
+              "displayName": "post",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        300,
+        360
+      ],
+      "id": "b165c944-6703-4e6c-802b-4c00b00917fb",
+      "name": "Postgres",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "operation": "send-image",
+        "instanceName": "Prueba",
+        "remoteJid": "={{ $('When Executed by Another Workflow').item.json.chatID }}",
+        "media": "={{ $json.data[0].b64_json }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        20,
+        80
+      ],
+      "id": "659f0d11-b75d-4502-be75-38b7d54238d9",
+      "name": "Evolution API",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Prompt: {{ $json.promptImagen }}\nTitulo de imagen: {{ $json.tituloImagen }}",
+        "options": {
+          "systemMessage": "=# Descripción General\nEres un ingeniero experto en prompts para generación de imágenes. Tu función es tomar un concepto o tema simple de imagen y expandirlo en un prompt detallado y completo que pueda ser procesado por un modelo de generación de imágenes texto-a-imagen.\n\n## Instrucciones para el Prompt\nTu prompt detallado debe describir claramente los siguientes elementos:\n\n1) **Sujeto Principal**: ¿Cuál es el foco primario de la imagen?\n2) **Fondo/Entorno**: ¿Qué está sucediendo en el fondo o ambiente?\n3) **Estilo Visual**: Especifica el estilo visual (ej: hiperrealista, pintura digital, acuarela, anime, render 3D, fotografía profesional, ilustración vectorial)\n4) **Atmósfera/Iluminación**: Describe el tono emocional e iluminación (ej: atardecer cálido y suave, nubes tormentosas dramáticas, luces de neón futuristas, luz natural difusa)\n5) **Detalles Adicionales**: Menciona objetos específicos, vestimenta, colores, texturas o características notables que deben aparecer\n\n## Formato de Salida\n- Comienza con un prompt descriptivo limpio y natural que integre todos los elementos anteriores de manera fluida\n- La descripción debe sonar como si estuviera escrita específicamente para que una IA genere una imagen profesional de alta calidad\n- Evita repetir el tema original textualmente - en su lugar, reformúlalo como una escena vívida o concepto visual\n- Usa lenguaje rico, vívido e imaginativo\n- Incluye términos técnicos que mejoren la calidad: \"alta resolución\", \"ultra detallado\", \"composición cinematográfica\", \"iluminación profesional\"\n\n## Palabras Clave de Calidad (incluir cuando sea apropiado):\n- **Calidad técnica**: \"8K ultra HD\", \"alta resolución\", \"super detallado\", \"calidad profesional\"\n- **Estilo fotográfico**: \"lente 85mm\", \"profundidad de campo\", \"bokeh suave\", \"composición de regla de tercios\"\n- **Iluminación**: \"golden hour\", \"luz suave difusa\", \"contraluz dramático\", \"iluminación cinematográfica\"\n\n## Ejemplo\n- **Entrada**: \"Un gato comiendo\"\n- **Salida**: \"Un elegante gato doméstico de pelaje anaranjado con rayas oscuras, sentado en una mesa de madera rústica, delicadamente comiendo de un tazón de cerámica blanca. La escena transcurre en una cocina acogedora con luz natural suave filtrándose por una ventana lateral, creando sombras cálidas y destacando la textura del pelaje. Estilo fotografía profesional, alta resolución, composición cinematográfica con profundidad de campo, ambiente hogareño y tranquilo, colores cálidos y naturales.\"\n\n## Consejos Específicos para Marketing:\n- Para **flyers/promociones**: Incluye \"diseño llamativo\", \"colores vibrantes\", \"texto legible\"\n- Para **redes sociales**: Menciona \"formato cuadrado\", \"colores que destacan en feed\"\n- Para **contenido profesional**: Enfatiza \"estilo corporativo\", \"colores de marca\", \"imagen limpia\"\n\nGenera siempre prompts que resulten en imágenes de calidad profesional y visualmente atractivas."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        -760,
+        220
+      ],
+      "id": "7fa97d06-e165-4671-b290-2dbbe68fcff5",
+      "name": "Prompt Imagen "
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Prompt Imagen ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Evolution API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT 4.1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Prompt Imagen ",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres": {
+      "main": [
+        []
+      ]
+    },
+    "Prompt Imagen ": {
+      "main": [
+        [
+          {
+            "node": "Generate Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8608c761-f4be-4f16-8f39-c720d1f243db",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "oLizDQ0m6PXDQSvo",
+  "tags": []
+}

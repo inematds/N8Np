@@ -1,0 +1,705 @@
+{
+  "name": "m23 - Auditoria de IA 2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "f10dca3a-0be5-4a6c-8de5-294899ad97c4",
+        "responseMode": "lastNode",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "id": "235a588e-7294-46bd-ba8c-215805019222",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -496,
+        320
+      ],
+      "webhookId": "f10dca3a-0be5-4a6c-8de5-294899ad97c4"
+    },
+    {
+      "parameters": {
+        "model": "sonar-pro",
+        "messages": {
+          "message": [
+            {
+              "content": "=Company Name:  {{ $('Get many rows').item.json.company_name }}\nIndustry: {{ $('Get many rows').item.json.industry }}\nNumber of Employees:  {{ $('Get many rows').item.json.employee_count }}\nPrimary Business Goals:  {{ $('Get many rows').item.json.business_goals }}\n\nSearch for the following:\n1. A brief description of the company's services or products.\n2. Any recent news, press releases, or key milestones.\n3. Competitor landscape and positioning within its industry.\n4. Common challenges businesses in this industry face.\n5. Potential AI and automation opportunities based on industry trends.\n\nIf little to no information is found on the specific company, summarize general insights about businesses in the {{ $('Get many rows').item.json.industry }}  industry that match the size and goals of {{ $('Get many rows').item.json.company_name }}. \n\nStructure the response in a clear and concise format, avoiding unnecessary filler language "
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": "[REMOVED]"
+        },
+        "requestOptions": {}
+      },
+      "id": "6cdbefb8-f301-473d-86ac-8896a5cc4875",
+      "name": "Perplexity Research",
+      "type": "n8n-nodes-base.perplexity",
+      "typeVersion": 1,
+      "position": [
+        240,
+        0
+      ],
+      "credentials": {
+        "perplexityApi": {
+          "id": "[REMOVED]",
+          "name": "Perplexity N14"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "CHATGPT-4O-LATEST"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an AI consultant generating a **comprehensive AI & automation audit report** based on collected business inputs and enriched research.\n\nGenerate a professional and structured draft report using the data provided. The report must be written entirely in Brazilian Portuguese, with clear sections, concise paragraphs, and a technical tone suitable for business use. Include all relevant details without leaving any field empty.\n\n\n### Inputs:\n\n- **Company Name:**\n{{ $('Get many rows').item.json.company_name }}\n\n- **Industry:** \n{{ $('Get many rows').item.json.industry }}\n\n- **Employees Count:** \n{{ $('Get many rows').item.json.employee_count }}\n\n- **Business Goals:** \n{{ $('Get many rows').item.json.business_goals.join(', ') }}\n\n- **Workflow Analysis:** \n{{ $('Get many rows').item.json.tasks.map(task => `- ${task.description} (${task.frequency}, ${task.timeSpent}h, ${task.responsibleRole}, ${task.department})`).join('\\n') }}\n\n- **Data Infrastructure:**  \n  - **Data Sources:**  \n{{ $('Get many rows').item.json.data_sources.join(', ') }}\n\n  - **Data Quality:**  \n{{ $('Get many rows').item.json.data_quality }}\n\n- **AI Implementation Preferences:**  \n  - **Interested Tools:**  \n{{ $('Get many rows').item.json.ai_tools.join(', ') }}\n\n  - **Budget:**  \nR$ {{ $('Get many rows').item.json.budget }}\n\n  - **Implementation Approach:**  \n{{ $('Get many rows').item.json.implementation_approach }}\n\n  - **Compliance Requirements:**  \n{{ $('Get many rows').item.json.compliance_requirements }}\n\n- **Email:**  \n{{ $('Get many rows').item.json.email }}\n\n- **Created At:**  \n{{ $('Get many rows').item.json.created_at }}\n\n\n### **Report Output Structure**\n**1. Executive Summary**  \nProvide a **concise** introduction summarizing the company, its goals, and the scope of this audit. Mention key challenges identified from **workflow analysis and Perplexity research**. \n\n**2. Current Business Processes & Pain Points**  \nBreak down the company's current processes based on their workflow analysis. Identify which **tasks are the biggest bottlenecks** and whether they are **manual, inefficient, or data-limited**. Highlight where **data quality issues** might impact automation.\n\n**3. AI & Automation Opportunities**  \nFor each **high-impact area**, recommend a solution based on Mark's structured decision-making process. Ensure recommendations are **strategic, practical, and justified**.  \n\n- **Customer-Facing AI (If applicable)**\n  - If handling **high-volume repetitive inquiries**, suggest **Voiceflow or Botpress** for chatbot implementation.  \n  - If lead response time is an issue, suggest **Make.com or n8n** for automated follow-ups.  \n\n- **Sales & Lead Handling Optimization (If applicable)**\n  - If speed-to-lead is a problem, recommend an automation flow with **Make.com/n8n + CRM integration**.  \n  - For reactivation of cold leads, suggest **custom GPTs or AI-driven outreach sequences**.  \n\n- **Workflow Automation (If applicable)**\n  - Identify high-friction, repetitive tasks that can be automated using **Make.com (simpler) or n8n (more complex, custom logic)**.  \n  - If tasks require dynamic logic or integration across multiple platforms, recommend **n8n or Python-based scripts**.  \n\n- **Data Structuring & Readiness**\n  - If data is unstructured or fragmented, recommend **centralizing in Google Sheets, CRM, or using APIs** before AI is applied.  \n  - If a company is willing to improve data but lacks expertise, suggest hiring a **data engineer** or using **custom ETL pipelines**.  \n\n- **AI-Assisted Development (For Tech Teams)**\n  - If developers are using AI-assisted coding, ensure they are **reviewing AI-generated code** and not blindly deploying.  \n  - If security concerns exist, suggest **GitHub Copilot or Clusher AI** for managed AI-enhanced development. \n\n---\n\n# **Solution Matrix to Draw Inspiration From** \n\n# AI & Automation Solutions and Tools\n\n## 1. Customer-Facing AI Solutions\n### **Voiceflow**\n- **When to Use:** If the business receives a high volume of repetitive inquiries (e.g., FAQs, appointment scheduling).\n- **Example Implementation:** Deploy a Voiceflow chatbot on the website and integrate it with the CRM to log inquiries.\n- **Roadmap:**\n  - **Phase 1:** Define top 20 customer questions.\n  - **Phase 2:** Build a chatbot flow that answers these automatically.\n  - **Phase 3:** Integrate with CRM to capture leads and automate follow-ups.\n  - **Phase 4:** Train AI to escalate complex inquiries to human agents.\n\n### **Botpress**\n- **When to Use:** When the business needs a chatbot with complex logic or internal integrations (e.g., internal helpdesk automation).\n- **Example Implementation:** Use Botpress to build an internal HR chatbot that answers employee questions and integrates with payroll.\n- **Roadmap:**\n  - **Phase 1:** Identify repetitive HR and IT support questions.\n  - **Phase 2:** Build chatbot logic in Botpress.\n  - **Phase 3:** Connect to company database for real-time employee info.\n  - **Phase 4:** Expand to handle leave requests and approvals.\n\n### **Make.com + AI**\n- **When to Use:** When automating chatbot-human handoffs or triggering workflows from chatbot interactions.\n- **Example Implementation:** Connect Voiceflow to Make.com so that when a lead requests a demo, Make.com books a calendar invite.\n- **Roadmap:**\n  - **Phase 1:** Set up chatbot with demo request intent.\n  - **Phase 2:** Create Make.com workflow that triggers when a request is made.\n  - **Phase 3:** Automatically schedule meetings and send reminders.\n  - **Phase 4:** Integrate with CRM to track interactions.\n\n---\n\n## 2. Sales & Lead Handling Optimization\n### **Make.com / n8n**\n- **When to Use:** If leads are going cold due to slow responses, or if sales follow-ups are inconsistent.\n- **Example Implementation:** Automate follow-ups so that every lead receives a personalized email or SMS 5 minutes after filling out a form.\n- **Roadmap:**\n  - **Phase 1:** Connect form submissions to Make.com/n8n.\n  - **Phase 2:** Trigger an email sequence based on lead source.\n  - **Phase 3:** Integrate with CRM to track lead responses.\n  - **Phase 4:** Use AI to segment leads and prioritize high-intent ones.\n\n### **AI-Powered Outreach**\n- **When to Use:** For lead nurturing or reactivation of old contacts.\n- **Example Implementation:** Use a custom GPT to craft personalized cold emails for leads that have not been contacted in 30 days.\n- **Roadmap:**\n  - **Phase 1:** Extract stale leads from CRM.\n  - **Phase 2:** Generate personalized emails using GPT.\n  - **Phase 3:** Automate sending and tracking open rates.\n  - **Phase 4:** Schedule follow-ups based on response behavior.\n\n### **Automated Lead Scoring**\n- **When to Use:** If sales teams spend too much time on low-quality leads.\n- **Example Implementation:** Use AI to rank leads based on behavior, like email opens, website visits, and demo requests.\n- **Roadmap:**\n  - **Phase 1:** Define lead scoring criteria.\n  - **Phase 2:** Set up AI model to score new leads.\n  - **Phase 3:** Route high-priority leads to sales team.\n  - **Phase 4:** Optimize based on conversion performance.\n\n---\n\n## 3. Workflow & Process Automation\n### **Make.com**\n- **When to Use:** If the business has **simple, repetitive tasks** that can be automated without code.\n- **Example Implementation:** Automatically send invoices when a contract is signed.\n- **Roadmap:**\n  - **Phase 1:** Identify processes that require manual input.\n  - **Phase 2:** Automate a single process using Make.com.\n  - **Phase 3:** Expand automations across departments.\n  - **Phase 4:** Introduce AI-based decision-making.\n\n### **n8n**\n- **When to Use:** When the workflow involves **multiple systems** or requires **custom logic**.\n- **Example Implementation:** Sync customer support tickets between a helpdesk and Slack in real time.\n- **Roadmap:**\n  - **Phase 1:** Map out data flows between tools.\n  - **Phase 2:** Build n8n workflows for ticket updates.\n  - **Phase 3:** Introduce AI-based ticket categorization.\n  - **Phase 4:** Optimize for efficiency and automation reliability.\n\n---\n\n## 4. Data Structuring & Integration\n### **Google Sheets / CRM**\n- **When to Use:** If the company needs a **centralized location** to store structured data before AI automation.\n- **Example Implementation:** Consolidate sales data from different platforms into a Google Sheet.\n- **Roadmap:**\n  - **Phase 1:** Identify key data sources.\n  - **Phase 2:** Set up automated data extraction.\n  - **Phase 3:** Normalize and clean data.\n  - **Phase 4:** Use AI to generate insights.\n\n### **Custom ETL Pipelines**\n- **When to Use:** If a business has **disparate data sources** and needs structured pipelines.\n- **Example Implementation:** Aggregate sales data from Shopify, Stripe, and HubSpot into a centralized warehouse.\n- **Roadmap:**\n  - **Phase 1:** Map existing data sources.\n  - **Phase 2:** Build ETL pipelines.\n  - **Phase 3:** Ensure data consistency.\n  - **Phase 4:** Make AI-ready by structuring into clean datasets.\n\n---\n\n## 5. AI-Assisted Development (For Tech Teams)\n### **Clusher AI (iLibrary)**\n- **When to Use:** If developers need structured AI assistance in writing code.\n- **Example Implementation:** Use Clusher AI to generate scalable backend functions.\n- **Roadmap:**\n  - **Phase 1:** Train devs to use AI-assisted coding.\n  - **Phase 2:** Implement AI-generated components.\n  - **Phase 3:** Ensure code review & scalability checks.\n  - **Phase 4:** Automate repetitive coding patterns.\n\n### **GitHub Copilot**\n- **When to Use:** If developers need AI help for **speeding up coding** but still require human review.\n- **Example Implementation:** Use Copilot to draft API integrations, with devs reviewing the final code.\n- **Roadmap:**\n  - **Phase 1:** Enable Copilot for all engineers.\n  - **Phase 2:** Define best practices for AI review.\n  - **Phase 3:** Track efficiency improvements.\n  - **Phase 4:** Scale AI adoption across engineering teams.\n\n---\n\n## 6. AI Agents & Advanced AI Workflows\n### **Custom GPTs**\n- **When to Use:** When businesses need AI **tailored to their unique workflows**.\n- **Example Implementation:** Create a GPT-powered assistant that analyzes contracts for legal teams.\n- **Roadmap:**\n  - **Phase 1:** Define the use case.\n  - **Phase 2:** Train GPT on company data.\n  - **Phase 3:** Deploy internally for testing.\n  - **Phase 4:** Expand functionality based on feedback.\n\n### **Vector Databases (Pinecone, Quadrant)**\n- **When to Use:** If AI needs memory to retrieve **contextual knowledge over time**.\n- **Example Implementation:** Store customer chat histories for personalized responses.\n- **Roadmap:**\n  - **Phase 1:** Define what data to store.\n  - **Phase 2:** Build vector embeddings.\n  - **Phase 3:** Optimize retrieval performance.\n  - **Phase 4:** Scale and integrate with AI workflows."
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": "[REMOVED]",
+          "temperature": 1
+        }
+      },
+      "id": "67da169a-9df4-4fff-b43c-ed6dc31b81bb",
+      "name": "Generate Draft Report",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        464,
+        0
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account nei14"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a senior business consultant from Early AI-dopters specializing in AI and automation strategy.\n\nPolish the text for clarity and keep it fully in Brazilian Portuguese, ensuring natural and professional language.\n\n\nYour task is to take the provided AI audit report and completely rewrite it to be:\n\n1. **More conversational and engaging** - Write as if you're speaking directly to the business owner in a friendly, professional consultation\n2. **Significantly longer and more detailed** - Double the length by adding deeper insights, more specific examples, and detailed explanations (not filler content)\n3. **More actionable** - Include specific steps, timelines, and tactical guidance\n4. **Better structured** - Improve flow, readability, and organization\n5. **Professional and polished** - NO emojis, casual symbols, or overly informal language\n\n**Input Report to Refine:**\n{{ $json.message.content }}\n\n**Refinement Instructions:**\n- Remove ALL emojis and casual symbols - keep it strictly professional\n- Remove any technical jargon and make it business-friendly\n- Add specific examples of how each recommendation would work in practice\n- Include realistic timelines and resource requirements\n- Expand on the \"why\" behind each recommendation with business impact\n- Create a more detailed implementation roadmap with specific milestones\n- Add budget considerations and ROI expectations where relevant\n- Make the tone warm, consultative, and confident but professional\n- Structure with clear headings and bullet points for easy scanning\n- Use clean, executive-level language throughout\n\n**Output Format:** \nClean markdown format without any code blocks or metadata. Start directly with the refined report content.\n\nTransform this into an exceptional, comprehensive business consultation report that reads like it came from a top-tier consulting firm - professional, insightful, and actionable."
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": "[REMOVED]",
+          "temperature": 1
+        }
+      },
+      "id": "7927fa4f-c2ca-46dc-9357-7e44df922524",
+      "name": "Refine Report",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        864,
+        0
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account nei14"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a markdown formatting specialist. Your task is to clean and output the provided content with perfect formatting.\n\nthe text \n\n**Input Content:**\n{{ $('Refine Report').first().json.message.content }}\n\n**Your Task:**\nTake the above content and output it as clean, properly formatted markdown with these requirements:\n\n1. **Remove ALL code block markers** - No ```markdown, ```, or any code fence indicators\n2. **Remove ALL metadata** - No system messages, timestamps, or technical annotations  \n3. **Remove ALL quotes** - No leading or trailing quotation marks around the content\n4. **Clean formatting** - Ensure proper markdown syntax (headings, lists, tables, etc.)\n5. **Remove any artifacts** - No [object Object], template expressions, or system-generated text\n6. **Preserve structure** - Keep all headings, bullet points, tables, and formatting intact\n7. **No wrapper text** - Do not add introductions, explanations, or conclusions\n\n**Critical Instructions:**\n- Output ONLY the cleaned markdown content\n- Start immediately with the first heading or content line  \n- End immediately after the last line of actual content\n- Do NOT include any explanatory text before or after\n- Do NOT wrap the output in code blocks or quotes\n- Do NOT add any metadata or system messages\n\nSimply output the clean, raw markdown content exactly as it should appear in the final document."
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": "[REMOVED]",
+          "temperature": 1
+        }
+      },
+      "id": "659e7a95-9160-49d0-860b-d752716e61ed",
+      "name": "Clean Markdown",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1264,
+        0
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account nei14"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $('Clean Markdown').item.json.message.content }}",
+        "destinationKey": "html",
+        "options": {}
+      },
+      "id": "b2ca2260-634b-40b7-b208-108186e1fc0b",
+      "name": "Convert to HTML",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        1664,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "driveId": "=myDrive",
+        "folderId": "=default",
+        "title": "=report_{{ $('Get many rows').item.json.company_name }}_{{ $('Get many rows').item.json.created_at }}_draft\n"
+      },
+      "id": "c5001fc0-fb57-4d6b-b59d-41421a25d22c",
+      "name": "Create Google Doc",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        1888,
+        0
+      ],
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Docs INEMA TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.documentId }}",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/pdf"
+            }
+          }
+        }
+      },
+      "id": "43f5573e-6c67-4145-b770-90aeea6e2f38",
+      "name": "Download Document",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2320,
+        0
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Get many rows').item.json.email }}",
+        "subject": "✅ Your AI Audit Is Ready",
+        "message": "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"UTF-8\">\n    <title>Sua Auditoria de IA Está Pronta</title>\n  </head>\n  <body style=\"margin:0; padding:0; font-family: Arial, sans-serif;\">\n    \n    <!-- Hidden Preheader (for Gmail snippet) -->\n    <span style=\"display:none; font-size:0; line-height:0; max-height:0; overflow:hidden; color:#ffffff;\">\n      Obrigado por solicitar sua Auditoria de IA! Estamos empolgados para compartilhar os resultados.\n    </span>\n    \n    <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\">\n      <tr>\n        <td align=\"center\" style=\"background-color:#000000; padding:30px 0;\">\n          <h1 style=\"color:#ffffff; margin:0; font-size:28px;\">\n            Your AI Audit Is Ready\n          </h1>\n        </td>\n      </tr>\n      <tr>\n        <td align=\"center\" style=\"padding:20px;\">\n          <table width=\"600\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:600px;\">\n            <tr>\n              <td style=\"padding:20px; text-align:left;\">\n                <p style=\"margin-top:0; font-size:16px; line-height:1.6;\">\n                  Hi there!\n                </p>\n                <p style=\"font-size:16px; line-height:1.6;\">\n                  Estamos felizes em compartilhar o arquivo da sua Auditoria de IA concluída. Confira o anexo abaixo. Se tiver alguma dúvida, basta responder a este e-mail.\n                </p>\n                <hr style=\"border:none; border-top:1px solid #000000; margin:20px 0;\">\n                <p style=\"font-size:16px; line-height:1.6; margin-bottom:0;\">\n                  Best,<br>\n                  <strong>INEMA VIP</strong>\n                </p>\n              </td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n    </table>\n    \n  </body>\n</html>",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "id": "e9ce2a16-ef4e-4a4d-a8f6-9c18faebb2a1",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2544,
+        0
+      ],
+      "webhookId": "007255d6-4f9f-45bb-92f9-eb5fe1941005",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail FTD"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ $json.id }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ $('Convert to HTML').item.json.message.content }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        0
+      ],
+      "id": "5a14cb3f-9915-4ebd-a3c5-d41ec5312673",
+      "name": "Update a document",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Docs INEMA TDS"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        -32
+      ],
+      "id": "370d1356-f084-400c-aa55-a7ee0d329450",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "ai_audits",
+        "limit": 1,
+        "filterType": "none"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        16,
+        -32
+      ],
+      "id": "234032bc-6046-44d7-ad1c-a058015ea250",
+      "name": "Get many rows",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase TDS Servico"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "Company Name",
+              "value": "={{ $json.company_name }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "=Industry",
+              "value": "={{ $json.industry }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": " Number of Employees",
+              "value": "={{ $json.employee_count }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Primary Business Goals",
+              "value": "={{ $json.business_goals }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -208,
+        352
+      ],
+      "id": "2a4b19f1-cf32-4996-a447-da0952facfaa",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "markdown",
+              "value": "={{ $json.message.content }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set Markdown1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        272
+      ],
+      "id": "86f06626-2f5b-4ad7-835e-1e3d2b06de22"
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.message.content }}",
+        "destinationKey": "html",
+        "options": {
+          "completeHTMLDocument": true,
+          "tables": true
+        }
+      },
+      "name": "Markdown to HTML1",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        1664,
+        240
+      ],
+      "id": "3f8f21c2-f59f-42f0-ac13-f8977a3ec102"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst token = 'Your-API-Token-Here';\nconst newItems = [];\nfor (const item of items) {\n    const html = item.json.html || '';\n    const reportTitle = item.json.report_title || 'Executive Report';\n    const fileName = reportTitle.replace(/\\s+/g, '_') + '.html';\n    const htmlBase64 = Buffer.from(html).toString('base64');\n    const body = {\n        Parameters: [\n            {\n                Name: 'File',\n                FileValue: {\n                    Name: fileName,\n                    Data: htmlBase64,\n                },\n            },\n            {\n                Name: 'PageSize',\n                Value: 'Letter',\n            },\n            {\n                Name: 'PageOrientation',\n                Value: 'Portrait',\n            },\n        ],\n    };\n    const response = await this.helpers.httpRequest({\n        method: 'POST',\n        url: 'https://v2.convertapi.com/convert/html/to/pdf',\n        headers: {\n            Authorization: `Bearer ${token}`,\n        },\n        body,\n        json: true,\n    });\n    if (response.Files && response.Files.length > 0) {\n        item.json.pdfFileName = response.Files[0].FileName || 'report.pdf';\n        item.json.pdfBase64 = response.Files[0].FileData || null;\n        if (response.Files[0].Url) {\n            item.json.pdfUrl = response.Files[0].Url;\n        }\n    } else {\n        item.json.error = response;\n    }\n    newItems.push(item);\n}\nreturn newItems;\n"
+      },
+      "name": "Convert HTML to PDF (ConvertAPI)1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        2128,
+        240
+      ],
+      "id": "afa3e7f0-4df3-4917-be6d-a1adb3117feb"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// Enhance table styling for the executive report\nconst results = items.map(item => {\n  const reportTitle = item.json.report_title || 'Executive Report';\n  let htmlString = item.json.html || '';\n  // CSS styling including improved table formatting\n  const styles = `\n    <style>\n      body { font-family: Arial, sans-serif; margin: 1in; }\n      h1 { text-align: center; font-size: 24pt; margin-bottom: 0.5in; }\n      h2, h3 { font-weight: bold; margin-top: 0.5in; }\n      p { line-height: 1.5; font-size: 12pt; }\n      table { width: 100%; border-collapse: collapse; table-layout: fixed; }\n      thead th { background-color: #f2f2f2; }\n      th, td { border: 1px solid #ddd; padding: 5px; font-size: 10pt; text-align: left; vertical-align: top; word-wrap: break-word; }\n      footer { position: fixed; bottom: 0.5in; left: 0; right: 0; text-align: center; font-size: 10pt; color: #888; }\n    </style>\n  `;\n  // Insert CSS into <head>\n  if (/<head\\s*>/i.test(htmlString)) {\n    htmlString = htmlString.replace(/<head\\s*>/i, `<head>${styles}`);\n  } else {\n    htmlString = `<head>${styles}</head>` + htmlString;\n  }\n  // Add report title if not present\n  if (!/<h1>/i.test(htmlString)) {\n    htmlString = htmlString.replace(/<body\\s*>/i, `<body><h1>${reportTitle}</h1>`);\n  }\n  // Append footer with page numbers for PDF.co\n  htmlString += `<footer><span class=\"pageNumber\"></span> / <span class=\"totalPages\"></span></footer>`;\n  item.json.html = htmlString;\n  item.json.report_title = reportTitle;\n  return item;\n});\nreturn results;\n"
+      },
+      "name": "Style HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1936,
+        240
+      ],
+      "id": "16fd8f64-274d-498d-971a-7de56e7f8dfb"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "pdfBase64",
+        "options": {
+          "fileName": "={{ $json.pdfFileName }}",
+          "mimeType": "pdf"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2352,
+        240
+      ],
+      "id": "fcf27754-ca92-4a88-b36b-c1bddfea6d36",
+      "name": "Convert to File1"
+    }
+  ],
+  "pinData": {
+    "Webhook Trigger": [
+      {
+        "json": {
+          "email": "test@example.com",
+          "timestamp": "2024-01-15T10:30:00Z",
+          "business_overview": {
+            "company_name": "TechStart Solutions",
+            "industry": "Software Development",
+            "employees": "25-50",
+            "goals": [
+              "Increase operational efficiency",
+              "Reduce manual data entry",
+              "Improve customer response times",
+              "Scale business operations"
+            ]
+          },
+          "workflow_analysis": {
+            "tasks": [
+              {
+                "description": "Manual data entry from customer forms into CRM",
+                "frequency": "Daily",
+                "timeSpent": "2 hours",
+                "responsible": "Sales Team",
+                "department": "Sales"
+              },
+              {
+                "description": "Customer support ticket routing and initial responses",
+                "frequency": "Hourly",
+                "timeSpent": "30 minutes",
+                "responsible": "Support Staff",
+                "department": "Customer Support"
+              },
+              {
+                "description": "Weekly sales report compilation",
+                "frequency": "Weekly",
+                "timeSpent": "3 hours",
+                "responsible": "Sales Manager",
+                "department": "Sales"
+              },
+              {
+                "description": "Invoice generation and follow-up",
+                "frequency": "Daily",
+                "timeSpent": "1 hour",
+                "responsible": "Accounting Team",
+                "department": "Finance"
+              },
+              {
+                "description": "Lead qualification and scoring",
+                "frequency": "Daily",
+                "timeSpent": "1.5 hours",
+                "responsible": "Marketing Team",
+                "department": "Marketing"
+              }
+            ]
+          },
+          "data_infrastructure": {
+            "data_sources": [
+              "HubSpot CRM",
+              "Google Sheets",
+              "Stripe",
+              "Zendesk",
+              "Website Contact Forms"
+            ],
+            "source_details": {
+              "CRM System": "HubSpot - contains customer data, deals, and communication history"
+            },
+            "data_quality": "Mixed - some data is well-structured in CRM, but manual processes create inconsistencies",
+            "willing_to_improve": true
+          },
+          "ai_implementation": {
+            "interested_tools": [
+              "Chatbots for customer support",
+              "Automated lead scoring",
+              "Document processing",
+              "Email automation",
+              "Data analysis and reporting"
+            ],
+            "budget": 15000,
+            "implementation_preference": "Gradual rollout with pilot programs",
+            "compliance_needs": "GDPR compliance required, SOC 2 preferred"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        []
+      ]
+    },
+    "Perplexity Research": {
+      "main": [
+        [
+          {
+            "node": "Generate Draft Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Draft Report": {
+      "main": [
+        [
+          {
+            "node": "Refine Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refine Report": {
+      "main": [
+        [
+          {
+            "node": "Clean Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Markdown": {
+      "main": [
+        [
+          {
+            "node": "Convert to HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to HTML": {
+      "main": [
+        [
+          {
+            "node": "Create Google Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Google Doc": {
+      "main": [
+        [
+          {
+            "node": "Update a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Document": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a document": {
+      "main": [
+        [
+          {
+            "node": "Download Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get many rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows": {
+      "main": [
+        [
+          {
+            "node": "Perplexity Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        []
+      ]
+    },
+    "Set Markdown1": {
+      "main": [
+        [
+          {
+            "node": "Markdown to HTML1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown to HTML1": {
+      "main": [
+        [
+          {
+            "node": "Style HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert HTML to PDF (ConvertAPI)1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Style HTML": {
+      "main": [
+        [
+          {
+            "node": "Convert HTML to PDF (ConvertAPI)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "22bea0b5-f6eb-473d-844e-5b9b1d7a8681",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "NPCZIEF3b8fAVD0e",
+  "tags": []
+}

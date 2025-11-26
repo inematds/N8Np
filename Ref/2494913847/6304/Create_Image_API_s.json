@@ -1,0 +1,147 @@
+{
+  "name": "Create Image API's",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-image-1\",\n  \"prompt\": \"Create a 4-panel comic strip in a vibrant, cartoon style reminiscent of classic animated sitcoms, with bold outlines, exaggerated facial expressions, and a bright, playful color palette. The characters should have yellow-toned skin, expressive eyes, and slightly caricatured proportions. The comic is designed to be used as a cold outreach tool for an AI automation consultant and should be clean, colorful, and engaging.\\n\\nCharacter A is a tech-savvy, confident professional with either a clean haircut or a scruffy beard. He wears a T-shirt with the attached logo. In the final panel, Character B appears—clearly different in appearance—and wears a plain T-shirt with the word \\\"Jack\\\" written on it.\\n\\nPanel 1 shows Character A sitting at his desk, looking intrigued at his open laptop screen. The laptop screen clearly shows a screenshot of the prospect’s business homepage. His expression reflects admiration and curiosity. His speech bubble says: \\\"Love how clean this is!\\\"\\n\\nPanel 2 shifts to Character A gazing out the window, looking thoughtful and slightly sad, perhaps holding a coffee. His speech bubble reads: \\\"Imagine more customers here...\\\"\\n\\nPanel 3 shows Character A having a eureka moment—a glowing lightbulb above his head. The background includes friendly cartoon robots performing helpful tasks like sorting tabs, organizing emails, or delivering digital forms. Character A now looks hopeful. His speech bubble says: \\\"AI automation could help.\\\"\\n\\nPanel 4 introduces Character B. He is smiling, maybe writing something on a sticky note or sending a message. His T-shirt says \\\"Jack\\\" in bold text. His expression is inviting and confident. His speech bubble reads: \\\"Want me to show you how?\\\"\\n\\nThe entire comic must follow a clean and punchy visual style. Each panel should include a speech bubble, and no text should exceed five words. The colors and design should draw from the brand elements and homepage description available in the Website Analysis step, such as vibrant purples, light gradients, and minimal icons. The composition should use contrast and accent props that reflect the brand’s energy and tone.\",\n  \"n\": 1,\n  \"size\": \"1024x1024\",\n  \"quality\": \"high\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2600,
+        480
+      ],
+      "id": "a647d621-cd17-4d6a-bf65-4c4de9b45487",
+      "name": "HTTP Request",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account 14"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "B64",
+              "value": "={{ $json.data[0].b64_json }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2820,
+        480
+      ],
+      "id": "bd0ab2dd-6e79-44e8-bf4d-e9778e869517",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const base64String = $json.B64;\n\nconst binaryData = Buffer.from(base64String, 'base64');\n\nreturn {\n  binary: {\n    data: {\n      data: binaryData,\n      mimeType: 'image/png',\n      fileName: 'generated-image.png'\n    }\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3000,
+        480
+      ],
+      "id": "393d0bc8-ed79-408e-9080-ddee40c4e9ab",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "=data",
+        "name": "={{$binary.data.fileName}}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3260,
+        480
+      ],
+      "id": "4df98550-3cf4-48d3-976a-107017a2bc23",
+      "name": "Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9edc0b59-569c-4282-864f-ce16847addae",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1ad5536c7c55ace0cd2d13b5ee509a9d5436e829bf5adf69ed3e58c359b43097"
+  },
+  "id": "D8xfk1rMBtdKHtkd",
+  "tags": []
+}

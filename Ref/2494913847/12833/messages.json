@@ -1,0 +1,196 @@
+[
+  {
+    "id": 12857,
+    "author": "INEMA",
+    "date": "2025-08-15T19:03:52+00:00",
+    "text": "breve, jti e scopes minimizados.\n\nComo fazer\n– exp 5–15 min; incluir jti; validar issuer/audience; checar blacklist.\n\nExemplo de claims\n\n```sub: user_123\nscope: posts:read,posts:write\naud: n8n-webhooks\niss: seu-backend\nexp: 1734398400\njti: 7b7c1f...```\n\nResposta esperada\n– 401 para exp expirado, aud/iss incorretos ou jti revogado.\n\n7. mTLS atrás de proxy\n   O que é\n   – Exigir certificado cliente em Nginx/API Gateway e só então repassar.\n\nComo fazer\n– Validar client cert CA no Nginx e adicionar um header interno X-Client-Cert: valid.\n– No n8n, recusar se header ausente.\n\nResposta esperada\n– Só quem tem cert cliente chega no n8n; demais 400/403 no edge.\n\n8. Segredos fora do fluxo\n   O que é\n   – Nunca hardcode. Use Credentials/variáveis de ambiente.\n\nComo fazer\n– Referenciar \\$env.MEU\\_SECRETO ou credenciais do n8n.\n– Negar logs sensíveis em nós de debug.\n\nResposta esperada\n– Nenhum segredo aparece em histórico ou versionamento.\n\n9. Honeytoken e canário\n   O que é\n   – Chave falsa monitorada para detectar vazamento.\n\nComo fazer\n– Criar X-Api-Key-canary aceita só no edge e alerta.\n– Se usada, alertar e rotacionar chaves reais.\n\nResposta esperada\n– Alerta imediato e trilha para resposta a incidentes.\n\n10. Limitar métodos e content-type\n    O que é\n    – Recusar GET/PUT/DELETE e tipos fora de application/json.\n\nComo fazer\n– No Webhook: método POST.\n– Function: checar \\$json.headers\\['content-type'] === 'application/json'.\n\nResposta esperada\n– 405 ou 415 para métodos/tipos inválidos.\n\n11. Concurrency guard e backpressure\n    O que é\n    – Evitar estouro de nós caros (LLM, banco).\n\nComo fazer\n– Gate por fila (ex.: Redis) ou contador em \\$global.\n– Se acima do limite, responder 429 com Retry-After.\n\nResposta esperada\n– 429 sob pico; sistema estável.\n\n12. Rotação automática de chaves\n    O que é\n    – Trocar segredos periodicamente sem downtime.\n\nComo fazer\n– Manter K1 e K2 válidos; aceitar ambos por janela; assinar novo com K2.\n\nResposta esperada\n– Nenhuma quebra durante rotação; tokens antigos expiram naturalmente.\n\n13. Sanitização e redaction nos logs\n    O que é\n    – Remover Authorization, cookies, PII de logs e respostas de erro.\n\nComo fazer\n– Function que zera cabeçalhos sensíveis antes de salvar/emitir logs.\n– Mensagens de erro genéricas: nunca diga se faltou senha ou token específico.\n\nResposta esperada\n– Logs úteis sem segredos; menos engenharia reversa por atacante.\n\n14. Pré-validação no edge com Turnstile/Proof-of-Work opcional\n    O que é\n    – Para endpoints públicos, exigir um desafio leve.\n\nComo fazer\n– Cloudflare Turnstile no cliente; backend verifica token antes de repassar.\n\nResposta esperada\n– Bots simples ficam de fora; menos spam.\n\nExemplos de respostas padrão no n8n\n– 200 ok\n– 400 invalid schema\n– 401 unauthorized/invalid signature/token expired\n– 403 forbidden\n– 413 payload too large\n– 415 unsupported media type\n– 429 too many requests\n\nChecklist de operação\n– WAF/edge com allowlist e rate limit ativo.\n– Método de autenticação aplicado + HMAC ou JWT curto.\n– Anti-replay ligado (timestamp/nonce).\n– Schema e tamanho validados.\n– Logs com redaction e alertas 401/403/429.\n– Plano de rotação de chaves e tokens.\n– Testes automatizados de segurança (curl/Postman/CI) cobrindo 200 e falhas.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12856,
+    "author": "INEMA",
+    "date": "2025-08-15T19:03:51+00:00",
+    "text": "Aqui vão hacks práticos para blindar webhooks no n8n, além do básico (Basic Auth, Header API Key e JWT). Curto e direto, com exemplos e respostas esperadas.\n\nResumo rápido\n– Minimize superfície de ataque no edge (WAF, rate limit, allowlist).\n– Verifique autenticidade e integridade de cada requisição (HMAC/JWT).\n– Evite replay, vazamento e abuso (nonce, expiração, idempotência).\n– Valide conteúdo e tamanho antes de tocar em recursos caros (schema, limites).\n– Observe, alerte e rotacione segredos como rotina.\n\n1. Rate limiting e IP allowlist no edge\n   O que é\n   – Bloquear/limitar chamadas antes do n8n, via Cloudflare, Nginx ou API Gateway.\n\nComo fazer\n– Cloudflare: regra WAF para permitir apenas países/IPs/clientes.\n– Nginx: limitar por IP/rota com limit\\_req e allow/deny.\n\nExemplo Nginx\n\n```limit_req_zone $binary_remote_addr zone=wl:10m rate=5r/s;\nserver {\n  location /webhook/ {\n    allow 200.201.0.0/16; deny all;\n    limit_req zone=wl burst=10 nodelay;\n    proxy_pass http://n8n:5678;\n}\n}```\n\nResposta esperada\n– Tráfego não autorizado recebe 403; floods recebem 429 antes de atingir o n8n.\n\n2. Assinatura HMAC do corpo (integridade)\n   O que é\n   – Emissor calcula HMAC-SHA256 do body com um segredo; você valida no n8n.\n\nComo fazer no n8n\n– Header X-Signature: hex/base64 do HMAC(body, secret).\n– Function antes de qualquer nó caro: recalcular e comparar.\n\nExemplo Function (Node.js)\n\nc```onst secret = $env.SECRET_WEBHOOK; // use Credentials/Env\nconst sig = $json.headers['x-signature'] || $json.headers['X-Signature'];\nconst body = JSON.stringify($json.body || {});\nconst crypto = require('crypto');\nconst calc = crypto.createHmac('sha256', secret).update(body).digest('hex');\nif (!sig || sig !== calc) {\n  return [{ status: 401, error: 'invalid signature' }]; // pare o fluxo\n}\nreturn [{ ok: true }];\n```\ncurl de teste\n\nB```ODY='{\"msg\":\"ping\"}'\nSIG=$(printf '%s' \"$BODY\" | openssl dgst -sha256 -hmac \"SEU_SEGREDO\" -hex | cut -d' ' -f2)\ncurl -X POST \"https://seu.webhook\" -H \"X-Signature: $SIG\" -H \"Content-Type: application/json\" -d \"$BODY\"\n```\nResposta esperada\n– 200 quando assinatura bate; 401 quando diverge.\n\n3. Anti-replay com nonce e timestamp\n   O que é\n   – Evitar reenvio do mesmo pacote.\n\nComo fazer\n– Headers X-Timestamp (epoch seg) e X-Nonce (uuid).\n– Recusar se clock drift > 120s ou nonce já visto (cache KV/DB com TTL).\n\nExemplo Function\n\nco```nst ts = Number($json.headers['x-timestamp'] || 0);\nconst nonce = $json.headers['x-nonce'];\nif (!ts || !nonce) return [{ status: 400, error: 'missing ts/nonce' }];\nif (Math.abs(Date.now()/1000 - ts) > 120) return [{ status: 401, error: 'stale' }];\n\n// checar nonce (ex.: Redis/SQLite). Pseudo:\nconst seen = $flow.get(nonce);\nif (seen) return [{ status: 401, error: 'replay' }];\n$flow.set(nonce, true, 180); // TTL 3 min\nreturn [{ ok: true }];\n\n```Resposta esperada\n– 401 para timestamps velhos ou nonce repetido.\n\n4. JSON Schema e limites de payload\n   O que é\n   – Validar formato e tamanho antes de acionar LLM/DB.\n\nComo fazer\n– Function com Ajv ou validação simples; rejeitar > X KB.\n\nExemplo simples\n\nco```nst raw = $json.body;\nconst size = Buffer.byteLength(JSON.stringify(raw));\nif (size > 50*1024) return [{ status: 413, error: 'payload too large' }];\nif (!raw || typeof raw !== 'object' || typeof raw.mensagem !== 'string') {\n  return [{ status: 400, error: 'invalid schema' }];\n}\nreturn [{ ok: true }];\n\n```Resposta esperada\n– 413 para excesso; 400 para schema inválido.\n\n5. Idempotência por chave\n   O que é\n   – Garantir que requisições repetidas não executem duas vezes.\n\nComo fazer\n– Header Idempotency-Key; armazene resultado por janela de tempo.\n\nExemplo\n\nco```nst key = $json.headers['idempotency-key'];\nif (!key) return [{ status: 400, error: 'missing idempotency key' }];\nif ($flow.get('idem:' + key)) return [{ status: 200, reused: true }];\n$flow.set('idem:' + key, true, 600); // 10 min\nreturn [{ ok: true }];\n\n```Resposta esperada\n– Primeira vez executa; repetição retorna reused sem refazer.\n\n6. JWT de curta duração + jti e escopos\n   O que é\n   – Tokens Bearer com exp",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12855,
+    "author": "INEMA",
+    "date": "2025-08-15T19:00:55+00:00",
+    "text": "===========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12854,
+    "author": "INEMA",
+    "date": "2025-08-15T19:00:51+00:00",
+    "text": "planeje rotação periódica de senhas/chaves/segredos.\n7. Logs: registre tentativas 401/403 e alerte.\n8. Produção vs teste: use segredos distintos.\n9. Conteúdo: valide schema do body (ex.: JSON Schema via Function) antes de prosseguir.\n10. Respostas: retorne 401/403 e nunca detalhe o motivo específico em produção.\n\nTestes rápidos com curl\n\n1. Sem proteção (esperado 200 quando desprotegido)\n   curl -X POST \"https\\://SEU\\_WEBHOOK\" -H \"Content-Type: application/json\" -d \"{\"mensagem\":\"ping\"}\"\n2. Basic Auth ok\n   curl -X POST \"https\\://SEU\\_WEBHOOK\" -u \"svc-interno\\:SUA\\_SENHA\" -H \"Content-Type: application/json\" -d \"{\"mensagem\":\"ping\"}\"\n3. Header Auth ok\n   curl -X POST \"https\\://SEU\\_WEBHOOK\" -H \"X-Api-Key: SUA\\_CHAVE\" -H \"Content-Type: application/json\" -d \"{\"mensagem\":\"ping\"}\"\n4. JWT ok\n   curl -X POST \"https\\://SEU\\_WEBHOOK\" -H \"Authorization: Bearer SEU\\_TOKEN\\_JWT\" -H \"Content-Type: application/json\" -d \"{\"mensagem\":\"ping\"}\"\n5. JWT expirado (esperado 401)\n   – Gere um token com exp no passado e repita o passo 4.\n\nChecklist final\n– Webhook com um dos métodos ativos (Basic, Header ou JWT).\n– Segredo/credenciais guardados em Credentials.\n– Testes 200/401 via curl/Postman.\n– Logs/alertas ligados.\n– Plano de rotação de segredos e chaves.\n– Se houver usuários/planos/roles, use JWT + Switch.\n\nResumo completo com tópicos, exemplos e respostas\n\nO que configurar primeiro?\n– Ativar autenticação no Webhook e testar em ambiente de teste.\nExemplo: Header Auth com X-Api-Key e chave de 64+ chars.\n\nQual método escolher?\n– Interno/rápido: Basic Auth.\n– Serviço/integração B2B: Header Auth (X-Api-Key).\n– Usuários, planos, permissões e expiração: JWT.\n\nComo gerar um JWT seguro?\n– Assine com HS256 e segredo de 256 bits.\n– Inclua sub, role, plan, iat, exp.\nResposta prática: gere o secret no servidor e assine o token no backend; evite ferramentas online com segredos reais.\n\nComo rotear por role/plan?\n– Decode do JWT no fluxo (Function) e use Switch para separar admin vs user, vip vs basic.\n\nComo evitar vazamentos?\n– Não exponha URLs de Production; use nomes não óbvios; limite IP; rotacione chaves.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12853,
+    "author": "INEMA",
+    "date": "2025-08-15T19:00:51+00:00",
+    "text": "Passo a passo para proteger webhooks no n8n\n\nPreparação\n\n1. Crie um fluxo simples com um nó Webhook (POST) e um nó de resposta (por exemplo, Respond to Webhook ou Set → Respond to Webhook), só para testar.\n2. Copie as URLs de Test e Production do Webhook.\n\nMétodo 1: Basic Auth (usuário e senha)\n\n1. No nó Webhook, abra Authentication e escolha Basic Auth.\n2. Clique em Create New Credential e defina:\n\n   * Username: ex. svc-interno\n   * Password: gere uma senha forte (32+ chars).\n3. Salve o fluxo e ative.\n4. Teste com curl:\n   curl -X POST \"https\\://SEU\\_WEBHOOK\" -u \"svc-interno\\:SUA\\_SENHA\" -H \"Content-Type: application/json\" -d \"{\"mensagem\":\"ping\"}\"\n5. Se quiser validar dentro do fluxo (opcional): adicione um IF para checar campos do body/headers e retornar status 401 se faltar credencial.\n\nQuando usar\n– Rápido para testes internos.\nLimitações\n– Se a senha vazar, qualquer um acessa. Rotacione senhas com frequência.\n\nMétodo 2: Header Authorization (API Key em cabeçalho)\n\n1. No nó Webhook, selecione Header Auth.\n2. Configure:\n\n   * Header Name: Authorization (ou X-Api-Key)\n   * Header Value: uma chave forte, por exemplo: api\\_live\\_9b0f… (64+ chars).\n3. Salve e ative.\n4. Teste com curl:\n   curl -X POST \"https\\://SEU\\_WEBHOOK\" -H \"Authorization: api\\_live\\_9b0f...\" -H \"Content-Type: application/json\" -d \"{\"mensagem\":\"ping\"}\"\n5. Para múltiplos clientes/serviços, gere uma chave por cliente e armazene a lista/validação no próprio n8n (ex.: em uma tabela, Google Sheet, DB) antes de prosseguir no fluxo.\n\nQuando usar\n– Integrações B2B ou entre serviços.\nVantagem\n– Você identifica quem chamou pelo valor da chave.\nCuidados\n– Rotacione chaves; não versionar chaves no repositório.\n\nMétodo 3: JWT (Json Web Token com expiração e claims)\n\n1. No nó Webhook, escolha JWT Authorization.\n2. Em Credentials, crie uma credencial JWT:\n\n   * Algorithm: HS256\n   * Secret: gere um segredo aleatório de 256 bits (ex.: no Node: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\")\n3. Gere o token JWT para o chamador (no seu backend). Para testes, use uma ferramenta local/segura. Payload sugerido:\n   {\n   \"sub\": \"user\\_123\",\n   \"email\": \"user@exemplo.com\",\n   \"role\": \"admin\",\n   \"plan\": \"vip\",\n   \"iat\": 1734312000,\n   \"exp\": 1734398400\n   }\n   Observações\n   – iat/exp são timestamps em segundos.\n   – O Secret usado para assinar deve ser o mesmo configurado no Webhook.\n4. Envie chamadas com o cabeçalho:\n   Authorization: Bearer SEU\\_TOKEN\\_JWT\n   Exemplo curl:\n   curl -X POST \"https\\://SEU\\_WEBHOOK\" -H \"Authorization: Bearer SEU\\_TOKEN\\_JWT\" -H \"Content-Type: application/json\" -d \"{\"mensagem\":\"ping\"}\"\n5. Roteie por claims\n   – Após o Webhook, adicione um Function (ou Code) para extrair claims, caso o n8n não exponha automaticamente o payload decodificado:\n   // Lê o JWT do header e decodifica o payload (já foi verificado pelo Webhook)\n   const auth = \\$json.headers.authorization || '';\n   const token = auth.split(' ')\\[1] || '';\n   const payloadPart = token.split('.')\\[1] || '';\n   const payload = JSON.parse(Buffer.from(payloadPart, 'base64url').toString('utf8'));\n   return \\[{ jwt: payload }];\n   – Use um Switch para ramificar por {{\\$json.jwt.role}} (admin, user, etc.) ou {{\\$json.jwt.plan}} (vip, basic).\n6. Expiração e revogação\n   – Defina exp curto (ex.: 15 min) e renove conforme necessário.\n   – Para revogar, mantenha uma lista de jti (ID do token) ou sub bloqueados e cheque antes de seguir.\n\nQuando usar\n– Apps, usuários e integrações que exigem autorização granular, expiração e contexto do usuário.\nVantagens\n– Permite decisões no fluxo por role/plan/permissões.\n\nDicas de segurança adicionais\n\n1. Nome do Webhook: evite nomes previsíveis na URL.\n2. IP allowlist (se possível): filtre origem com um Reverse Proxy (ex.: Nginx/Cloudflare) ou Firewall.\n3. Anti-replay: inclua no payload nonce e timestamp; rejeite requisições fora de janela curta.\n4. Rate limit: limite por IP/chave no proxy antes do n8n.\n5. Segredos: mantenha apenas em Credentials do n8n; nunca em campos de texto/expressões.\n6. Rotação:",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12852,
+    "author": "INEMA",
+    "date": "2025-08-15T19:00:42+00:00",
+    "text": "=============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12850,
+    "author": "INEMA",
+    "date": "2025-08-15T18:56:29+00:00",
+    "text": "Resumo sobre proteção de webhooks no N8N:\n\nA importância de proteger webhooks para evitar acessos não autorizados, consumo indevido de tokens de IA e acesso a dados sensíveis. O instrutor demonstra três métodos de autenticação e mostra, na prática, como cada um funciona.\n\n**1. Riscos de não proteger um webhook**\n\n* Qualquer pessoa com a URL pode acionar o fluxo.\n* Possibilidade de consumir recursos (tokens, API) sem permissão.\n* Acesso a bancos de dados e informações de clientes.\n* Quebra ou mau uso de automações.\n\n**2. Boas práticas iniciais**\n\n* Evitar nomes óbvios na URL do webhook.\n* Sempre aplicar pelo menos uma camada de autenticação.\n\n**3. Três métodos de autenticação**\n\n1. **Basic Auth (usuário e senha)**\n\n   * Configura credenciais simples.\n   * Fácil de implementar, mas menos seguro se compartilhado.\n\n2. **Header Authorization (API Key)**\n\n   * Chave personalizada enviada no cabeçalho.\n   * Útil para identificar serviços emissores (B2B).\n   * Permite gerar chaves diferentes para cada cliente ou serviço.\n\n3. **JWT (Json Web Token)**\n\n   * Autenticação avançada com informações no payload.\n   * Possibilita incluir dados como nome, e-mail, papel, permissões, plano contratado, validade, etc.\n   * Permite filtragem e rotas personalizadas dentro do fluxo.\n   * Mais seguro e versátil para integrações complexas.\n\n**4. Conclusão**\n\n* Sempre proteger webhooks, mesmo de teste.\n* Escolher o método de autenticação conforme a necessidade de segurança e personalização.\n* Basic Auth e Header Auth servem para a maioria dos casos, mas JWT é ideal quando se precisa transmitir e validar dados do usuário.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12849,
+    "author": "INEMA",
+    "date": "2025-08-15T18:53:40+00:00",
+    "text": "==============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12848,
+    "author": "INEMA",
+    "date": "2025-08-15T18:52:49+00:00",
+    "text": "Seus Webhooks estão em perigo! 🛑\n\nSe você trabalha com clientes e usa webhooks no N8N, precisa ver e sem falta.\n\n💥 Até pouco tempo atrás, eu mesmo não dava tanta importância…\n\nO alerta foi dado quando disse:\n“Tem gente que perdeu dados porque não tinha os webhooks protegidos.”\n\nE ele estava totalmente certo. Porque se eles não estiverem protegidos:\n❌ Qualquer pessoa pode acessar seu fluxo\n❌ Podem consumir seus tokens de IA\n❌ Ter acesso a dados dos seus clientes\n❌ Ou simplesmente quebrar sua automação\n\n🔥 Por isso,  explico as 3 formas de proteger seus webhooks como um PRO:\n✅ Basic Auth (usuário e senha)\n✅ Header Authorization (tipo API Key)\n✅ JWT (autenticação avançada com dados do usuário e tempo de expiração)\n\nSe você trabalha com clientes: isso não é opcional.\nColoque pelo menos uma camada de segurança.\n\nIsso pode ser aplicado se você é agência, SaaS, consultor… ou simplesmente cuida das suas automações como deve ser.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12847,
+    "author": "INEMA",
+    "date": "2025-08-15T18:50:05+00:00",
+    "text": "https://token.dev/",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 12846,
+    "author": "INEMA",
+    "date": "2025-08-15T18:49:36+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Webhooks.json"
+  },
+  {
+    "id": 12845,
+    "author": "INEMA",
+    "date": "2025-08-15T18:42:44+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_12845_012.jpg"
+  },
+  {
+    "id": 12844,
+    "author": "INEMA",
+    "date": "2025-08-15T18:42:40+00:00",
+    "text": "nm66 - Protegendo o Webhook",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12843,
+    "author": "INEMA",
+    "date": "2025-08-15T18:42:22+00:00",
+    "text": "...",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12842,
+    "author": "INEMA",
+    "date": "2025-08-15T18:42:20+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12841,
+    "author": "INEMA",
+    "date": "2025-08-15T18:42:19+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12840,
+    "author": "INEMA",
+    "date": "2025-08-15T18:42:19+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12839,
+    "author": "INEMA",
+    "date": "2025-08-15T18:42:17+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12838,
+    "author": "INEMA",
+    "date": "2025-08-15T18:42:16+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12837,
+    "author": "INEMA",
+    "date": "2025-08-15T18:42:15+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12836,
+    "author": "INEMA",
+    "date": "2025-08-15T18:42:12+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12835,
+    "author": "INEMA",
+    "date": "2025-08-15T18:42:10+00:00",
+    "text": "https://chatgpt.com/c/689f7c6a-d5d8-832d-bb3c-71ec9aad16b0",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 12834,
+    "author": "INEMA",
+    "date": "2025-08-15T18:42:09+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12833,
+    "author": "INEMA",
+    "date": "2025-08-15T18:41:57+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

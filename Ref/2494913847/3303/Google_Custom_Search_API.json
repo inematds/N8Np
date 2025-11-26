@@ -1,0 +1,170 @@
+{
+  "name": "Google Custom Search API",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "ec1ba091-d088-4ef7-a963-45b5e1260a5b",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        600,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "30e9b137-732f-4591-8111-925a4e3df23b",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        760,
+        420
+      ],
+      "webhookId": "7a8ce8a5-1217-45c1-a90f-f2ee47d8d1c2"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Search the web for results based on the input from the AI Agent",
+        "url": "https://customsearch.googleapis.com/customsearch/v1?key={key}&cx={engine}&q={query}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "engine",
+              "description": "ENTER_YOUR_ENGINE_ID",
+              "type": "string"
+            },
+            {
+              "name": "query",
+              "description": "={{ $json[\"parameters\"][\"type\"] }}",
+              "type": "string"
+            },
+            {
+              "name": "key",
+              "description": "ENTER_YOUR_API_KEY",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "3672e8d3-f776-40f2-9c71-082127b9b333",
+      "name": "Web Search",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1260,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "9f5b1631-b3c9-4ecb-b00d-443e3defe81d",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        500
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "if restricting the web search you can add additional instructions to the Prompt, such as \n\n** ALL QUERIES RELATE TO STONEFORGE CONSULTING GROUP **\n\ne.g. \"what services do you offer\" should result on a search of stoneforgegroup.com and return a summary of services and the /services URL\n\nthis stops the agent from interpreting questions such as the one above as a question for the agent itself.",
+        "height": 275.3474320241692,
+        "width": 556.8580060422961
+      },
+      "id": "290d695d-18b7-41e1-aa01-7f167a1f4698",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        820.4833836858007,
+        -35.34743202416922
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=using {{$json.chatInput}} query the internet using the Web Search Tool, and interpret the results, with links, in plain english.\n\n",
+        "options": {}
+      },
+      "id": "2e6d5348-5093-4de0-99d5-37ac626d9316",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1000,
+        280
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b8bc6cc2-713b-4230-bf33-b7958e03534f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "024f70f665669eb2ed203bf40d4924df4a7d965ceacc5ae076a7d4e390297b96"
+  },
+  "id": "BPYpJigkUVmuE41y",
+  "tags": []
+}

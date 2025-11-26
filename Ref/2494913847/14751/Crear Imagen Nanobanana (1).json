@@ -1,0 +1,316 @@
+{
+  "name": "Crear Imagen Nanobanana",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "image_prompt"
+            },
+            {
+              "name": "image_reference"
+            },
+            {
+              "name": "aspect_ratio"
+            }
+          ]
+        }
+      },
+      "id": "6eff3c09-5fdf-49fe-9b2c-56d6f2198920",
+      "typeVersion": 1.1,
+      "name": "Cuando es ejecutado por otro flujo de trabajo",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -144,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/jobs/createTask",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"google/nano-banana-edit\",\n  \"input\": {\n    \"prompt\": {{ JSON.stringify($json.image_prompt) }},\n    \"image_urls\": [\"{{ $json.image_reference }}\"],\n    \"output_format\": \"png\",\n    \"image_size\": \"{{ $('Cuando es ejecutado por otro flujo de trabajo').item.json.aspect_ratio }}\"\n  }\n}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        80,
+        128
+      ],
+      "id": "6a8adcf8-4599-4ec2-a118-3c55aa55e3fc",
+      "name": "Crear Imagen",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/jobs/recordInfo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $('Crear Imagen').item.json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        528,
+        128
+      ],
+      "id": "2d60fb28-f070-4425-9318-9fb7db16a2ad",
+      "name": "Obtener Imagen",
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 20
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        304,
+        128
+      ],
+      "id": "70496da5-bb8b-457f-b749-821c7d389a96",
+      "name": "Esperar1",
+      "webhookId": "764fde22-6a90-4f26-ad14-8b30c5b8078e"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "success",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "[REMOVED]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "éxito"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "ing",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "en progreso"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "error"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        752,
+        112
+      ],
+      "id": "f8c6f178-e430-4a3c-be4f-dca7ad06058c",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "image_result",
+              "value": "={{ $json.data.failMsg }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        976,
+        224
+      ],
+      "id": "1867d89a-2ef6-430a-88fc-3b023db16104",
+      "name": "Devolver error"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "image_result",
+              "value": "={{ JSON.parse($json.data.resultJson).resultUrls[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        976,
+        32
+      ],
+      "id": "7558b1bb-41c8-4d71-8ea9-f6d0de6d2f15",
+      "name": "Devolver imagen"
+    }
+  ],
+  "pinData": {
+    "Cuando es ejecutado por otro flujo de trabajo": [
+      {
+        "json": {
+          "image_prompt": "action: toma el producto en la imagen y haz que el personaje lo sostenga hacia la cámara con una sonrisa confiada, sentada relajada en una banca del gimnasio después de entrenar\ncharacter: mujer entre 50 y 55 años, cabello gris plateado, piel clara, sonriente, blusa verde menta claro de tela ligera, sin accesorios\nproduct: el envase de suplemento blanco con etiqueta de 'Collagen Peptides' güdd, con todos los textos e ingredientes claramente visibles, como la imagen de referencia\nsetting: gimnasio real, luz natural o blanca, entorno cotidiano, pesas y colchonetas de fondo, ambiente relajado post-entreno\ncamera: selfie de iPhone amateur, encuadre ligeramente irregular, relación de aspecto 9:16\nstyle: UGC, sin filtros, realismo auténtico, detalles del envase perfectamente legibles",
+          "image_reference": "https://aasupabaseaa.vps.rubikmarketing.com.co/storage/v1/object/public/Videos/Collagen%20gudd%20y%20modelo.png",
+          "aspect_ratio": "9:16"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Cuando es ejecutado por otro flujo de trabajo": {
+      "main": [
+        [
+          {
+            "node": "Crear Imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Imagen": {
+      "main": [
+        [
+          {
+            "node": "Esperar1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Imagen": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar1": {
+      "main": [
+        [
+          {
+            "node": "Obtener Imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Devolver imagen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Esperar1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Devolver error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f3ff2fa5-1329-4808-af99-a5d07944fca1",
+  "meta": {
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "O4fhnJ6x3GwQqxMd",
+  "tags": []
+}

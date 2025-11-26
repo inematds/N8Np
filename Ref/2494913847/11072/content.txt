@@ -1,0 +1,405 @@
+TOPICO 11072
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-07-08 21:32:33+00:00
+
+Total de mensagens: 23
+Midias baixadas: 7
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-07-09T02:49:51+00:00
+Texto:
+============
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-07-09T02:49:47+00:00
+Texto:
+# Configuração Manual do Workflow N8N - Passo a Passo
+
+## 1. Webhook (incoming data)
+```Tipo: Webhook
+HTTP Method: POST
+Path: entry-blog
+Response Mode: Using 'Respond to Webhook' Node```
+
+## 2. Set/Edit Fields
+C```ampo 1:
+  Name: topic
+  Value: {{ $json.body.topicDetails }}
+
+Campo 2:
+  Name: style
+  Value: {{ $json.body.writingStyle }}
+
+Campo 3:
+  Name: title
+  Value: {{ $json.body.articleTitle }}
+```
+## 3. AI Agent
+Ag```ent Type: Conversational Agent
+Prompt Type: Define below
+
+Prompt:
+User Topic: {{ $json.topic }}
+
+User Style: {{ $json.style }}
+
+Chat Model: OpenRouter ou OpenAI
+Model: google/gemini-2.0-flash-exp (ou gpt-4)
+
+Output Parser: Structured Output Parser
+Schema: {"blog": "string"}
+
+Options:
+- Retry on Fail: Yes
+- Max Retries: 5
+- Wait Between Retries: 1000ms
+
+```### System Message (cole isso no AI Agent):
+You``` are a provocative, unapologetically confident blogging agent that crafts bold, minimalist natural health posts. This agent fearlessly dismantles conventional medical narratives, exposes the failures of our disease-management system, and challenges readers to abandon the broken status quo.
+
+TONE & ATTITUDE:
+• Write with unwavering confidence – present natural health solutions as obviously superior
+• Be brazenly critical of current medical practices
+• Use provocative language that makes readers uncomfortable with the status quo
+• Express frustration with how the medical system has failed patients
+
+CONTENT STRUCTURE:
+• Begin with a conversational hook that questions conventional wisdom
+• Use short, punchy paragraphs (2-3 sentences max)
+• Pose critical questions that expose absurdity of medical practices
+• Highlight key points in bold
+• End with action step encouraging readers to abandon conventional approaches
+
+OUTPUT FORMAT:
+Output ONLY in JSON: {"blog": "[FULL BLOG POST HERE]"}
+
+#```# 4. Set/Edit Fields 2
+Camp```o 1:
+  Name: title
+  Value: {{ $('Edit Fields').item.json.title }}
+
+Campo 2:
+  Name: content  
+  Value: {{ $json.blog }}
+
+Campo 3:
+  Name: author
+  Value: HealthMinimalistBlogger
+
+##``` 5. Respond to Webhook
+Respo```nse Mode: Custom JSON
+
+Response Body:
+{
+  "title": "{{ $json.title }}",
+  "content": "{{ JSON.stringify($json.content) }}",
+  "author": "{{ $json.author }}"
+}
+
+## ```Conexões:
+1. Webhook → Edit Fields
+2. Edit Fields → AI Agent
+3. AI Agent → Edit Fields 2
+4. Edit Fields 2 → Respond to Webhook
+5. Chat Model → AI Agent (conexão AI)
+6. Output Parser → AI Agent (conexão AI)
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-07-09T02:49:39+00:00
+Texto:
+======================
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-07-09T02:46:36+00:00
+Texto:
+# Lovable & Supabase Setup Prompt
+
+## Complete Prompt for Building the Natural Health Blogging Website
+
+```Build me a blogging website that has a natural health and holistic feel that allows for a single blog page, an archive page, and allows me to add a new blog with a quick form field.
+
+The form fields should be:
+- Article Title (single line text input)
+- Topic & Details (text area)
+- Writing Style (dropdown list with options: "Informative" and "Theoretical")
+
+This form once submitted should connect and trigger my N8N blogging agent using this webhook: [YOUR_WEBHOOK_URL]
+
+It will return information from the webhook in this format:
+{
+  "title": "title here",
+  "content": "entire blog post here",
+  "author": "author here"
+}
+
+Create my Supabase tables to accept this webhook response data and present it on the frontend.
+
+Add a loading spinner/progress bar once I hit "Generate Article" from the form and wait for the blogging agent in N8N to do its work.
+
+Make this website have earthy tones and be a very simple personal blogging website with the following features:
+
+1. Homepage showing the latest blog post
+2. Archive page showing all blog posts in a grid or list view
+3. Individual blog post pages when clicking "Read More" from the archive
+4. Navigation bar with Home, Archive, and New Article links
+5. Responsive design that works on all devices
+6. Footer with copyright information
+
+The Supabase table should have these columns:
+- id (UUID, primary key)
+- title (text)
+- content (text)
+- author (text)
+- topic (text)
+- style (text)
+- created_at (timestamp)
+- updated_at (timestamp)
+
+Enable Row Level Security (RLS) on the table and make it publicly readable.
+
+Style requirements:
+- Use earthy, natural colors (greens, browns, beiges)
+- Minimalist design with plenty of whitespace
+- Clean, readable typography
+- Subtle animations and transitions
+- Loading spinner should be a natural/organic animation
+
+Make the "Generate Article" button prominent and ensure it properly handles the async nature of the webhook call.```
+
+## Additional Refinement Prompts (if needed)
+
+### For fixing the loading spinner:
+T```he loading spinner when the article is generating is not spinning. Make it more attractive as I am waiting. Use a nature-inspired animation like leaves spinning or a flower blooming.
+```
+### For improving navigation:
+Wh```en I click on "Read More", make sure it takes me to the single blog page. Also add smooth scroll animations between sections.
+
+```### For better mobile experience:
+Imp```rove the mobile responsive design. Make the form fields stack vertically on mobile and ensure the text is readable without zooming.
+
+#```# Supabase SQL Command (if needed manually)
+
+CREATE TABLE blog_posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  author TEXT DEFAULT 'HealthMinimalistBlogger',
+  topic TEXT,
+  style TEXT CHECK (style IN ('Informative', 'Theoretical')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
+
+-- Create policy for public read access
+CREATE POLICY "Allow public read access" ON blog_posts
+  FOR SELECT USING (true);
+
+-- Create updated_at trigger
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_blog_posts_updated_at
+  BEFORE UPDATE ON blog_posts
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-07-09T02:46:05+00:00
+Texto:
+e printei o workflow que mostrou no video, se fosse usar o gemini poderia ele analisar o video.
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-07-09T02:45:22+00:00
+Texto:
+tambem printei o prompt do agente
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-07-09T02:45:08+00:00
+Texto:
+no cloude, levei a transcricao do video
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-07-09T02:44:49+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_11091_008.jpg
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-07-09T02:43:14+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_11090_009.jpg
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-07-09T02:29:04+00:00
+Texto:
+Problema foi mal configurado aqui estava como imediatamente e deve ser using Respond to Webhook node
+Midia: MessageMediaPhoto -> photo_11089_010.jpg
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-07-09T01:37:57+00:00
+Texto:
+https://www.youtube.com/watch?v=0c_NpEBLltM
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-07-08T21:36:09+00:00
+Texto:
+### 🌱 **Propósito do HealthMinimalistBlogger**
+
+Criar um **agente de blog provocador e confiante** que:
+
+* Produz posts **minimalistas sobre saúde natural**, denunciando as falhas da medicina convencional.
+* Incentiva os leitores a **questionar o sistema médico** e buscar **alternativas naturais** para prevenção e cura.
+* Usa uma linguagem ousada para **despertar consciência** e provocar mudanças no comportamento das pessoas.
+
+---
+
+### 📦 **Como funciona**
+
+1. Recebe **tópico** e **estilo** do usuário (ex: “Doença cardíaca em jovens” / “Teórico”).
+2. Gera um post no formato JSON com título, conteúdo e autor.
+3. Pode ser integrado em um **app web** com frontend (Lovable) e backend (Supabase/N8N).
+
+---
+
+### 🎯 **Objetivo final**
+
+Oferecer uma plataforma automatizada para:
+✅ Gerar blogs de saúde natural com **um clique**.
+✅ Armazenar e exibir os posts em uma interface moderna.
+✅ Empoderar leitores a abandonar práticas médicas tradicionais em favor de soluções naturais.
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-07-08T21:35:48+00:00
+Texto:
+tem correcoes a fazer
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-07-08T21:35:41+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> nm57 - webhook Blog.json
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-07-08T21:33:44+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_11080_015.jpg
+
+------------------------------
+
+MENSAGEM 16
+Autor: INEMA
+Data: 2025-07-08T21:32:41+00:00
+Texto:
+nm57 - webhook Blog
+
+------------------------------
+
+MENSAGEM 17
+Autor: INEMA
+Data: 2025-07-08T21:32:40+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 18
+Autor: INEMA
+Data: 2025-07-08T21:32:40+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 19
+Autor: INEMA
+Data: 2025-07-08T21:32:39+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 20
+Autor: INEMA
+Data: 2025-07-08T21:32:39+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 21
+Autor: INEMA
+Data: 2025-07-08T21:32:39+00:00
+Texto:
+https://chatgpt.com/c/686d5820-7e80-8009-b114-b89697f5bf9f
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 22
+Autor: INEMA
+Data: 2025-07-08T21:32:38+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 23
+Autor: INEMA
+Data: 2025-07-08T21:32:33+00:00
+Texto: [Sem texto]
+
+------------------------------
+

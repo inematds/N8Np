@@ -1,0 +1,192 @@
+[
+  {
+    "id": 15677,
+    "author": "INEMA",
+    "date": "2025-11-07T05:35:23+00:00",
+    "text": "tração de fato.\n   * Resposta: mensura a eficácia do método.\n\n10. Provenance automático\n\n    * Ex.: incluir doc_id/url na resposta.\n    * Resposta: facilita checagem.\n\n11. Pré-filtragem para economizar tokens\n\n    * Ex.: filtros em Supabase antes do LLM.\n    * Resposta: reduz custo.\n\n12. Teste large context windows com cuidado\n\n    * Ex.: 60k tokens em avaliações.\n    * Resposta: bom para precisão, caro.\n\n13. Verificadores automáticos pós-resposta\n\n    * Ex.: soma checada por script.\n    * Resposta: evita aceitar hallucinations.\n\n14. Tool calling & memory para dados sensíveis\n\n    * Ex.: get_user_profile(user_id).\n    * Resposta: mais seguro/eficiente.\n\n15. Geração automática de datasets e prompts\n\n    * Ex.: pedir ao LLM para criar 100 queries de teste.\n    * Resposta: útil para prototipagem.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15676,
+    "author": "INEMA",
+    "date": "2025-11-07T05:35:23+00:00",
+    "text": "tag timestamp.\n* Pergunta: overlap aumenta custo?\n\n  * Resposta: sim, mas evita perda de contexto entre chunks.\n\n9. Teste com avaliações “needle-in-haystack” e métricas reais\n\n* Hack: crie queries de avaliação específicas (buscar pequeno fato dentro de muitos docs) e meça precisão/recall/latência/custo.\n* Exemplo: 100 perguntas sobre fatos pontuais; compare vetores vs full-context vs SQL.\n* Pergunta: quanto devo pagar por essa avaliação?\n\n  * Resposta: depende do modelo; use amostras representativas antes de rodar em larga escala.\n\n10. Tracking de proveniência e verificação em cadeia (provenance)\n\n* Hack: sempre retorne para o usuário a fonte (doc_id, url, timestamp) usada para formar a resposta. Implementar um “footnote” automático.\n* Exemplo: resposta: “Segundo Doc A (video_id X, t=03:12–03:45)…”\n* Pergunta: isso impede hallucinations?\n\n  * Resposta: reduz risco e facilita checagem humana, mas não elimina totalmente.\n\n11. Estratégias de custo: filtrar antes de passar para LLM\n\n* Hack: aplique filtros/SQL para reduzir o conjunto antes de chamar LLMs caros. Use modelos menores para etapas de triagem.\n* Exemplo: rodar pré-filtros em Supabase, depois chamar LLM só com subset.\n* Pergunta: models menores são seguros?\n\n  * Resposta: para triagem sim; validação final em modelo maior.\n\n12. Use janelas de contexto grandes quando possível (heavy models) — mas com cuidado\n\n* Hack: se você tem acesso a modelos com grandes context windows, teste full-context e compare; em muitos casos dá melhores resultados.\n* Exemplo: 60k tokens em system prompt funcionou melhor em avaliações do Nate.\n* Pergunta: é sempre melhor?\n\n  * Resposta: não — é caro e lento; bom para casos onde precisão supera custo.\n\n13. Guardrails e checks automatizados pós-resposta\n\n* Hack: sempre rode um verificador automático: checar números, datas, somas, links válidos. Se o verificador falhar, reexecute outra estratégia (ex.: pedir para rodar SQL).\n* Exemplo: LLM responde total_revenue=5196 → verificador soma as linhas e confirma.\n* Pergunta: como construir esse verificador?\n\n  * Resposta: scripts simples em JS/Python que parseiam a resposta e checam contra DB/queries.\n\n14. Ferramentas que ajudam: chain-of-thought control, tool calling, memory\n\n* Hack: use tool-calling para consultas precisas e “memory” para contexto persistente de usuário. Evite expor memória sensível a vetorização sem cuidado.\n* Exemplo: usar tool get_user_profile(user_id) em vez de passar todos os dados no prompt.\n* Pergunta: memory melhora as respostas?\n\n  * Resposta: sim, para personalização; cuidado com privacidade.\n\n15. Automação de criação de prompts e test dataset pelo próprio ChatGPT\n\n* Hack: gere exemplos sintéticos e o system prompt via LLM (pede para gerar dados de teste e queries) — economiza tempo para validar agentes.\n* Exemplo: “Gere 50 perguntas típicas que usuários fariam sobre vendas e as respostas esperadas.”\n* Pergunta: confiar nesses dados sintéticos?\n\n  * Resposta: servem para teste inicial; sempre valide com dados reais depois.\n\n# Lista final — tópicos + exemplos + respostas às perguntas (resumido)\n\n1. Seleção por tipo de pergunta\n\n   * Ex.: agregação → SQL; resumo → full-context.\n   * Resposta: escolha conforme necessidade de ordem/precisão.\n\n2. Metadata em vetores\n\n   * Ex.: {doc_id, t_start, t_end, url}.\n   * Resposta: essencial para rastreabilidade.\n\n3. Tabelas → não chunkize\n\n   * Ex.: vendas em DB → SQL.\n   * Resposta: chunk = erro para cálculos.\n\n4. Tool calls para docs grandes\n\n   * Ex.: Google Doc como ferramenta.\n   * Resposta: economiza tokens.\n\n5. Full-context quando ordem importa\n\n   * Ex.: resumo cronológico de webinar.\n   * Resposta: caro, mas preciso.\n\n6. Abordagem híbrida\n\n   * Ex.: vetor → candidates → SQL/verifier.\n   * Resposta: melhor equilíbrio acurácia/custo.\n\n7. Schema explícito no system prompt\n\n   * Ex.: listar colunas e formatos.\n   * Resposta: evita SQL errado.\n\n8. Chunk size & overlap inteligente\n\n   * Ex.: 1 min chunks de transcrição com 5s overlap.\n   * Resposta: reduz perda de contexto.\n\n9. Avaliações needle-in-haystack\n\n   * Ex.: testes de ex",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15675,
+    "author": "INEMA",
+    "date": "2025-11-07T05:35:23+00:00",
+    "text": "**hacks práticos** (táteis, aplicáveis hoje)  sobre *context engineering* para agentes/RAG. Primeiro um resumo curto do objetivo — depois os hacks, cada um com exemplo e resposta para a pergunta mais comum sobre ele.\n\n# Resumo rápido\n\nO problema não é só o modelo: é **como você entrega contexto**. Existem 4 abordagens principais para dar contexto a um agente: **filtros (filtering)**, **consultas SQL (querying)**, **contexto completo (full-context / tool calls)** e **vetorização (vector store / chunking)**. Cada uma tem trade-offs de custo, velocidade e fidelidade. Escolha a abordagem conforme o tipo de pergunta que seu sistema receberá.\n\n# Hacks práticos (com exemplo e resposta)\n\n1. Escolha a abordagem pelo tipo de pergunta\n\n* Hack: defina classes de perguntas (numéricas/analytics, lookup simples, resumo cronológico, semantic search) e roteie cada classe para um método específico.\n* Exemplo: pergunta sobre “total de vendas” → rota para SQL; “resumo do vídeo do início ao fim” → rota para full-context.\n* Pergunta: Qual devo escolher se tiver dúvidas?\n\n  * Resposta: priorize SQL/filtros para contas e agregações; full-context para sequência/ordem; vectors para buscas semânticas rápidas.\n\n2. Metadata + tagging é obrigatório para vetores\n\n* Hack: ao indexar chunks em vetor store inclua metadata: doc_id, source_url, timestamp, chunk_start_time, chunk_order.\n* Exemplo: transcrição YouTube → chunk + {video_id, t_start, t_end, title}.\n* Pergunta: metadata resolve tudo?\n\n  * Resposta: ajuda muito, mas só se for consistente — sem metadata rica o vetor perde origem/ordem.\n\n3. Para tabelas, NUNCA chunkizar sem razão — use filtros/SQL\n\n* Hack: mantenha dados tabulares fora do flow de chunks. Exponha APIs/queries que o agente possa chamar (ou gere SQL pelo modelo).\n* Exemplo: “Qual a semana com maior receita?” → SQL: SELECT week, SUM(revenue) GROUP BY week ORDER BY SUM DESC LIMIT 1.\n* Pergunta: e se eu indexei a tabela em chunks?\n\n  * Resposta: risco alto de resposta errada (só alguns chunks serão consultados). Reindexar como tabela/DB é a correção.\n\n4. Use tool calls (documents como “ferramentas”) quando tiver documentos grandes\n\n* Hack: em vez de inserir PDFs inteiros no prompt, registre cada documento como uma ferramenta/endpoint que o agente chama quando necessário.\n* Exemplo: “Resuma o Doc A” → agente chama tool get_doc('A') e processa apenas esse doc.\n* Pergunta: isso economiza tokens?\n\n  * Resposta: sim, porque você só injeta o texto relevante quando necessário.\n\n5. Full-context (colar documentos no prompt) quando a ordem/importância cronológica importa\n\n* Hack: se a pergunta exige leitura sequencial (resumo cronológico, narrativa), entregue o documento inteiro no sistema prompt — se couber na context window.\n* Exemplo: resumo detalhado de webinar de 1h — full-context com timestamps.\n* Pergunta: e o custo?\n\n  * Resposta: alto em tokens; use somente se precisão/ordem for essencial.\n\n6. Combine métodos (hybrid) — a melhor prática muitas vezes\n\n* Hack: use vetor para recuperar candidatos semânticos, mas rode um SQL/consulta estruturada ou full-context sobre os candidatos filtrados para validação/fact-checking.\n* Exemplo: vetor retorna 5 chunks relevantes → agente chama um “verifier” que reconsulta a fonte original ou executa um cálculo preciso.\n* Pergunta: aumenta latência?\n\n  * Resposta: sim, um pouco — mas melhora acurácia e reduz hallucinations.\n\n7. Defina schema e documente para o agente (system prompt com schema explícito)\n\n* Hack: no system prompt inclua nomes de colunas, tipos e exemplos de valores. Torna SQL gerado mais confiável.\n* Exemplo: “Tabela sales_data: order_id, date(YYYY-MM-DD), product(text), qty(int), total_price(float).”\n* Pergunta: o modelo precisa saber isso sempre?\n\n  * Resposta: sim — sem schema ele “adivinha” e pode gerar SQL inválido.\n\n8. Controle de chunk size e overlap inteligente\n\n* Hack: use chunk sizes alinhadas à unidade lógica (ex.: parágrafos, seções, ou 6 linhas da tabela), com overlap pequeno (10–20%) e metadata de origem.\n* Exemplo: transcrição longa → chunk por minuto com overlap de 5s e tag",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15674,
+    "author": "INEMA",
+    "date": "2025-11-07T05:33:42+00:00",
+    "text": "=============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15673,
+    "author": "INEMA",
+    "date": "2025-11-07T05:32:57+00:00",
+    "text": "### Exemplos práticos\n\n1. “Quantas unidades de fones de ouvido vendemos?” → **Filtro**\n2. “Quais os produtos mais lucrativos?” → **SQL**\n3. “Resuma o conteúdo do vídeo ‘Agente em 2 horas’.” → **Full Context**\n4. “O que é dito sobre IA no vídeo A e B?” → **Vetores + Metadados**\n\n---\n\n**Resumo final:**\nA precisão de um agente depende menos do modelo e mais de **como o contexto é projetado e entregue**.\n\nA engenharia de contexto é o elo entre o dado bruto e a inteligência do agente — e escolher o método certo (filtro, SQL, full context ou vetores) é o que separa uma resposta correta de uma confusa.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15672,
+    "author": "INEMA",
+    "date": "2025-11-07T05:32:57+00:00",
+    "text": "**“Agents not giving you correct answers? Watch this” **\n\n---\n\n### 1. Motivo \n\nMuitas pessoas reclamam que seus **agentes RAG** (Retrieval-Augmented Generation) não retornam respostas corretas. Ele mostra que o problema raramente é “o modelo”, mas sim **como o contexto é fornecido**.\n\nSurge então o conceito central: **Context Engineering** — a engenharia do contexto que alimenta o agente.\n\n---\n\n### 2. O que é “Context Engineering”\n\nÉ o processo de estruturar e fornecer dados de forma que o agente tenha acesso ao **contexto certo no momento certo**.\nExistem várias fontes possíveis:\n\n* Input do usuário\n* Instruções (prompt)\n* Memória\n* Chamadas de ferramentas (tool calling)\n* Bases de conhecimento (como vetores ou SQL)\n* Saídas estruturadas\n\nO segredo é entender **qual tipo de dado o agente precisa** e **como ele deve acessá-lo**.\n\n---\n\n### 3. O conceito real de RAG\n\nMuitos pensam que RAG é sinônimo de banco vetorial (Pinecone, Supabase, etc.), mas **RAG é apenas o processo de buscar informações externas e gerar uma resposta com base nelas**.\nO modelo não sabe tudo: ele **recupera, complementa e gera** — como uma pessoa que pesquisa antes de responder.\n\n---\n\n### 4. Problemas do modelo baseado em “chunks”\n\nAo dividir documentos em pedaços (chunks) e armazenar em vetores, perdem-se:\n\n* A **ordem lógica** dos dados (ex.: início, meio, fim do texto)\n* O **contexto global** (ex.: tabelas quebradas)\n* A **origem precisa** (ex.: de qual documento veio o trecho)\n\nIsso leva a erros como:\n\n* Somar valores errados em tabelas\n* Fazer médias incompletas\n* Misturar informações de documentos diferentes\n\n---\n\n### 5. Três principais formas de fornecer contexto\n\n#### a) Filtro de dados (Filtering)\n\nO agente interpreta a linguagem natural e **filtra dados diretamente**, por exemplo:\n\n> “Quantos fones de ouvido sem fio foram vendidos?”\n> O agente aplica filtros (produto = “wireless headphones”) e soma quantidades.\n> Esse método é rápido, barato e bom para **grandes bases tabulares**.\n\n#### b) Consulta SQL (Querying)\n\nUsa **consultas SQL geradas automaticamente** pelo modelo.\nExemplo:\n\n> “Quais são os 3 produtos com maior receita total?”\n> O agente gera uma query SQL que soma, agrupa e ordena.\n> Ideal para bases complexas com várias tabelas e funções.\n\n#### c) Contexto completo (Full Context)\n\nEm vez de fragmentar, o agente **lê documentos inteiros** (ex.: transcrições completas de vídeos).\nÉ mais caro em tokens, mas preserva a sequência e coerência — essencial para resumos cronológicos ou entendimento profundo.\n\nExemplo:\n\n> “Resuma o vídeo do começo ao fim.”\n> Somente o método full-context pode responder corretamente, porque mantém a ordem original do conteúdo.\n\n---\n\n### 6. Comparação de custos e eficiência\n\n| Método               | Vantagem                                      | Desvantagem                    |\n| -------------------- | --------------------------------------------- | ------------------------------ |\n| **Filtros**          | Barato, rápido, preciso em dados estruturados | Limitado a consultas simples   |\n| **SQL**              | Mais robusto, ótimo para análise e cálculos   | Exige schema bem definido      |\n| **Full Context**     | Compreensão profunda, preserva ordem          | Alto custo de tokens           |\n| **Vetores (chunks)** | Rápido e barato para busca semântica          | Pode perder coerência e origem |\n\n---\n\n### 7. Context windows e novos modelos\n\nModelos modernos (Gemini, Claude, Llama etc.) possuem **janelas de contexto enormes** (até 10 milhões de tokens), o que permite usar muito mais texto diretamente — tornando o **Full Context** mais viável e preciso.\n\n---\n\n### 8. Conclusão e boas práticas\n\n* **Não existe um único método “correto”** — depende do tipo de dado e pergunta.\n* Para perguntas numéricas → use **filtros ou SQL**.\n* Para perguntas semânticas → **vetores** funcionam.\n* Para resumos ou narrativas → use **contexto completo**.\n* Sempre defina bem o **schema** e o **propósito** do agente.\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15671,
+    "author": "INEMA",
+    "date": "2025-11-07T05:29:06+00:00",
+    "text": "===============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15670,
+    "author": "INEMA",
+    "date": "2025-11-07T05:29:00+00:00",
+    "text": "Os agentes não estão te dando respostas corretas? Veja isso.\nQuando as pessoas pensam em um agente RAG, normalmente imaginam um agente fazendo recuperação baseada em fragmentos (chunks) a partir de um banco de dados vetorial.\n\nA verdade é que, muitas vezes, essa não é a melhor abordagem.\n\nEu queria explicar a ideia importante de **engenharia de contexto** — que envolve filtrar dados, fazer consultas SQL, usar o método de contexto completo ou empregar um banco de dados vetorial.\n\nDefinitivamente, quero saber o que você pensa sobre isso. Espero que haja alguns “insights valiosos” ou “momentos de luz” ao longo do Texto",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15669,
+    "author": "INEMA",
+    "date": "2025-11-07T05:27:28+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Types of RAG.json"
+  },
+  {
+    "id": 15668,
+    "author": "INEMA",
+    "date": "2025-11-07T05:27:23+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_15668_010.jpg"
+  },
+  {
+    "id": 15667,
+    "author": "INEMA",
+    "date": "2025-11-07T05:27:01+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_15667_011.jpg"
+  },
+  {
+    "id": 15666,
+    "author": "INEMA",
+    "date": "2025-11-07T05:25:51+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_15666_012.jpg"
+  },
+  {
+    "id": 15665,
+    "author": "INEMA",
+    "date": "2025-11-07T05:25:15+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_15665_013.jpg"
+  },
+  {
+    "id": 15664,
+    "author": "INEMA",
+    "date": "2025-11-07T05:24:41+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_15664_014.jpg"
+  },
+  {
+    "id": 15661,
+    "author": "INEMA",
+    "date": "2025-11-07T05:23:24+00:00",
+    "text": "Agentes RAG Contexto",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15660,
+    "author": "INEMA",
+    "date": "2025-11-07T05:23:02+00:00",
+    "text": "ap72 - Agentes RAG - Não Funciona ?",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15659,
+    "author": "INEMA",
+    "date": "2025-11-07T05:23:01+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15658,
+    "author": "INEMA",
+    "date": "2025-11-07T05:23:01+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15657,
+    "author": "INEMA",
+    "date": "2025-11-07T05:23:00+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15656,
+    "author": "INEMA",
+    "date": "2025-11-07T05:23:00+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15655,
+    "author": "INEMA",
+    "date": "2025-11-07T05:23:00+00:00",
+    "text": "https://chatgpt.com/c/690d818f-1628-8328-aeb0-08e0cb8ed21e",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 15654,
+    "author": "INEMA",
+    "date": "2025-11-07T05:22:59+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 15653,
+    "author": "INEMA",
+    "date": "2025-11-07T05:22:51+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

@@ -1,0 +1,465 @@
+-- ============================================
+-- NUTRI_BOT – Setup completo (schema, funciones, tablas, índices, vistas, triggers)
+-- Seguro de ejecutar múltiples veces (idempotente)
+-- ============================================
+
+-- 1) Schema
+CREATE SCHEMA IF NOT EXISTS nutri_bot;
+
+-- 2) Funciones auxiliares para triggers
+-- 2.1) set_updated_at(): actualiza el campo updated_at si existe en la fila
+CREATE OR REPLACE FUNCTION nutri_bot.set_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    IF NEW.updated_at IS DISTINCT FROM now() THEN
+      NEW.updated_at := now();
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+-- 2.2) set_goal_start_metrics(): completa start_weight_kg / start_waist_cm
+--     con el último check-in <= start_date si no fueron provistos.
+CREATE OR REPLACE FUNCTION nutri_bot.set_goal_start_metrics()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  ref_date date;
+  w_rec RECORD;
+BEGIN
+  ref_date := COALESCE(NEW.start_date, CURRENT_DATE);
+
+  IF NEW.start_weight_kg IS NULL OR NEW.start_waist_cm IS NULL THEN
+    SELECT w.weight_kg, w.waist_cm
+      INTO w_rec
+    FROM nutri_bot.weekly_checkins w
+    WHERE w.patient_id = NEW.patient_id
+      AND w.week_start_date <= ref_date
+    ORDER BY w.week_start_date DESC
+    LIMIT 1;
+
+    IF NEW.start_weight_kg IS NULL AND w_rec.weight_kg IS NOT NULL THEN
+      NEW.start_weight_kg := w_rec.weight_kg;
+    END IF;
+
+    IF NEW.start_waist_cm IS NULL AND w_rec.waist_cm IS NOT NULL THEN
+      NEW.start_waist_cm := w_rec.waist_cm;
+    END IF;
+  END IF;
+
+  -- Si la meta ya tiene end_date y status 'completed', mantenemos lo demás tal cual
+  RETURN NEW;
+END;
+$$;
+
+-- ============================================
+-- 3) Tablas (ordenadas para respetar FKs)
+-- ============================================
+
+-- 3.1) patients
+CREATE TABLE IF NOT EXISTS nutri_bot.patients (
+  patient_id bigserial NOT NULL,
+  full_name text NOT NULL,
+  phone_e164 text NOT NULL,
+  email text NULL,
+  sex text NULL,
+  height_cm numeric(5, 2) NULL,
+  timezone text NOT NULL DEFAULT 'America/Bogota'::text,
+  status text NOT NULL DEFAULT 'active'::text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  birth_date date NULL,
+  CONSTRAINT patients_patient_id_pkey PRIMARY KEY (patient_id),
+  CONSTRAINT patients_phone_e164_key UNIQUE (phone_e164)
+) TABLESPACE pg_default;
+
+-- 3.2) weekly_checkins
+CREATE TABLE IF NOT EXISTS nutri_bot.weekly_checkins (
+  id bigserial NOT NULL,
+  patient_id bigint NOT NULL,
+  week_start_date date NOT NULL,
+  weight_kg numeric(5, 2) NULL,
+  waist_cm numeric(5, 2) NULL,
+  energy_level smallint NULL,
+  adherence smallint NULL,
+  notes text NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT weekly_checkins_pkey PRIMARY KEY (id),
+  CONSTRAINT weekly_checkins_patient_id_week_start_date_key UNIQUE (patient_id, week_start_date),
+  CONSTRAINT weekly_checkins_patient_id_fkey FOREIGN KEY (patient_id)
+    REFERENCES nutri_bot.patients (patient_id) ON DELETE CASCADE
+) TABLESPACE pg_default;
+
+-- 3.3) goals
+CREATE TABLE IF NOT EXISTS nutri_bot.goals (
+  id bigserial NOT NULL,
+  patient_id bigint NOT NULL,
+  goal_type text NOT NULL,
+  start_date date NOT NULL DEFAULT current_date,
+  target_metric text NOT NULL,
+  target_value numeric(7, 2) NOT NULL,
+  deadline date NULL,
+  status text NOT NULL DEFAULT 'active'::text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  weekly_rate_kg numeric(4, 2) NULL,
+  end_date date NULL,
+  start_weight_kg numeric(6, 2) NULL,
+  start_waist_cm numeric(6, 1) NULL,
+  CONSTRAINT goals_pkey PRIMARY KEY (id),
+  CONSTRAINT goals_patient_id_fkey FOREIGN KEY (patient_id)
+    REFERENCES nutri_bot.patients (patient_id) ON DELETE CASCADE,
+  CONSTRAINT goals_start_weight_chk CHECK (
+    (start_weight_kg IS NULL) OR (start_weight_kg >= 20::numeric AND start_weight_kg <= 400::numeric)
+  ),
+  CONSTRAINT goals_status_chk CHECK (
+    status = ANY (ARRAY['active'::text,'completed'::text,'cancelled'::text])
+  ),
+  CONSTRAINT goals_target_metric_chk CHECK (
+    target_metric = ANY (ARRAY['weight_kg'::text,'body_fat_pct'::text,'bmi'::text,'waist_cm'::text])
+  ),
+  CONSTRAINT goals_start_waist_chk CHECK (
+    (start_waist_cm IS NULL) OR (start_waist_cm >= 30::numeric AND start_waist_cm <= 200::numeric)
+  ),
+  CONSTRAINT goals_goal_type_chk CHECK (
+    goal_type = ANY (ARRAY['lose'::text,'maintain'::text,'gain'::text])
+  )
+) TABLESPACE pg_default;
+
+-- 3.4) meal_plans
+CREATE TABLE IF NOT EXISTS nutri_bot.meal_plans (
+  id bigserial NOT NULL,
+  patient_id bigint NOT NULL,
+  for_date date NOT NULL,
+  meal_type text NOT NULL,
+  recipe_title text NOT NULL,
+  recipe_instructions text NOT NULL,
+  macros jsonb NOT NULL DEFAULT '{}'::jsonb,
+  portions jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT meal_plans_pkey PRIMARY KEY (id),
+  CONSTRAINT meal_plans_patient_id_for_date_meal_type_key UNIQUE (patient_id, for_date, meal_type),
+  CONSTRAINT meal_plans_patient_id_fkey FOREIGN KEY (patient_id)
+    REFERENCES nutri_bot.patients (patient_id) ON DELETE CASCADE
+) TABLESPACE pg_default;
+
+-- 3.5) daily_pantry
+CREATE TABLE IF NOT EXISTS nutri_bot.daily_pantry (
+  id bigserial NOT NULL,
+  patient_id bigint NOT NULL,
+  for_date date NOT NULL,
+  items jsonb NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT daily_pantry_pkey PRIMARY KEY (id),
+  CONSTRAINT daily_pantry_patient_id_for_date_key UNIQUE (patient_id, for_date),
+  CONSTRAINT daily_pantry_patient_id_fkey FOREIGN KEY (patient_id)
+    REFERENCES nutri_bot.patients (patient_id) ON DELETE CASCADE
+) TABLESPACE pg_default;
+
+-- 3.6) dietary_flags
+CREATE TABLE IF NOT EXISTS nutri_bot.dietary_flags (
+  id bigserial NOT NULL,
+  patient_id bigint NOT NULL,
+  flag text NOT NULL,
+  note text NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT dietary_flags_pkey PRIMARY KEY (id),
+  CONSTRAINT dietary_flags_patient_id_fkey FOREIGN KEY (patient_id)
+    REFERENCES nutri_bot.patients (patient_id) ON DELETE CASCADE
+) TABLESPACE pg_default;
+
+-- 3.7) message_log
+CREATE TABLE IF NOT EXISTS nutri_bot.message_log (
+  id bigserial NOT NULL,
+  patient_id bigint NULL,
+  direction text NOT NULL,
+  channel_msg_id text NULL,
+  body text NOT NULL,
+  sent_at timestamp with time zone NOT NULL,
+  status text NULL,
+  meta jsonb NOT NULL DEFAULT '{}'::jsonb,
+  CONSTRAINT message_log_pkey PRIMARY KEY (id),
+  CONSTRAINT message_log_patient_id_fkey FOREIGN KEY (patient_id)
+    REFERENCES nutri_bot.patients (patient_id) ON DELETE SET NULL
+) TABLESPACE pg_default;
+
+-- 3.8) progress_images
+CREATE TABLE IF NOT EXISTS nutri_bot.progress_images (
+  id bigserial NOT NULL,
+  patient_id bigint NOT NULL,
+  week_start_date date NOT NULL,
+  chart_url text NULL,
+  chart_blob bytea NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT progress_images_pkey PRIMARY KEY (id),
+  CONSTRAINT progress_images_patient_id_week_start_date_key UNIQUE (patient_id, week_start_date),
+  CONSTRAINT progress_images_patient_id_fkey FOREIGN KEY (patient_id)
+    REFERENCES nutri_bot.patients (patient_id) ON DELETE CASCADE
+) TABLESPACE pg_default;
+
+-- 3.9) scheduled_jobs
+CREATE TABLE IF NOT EXISTS nutri_bot.scheduled_jobs (
+  id bigserial NOT NULL,
+  patient_id bigint NULL,
+  job_type text NOT NULL,
+  next_run_at timestamp with time zone NOT NULL,
+  rule text NOT NULL,
+  active boolean NOT NULL DEFAULT TRUE,
+  last_run_at timestamp with time zone NULL,
+  CONSTRAINT scheduled_jobs_pkey PRIMARY KEY (id),
+  CONSTRAINT scheduled_jobs_patient_id_fkey FOREIGN KEY (patient_id)
+    REFERENCES nutri_bot.patients (patient_id) ON DELETE CASCADE
+) TABLESPACE pg_default;
+
+-- 3.10) unit_equivalences
+CREATE TABLE IF NOT EXISTS nutri_bot.unit_equivalences (
+  id bigserial NOT NULL,
+  ingredient_key text NOT NULL,
+  grams_per_tbsp numeric(7, 2) NULL,
+  grams_per_cup numeric(7, 2) NULL,
+  grams_per_unit numeric(7, 2) NULL,
+  notes text NULL,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT unit_equivalences_pkey PRIMARY KEY (id),
+  CONSTRAINT unit_equivalences_ingredient_key_key UNIQUE (ingredient_key)
+) TABLESPACE pg_default;
+
+-- 3.11) food_aliases
+CREATE TABLE IF NOT EXISTS nutri_bot.food_aliases (
+  id bigserial NOT NULL,
+  alias text NOT NULL,
+  ingredient_key text NOT NULL,
+  locale text NULL DEFAULT 'es-CO'::text,
+  CONSTRAINT food_aliases_pkey PRIMARY KEY (id)
+) TABLESPACE pg_default;
+
+-- 3.12) patient_preferences
+CREATE TABLE IF NOT EXISTS nutri_bot.patient_preferences (
+  id bigserial NOT NULL,
+  patient_id bigint NOT NULL,
+  daily_contact_hour smallint NOT NULL,
+  language text NULL DEFAULT 'es-CO'::text,
+  portion_style text NOT NULL DEFAULT 'mixed'::text,
+  restrictions jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT patient_preferences_pkey PRIMARY KEY (id),
+  CONSTRAINT patient_preferences_patient_id_key UNIQUE (patient_id),
+  CONSTRAINT patient_preferences_patient_id_fkey FOREIGN KEY (patient_id)
+    REFERENCES nutri_bot.patients (patient_id) ON DELETE CASCADE,
+  CONSTRAINT patient_preferences_daily_contact_hour_check CHECK (
+    daily_contact_hour >= 0 AND daily_contact_hour <= 23
+  )
+) TABLESPACE pg_default;
+
+-- 3.13) patient_profile
+CREATE TABLE IF NOT EXISTS nutri_bot.patient_profile (
+  patient_id bigint NOT NULL,
+  activity_level text NOT NULL,
+  dietary_pattern text NOT NULL DEFAULT 'omnivorous'::text,
+  allergies text[] NULL,
+  dislikes text[] NULL,
+  meals_per_day smallint NULL,
+  sleep_window text NULL,
+  equipment jsonb NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT patient_profile_pkey PRIMARY KEY (patient_id),
+  CONSTRAINT patient_profile_patient_id_fkey FOREIGN KEY (patient_id)
+    REFERENCES nutri_bot.patients (patient_id) ON DELETE CASCADE,
+  CONSTRAINT patient_profile_activity_level_check CHECK (
+    activity_level = ANY (ARRAY['sedentary','light','moderate','active','athlete'])
+  ),
+  CONSTRAINT patient_profile_meals_per_day_check CHECK (
+    meals_per_day >= 1 AND meals_per_day <= 8
+  )
+) TABLESPACE pg_default;
+
+-- ============================================
+-- 4) Índices
+-- ============================================
+CREATE UNIQUE INDEX IF NOT EXISTS uq_goals_active_per_patient
+  ON nutri_bot.goals USING btree (patient_id) TABLESPACE pg_default
+  WHERE (status = 'active'::text);
+
+CREATE INDEX IF NOT EXISTS idx_goals_patient_created_at
+  ON nutri_bot.goals USING btree (patient_id, created_at DESC) TABLESPACE pg_default;
+
+CREATE INDEX IF NOT EXISTS idx_weekly_checkins_patient_date
+  ON nutri_bot.weekly_checkins USING btree (patient_id, week_start_date DESC) TABLESPACE pg_default;
+
+CREATE INDEX IF NOT EXISTS idx_food_aliases_alias
+  ON nutri_bot.food_aliases USING btree (alias) TABLESPACE pg_default;
+
+-- ============================================
+-- 5) Vistas
+-- ============================================
+
+-- 5.1) v_active_goal
+CREATE OR REPLACE VIEW nutri_bot.v_active_goal AS
+SELECT
+  g.id,
+  g.patient_id,
+  g.goal_type,
+  g.start_date,
+  g.target_metric,
+  g.target_value,
+  g.deadline,
+  g.status,
+  g.created_at,
+  g.updated_at,
+  g.weekly_rate_kg,
+  g.end_date
+FROM nutri_bot.goals g
+WHERE g.status = 'active'::text;
+
+-- 5.2) v_patient_latest_weight
+CREATE OR REPLACE VIEW nutri_bot.v_patient_latest_weight AS
+SELECT DISTINCT ON (w.patient_id)
+  w.patient_id,
+  w.week_start_date,
+  w.weight_kg,
+  w.created_at
+FROM nutri_bot.weekly_checkins w
+WHERE w.weight_kg IS NOT NULL
+ORDER BY w.patient_id, w.week_start_date DESC;
+
+-- 5.3) v_weight_time_series
+CREATE OR REPLACE VIEW nutri_bot.v_weight_time_series AS
+SELECT
+  p.patient_id,
+  p.full_name,
+  w.week_start_date,
+  w.weight_kg
+FROM nutri_bot.patients p
+JOIN nutri_bot.weekly_checkins w ON w.patient_id = p.patient_id
+WHERE w.weight_kg IS NOT NULL
+ORDER BY p.patient_id, w.week_start_date;
+
+-- 5.4) v_patient_overview
+CREATE OR REPLACE VIEW nutri_bot.v_patient_overview AS
+WITH last_weight AS (
+  SELECT
+    w.patient_id,
+    w.weight_kg,
+    w.week_start_date,
+    ROW_NUMBER() OVER (PARTITION BY w.patient_id ORDER BY w.week_start_date DESC) AS rn
+  FROM nutri_bot.weekly_checkins w
+  WHERE w.weight_kg IS NOT NULL
+)
+SELECT
+  p.patient_id,
+  p.full_name,
+  p.phone_e164,
+  p.email,
+  p.sex,
+  p.birth_date,
+  p.height_cm,
+  p.timezone,
+  p.status,
+  DATE_PART('year', age(p.birth_date::timestamp with time zone))::integer AS age_years,
+  pref.daily_contact_hour,
+  pref.portion_style,
+  prof.activity_level,
+  prof.dietary_pattern,
+  prof.allergies,
+  prof.dislikes,
+  prof.meals_per_day,
+  prof.sleep_window,
+  prof.equipment,
+  g.id AS goal_id,
+  g.goal_type,
+  g.target_metric,
+  g.target_value,
+  g.weekly_rate_kg,
+  g.deadline,
+  g.status AS goal_status,
+  lw.weight_kg AS latest_weight_kg,
+  lw.week_start_date AS latest_weight_week,
+  CASE
+    WHEN p.height_cm IS NOT NULL AND p.height_cm > 0::numeric AND lw.weight_kg IS NOT NULL
+      THEN ROUND(lw.weight_kg / ((p.height_cm / 100.0) ^ 2::numeric), 2)
+    ELSE NULL::numeric
+  END AS bmi
+FROM nutri_bot.patients p
+LEFT JOIN nutri_bot.patient_preferences pref ON pref.patient_id = p.patient_id
+LEFT JOIN nutri_bot.patient_profile    prof ON prof.patient_id = p.patient_id
+LEFT JOIN nutri_bot.v_active_goal      g    ON g.patient_id = p.patient_id
+LEFT JOIN last_weight                  lw   ON lw.patient_id = p.patient_id AND lw.rn = 1;
+
+-- ============================================
+-- 6) Triggers (creación condicional)
+-- ============================================
+
+-- goals.updated_at
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_goals_updated_at'
+  ) THEN
+    CREATE TRIGGER trg_goals_updated_at
+    BEFORE UPDATE ON nutri_bot.goals
+    FOR EACH ROW
+    EXECUTE FUNCTION nutri_bot.set_updated_at();
+  END IF;
+END$$;
+
+-- goals.set_start_metrics
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_goals_set_start_metrics'
+  ) THEN
+    CREATE TRIGGER trg_goals_set_start_metrics
+    BEFORE INSERT OR UPDATE ON nutri_bot.goals
+    FOR EACH ROW
+    EXECUTE FUNCTION nutri_bot.set_goal_start_metrics();
+  END IF;
+END$$;
+
+-- patient_preferences.updated_at
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_patient_preferences_updated_at'
+  ) THEN
+    CREATE TRIGGER trg_patient_preferences_updated_at
+    BEFORE UPDATE ON nutri_bot.patient_preferences
+    FOR EACH ROW
+    EXECUTE FUNCTION nutri_bot.set_updated_at();
+  END IF;
+END$$;
+
+-- unit_equivalences.updated_at
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_unit_equivalences_updated_at'
+  ) THEN
+    CREATE TRIGGER trg_unit_equivalences_updated_at
+    BEFORE UPDATE ON nutri_bot.unit_equivalences
+    FOR EACH ROW
+    EXECUTE FUNCTION nutri_bot.set_updated_at();
+  END IF;
+END$$;
+
+-- patient_profile.updated_at
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_patient_profile_updated_at'
+  ) THEN
+    CREATE TRIGGER trg_patient_profile_updated_at
+    BEFORE UPDATE ON nutri_bot.patient_profile
+    FOR EACH ROW
+    EXECUTE FUNCTION nutri_bot.set_updated_at();
+  END IF;
+END$$;
+
+-- ============================================
+-- Fin
+-- ============================================

@@ -1,0 +1,294 @@
+{
+  "name": "MultiAgentes v2",
+  "nodes": [
+    {
+      "parameters": {
+        "model": "gpt-4o-mini-2024-07-18",
+        "options": {}
+      },
+      "id": "97812a2e-a71e-48e1-8be8-7f49c39bfedd",
+      "name": "OpenAI Chat Model3",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        860
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "TranscripcionYT",
+        "description": "Llama a esta herramienta para crear la transcripción de un video de YouTube a partir de su enlace.",
+        "workflowId": {
+          "__rl": true,
+          "value": "uclga8aGBs0ZL8RB",
+          "mode": "list",
+          "cachedResultName": "Agente Transcripción YouTube"
+        },
+        "responsePropertyName": "=response"
+      },
+      "id": "98465c9e-3937-4a4e-ac13-fa417b3b341e",
+      "name": "Transcribir YT",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1600,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "name": "Post_Linkedin",
+        "description": "Llama a esta herramienta para realizar un post de Linkedin a partir de la transcripción de video de YouTube.",
+        "workflowId": {
+          "__rl": true,
+          "value": "1UhNZBzIbHQbBKXA",
+          "mode": "list",
+          "cachedResultName": "Agente Post Linkedin"
+        }
+      },
+      "id": "15a52a68-00d3-4c25-84d0-dc2b54a3585a",
+      "name": "Post Linkedin",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1740,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Llama a esta herramienta para obtener informacion de la base de datos de Airtable cuando el usuario lo requiera.",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appvHXtBCc7JmQ2Dl",
+          "mode": "list",
+          "cachedResultName": "Linkedin Base",
+          "cachedResultUrl": "https://airtable.com/appvHXtBCc7JmQ2Dl"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblI9whdFATo4T5hq",
+          "mode": "list",
+          "cachedResultName": "Links",
+          "cachedResultUrl": "https://airtable.com/appvHXtBCc7JmQ2Dl/tblI9whdFATo4T5hq"
+        },
+        "filterByFormula": "OR({Transcripción YouTube}=\"\",{Post Linkedin}=\"\",{Post Blog}=\"\",{Post X}=\"\")",
+        "options": {}
+      },
+      "id": "d290d6c6-0d66-4162-80a0-dd4dbfaf934d",
+      "name": "Consulta Estado",
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        2060,
+        840
+      ],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "[REMOVED]",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "Post_Blog",
+        "description": "Llama a esta herramienta para realizar un post para un Blog a partir de la transcripción de video de YouTube.",
+        "workflowId": {
+          "__rl": true,
+          "value": "cjZnCkK2mY7bSSka",
+          "mode": "list",
+          "cachedResultName": "Agente Post Blog"
+        }
+      },
+      "id": "a5861794-d666-47bd-a04b-0da9cfed308b",
+      "name": "Post Blog",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1860,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "name": "Post_X",
+        "description": "Llama a esta herramienta para realizar un post para X a partir de la transcripción de video de YouTube.",
+        "workflowId": {
+          "__rl": true,
+          "value": "RKdroS2fqgzRcgsa",
+          "mode": "list",
+          "cachedResultName": "Agente Post X"
+        }
+      },
+      "id": "2d30912c-6aa2-4e2b-a182-c3f62b73f4f4",
+      "name": "Post X",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2000,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "81dc94dc-4fce-4ee0-a4a5-65415bd998ef",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        1420,
+        640
+      ],
+      "webhookId": "be9271cc-4728-4dea-9c84-1afad834219d"
+    },
+    {
+      "parameters": {},
+      "id": "2f47958c-0147-4203-ae72-44b56ac934db",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [
+        1560,
+        860
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "Eres un asistente virtual que se encarga de consultar una base de datos y crear contenido para redes sociales a demanda del usuario."
+        }
+      },
+      "id": "f54e2d37-a85d-4fd6-bb41-c7c330b2d2ea",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1680,
+        640
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Linkedin": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consulta Estado": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Blog": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post X": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribir YT": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a8e0c998-975c-4abf-985c-1e8480548e4c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d139e409968c1a9c153ce5718318c817cafb26c088ab268ed768f39ac06a54f2"
+  },
+  "id": "5L0i9Z0YdnFjl4Je",
+  "tags": [
+    {
+      "createdAt": "2024-12-08T08:34:11.948Z",
+      "updatedAt": "2024-12-08T08:34:11.948Z",
+      "id": "pxl34eTjO6YthSUZ",
+      "name": "YouTube"
+    }
+  ]
+}

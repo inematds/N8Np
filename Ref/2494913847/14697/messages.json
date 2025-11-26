@@ -1,0 +1,221 @@
+[
+  {
+    "id": 15126,
+    "author": "Agnaldo Pael",
+    "date": "2025-10-15T03:27:10+00:00",
+    "text": "Show",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14722,
+    "author": "INEMA",
+    "date": "2025-10-03T03:11:53+00:00",
+    "text": "Volta ao Split In Batches até concluir todos os itens\n\n16. Excalidraw (opcional, como no vídeo)\n    Pegue o JSON do fluxo (ou descreva o diagrama) e peça a um LLM para gerar JSON compatível com Excalidraw\n    Cole no Excalidraw para apresentar o mapa visual ao cliente/equipe\n\nBoas práticas que o autor enfatiza\n– Filtre antes de enviar à IA (economia de custo e tempo)\n– Use loop + wait para grandes volumes\n– Trate vídeos “processing” com retry/backoff\n– Centralize prompts como variáveis de configuração\n– Salve outputs prontos para reuso (resumo + copy reescrito) no Sheets\n– Use hash para deduplicar anúncios já processados\n\nExemplos rápidos\nFiltro inicial:\nmin_likes = 1000\nPaís = US\nTermo = Shopify\nResultados: 20 → 12 após filtro\n\nPrompt de reescrita (exemplo curto):\n“Reescreva este copy para foco em benefício principal, prova social e CTA curto. Traga 3 variações com tom direto, 140–180 caracteres.”\n\nPerguntas frequentes com respostas\n\n1. O que fazer quando o vídeo está “processing”?\n   Resposta: aplicar retry com backoff (ex.: 5 min, 15 min, 1 h; máx. 5 tentativas) e só seguir quando status == ACTIVE.\n\n2. Como reduzir custo de IA?\n   Resposta: triagem com modelo mais barato; análise profunda só nos top-N (por likes/score). Filtrar primeiro, analisar depois.\n\n3. Onde armazenar tudo?\n   Resposta: protótipo em Google Sheets; para escala, DB + vetor (Supabase/Pinecone) e logs de versão de prompts.\n\n4. Dá para reutilizar os insights?\n   Resposta: sim. Use summary + ganchos para gerar imagens mockup e roteiro UGC; em seguida, alimente um gerador de vídeo.\n\n5. Como mostrar o fluxo para o cliente?\n   Resposta: gere JSON para Excalidraw a partir da descrição do workflow e cole no app; é o que o autor demonstra.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14721,
+    "author": "INEMA",
+    "date": "2025-10-03T03:11:53+00:00",
+    "text": "Passo a passo direto do vídeo (n8n + Apify + IA + Google Sheets)\n\nPré-requisitos\n\n1. Crie uma planilha no Google Sheets com as colunas:\n   id_hash, ad_url, tipo, page_name, page_url, country, likes, shares, comments, media_url, ad_text, subtitle, summary, rewritten_copy, status_media, processed_at, prompt_version, tags\n2. Tenha as chaves:\n   Apify API Token\n   OpenAI e/ou Gemini (Vision + Chat)\n3. Anote:\n   ID da planilha e nome da aba\n   Termo de busca (ex.: Shopify), país (ex.: US), min_likes (ex.: 1000), max_results (ex.: 20)\n\nPrompts base (variáveis globais)\nprompt_image: “Analise a imagem: 1) 3 emoções; 2) público-alvo provável; 3) 3 ganchos; 4) 2 razões de conversão.”\nprompt_video: “Analise o vídeo: 1) promessa; 2) prova social; 3) CTA; 4) objeções quebradas; 5) resumo em 3 linhas.”\nprompt_text: “Reescreva o copy com foco em clareza, benefício principal, prova social e CTA curto. Traga 3 variações.”\n\nFluxo no n8n (nodes e parâmetros essenciais)\n\n1. Trigger\n   Opção A: Manual Trigger\n   Opção B: Cron\n   Mode: Every Day\n   Time: 09:00\n\n2. Set (Config)\n   Campos:\n   search_term = “Shopify”\n   country = “US”\n   min_likes = 1000\n   max_results = 20\n   sheet_id = “SEU_SHEET_ID”\n   sheet_tab = “Resultados”\n   prompt_image, prompt_video, prompt_text (os textos acima)\n   prompt_version = “v1”\n\n3. HTTP Request – Apify (rodar o actor de scraping da Ads Library)\n   Method: POST\n   URL: [https://api.apify.com/v2/acts/{SEU_ACTOR}/runs?token={{APIFY_TOKEN}}&waitForFinish=120](https://api.apify.com/v2/acts/{SEU_ACTOR}/runs?token={{APIFY_TOKEN}}&waitForFinish=120)\n   Body (JSON):\n   {\n   \"search\": \"{{$json.search_term}}\",\n   \"country\": \"{{$json.country}}\",\n   \"maxResults\": {{$json.max_results}}\n   }\n   Headers:\n   Authorization: Bearer APIFY_TOKEN\n   Content-Type: application/json\n\nObservação: se preferir, use o node Apify no n8n com os mesmos campos. O vídeo mostra gerar a API Key no Apify e usar Authorization: Bearer.\n\n4. HTTP Request – Itens do dataset (pegar resultados)\n   Method: GET\n   URL: [https://api.apify.com/v2/datasets/{{](https://api.apify.com/v2/datasets/{{) $json.data.defaultDatasetId }}/items\n   (ou o datasetId retornado do run)\n   Query (opcional): limit={{$json.max_results}}\n\n5. IF – Filtro de qualidade\n   Condição: item.likes >= {{$json.min_likes}} e item.status_media == “ACTIVE” (se disponível)\n   Se verdadeiro: segue\n   Se falso: descarta\n   Dica do vídeo: o filtro reduz de ~20 para ~12 anúncios (exemplo real)\n\n6. Split In Batches\n   Batch size: 10–20 (ex.: 15)\n\n7. Function (extração e hashing)\n   Código simples para:\n   – Extrair: ad_url, media_url (imagem/vídeo), ad_text, subtitle, page_name, page_url, likes/shares/comments, tipo (image/video)\n   – Gerar id_hash = md5(ad_url + substring(ad_text,0,120))\n\n8. IF – Status do vídeo\n   Se tipo == “video” e status_media == “processing”:\n   → Wait\n   → Volta ao item (retry) ou reenqueue com contador (até 3–5 vezes)\n   Se ativo: segue\n\n9. HTTP Request – Baixar mídia (quando necessário)\n   Para vídeo: GET media_url, response: Binário (ou só passar a URL ao modelo multimodal)\n   Para imagem: use a URL direto na análise\n\n10. OpenAI/Gemini – Análise de imagem (se tipo == image)\n    Entrada:\n    media_url e prompt_image (da Config)\n    Saída esperada:\n    summary_imagem, ganchos, público-alvo, razões de conversão\n\n11. OpenAI/Gemini – Análise de vídeo (se tipo == video)\n    Entrada:\n    media_url (ou frames/transcrição) e prompt_video\n    Saída esperada:\n    summary_video, ganchos, CTA, objeções quebradas\n\n12. OpenAI – Reescrita de texto (sempre)\n    Entrada:\n    ad_text (original) + contexto do resumo (imagem/vídeo) + prompt_text\n    Saída:\n    rewritten_copy (3 variações, escolha 1 ou salve todas)\n\n13. Google Sheets – Append\n    Planilha: sheet_id\n    Aba: sheet_tab\n    Campos:\n    id_hash, ad_url, tipo, page_name, page_url, country, likes, shares, comments, media_url, ad_text, subtitle, summary, rewritten_copy, status_media, processed_at={{$now}}, prompt_version, tags\n\n14. Wait\n    Time: 3–5s\n    Motivo:\n    Evitar rate limit e dar tempo para próximos itens\n\n15. Loop",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14720,
+    "author": "INEMA",
+    "date": "2025-10-03T03:11:44+00:00",
+    "text": "=================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14719,
+    "author": "INEMA",
+    "date": "2025-10-03T03:10:28+00:00",
+    "text": "anúncios via Apify (ou API/HTTP request), aplicar filtros de qualidade, extrair dados essenciais (texto, imagens, vídeos, engajamento), usar IA em camadas para gerar resumos e copies reescritos, armazenar tudo em Google Sheets ou um DB vetorial, e usar esses outputs para criar imagens, roteiros UGC e novas campanhas. Hacks chave: filtrar antes de analisar, processar em batches com loop+wait, re-enfileirar vídeos em processing, usar embeddings para agrupar, e versionar prompts. Sempre monitorar custos e adicionar controle humano para calibrar.\n\nTÓPICOS COM EXEMPLOS E PERGUNTAS/RESPOSTAS\n\n1. Filtro de likes — Exemplo: >=1000 likes\n\n   * Pergunta: Qual filtro usar?\n   * Resposta: Comece em 500–1.000 para nichos com menos volume; 1.000+ para nichos competitivos. Ajuste por país.\n\n2. Batch e wait — Exemplo: batch=15, wait=4s\n\n   * Pergunta: Por que usar wait?\n   * Resposta: Evita timeouts, limites de taxa e estourar a cota de API.\n\n3. Retry para vídeos em processing — Exemplo: re-enqueue com backoff 5m→15m→1h\n\n   * Pergunta: Quantas tentativas?\n   * Resposta: 3–5 tentativas razoáveis; depois marcar como \"pendente humano\".\n\n4. Economia de API — Exemplo: triagem com modelo barato, análise final com modelo caro\n\n   * Pergunta: Como reduzir custos sem perder qualidade?\n   * Resposta: Use modelos menores para filtro; só enviei top 5–10 para análise profunda.\n\n5. Prompt exemplo para análise de imagem\n\n   * Exemplo de prompt: \"Analise esta imagem [URL]. Diga: 1) 3 emoções principais; 2) público-alvo provável; 3) 3 ganchos de anúncio; 4) 2 motivos de conversão.\"\n   * Pergunta: Preciso de prompts diferentes por país?\n   * Resposta: Sim — adapte linguagem e referências culturais.\n\n6. Organização do Google Sheets — Exemplo de colunas já citadas\n\n   * Pergunta: Vale usar Sheets ou DB?\n   * Resposta: Sheets para protótipo; DB + vector store para escala e buscas semânticas.\n\n7. Geração automática de criativos — Exemplo: usar summary → gerar imagem com prompt: \"Produto X em uso por mulher 25–35, lifestyle praia\"\n\n   * Pergunta: Posso publicar diretamente?\n   * Resposta: Faça revisão humana para assegurar conformidade e qualidade.\n\n8. Uso de embeddings — Exemplo: OpenAI embeddings + Pinecone cluster\n\n   * Pergunta: Para que serve agrupar por embedding?\n   * Resposta: Descobrir temas recorrentes e criar clusters de anúncios similares para insights de categoria.\n\n9. Monitoramento de custos — Exemplo: alerta quando custo diário > X USD\n\n   * Pergunta: Como evitar surpresas de fatura?\n   * Resposta: coloque limites diários e alertas; teste com amostra antes de escalar.\n\n10. Excalidraw automático — Exemplo: gerar JSON do fluxo e importar em Excalidraw\n\n    * Pergunta: Serve para clientes?\n    * Resposta: Sim — ótima para demos e documentação visual.\n\n11. Handling de idiomas — Exemplo: detectar idioma do texto e chamar prompt local (pt/es/en)\n\n    * Pergunta: E se anúncio em espanhol e público alvo Brasil?\n    * Resposta: Detecte idioma e faça tradução contextual antes de gerar copy para o público alvo.\n\n12. Segurança/Legal — Exemplo: manter referência da fonte, link e data de captura\n\n    * Pergunta: Posso usar imagens como estão?\n    * Resposta: Só para análise. Para redistribuir, valide direitos ou crie criativos originais baseados em insights.\n\n13. Métrica de sucesso — Exemplo: definir score = likes_norm + shares*2 + comentários*1.5\n\n    * Pergunta: Como priorizar o que analisar?\n    * Resposta: Use um score ponderado por engajamento e recência.\n\n14. Teste A/B de prompts — Exemplo: testar 3 variantes de prompt de reescrita e medir CTR em anúncios gerados\n\n    * Pergunta: Como saber qual prompt funciona melhor?\n    * Resposta: A/B com KPIs reais (CTR, CPA) em amostra controlada.\n\n15. Observabilidade — Exemplo: log de cada item com prompt_version, model, latency, result_status\n\n    * Pergunta: Preciso desses logs?\n    * Resposta: Sim — essenciais para debug e otimização.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14718,
+    "author": "INEMA",
+    "date": "2025-10-03T03:10:28+00:00",
+    "text": "HACKS PRÁTICOS\n\n1. Use variáveis de prompt centralizadas\n\n   * Coloque os prompts (análise imagem, análise vídeo, reescrita de copy) em uma configuração global e injete via variável nos nós.\n   * Exemplo: prompt_image_analysis = \"Descreva emoção, público alvo, 3 ganchos e 2 motivos de conversão.\"\n\n2. Filtre primeiro, analise depois (economia de API)\n\n   * Aplique filtros de qualidade (likes, shares, tempo de publicação) no scraping antes de enviar para IA.\n   * Ex.: só analisar anúncios com >= 1.000 likes e vídeo ativo.\n\n3. Use loop + wait para grandes volumes\n\n   * Processar em lotes de 10–20 itens com wait (ex.: 5s) evita timeouts e estouro de cota.\n   * Ex.: batch_size=15, sleep=4s entre batches.\n\n4. Detecte e reenqueue itens em \"processing\" automaticamente\n\n   * Se vídeo retorna status processing, coloque o item numa fila com retry exponencial (5m, 15m, 1h).\n   * Ex.: retry_count <= 5, backoff multiplicativo.\n\n5. Deduplicação por hash e fingerprinting\n\n   * Gere hash da URL+texto para evitar processar o mesmo anúncio várias vezes.\n   * Ex.: md5(url + short_text) → skip se já existe no Sheets/Pinecone.\n\n6. Cache local de metadados (evita re-scrape)\n\n   * Salve last_checked_at e etag; re-scrape apenas se mudou ou após X dias.\n   * Ex.: recheck_interval = 7 dias por anúncio.\n\n7. Priorize vídeos ativos (maior ROI)\n\n   * Coloque pesos: vídeo ativo > carrossel > imagem estática. Use score para priorizar análises.\n\n8. Enriquecimento com metadados (produto / loja)\n\n   * Extraia pistas: dominio do link, tags do store (Shopify), preço aparente, reviews. Ajuda segmentação.\n\n9. Transforme insight em inputs para geração criativa automática\n\n   * Use o resumo e os 3 ganchos da IA como seed para gerar imagem (DALLE/Imagen) + roteiro UGC (vídeo curto).\n   * Ex.: prompt para imagem: \"Criar mockup de produto X com lifestyle Y, close, fundo neutro.\"\n\n10. Use embeddings para agrupar anúncios semelhantes\n\n    * Gere embedding do resumo e agrupe por clusters; facilita detectar padrões vencedores e evitar redundância.\n    * Ferramenta: Pinecone / Supabase vector.\n\n11. Monitoramento e alertas de custo / erro\n\n    * Configure alertas quando consumo de API ultrapassar limites diários ou quando taxa de erro > 5%.\n    * Ex.: webhook para Telegram/Slack com resumo diário.\n\n12. Templates de prompts com slots preenchíveis\n\n    * Crie templates tipo: \"Analisar imagem: [URL], objetivo: [conversão/engajamento], país: [BR]\". Troque apenas slots.\n    * Facilita A/B de prompts.\n\n13. Use resposta multimodal em camadas (texto → imagem → vídeo)\n\n    * Primeiro gere resumo; depois, com esse resumo, peça imagem; depois use imagem+resumo para roteiro/UGC. Fluxo encadeado.\n\n14. Trate arquivos grandes de vídeo por extratos (clips)\n\n    * Não analise vídeo inteiro; extraia frames-chave + transcrição dos primeiros 30s e frames do pico de engajamento.\n    * Ex.: sample every 3s + first 30s transcript.\n\n15. Controle de qualidade humano-aumentado (amostra)\n\n    * Rotina: 5% dos itens aprovados pela IA vão para revisão humana para calibrar filtros e prompts.\n\n16. Reduza custos com classes de modelos e truncagem inteligente\n\n    * Use modelo mais barato para triagem e modelo topo de linha só para top-N candidatos.\n    * Ex.: triagem com modelochat-small; análise profunda com gemini-advanced.\n\n17. Organização de Sheets/DB pensando em automações posteriores\n\n    * Colunas: id_hash, url_ad, tipo, likes, shares, summary, rewritten_copy, image_url, video_url, processed_at, status, tags.\n    * Isso facilita reuso para geração de anúncios e automações downstream.\n\n18. Versionamento dos prompts e logs de mudança\n\n    * Armazene versão do prompt usado por item (prompt_v1, v2). Permite auditoria e rollback.\n\n19. Gerar mapa visual automaticamente (Excalidraw)\n\n    * Produza JSON do fluxo e injete em Excalidraw para apresentação ao cliente rapidamente.\n\n20. Proteção legal e privacidade\n\n    * Respeite direitos de uso: armazene apenas metadados e links, evite redistribuir criativos com copyright sem permissão; registre fontes.\n\nRESUMO COMPLETO\nA automação deve primeiro obter",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14717,
+    "author": "INEMA",
+    "date": "2025-10-03T03:08:27+00:00",
+    "text": "==================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14716,
+    "author": "INEMA",
+    "date": "2025-10-03T03:08:24+00:00",
+    "text": "### Resumo da Automação – Scraping de Anúncios do Meta Ads\n\nComo construir uma **automação prática para identificar produtos vencedores** a partir da **biblioteca de anúncios do Facebook (Meta Ads)**.\n\n#### Objetivo\n\n* Encontrar **produtos ganhadores** analisando anúncios já em circulação.\n* Entender por que funcionam, analisando **imagens, vídeos e textos**.\n* Economizar tempo e transformar o processo em algo **escalável e visual** (com Excalidraw).\n\n#### Estrutura do Fluxo\n\n1. **Trigger**: pode ser manual ou agendado (ex: todos os dias às 9h).\n2. **Scraping com Apify**: busca anúncios filtrando por termos (ex: Shopify, país, likes mínimos).\n3. **Filtragem**: só passam anúncios que atendem a critérios de qualidade (ex: >1000 likes).\n4. **Extração de dados**: textos, subtítulos, perfis, URLs de imagens e vídeos.\n5. **Análise com IA (Gemini/OpenAI)**:\n\n   * Gera resumos.\n   * Reescreve copies.\n   * Analisa vídeos, imagens e textos em detalhe.\n6. **Gestão de erros**: se o vídeo está em “processing”, o sistema espera e reexecuta.\n7. **Armazenamento em Google Sheets**: centraliza todos os dados, resumos e copies reescritos.\n8. **Escalabilidade**: a partir das descrições e análises, pode-se gerar novos anúncios, criativos ou até **vídeos UGC automáticos**.\n\n#### Ferramentas Usadas\n\n* **n8n** (motor de automação).\n* **Apify** (scraping da biblioteca Meta Ads).\n* **Gemini + OpenAI** (análise de mídia e texto).\n* **Google Sheets** (armazenamento).\n* **Excalidraw** (mapa visual do fluxo).\n\n#### Insights e Boas Práticas\n\n* Usar variáveis de configuração para prompts economiza tempo.\n* O loop + wait evita que a automação quebre com muitos anúncios.\n* Aplicar filtros de qualidade melhora a confiabilidade.\n* Guardar resumos e copies em Sheets permite reutilização em novas campanhas.\n* Com os outputs, é possível gerar imagens, criativos e vídeos automáticos de novos produtos.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14715,
+    "author": "INEMA",
+    "date": "2025-10-03T03:07:46+00:00",
+    "text": "============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14714,
+    "author": "INEMA",
+    "date": "2025-10-03T03:07:44+00:00",
+    "text": "Ensina a criar uma **automação completa** para encontrar produtos virais a partir da biblioteca de anúncios do **Meta Ads**, filtrando por qualidade e analisando automaticamente imagens, vídeos e textos com **IA (Gemini / OpenAI)**.\n\n#### O que a automação entrega\n\n* Identificar anúncios e produtos que já estão performando.\n* Economizar horas de pesquisa manual.\n* Obter análises detalhadas de criativos e copies.\n* Gerar resumos e textos reescritos prontos para usar.\n* Centralizar dados em **Google Sheets**.\n* Escalar o processo com triggers automáticos.\n\n#### Estrutura do fluxo\n\n1. **Trigger**: manual ou agendado.\n2. **Scraping** (Apify): busca anúncios em Meta Ads com filtros (ex: Shopify, país, likes mínimos).\n3. **Filtragem**: elimina anúncios fracos ou indisponíveis.\n4. **Extração de dados**: textos, subtítulos, perfis, links de imagens e vídeos.\n5. **Análise com IA**: geração de resumos e novos copies.\n6. **Gestão de erros**: reprocessa anúncios em “processing”.\n7. **Armazenamento**: tudo em Google Sheets.\n8. **Escalado**: reutilizar dados para novos conteúdos e criativos com IA.\n\n#### Ferramentas usadas\n\n* **n8n** (motor de automação)\n* **Apify** (scraping)\n* **Gemini / OpenAI** (análise de mídia e texto)\n* **Google Sheets** (armazenamento)\n* **Excalidraw** (mapa visual do fluxo)\n\n#### Dicas-chave\n\n* Variáveis em prompts economizam tempo.\n* Usar loop + wait para grandes volumes.\n* Filtros de qualidade garantem resultados confiáveis.\n* Guardar resumos e copies em Sheets facilita a reutilização.\n* Controlar status de vídeos evita falhas no fluxo.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14713,
+    "author": "INEMA",
+    "date": "2025-10-03T03:05:18+00:00",
+    "text": "==================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14712,
+    "author": "INEMA",
+    "date": "2025-10-03T03:05:14+00:00",
+    "text": "🤑 Encontre produtos virais de forma automática\n\nQuerem encontrar produtos vencedores para vender no seu ecommerce...?\n\nUm sistema que vai transformar vocês em verdadeiros caçadores de produtos virais ⚡\n\nUma automação que:\n✅ Faz scraping no Meta Ads sem esforço e detecta produtos vencedores.\n✅ Filtra automaticamente os anúncios que têm interações reais (curtidas, compartilhamentos, comentários).\n✅ Analisa com IA (Gemini + OpenAI) imagens, vídeos e copies para entender o que faz eles funcionarem.\n✅ Guarda tudo no Google Sheets, pronto para usar em suas próprias campanhas ou apresentações.\n✅ Além disso, um truque para transformar o fluxo em um mapa visual com Excalidraw, perfeito para mostrar processos a clientes ou equipe.\n\nO melhor: isso não é teoria, é prático e acionável. Literalmente, vocês poderão:\n\n* Identificar o que já está vendendo no seu nicho.\n* Se inspirar para criar suas próprias campanhas.\n* Economizar horas de pesquisa manual e ir direto para a execução.\n* Construir uma base de dados de anúncios e produtos virais pronta para escalar.\n\n👉 E fiquem atentos, porque não para por aí.\nDá para pegar esses produtos vencedores e fechar o ciclo:e  vai gerar uma imagem top do produto com IA e um vídeo UGC automático, como já vimos em aulas anteriores 🔥 Ele vai subir isso em outro vídeo 🔥\n\nIsso significa que vocês terão um sistema completo end-to-end: desde descobrir produtos que funcionam → até ter criativos prontos para lançar em campanhas.\n\nIsso é ouro puro se você é agência, SaaS, ecom ou consultor e quer acelerar sua pesquisa e produção de conteúdo.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14711,
+    "author": "INEMA",
+    "date": "2025-10-03T03:03:29+00:00",
+    "text": "==============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14710,
+    "author": "INEMA",
+    "date": "2025-10-03T03:02:14+00:00",
+    "text": "https://apify.com/curious_coder/facebook-ads-library-scraper",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14709,
+    "author": "INEMA",
+    "date": "2025-10-03T03:02:03+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "escrapeador_facebook.json"
+  },
+  {
+    "id": 14708,
+    "author": "INEMA",
+    "date": "2025-10-03T03:02:01+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14708_016.jpg"
+  },
+  {
+    "id": 14707,
+    "author": "INEMA",
+    "date": "2025-10-03T03:00:26+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14707_017.jpg"
+  },
+  {
+    "id": 14706,
+    "author": "INEMA",
+    "date": "2025-10-03T03:00:15+00:00",
+    "text": "e50 - Ache Produtos virais Automática",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14705,
+    "author": "INEMA",
+    "date": "2025-10-03T03:00:14+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14704,
+    "author": "INEMA",
+    "date": "2025-10-03T03:00:13+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14703,
+    "author": "INEMA",
+    "date": "2025-10-03T03:00:13+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14702,
+    "author": "INEMA",
+    "date": "2025-10-03T03:00:13+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14701,
+    "author": "INEMA",
+    "date": "2025-10-03T03:00:12+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14700,
+    "author": "INEMA",
+    "date": "2025-10-03T03:00:12+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14699,
+    "author": "INEMA",
+    "date": "2025-10-03T03:00:12+00:00",
+    "text": "https://chatgpt.com/c/68df386b-38d8-8333-b832-f8d560c12411",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14698,
+    "author": "INEMA",
+    "date": "2025-10-03T03:00:11+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14697,
+    "author": "INEMA",
+    "date": "2025-10-03T03:00:07+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

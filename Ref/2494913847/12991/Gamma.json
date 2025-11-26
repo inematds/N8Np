@@ -1,0 +1,275 @@
+{
+  "name": "Gamma",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "99a61acf-7dcf-4f5c-a55d-1d4d866e29ba",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -432,
+        160
+      ],
+      "webhookId": "07b254a0-40fe-475e-a1ac-1e8d815c6208"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "9ece7ce5-c608-4244-a9c1-42db63d4f294",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -144,
+        384
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a Gamma API assistant. Convert the user's presentation request into a valid JSON object for the Gamma API.\n\nRESPOND ONLY WITH VALID JSON - no markdown, no backticks, no explanations.\n\nUse this structure:\n{\n  \"inputText\": \"[Create detailed, structured content for the presentation topic. Include main points, subpoints, and comprehensive information suitable for slides]\",\n  \"format\": \"presentation\",\n  \"textMode\": \"generate\",\n  \"numCards\": 10,\n  \"cardSplit\": \"auto\",\n  \"additionalInstructions\": \"Make titles engaging and professional\",\n  \"textOptions\": {\n    \"amount\": \"detailed\",\n    \"tone\": \"professional, engaging\",\n    \"audience\": \"general professional audience\",\n    \"language\": \"en\"\n  },\n  \"imageOptions\": {\n    \"source\": \"aiGenerated\",\n    \"model\": \"flux-1-pro\",\n    \"style\": \"professional, clean, modern, high-quality\"\n  },\n  \"cardOptions\": {\n    \"dimensions\": \"16x9\"\n  },\n  \"sharingOptions\": {\n    \"workspaceAccess\": \"view\",\n    \"externalAccess\": \"noAccess\"\n  }\n}\n\nEnsure the inputText is comprehensive and well-structured for the topic requested."
+        }
+      },
+      "id": "017e7c8b-74cc-4433-ae24-ce7e3f7b2b40",
+      "name": "Slide Content AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -208,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the AI agent output and ensure it's valid JSON\nlet aiOutput = $input.first().json.output;\n\n// Remove any markdown formatting if present\nif (typeof aiOutput === 'string') {\n  // Remove backticks and json markers\n  aiOutput = aiOutput.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  \n  try {\n    // Parse the cleaned string to JSON\n    aiOutput = JSON.parse(aiOutput);\n  } catch (error) {\n    // If parsing fails, create a default structure\n    return [{\n      json: {\n        error: \"Failed to parse AI output\",\n        originalOutput: aiOutput,\n        defaultPayload: {\n          \"inputText\": \"Create a presentation about: \" + $input.first().json.chatInput,\n          \"format\": \"presentation\",\n          \"textMode\": \"generate\",\n          \"numCards\": 10,\n          \"cardSplit\": \"auto\",\n          \"textOptions\": {\n            \"amount\": \"detailed\",\n            \"tone\": \"professional\",\n            \"language\": \"en\"\n          },\n          \"imageOptions\": {\n            \"source\": \"aiGenerated\",\n            \"model\": \"flux-1-pro\",\n            \"style\": \"professional, modern\"\n          }\n        }\n      }\n    }];\n  }\n}\n\n// Return the parsed JSON\nreturn [{\n  json: aiOutput\n}];"
+      },
+      "id": "841be1d5-789f-4dc0-8e32-95c7fa5771b9",
+      "name": "Parse JSON Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://public-api.gamma.app/v0.2/generations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-API-KEY",
+              "value": "="
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "f3932ead-8159-4a0b-8741-7a85707d2d64",
+      "name": "Gamma API Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        368,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the generation ID from the Gamma API response\nconst generationId = $input.first().json.generationId;\n\n// Construct the Gamma presentation URL\nconst gammaUrl = `https://gamma.app/docs/${generationId}`;\n\n// Get the original chat input for context\nconst originalRequest = $input.all()[0].json.inputText || \"Your presentation\";\n\n// Prepare the response message\nconst responseMessage = {\n  success: true,\n  message: `✅ Your presentation has been created successfully!`,\n  presentationUrl: gammaUrl,\n  generationId: generationId,\n  topic: originalRequest.substring(0, 100) + \"...\",\n  instructions: [\n    \"Click the link above to view your presentation\",\n    \"The presentation may take a few moments to fully generate\",\n    \"You can edit and customize it further in Gamma\"\n  ],\n  timestamp: new Date().toISOString()\n};\n\nreturn [{\n  json: responseMessage\n}];"
+      },
+      "id": "4526a16d-3a34-4b6a-9065-55761dc611af",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "01449213-aaac-4423-a2e6-a5e089859a04",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        816,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://public-api.gamma.app/v0.2/generations/{{ $json.generationId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "="
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "4f13845e-a996-47c2-9a65-8fce995575fd",
+      "name": "Check Generation Status (Optional)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        816,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 100,
+        "unit": "seconds"
+      },
+      "id": "3379854c-411d-4c43-a00c-2c421ae1a2ae",
+      "name": "Wait 180 seconds",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        592,
+        256
+      ],
+      "webhookId": "ab0dc21d-73d1-496a-a9e7-06c5f0fd489e"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Slide Content AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Slide Content AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slide Content AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON Output": {
+      "main": [
+        [
+          {
+            "node": "Gamma API Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gamma API Request": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait 180 seconds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 180 seconds": {
+      "main": [
+        [
+          {
+            "node": "Check Generation Status (Optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5014c109-8b26-4da6-a285-be7830b8e07f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aaadb797535f05587ee95b776c942a7c3f7a46fd7aa0c9b6a9d64e1e595f8af1"
+  },
+  "id": "9ycldxYjFyDKBkT3",
+  "tags": []
+}

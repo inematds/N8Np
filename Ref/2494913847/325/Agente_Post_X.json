@@ -1,0 +1,404 @@
+{
+  "name": "Agente Post X",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1ac69e87-9530-4adb-9d43-c7d7a8acc435",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        880,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "response",
+              "value": "El post de X se ha realizado correctamente.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c0c6793d-d77f-41c2-bb0d-7c4f23cd76bc",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2300,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appvHXtBCc7JmQ2Dl",
+          "mode": "list",
+          "cachedResultName": "Linkedin Base",
+          "cachedResultUrl": "https://airtable.com/appvHXtBCc7JmQ2Dl"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblI9whdFATo4T5hq",
+          "mode": "list",
+          "cachedResultName": "Links",
+          "cachedResultUrl": "https://airtable.com/appvHXtBCc7JmQ2Dl/tblI9whdFATo4T5hq"
+        },
+        "filterByFormula": "{Post X}=\"\"",
+        "options": {}
+      },
+      "id": "fc89b481-fa54-49ef-ba7c-7217f6e94754",
+      "name": "Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1100,
+        380
+      ],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "[REMOVED]",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini-2024-07-18",
+        "options": {}
+      },
+      "id": "ea78c39f-9472-42b5-8f11-7ca33451eca3",
+      "name": "OpenAI Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1240,
+        580
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "Post_X",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "900bd08e-64a5-4ddf-966d-6b2c920bf29e",
+      "name": "Var. Twitter / X",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1760,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"Post_X\": \"Post para publicar\"\n}"
+      },
+      "id": "e1b9ed47-8009-46d8-ab0e-6e1368e07687",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1620,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Supongamos que tu cadena original es algo como esto:\nlet cadena = $json[\"Post_X\"];//.json;\n\n//json.output//'{\"Post_X\":\"Este es el texto que quiero extraer\"}';\n\n// Encuentra las posiciones de las subcadenas que deseas usar como delimitadores\nlet startIndex = cadena.indexOf('{\"Post_X\":\"') + '{\"Post_X\":\"'.length; // Calcula la posición después de {\"Post_X\":\nlet endIndex = cadena.indexOf('\"}'); // Encuentra el final de la cadena antes de \"}\n\n// Extrae el texto entre esos índices\nlet textoExtraido = cadena.substring(startIndex, endIndex);\n\nreturn {\n  textoExtraido: textoExtraido\n};\n"
+      },
+      "id": "66427f4a-d8a1-437c-80d8-070e46ed506b",
+      "name": "Extraer Texto JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1940,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appvHXtBCc7JmQ2Dl",
+          "mode": "list",
+          "cachedResultName": "Linkedin Base",
+          "cachedResultUrl": "https://airtable.com/appvHXtBCc7JmQ2Dl"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblI9whdFATo4T5hq",
+          "mode": "list",
+          "cachedResultName": "Links",
+          "cachedResultUrl": "https://airtable.com/appvHXtBCc7JmQ2Dl/tblI9whdFATo4T5hq"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Check": true,
+            "Post X": "={{ $json.textoExtraido }}",
+            "Link YouTube": "={{ $('Airtable').item.json['Link YouTube'] }}"
+          },
+          "matchingColumns": [
+            "Link YouTube"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Link YouTube",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Transcripción YouTube",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Post Blog",
+              "displayName": "Post Blog",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Post X",
+              "displayName": "Post X",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Post Linkedin",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Check",
+              "displayName": "Check",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Calculation",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "33374de2-d277-476b-bc1e-5f441c9872d4",
+      "name": "Guardado Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2120,
+        380
+      ],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "[REMOVED]",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Transcripcion Video YouTube:\n\n{{ $json['Transcripción YouTube'] }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=###ROL###\n\nERES EL MEJOR EXPERTO EN REDACCIÓN DE TWEETS VIRALES, CON UN ENFOQUE ESPECIALIZADO EN INTELIGENCIA ARTIFICIAL. TU OBJETIVO ES TRANSFORMAR UNA TRANSCRIPCIÓN DE VIDEO EN UN TWEET QUE SEA ATRACTIVO, INFORMATIVO Y CAPAZ DE GENERAR ALTA INTERACCIÓN.  \n\n###INSTRUCCIONES###  \n\n1. EXAMINA la transcripción para identificar las ideas más impactantes o novedosas sobre inteligencia artificial.  \n2. EXTRA las frases o conceptos más relevantes y que tengan el mayor potencial de captar la atención de la audiencia.  \n3. CONVIERTE la idea seleccionada en un tweet de no más de 280 caracteres que:  \n   - RESUMA el concepto de manera clara y atractiva.  \n   - INCLUYA palabras clave relacionadas con IA que generen interés.  \n   - UTILICE un tono intrigante, persuasivo o inspirador.  \n   - INCORPORE, cuando sea posible, un llamado a la acción o un dato sorprendente.  \n4. AJUSTA el tweet para que sea directo, sin incluir información irrelevante o redundante.  \n\n###FORMATO DE SALIDA###  \n- \"TWEET GENERADO: [contenido del tweet, máximo 280 caracteres]\" \n- Debes de responder en Español, Castellano de España\n\n###QUÉ NO HACER###  \n- NUNCA SUPERES EL LÍMITE DE 280 CARACTERES.  \n- NO INCLUYAS CONTENIDO GENÉRICO O QUE NO AÑADA VALOR.  \n- EVITA FRASES COMPLEJAS O DIFÍCILES DE ENTENDER.  \n- NO UTILICES TONO ABURRIDO O POCO ENTUSIASTA.  \n- NUNCA OMITAS EL ENFOQUE EN INTELIGENCIA ARTIFICIAL O SU IMPACTO. \n- NO PONGAS NADA AL PRINCIPIO COMO \"TWEET GENERADO\", SOLO EL EL TEXTO PARA PUBLICAR\n- NO USES SIMBOLOS COMO \\, /, *\n\n###EJEMPLOS###  \n\n1. **Entrada (Transcripción)**:  \n   \"Las redes neuronales están evolucionando rápidamente y ahora pueden generar imágenes hiperrealistas en segundos.\"  \n   **Salida**:  \n   - \"TWEET GENERADO: Las redes neuronales han alcanzado un nuevo nivel: ahora crean imágenes hiperrealistas en segundos. La IA no deja de sorprendernos. ¿Qué sigue? 🤖🎨\"  \n\n2. **Entrada (Transcripción)**:  \n   \"OpenAI predice que los modelos de lenguaje pronto podrán razonar mejor que un humano promedio en tareas específicas.\"  \n   **Salida**:  \n   - \"TWEET GENERADO: OpenAI asegura que pronto veremos modelos de IA que razonan mejor que un humano promedio en ciertas tareas. ¿Estamos listos para este futuro? 🤔🚀\" \n"
+        }
+      },
+      "id": "3ea22800-6ef6-44a8-81b3-eb83b14d2297",
+      "name": "Twitter / X",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1340,
+        380
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Airtable": {
+      "main": [
+        [
+          {
+            "node": "Twitter / X",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Twitter / X",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Var. Twitter / X": {
+      "main": [
+        [
+          {
+            "node": "Extraer Texto JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Twitter / X",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Texto JSON": {
+      "main": [
+        [
+          {
+            "node": "Guardado Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardado Airtable": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Twitter / X": {
+      "main": [
+        [
+          {
+            "node": "Var. Twitter / X",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "61de1f15-4dfa-458c-8971-f9d669cbb410",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d139e409968c1a9c153ce5718318c817cafb26c088ab268ed768f39ac06a54f2"
+  },
+  "id": "RKdroS2fqgzRcgsa",
+  "tags": [
+    {
+      "createdAt": "2024-12-08T08:34:11.948Z",
+      "updatedAt": "2024-12-08T08:34:11.948Z",
+      "id": "pxl34eTjO6YthSUZ",
+      "name": "YouTube"
+    }
+  ]
+}

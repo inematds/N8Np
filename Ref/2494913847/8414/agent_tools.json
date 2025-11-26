@@ -1,0 +1,904 @@
+{
+  "name": "agent_tools",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -320,
+        0
+      ],
+      "id": "fe8d257b-c61a-4b03-881d-7b25362c2aa7",
+      "name": "When chat message received",
+      "webhookId": "36df2438-acf9-4e7a-8f92-cb1d6f7ec452"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are an intelligent productivity assistant with access to multiple business tools. Your role is to help users manage their projects, tasks, communications, and customer relationships across different platforms.\n\n## Available Tools and When to Use Them\n\n### 📊 **Airtable** (Database & Records Management)\n- **Create Record**: Use when users need to add new entries to a database (e.g., new contacts, inventory items, project entries)\n- **Search Record**: Use to find specific records or filter data based on criteria\n- **Update Record**: Use to modify existing database entries\n\n### 📋 **Asana** (Project & Task Management)\n- **Create Project**: Use when starting new initiatives or organizing work streams\n- **Update Project**: Use to modify project details, timelines, or settings\n- **Create Task**: Use for adding new action items, to-dos, or work assignments\n- **Delete Tasks**: Use to remove completed or cancelled tasks\n- **Search Task**: Use to find specific tasks by name, assignee, or project\n- **Update Task**: Use to change task status, assignee, due dates, or descriptions\n\n### 💬 **Slack** (Team Communication)\n- **Post Message**: Use for sending announcements, updates, or notifications to channels/users\n- **Send and Wait For Response**: Use when you need user confirmation or input before proceeding\n- **Update Message**: Use to edit previously sent messages with new information\n\n### 💼 **Zoho CRM** (Customer Relationship Management)\n- **Create Invoice**: Use for billing customers or generating sales documents\n- **Update Account**: Use to modify customer company information\n- **Create Lead**: Use when adding new potential customers or sales opportunities\n- **Delete Lead**: Use to remove invalid or duplicate leads\n- **Create Account**: Use to add new customer organizations to the CRM\n\n### 📅 **Monday.com** (Work Management)\n- **Create Board**: Use to set up new project workspaces or workflows\n- **Get Board**: Use to retrieve information about a specific board\n- **Get All Boards**: Use to list all available boards in the workspace\n\n### ✅ **ClickUp** (Task Management)\n- **Create Checklist**: Use for creating subtasks or step-by-step processes\n- **Delete Task**: Use to remove tasks that are no longer needed\n- **Get Task**: Use to retrieve details about a specific task\n- **Get All Tasks**: Use to view all tasks in a list or space\n\n### 🎥 **Zoom** (Video Conferencing)\n- **Create Meeting**: Use to schedule video calls, webinars, or virtual meetings\n- **Custom API Call**: Use for advanced Zoom operations not covered by standard actions\n\n## Decision Framework\n\nWhen a user makes a request, follow this logic:\n\n1. **Identify the primary need:**\n   - Data/Records → Airtable\n   - Projects/Tasks → Asana or ClickUp (ask preference if unclear)\n   - Communication → Slack\n   - Customer/Sales → Zoho CRM\n   - Work Boards → Monday.com\n   - Meetings → Zoom\n\n2. **Clarify ambiguous requests:**\n   - If user says \"create a task\" → Ask if they prefer Asana or ClickUp\n   - If user says \"add a record\" → Ask what type (customer, project, etc.)\n   - If user mentions \"board\" → Clarify if they mean Monday.com\n\n3. **Handle multi-tool scenarios:**\n   - Creating a new client project might involve:\n     - Zoho CRM (Create Account/Lead)\n     - Asana/ClickUp (Create Project/Tasks)\n     - Slack (Post Message to team)\n     - Zoom (Create Meeting for kickoff)\n\n4. **Best practices:**\n   - Always confirm which platform before taking action\n   - Provide summaries of completed actions\n   - Suggest related actions (e.g., after creating a project, offer to create initial tasks)\n   - Use the search functions before creating duplicates\n   - Remember context from previous messages (10 message memory window)\n\n## Example Interactions\n\n- \"I need to track a new sales lead\" → Use Zoho CRM Create Lead\n- \"Schedule a team meeting\" → Use Zoom Create Meeting\n- \"Update the project timeline\" → Ask which platform (Asana/Monday), then update\n- \"Message the team about the deadline\" → Use Slack Post Message\n- \"Find all tasks assigned to John\" → Use Asana/ClickUp Search Task\n- \"Add a new vendor to our database\" → Use Airtable Create Record\n\nAlways be helpful, precise, and proactive in suggesting the most appropriate tool for each use case.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1440,
+        0
+      ],
+      "id": "7e31b5c7-12ad-4096-a821-c3ced0904afd",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-3-7-sonnet-20250219",
+          "cachedResultName": "Claude 3.7 Sonnet"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        -100,
+        220
+      ],
+      "id": "31d5ef4a-7aca-4e49-a37d-48ec210269b2",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "[REMOVED]",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        20,
+        220
+      ],
+      "id": "251f80e8-08e3-4785-ab8a-3447706b93cb",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        140,
+        220
+      ],
+      "id": "ca35a4e8-ee1f-442f-b6e7-c4eeba2f8ab4",
+      "name": "Create Record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Sales Agent Airtable Access"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        260,
+        220
+      ],
+      "id": "fbaaf233-cc70-4e5e-bf80-37bbffc385d9",
+      "name": "Search Record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Sales Agent Airtable Access"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        380,
+        220
+      ],
+      "id": "f4df446e-6469-4ba8-9c69-3c604f10d819",
+      "name": "Update Record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Sales Agent Airtable Access"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "project",
+        "operation": "create",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.asanaTool",
+      "typeVersion": 1,
+      "position": [
+        500,
+        220
+      ],
+      "id": "eb031bce-14cf-49ac-abb0-512e4d3e8b77",
+      "name": "Create Project (Asana)"
+    },
+    {
+      "parameters": {
+        "resource": "project",
+        "operation": "update",
+        "updateFields": {}
+      },
+      "type": "n8n-nodes-base.asanaTool",
+      "typeVersion": 1,
+      "position": [
+        620,
+        220
+      ],
+      "id": "dbe0c5c7-ff9b-4038-9498-5e58e568888f",
+      "name": "Update Project (Asana)"
+    },
+    {
+      "parameters": {
+        "otherProperties": {}
+      },
+      "type": "n8n-nodes-base.asanaTool",
+      "typeVersion": 1,
+      "position": [
+        740,
+        220
+      ],
+      "id": "14ffec50-c055-4f33-a3fd-53f7b746f507",
+      "name": "Create Task (Asana)"
+    },
+    {
+      "parameters": {
+        "operation": "delete"
+      },
+      "type": "n8n-nodes-base.asanaTool",
+      "typeVersion": 1,
+      "position": [
+        860,
+        220
+      ],
+      "id": "9bcd9ad0-be5c-4267-ab2d-baebb28adac1",
+      "name": "Delete Tasks (Asana)"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "searchTaskProperties": {}
+      },
+      "type": "n8n-nodes-base.asanaTool",
+      "typeVersion": 1,
+      "position": [
+        980,
+        220
+      ],
+      "id": "6fe960d7-1a31-484b-ac37-bf6530b97646",
+      "name": "Search Task (Asana)"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "otherProperties": {}
+      },
+      "type": "n8n-nodes-base.asanaTool",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        220
+      ],
+      "id": "3bcba8b6-9f4f-471b-a29a-a93db7146ed0",
+      "name": "Update Task (Asana)"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slackTool",
+      "typeVersion": 2.3,
+      "position": [
+        1220,
+        220
+      ],
+      "id": "8fbce6df-90fd-4a6c-940e-08e1946f3dde",
+      "name": "Post Message (Slack)",
+      "webhookId": "c8e7c640-3141-43fa-b42b-7f52b3c7be6e",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "sendAndWait",
+        "user": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slackTool",
+      "typeVersion": 2.3,
+      "position": [
+        1340,
+        220
+      ],
+      "id": "b1edb70e-e626-44b2-9bf6-d6d6b8b40f98",
+      "name": "Send and Wait For Response (Slack)",
+      "webhookId": "7369b8fd-701c-4e36-9b82-e85b1f549ad4",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "update",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "updateFields": {},
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slackTool",
+      "typeVersion": 2.3,
+      "position": [
+        1460,
+        220
+      ],
+      "id": "3242af5f-14aa-4647-a9c0-3dd023e16219",
+      "name": "Update Message (Slack)",
+      "webhookId": "7e624d63-81c2-492b-8253-fff1e11fd810",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "invoice",
+        "Product_Details": [],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.zohoCrmTool",
+      "typeVersion": 1,
+      "position": [
+        1580,
+        220
+      ],
+      "id": "393d8dad-0ed0-4464-8b5f-ba4550d04611",
+      "name": "Create Invoice (Zoho)"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "updateFields": {}
+      },
+      "type": "n8n-nodes-base.zohoCrmTool",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        220
+      ],
+      "id": "e590cd1e-5b68-42e2-9de2-77cdaad50315",
+      "name": "Update Account (Zoho)"
+    },
+    {
+      "parameters": {
+        "resource": "lead",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.zohoCrmTool",
+      "typeVersion": 1,
+      "position": [
+        1820,
+        220
+      ],
+      "id": "0d57acc6-b717-4fa6-b740-02cde004b345",
+      "name": "Create Lead (Zoho)"
+    },
+    {
+      "parameters": {
+        "operation": "delete"
+      },
+      "type": "n8n-nodes-base.zohoCrmTool",
+      "typeVersion": 1,
+      "position": [
+        1940,
+        220
+      ],
+      "id": "e5b6be8c-faa1-4540-89f7-439aa87ec644",
+      "name": "Delete Lead (Zoho)"
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.zohoCrmTool",
+      "typeVersion": 1,
+      "position": [
+        2060,
+        220
+      ],
+      "id": "a0657145-eded-479f-a66a-7536d348268d",
+      "name": "Create Account (Zoho)"
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.mondayComTool",
+      "typeVersion": 1,
+      "position": [
+        2180,
+        220
+      ],
+      "id": "813bceb4-f320-4ea0-913a-da55111f1d07",
+      "name": "Create Board (Monday)"
+    },
+    {
+      "parameters": {
+        "operation": "get"
+      },
+      "type": "n8n-nodes-base.mondayComTool",
+      "typeVersion": 1,
+      "position": [
+        2300,
+        220
+      ],
+      "id": "47a99fc2-0de9-4b72-8e22-7961637c8dfe",
+      "name": "Get Board (Monday)"
+    },
+    {
+      "parameters": {
+        "operation": "getAll"
+      },
+      "type": "n8n-nodes-base.mondayComTool",
+      "typeVersion": 1,
+      "position": [
+        2420,
+        220
+      ],
+      "id": "c7f592b3-6c91-43a4-a9ad-c686e03731d3",
+      "name": "Get All Boards (Monday)"
+    },
+    {
+      "parameters": {
+        "resource": "checklist"
+      },
+      "type": "n8n-nodes-base.clickUpTool",
+      "typeVersion": 1,
+      "position": [
+        2540,
+        220
+      ],
+      "id": "c8f415ed-f7b6-48b7-a171-df114682aa2b",
+      "name": "Create Checklist (ClickUp)"
+    },
+    {
+      "parameters": {
+        "operation": "delete"
+      },
+      "type": "n8n-nodes-base.clickUpTool",
+      "typeVersion": 1,
+      "position": [
+        2660,
+        220
+      ],
+      "id": "29422ef9-6bd4-4875-80c9-26c41b589c42",
+      "name": "Delete Task (ClickUp)"
+    },
+    {
+      "parameters": {
+        "operation": "get"
+      },
+      "type": "n8n-nodes-base.clickUpTool",
+      "typeVersion": 1,
+      "position": [
+        2780,
+        220
+      ],
+      "id": "b1e270fb-6b4f-438a-97cc-c05a6e893588",
+      "name": "Get Task (ClickUp)"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.clickUpTool",
+      "typeVersion": 1,
+      "position": [
+        2900,
+        220
+      ],
+      "id": "e03aad58-3f65-4269-a18e-0cf522e0e592",
+      "name": "Get All Tasks (ClickUp)"
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.zoomTool",
+      "typeVersion": 1,
+      "position": [
+        3020,
+        220
+      ],
+      "id": "1e4da8cc-bf61-404a-bca0-fb3149bfd6f4",
+      "name": "Create Meeting (Zoom)"
+    },
+    {
+      "parameters": {
+        "resource": "__CUSTOM_API_CALL__"
+      },
+      "type": "n8n-nodes-base.zoomTool",
+      "typeVersion": 1,
+      "position": [
+        3140,
+        220
+      ],
+      "id": "a420c8df-bf4a-4b98-987a-6871ded7a1df",
+      "name": "Custom API Call (Zoom)"
+    },
+    {
+      "parameters": {
+        "otherProperties": {}
+      },
+      "type": "n8n-nodes-base.asanaTool",
+      "typeVersion": 1,
+      "position": [
+        3300,
+        220
+      ],
+      "id": "316626fc-a684-4484-98e9-7badbd24c121",
+      "name": "Asana"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.airtopTool",
+      "typeVersion": 1,
+      "position": [
+        3500,
+        220
+      ],
+      "id": "44242d4b-8d4b-492a-af1a-a78cc98108ea",
+      "name": "Airtop"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Record": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Record": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Record": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Project (Asana)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Project (Asana)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Task (Asana)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Tasks (Asana)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Task (Asana)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Task (Asana)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Message (Slack)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send and Wait For Response (Slack)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Message (Slack)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Invoice (Zoho)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Account (Zoho)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Lead (Zoho)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Lead (Zoho)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Account (Zoho)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Board (Monday)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Board (Monday)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Boards (Monday)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Checklist (ClickUp)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Task (ClickUp)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Task (ClickUp)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Tasks (ClickUp)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Meeting (Zoom)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Custom API Call (Zoom)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Asana": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtop": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a3afcef1-d83d-4318-9d82-47c5b7b7a210",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aaadb797535f05587ee95b776c942a7c3f7a46fd7aa0c9b6a9d64e1e595f8af1"
+  },
+  "id": "OC8RvrbTVilHlsQW",
+  "tags": []
+}

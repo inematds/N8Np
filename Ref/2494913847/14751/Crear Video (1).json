@@ -1,0 +1,365 @@
+{
+  "name": "Crear Video",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/veo/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"prompt\": {{ JSON.stringify($json.message.content || \"\") }},\n  \"model\": \"veo3_fast\",\n  \"aspectRatio\": \"{{ $('Inicio').item.json.aspect_ratio }}\",\n  \"imageUrls\": \"{{ $('Inicio').item.json.image_reference }}\",\n  \"enableFallback\": true,\n  \"enableTranslation\": false\n}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        160
+      ],
+      "id": "a01f06f6-c4a6-4a35-9ffa-5e3ba3823f47",
+      "name": "Crear Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 20
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        160
+      ],
+      "id": "6b8c0d8a-2731-4d5f-9e88-0efa0ee70364",
+      "name": "Esperar 2",
+      "webhookId": "6831d9a2-576d-49cb-8f28-4faeeae50b14"
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/veo/record-info",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $('Crear Video').item.json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        160
+      ],
+      "id": "e0da84d4-4718-4e08-81c7-6c6ddf9bd9ff",
+      "name": "Obtener Video",
+      "alwaysOutputData": true,
+      "retryOnFail": false,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "video_result",
+              "value": "={{ $json.data.response.resultUrls[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1024,
+        32
+      ],
+      "id": "cd54bbc6-a333-40cb-a85b-aa0e2e376e8a",
+      "name": "Devolver"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "video_prompt"
+            },
+            {
+              "name": "aspect_ratio"
+            },
+            {
+              "name": "image_reference"
+            }
+          ]
+        }
+      },
+      "id": "190a434f-8d75-41c3-9a90-3f5b0e3540e6",
+      "typeVersion": 1.1,
+      "name": "Inicio",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -256,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.successFlag }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "id": "[REMOVED]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "éxito"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.data.successFlag }}",
+                    "rightValue": 0,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "en progreso"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "error"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        800,
+        144
+      ],
+      "id": "33b1b1d8-c54b-4e1a-9c7e-367113039d0a",
+      "name": "Switch 2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "video_result",
+              "value": "={{ $json.data.errorMessage }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1024,
+        304
+      ],
+      "id": "f78ccce7-1fc5-44ee-8a85-dd51049e4e9f",
+      "name": "Devolver error"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.video_prompt }}"
+            },
+            {
+              "content": "Traduce al ingles todo este prompt **EXCEPTO** el texto que debe decir que est entre dobles asteriscos (**)."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -48,
+        160
+      ],
+      "id": "40c41483-dfdb-4b4a-8da2-425ce4f10c82",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Inicio": [
+      {
+        "json": {
+          "video_prompt": "diálogo, el personaje en el vídeo dice: **Practicar yoga me ayuda a cuidar mi cuerpo… pero también mi mente.**\ntipo_de_voz: voz femenina con acento colombiano, tranquila y clara, de mujer entre 45 y 60 años\nemoción: sereno, confianza tranquila, bienestar\nentorno: parque o jardín amplio, ambiente natural, está sentada sobre el mat de yoga tras practicar\ncámara: selfie con móvil, encuadre cercano, desenfoque suave en el fondo\nmovimiento_de_cámara: fijo\niluminación: luz natural de amanecer o atardecer, cálida y suave\nestilo: UGC, realismo casual\nduración_segundos: 6\naspect_ratio: 9:16",
+          "aspect_ratio": "9:16",
+          "image_reference": "https://tempfile.aiquickdraw.com/f/16e51b51a4550d8d53c14cf87dbfdb90_1759023268_ij9ruay4.png"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Crear Video": {
+      "main": [
+        [
+          {
+            "node": "Esperar 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar 2": {
+      "main": [
+        [
+          {
+            "node": "Obtener Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Video": {
+      "main": [
+        [
+          {
+            "node": "Switch 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inicio": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch 2": {
+      "main": [
+        [
+          {
+            "node": "Devolver",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Esperar 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Devolver error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Crear Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b1931c56-bbdc-4235-bc95-2117d07c39bb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "LsJEYCVJRfc1lLwK",
+  "tags": []
+}

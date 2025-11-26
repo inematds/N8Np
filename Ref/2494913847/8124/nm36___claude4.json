@@ -1,0 +1,363 @@
+{
+  "name": "nm36 - claude4",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-lead",
+        "options": {}
+      },
+      "id": "7be761c1-b34f-4dec-bb03-eba58412744d",
+      "name": "Webhook - Lead Capture",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        320,
+        1820
+      ],
+      "webhookId": "lead-capture-webhook"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Validate and format lead data\nconst leadData = $input.first().json;\n\n// Ensure all required fields exist\nconst formattedLead = {\n  firstName: leadData.firstName || '',\n  lastName: leadData.lastName || '',\n  email: leadData.email || '',\n  phone: leadData.phone || '',\n  company: leadData.company || '',\n  jobTitle: leadData.jobTitle || '',\n  source: leadData.source || 'website',\n  interests: leadData.interests || [],\n  leadScore: 0,\n  status: 'new',\n  createdAt: new Date().toISOString()\n};\n\n// Basic lead scoring\nif (formattedLead.email.includes('.com')) formattedLead.leadScore += 10;\nif (formattedLead.company) formattedLead.leadScore += 20;\nif (formattedLead.jobTitle) formattedLead.leadScore += 15;\nif (formattedLead.phone) formattedLead.leadScore += 10;\n\nreturn formattedLead;"
+      },
+      "id": "94254dbf-da3e-4860-9861-268952b11e3f",
+      "name": "Format Lead Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        540,
+        1820
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "operation": "create"
+      },
+      "id": "5a76f70f-2a5a-466b-8b00-d0d6612c15a2",
+      "name": "HubSpot - Create Contact",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 1,
+      "position": [
+        640,
+        1480
+      ]
+    },
+    {
+      "parameters": {
+        "company": "={{$json[\"company\"]}}",
+        "additionalFields": {
+          "leadSource": "={{$json[\"source\"]}}",
+          "phone": "={{$json[\"phone\"]}}",
+          "rating": "={{$json[\"leadScore\"] >= 40 ? 'Hot' : $json[\"leadScore\"] >= 25 ? 'Warm' : 'Cold'}}",
+          "title": "={{$json[\"jobTitle\"]}}"
+        }
+      },
+      "id": "5e17e6a1-fa86-419f-b2c2-7e3495858b2c",
+      "name": "Salesforce - Create Lead",
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1,
+      "position": [
+        760,
+        2020
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$node[\"Format Lead Data\"].json[\"leadScore\"]}}",
+              "operation": "largerEqual",
+              "value2": 40
+            }
+          ]
+        }
+      },
+      "id": "368f3a1d-efac-4fcf-bf0a-61bf4c24c51d",
+      "name": "Check Lead Score",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        760,
+        1720
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "sales@company.com",
+        "toEmail": "={{$node[\"Format Lead Data\"].json[\"email\"]}}",
+        "subject": "Welcome {{$node[\"Format Lead Data\"].json[\"firstName\"]}}! Here's what we can do for you",
+        "options": {
+          "ccEmail": "sales-team@company.com"
+        }
+      },
+      "id": "526df7d8-fd4c-49cf-899f-e9653fec5181",
+      "name": "Send Hot Lead Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        980,
+        1620
+      ],
+      "webhookId": "2db976d7-d2d1-496e-840b-543ac007bc06"
+    },
+    {
+      "parameters": {
+        "fromEmail": "marketing@company.com",
+        "toEmail": "={{$node[\"Format Lead Data\"].json[\"email\"]}}",
+        "subject": "Welcome to {{$node[\"Format Lead Data\"].json[\"company\"]}}!",
+        "options": {}
+      },
+      "id": "747778b3-93e8-473a-b5e2-68422cf14355",
+      "name": "Send Nurture Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        980,
+        2020
+      ],
+      "webhookId": "26ffbfa9-c7cb-4a05-aa04-46baf0f2ed8b"
+    },
+    {
+      "parameters": {
+        "channel": "#sales-notifications",
+        "text": ":fire: *New HOT Lead Alert!* :fire:\n\n*Name:* {{$node[\"Format Lead Data\"].json[\"firstName\"]}} {{$node[\"Format Lead Data\"].json[\"lastName\"]}}\n*Company:* {{$node[\"Format Lead Data\"].json[\"company\"]}}\n*Email:* {{$node[\"Format Lead Data\"].json[\"email\"]}}\n*Lead Score:* {{$node[\"Format Lead Data\"].json[\"leadScore\"]}}\n\n_Immediate action required! This lead has been automatically added to the priority queue._",
+        "otherOptions": {},
+        "attachments": []
+      },
+      "id": "c3660167-994b-4406-aaa5-15a8f231c50e",
+      "name": "Slack - Hot Lead Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        980,
+        1420
+      ]
+    },
+    {
+      "parameters": {
+        "name": "Follow up with {{$node[\"Format Lead Data\"].json[\"firstName\"]}} {{$node[\"Format Lead Data\"].json[\"lastName\"]}}",
+        "otherProperties": {}
+      },
+      "id": "7600bce6-a71c-44ac-b50c-dab0e35bcd2f",
+      "name": "Asana - Create Follow-up Task",
+      "type": "n8n-nodes-base.asana",
+      "typeVersion": 1,
+      "position": [
+        980,
+        1820
+      ]
+    },
+    {
+      "parameters": {
+        "collection": "leads",
+        "options": {}
+      },
+      "id": "a67ec5ab-7d0a-42c2-9edd-40f94eb2368b",
+      "name": "MongoDB - Store Lead",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1,
+      "position": [
+        760,
+        2220
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "spreadsheetId",
+              "value": "your-google-spreadsheet-id"
+            },
+            {
+              "name": "range",
+              "value": "Leads!A:J"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "868c6e1b-f8da-41e9-b558-79bb3bf55d85",
+      "name": "Set Spreadsheet Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        980,
+        2220
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "={{$node[\"Set Spreadsheet Config\"].json[\"spreadsheetId\"]}}",
+        "range": "={{$node[\"Set Spreadsheet Config\"].json[\"range\"]}}",
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        }
+      },
+      "id": "228c72ca-d70c-4d35-99bb-76a45c7601da",
+      "name": "Google Sheets - Log Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        2220
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "95747153-e80b-42dd-b941-c7d090b40d36",
+      "name": "Wait 24 Hours",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        2020
+      ],
+      "webhookId": "wait-webhook-id"
+    },
+    {
+      "parameters": {
+        "fromEmail": "sales@company.com",
+        "toEmail": "={{$node[\"Format Lead Data\"].json[\"email\"]}}",
+        "subject": "Quick question about your needs",
+        "options": {}
+      },
+      "id": "99bc05ba-84ca-4dc4-ac1c-d5118d305a48",
+      "name": "Send Follow-up Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        2020
+      ],
+      "webhookId": "a848ef9b-b464-4a13-867a-01980b1702d4"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Lead Capture": {
+      "main": [
+        [
+          {
+            "node": "Format Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Lead Data": {
+      "main": [
+        [
+          {
+            "node": "HubSpot - Create Contact",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Salesforce - Create Lead",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "MongoDB - Store Lead",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check Lead Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Lead Score": {
+      "main": [
+        [
+          {
+            "node": "Send Hot Lead Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Slack - Hot Lead Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Asana - Create Follow-up Task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Nurture Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB - Store Lead": {
+      "main": [
+        [
+          {
+            "node": "Set Spreadsheet Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Spreadsheet Config": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Log Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Nurture Email": {
+      "main": [
+        [
+          {
+            "node": "Wait 24 Hours",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 24 Hours": {
+      "main": [
+        [
+          {
+            "node": "Send Follow-up Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f6c0aca1-ac4b-49d4-a068-3542bc62f15b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "pAzqh1mjngYHKtB3",
+  "tags": []
+}

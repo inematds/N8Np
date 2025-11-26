@@ -1,0 +1,1072 @@
+{
+  "name": "Motion Graphics AI Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Motion Graphic AI Agent",
+        "height": 520,
+        "width": 1420,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        -480
+      ],
+      "id": "f0cc0d33-37c9-48a1-aeb3-6a6cd7bdda29",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an AI agent responsible for managing rendering tasks. Each rendering task will be assigned a unique Render ID. \n\nYour job is to handle **only one rendering request at a time**, and **never mix data** between tasks.\n\nDO NOT CREATE ANY VIDEO UNLESS THE USER SPECIFICALLY STATES TO DO SO. SHOULD HAVE \"CREATE VIDEO\" IN THE REQUEST.\nFor example: \"Create the pie chart video of current crypto prices\"",
+          "maxIterations": 10
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        160,
+        -280
+      ],
+      "id": "c7b2317c-aff8-4bd2-8771-4948b46196e5",
+      "name": "AI Agent",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-3.7-sonnet",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        60,
+        -100
+      ],
+      "id": "8634aa13-1479-47ca-8992-1f6f9a19faa6",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "2Ib7i1DbzGsfQYu6",
+          "name": "OpenRouter"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.message.message_id.toString() }}",
+        "sessionTTL": 120,
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "position": [
+        220,
+        -100
+      ],
+      "id": "4040b108-e1a2-428c-ac34-bb0677ec4fc0",
+      "name": "Redis Chat Memory",
+      "credentials": {
+        "redis": {
+          "id": "JasoiE94u87KYYfg",
+          "name": "Redis account "
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Create Line Chart Animation Video. It will return the rendering id for tracing progress. Return the render ID to user when requested.",
+        "method": "POST",
+        "url": "https://www.vibecut.com/api/motion-graphic",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n    \"type\": \"line-chart\",\n    \"payload\": {payload}\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "payload",
+              "description": "=A line chart configuration object with the following structure:\n\n- data: An array of data points. Each item must include:\n  - name: A string label for the x-axis (e.g., year or month).\n  - data: An array of numbers corresponding to values for each line (must match the number of lineLabels).\n\n- title: A string representing the chart title.\n\n- lineLabels: An array of strings, each representing a line’s label (must match the number of values in each data array).\n\n- disableZoom: A boolean to control whether zooming is disabled.\n\n- disableRotate: A boolean to control whether rotation is disabled.\n\nAll properties are required.",
+              "type": "json"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        740,
+        160
+      ],
+      "id": "15b87576-157c-4a38-b148-0c59c36e5271",
+      "name": "Create Line Chart Animation Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SUOBBK7d57wwmJQF",
+          "name": "Vibecut Authentication"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "This tool generates smooth zoom-in map animation videos. Simply input a location, and the tool creates a dynamic animation that starts from a global or regional view and zooms into your selected point. Return the render ID to user when requested.",
+        "method": "POST",
+        "url": "https://www.vibecut.com/api/motion-graphic",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n    \"type\": \"world-map-zoom\",\n    \"payload\": {\n         \"title\": \"{title}\",\n         \"country\": \"{country}\"\n    }\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "title",
+              "description": "The title or description related to the specified country.",
+              "type": "string"
+            },
+            {
+              "name": "country",
+              "description": "The ISO 3166-1 alpha-2 country code (e.g., 'US', 'JP', 'FR').",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        500,
+        160
+      ],
+      "id": "7fcf1e50-4a63-43ff-9207-e50b48906900",
+      "name": "Create Map Animation Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SUOBBK7d57wwmJQF",
+          "name": "Vibecut Authentication"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "This tool generates dynamic, on-screen typographic elements for news videos—automatically pulling key information such as headline, highlighted quote, summary, and source/date to create eye-catching text animations. Designed for fast-paced content creation, it ensures every story is visually engaging and easy to follow, enhancing viewer retention and storytelling impact. Return the render ID to user when requested.",
+        "method": "POST",
+        "url": "https://www.vibecut.com/api/motion-graphic",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n    \"type\": \"text-news\",\n    \"payload\": {\n         \"title\": \"{title}\",\n         \"highlight\": \"{highlight}\",\n         \"content\": \"{content}\",\n         \"smallText\": \"{smallText}\"\n    }\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "title",
+              "description": "The headline of the news article",
+              "type": "string"
+            },
+            {
+              "name": "highlight",
+              "description": "A highlighted phrase or key point from the article",
+              "type": "string"
+            },
+            {
+              "name": "content",
+              "description": "The main text content or summary of the news article",
+              "type": "string"
+            },
+            {
+              "name": "smallText",
+              "description": "Additional small text such as the source and date",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        620,
+        160
+      ],
+      "id": "1c1ab725-e48e-42fb-8e8a-b6a8dfb2798a",
+      "name": "Create Text Animation Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SUOBBK7d57wwmJQF",
+          "name": "Vibecut Authentication"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Create Bar Chart Animation Video. It will return the rendering id for tracing progress. Return the render ID to user when requested.",
+        "method": "POST",
+        "url": "https://www.vibecut.com/api/motion-graphic",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n    \"type\": \"bar-chart\",\n    \"payload\": {payload}\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "payload",
+              "description": "=A bar chart configuration object with the following structure:\n\n- data: An array of data points. Each item must include:\n  - name: A string label for the x-axis (e.g., year or month).\n  - data: An array of numbers corresponding to values for each bar (must match the number of barLabels).\n\n- title: A string representing the chart title.\n\n- barLabels: An array of strings, each representing a bar’s label (must match the number of values in each data array).\n\n- disableZoom: A boolean to control whether zooming is disabled.\n\n- disableRotate: A boolean to control whether rotation is disabled.\n\nAll properties are required.",
+              "type": "json"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        160
+      ],
+      "id": "98aadee4-2741-4524-bcb4-8c8fa410e3c7",
+      "name": "Create Bar Chart Animation Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SUOBBK7d57wwmJQF",
+          "name": "Vibecut Authentication"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Create Pie Chart Animation Video. It will return the rendering id for tracing progress. Return the render ID to user when requested.",
+        "method": "POST",
+        "url": "https://www.vibecut.com/api/motion-graphic",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n    \"type\": \"pie-chart\",\n    \"payload\": {payload}\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "payload",
+              "description": "=A pie chart configuration object with the following structure:\n\n- data: An array of pie slice data. Each item must include:\n  - label: A string representing the name of the slice (e.g., \"BTC\", \"ETH\").\n  - value: A number indicating the size of the slice.\n\n- title: A string for the main title of the pie chart.\n\n- centerText: A string displayed in the center of the pie chart (e.g., summary or key category).\n\n- disableZoom: A boolean to disable zoom functionality.\n\n- disableRotate: A boolean to disable rotation functionality.\n\nAll properties are required.",
+              "type": "json"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1020,
+        160
+      ],
+      "id": "540f02f7-6919-48e9-9816-a1734ff39d00",
+      "name": "Create Pie Chart Animation Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SUOBBK7d57wwmJQF",
+          "name": "Vibecut Authentication"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "This tool search for any latest news.",
+        "method": "POST",
+        "url": "https://api.perplexity.ai/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"model\": \"sonar-pro\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a highly efficient and unbiased news research assistant.\\nYour task is to search for recent, credible, and relevant news related to a given topic or query.\\nSummarize key facts, dates, people involved, and any important developments.\\nCite the source and publication date for each piece of information.\\nIf no recent or credible news is available, state: \\\"No recent news found.\\\"Do not include opinions, speculation, or filler content. Always return your findings in a clear and structured format.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{content}\"\n    }\n  ]\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "content",
+              "description": "Research Content",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        400
+      ],
+      "id": "19c5e44c-3de0-4217-b4a3-d20414a8c3ff",
+      "name": "Perplexity",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "sTK1z2wFI89BXHHO",
+          "name": "Perplexity Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Motion Graphics Tools",
+        "height": 240,
+        "width": 820,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        460,
+        80
+      ],
+      "id": "255499d8-f6b8-4f1d-98e5-4b88de571ad7",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Research Tools",
+        "height": 200,
+        "width": 360
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        460,
+        340
+      ],
+      "id": "ac6da836-320b-4ab3-bb1b-58b82a332bff",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "toolDescription": "This tool can fetch historic cryptocurreny data",
+        "url": "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        400
+      ],
+      "id": "b409320c-bd16-46fb-95d5-7b53c7c8ddce",
+      "name": "Coinmarketcap Get Coin",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "oIhZKD3VeFu2MXyG",
+          "name": "Coinmarketcap account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "28122d3d-5a07-4d5f-b9ca-761ad85ac310",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        -280
+      ],
+      "webhookId": "e2f3ef29-86e3-47c4-82db-0fb4bab35cc3",
+      "credentials": {
+        "telegramApi": {
+          "id": "AmqjJuDLbuuT0LDP",
+          "name": "n8n Video Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"message_type\": {\n      \"type\": \"string\",\n      \"enum\": [\"video\", \"text\"],\n      \"description\": \"Specifies the type of message: 'video' or 'text'.\"\n    },\n    \"message_content\": {\n      \"type\": \"string\",\n      \"description\": \"The text content of the message, if applicable.\"\n    },\n    \"video_url\": {\n      \"type\": \"string\",\n      \"description\": \"URL of the video, if the message type is 'video'.\"\n    }\n  },\n  \"required\": [\"message_type\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        -100
+      ],
+      "id": "e162b1de-9804-4d2f-a137-6a4b73cb60e1",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.message_type }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a13d687f-6a7e-4f97-8c7f-16b2b8797497"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "319be45b-1f33-4612-b7fe-a5b62b9d34c6",
+                    "leftValue": "={{ $json.output.message_type }}",
+                    "rightValue": "video",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "video"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        460,
+        -280
+      ],
+      "id": "a4aaddc4-04bf-4992-8782-4e2235a7a506",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "980ffda8-fe9d-48f6-a540-e09523f1cfb5",
+              "leftValue": "={{ $json.output.message_content }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        -120
+      ],
+      "id": "11d60951-7dd6-484f-9ef4-8a4bae8c7fc3",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output.message_content }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        860,
+        -240
+      ],
+      "id": "7d405b57-428e-4b82-a15c-b039bd2e3070",
+      "name": "Telegram Send Message1",
+      "webhookId": "d95b35e6-3b28-4089-ba76-7cafa1b50501",
+      "credentials": {
+        "telegramApi": {
+          "id": "AmqjJuDLbuuT0LDP",
+          "name": "n8n Video Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $('AI Agent').item.json.output.video_url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1020,
+        -100
+      ],
+      "id": "d0bd533a-78b2-4567-adb8-6039120e08b1",
+      "name": "Download Video"
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        -100
+      ],
+      "id": "cbe2ea60-da51-4bda-a8ee-63de85650b65",
+      "name": "Send Video",
+      "webhookId": "fb60f02a-198b-4749-a46f-e81e82c52a41",
+      "credentials": {
+        "telegramApi": {
+          "id": "AmqjJuDLbuuT0LDP",
+          "name": "n8n Video Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.error }}",
+        "additionalFields": {
+          "appendAttribution": true
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        460,
+        -420
+      ],
+      "id": "69acd44d-d1cd-4023-90d7-7bfc471fbf08",
+      "name": "Telegram Send Error Message",
+      "webhookId": "d95b35e6-3b28-4089-ba76-7cafa1b50501",
+      "credentials": {
+        "telegramApi": {
+          "id": "AmqjJuDLbuuT0LDP",
+          "name": "n8n Video Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output.message_content }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        -320
+      ],
+      "id": "4040eb9e-7b61-4525-a469-d4c66723ed2a",
+      "name": "Telegram Send Message",
+      "webhookId": "d95b35e6-3b28-4089-ba76-7cafa1b50501",
+      "credentials": {
+        "telegramApi": {
+          "id": "AmqjJuDLbuuT0LDP",
+          "name": "n8n Video Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "Render ID"
+            },
+            {
+              "name": "Telegram Chat ID"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        1440,
+        -260
+      ],
+      "id": "ffcdf6af-1c9c-446b-ada9-ae61d22590a1",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.vibecut.com/api/motion-graphic/check-progress/{{ $('When Executed by Another Workflow').first().json['Render ID'] }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1600,
+        -260
+      ],
+      "id": "11e31958-17b2-4eb2-89f1-b3c6ae7eb0c8",
+      "name": "Get Progress",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SUOBBK7d57wwmJQF",
+          "name": "Vibecut Authentication"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8281a5c0-15dd-4589-8f33-34c9a4dd752e",
+              "name": "Progress",
+              "value": "={{ $json.data.progress }}",
+              "type": "string"
+            },
+            {
+              "id": "ce1226b9-01d4-40c8-8f3e-422b8c884529",
+              "name": "Video URL",
+              "value": "={{ $json.data.url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1980,
+        -300
+      ],
+      "id": "d07b9014-4401-44b1-a510-cfdc288ae72e",
+      "name": "Response"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1980,
+        -120
+      ],
+      "id": "3e0b4c50-8dc8-41c1-b588-b26cd4cf7206",
+      "name": "Wait",
+      "webhookId": "76465d01-70ec-4f8b-ab63-b34389fc808b"
+    },
+    {
+      "parameters": {
+        "content": "## Check Progress",
+        "height": 420,
+        "width": 880,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        -340
+      ],
+      "id": "17f9c70a-2d06-40e4-9d06-6e0a4500a270",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5ba56e7f-8085-4d76-a010-240fc0b7525b",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "done",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        -260
+      ],
+      "id": "f97ca9bf-74b2-4a7c-8efb-e11b2f885b1c",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "description": "This tool checks the progress of a motion graphic rendering job and returns its current status. It will return video url if the video rendering progress has been done.",
+        "workflowId": {
+          "__rl": true,
+          "value": "WNuij1e1th1TzpLO",
+          "mode": "list",
+          "cachedResultName": "Proxa Internal — Motion Graphics AI Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Render ID": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Render_ID', ``, 'string') }}",
+            "Telegram Chat ID": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Render ID",
+              "displayName": "Render ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "Telegram Chat ID",
+              "displayName": "Telegram Chat ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1160,
+        160
+      ],
+      "id": "a2c79b86-c512-4494-ae03-34fd8839e8bd",
+      "name": "Get Video Progress Tool"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Line Chart Animation Video": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Map Animation Video": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Text Animation Video": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Bar Chart Animation Video": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Pie Chart Animation Video": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Perplexity": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Coinmarketcap Get Coin": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Send Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Telegram Send Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Telegram Send Message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Send Message1": {
+      "main": [
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video": {
+      "main": [
+        [
+          {
+            "node": "Send Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Get Progress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Progress": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Progress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video Progress Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5840e120-5bb6-4456-96b1-93ce071516eb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1740c26791c747bf49d93178a26934eaaffaca5ab2d087ae7e06b06ed236dff6"
+  },
+  "id": "WNuij1e1th1TzpLO",
+  "tags": []
+}

@@ -1,0 +1,384 @@
+{
+  "name": "1.4 Asistente llamadas (Retell)",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "\n  {\n    \"fecha\": \"\",\n    \"hora\": \"\",\n    \"concepto\": \"\",\n    \"contacto\": \"\",\n    \"conversacion\": \"\",\n    \"no_contacto\": \"\"\n  }"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1720,
+        -220
+      ],
+      "id": "aa75cd42-eb1d-4f22-91f8-7e2dd4ffdafd",
+      "name": "Workflow Input Trigger"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=## 🎙️ **Generador de Prompts para Retell AI**\n\n### 🧠 **Rol y Contexto**  \nEres un **ingeniero de prompts especializado en Retell AI**. Tu tarea es **crear prompts óptimos** para llamadas automatizadas en Retell AI.  \n\n- **Lorena SIEMPRE es la asistente personal de Angel Aparicio.**  \n- **Siempre llama en nombre de Angel Aparicio, sin importar la tarea.**  \n- **Debe ignorar la primera frase del interlocutor y seguir el flujo de la conversación sin desviaciones.**  \n- **Debe esperar la respuesta del interlocutor antes de continuar (wait for user response).**  \n\n---\n\n### 📩 **Entrada de Datos:**  \nTe proporcionaré las siguientes variables desde n8n:  \n- **concepto:** ({{ $('Workflow Input Trigger').item.json.concepto }}) Define la acción a realizar (*pedido*, *reserva*, *cita médica*).  \n- **contacto:** ({{ $('Workflow Input Trigger').item.json.contacto }}) Nombre del restaurante, doctor o servicio.  \n- **fecha:** ({{ $('Workflow Input Trigger').item.json.fecha }}) Día en que se debe hacer la cita o reserva (si aplica).  \n- **hora:** ({{ $('Workflow Input Trigger').item.json.hora }}) Hora en que se debe hacer la cita o reserva (si aplica).  \n- **conversacion:** ({{ $('Workflow Input Trigger').item.json.conversacion }}) Descripción completa de la solicitud en lenguaje natural.  \n\n---\n\n### 📤 **Salida Esperada:**  \nDebes generar un **prompt estructurado en formato Markdown**, siguiendo estas reglas:  \n1. **Lorena siempre se presenta como la asistente de Angel Aparicio.**  \n2. **Lorena SIEMPRE ignora la primera frase del interlocutor y arranca directamente con la solicitud.**  \n3. **Siempre usa lenguaje natural para fechas y horas** (ej. *lunes 3 de marzo a las 8 de la mañana*).  \n4. **Siempre espera la respuesta antes de continuar (wait for user response).**  \n5. **No cambia el flujo de conversación por lo que diga el interlocutor.**  \n6. **No repite textualmente toda la solicitud en la confirmación, sino que la resume.**  \n7. **Incluye un cierre profesional y directo.**  \n\n---\n\n### 📜 **Ejemplo de Prompt Generado (Reserva en Restaurante)**  \n\n## 🎙️ **Prompt para Retell AI (Reserva en Restaurante)**\n\n### 🧠 **Rol y Contexto**  \nEres Lorena, la asistente de voz personal de Angel Aparicio. Siempre llamas en nombre de **Angel Aparicio** para hacer **reservas en restaurantes**, asegurándote de comunicar la solicitud de manera clara y profesional.  \n\n---\n\n### 📲 **Ejecución de la Llamada**  \n\n1️⃣ **Regla de Inicio:**  \n   - **Ignora la primera frase del interlocutor.**  \n   - **No respondas preguntas como \"¿En qué te puedo ayudar?\".**  \n   - **Siempre inicia directamente con la solicitud.**  \n\n2️⃣ **Presentación Inicial:**  \n   *\"Hola, soy Lorena, la asistente personal de Angel Aparicio.\"*  \n\n3️⃣ **Hacer la Reserva:**  \n   *\"Llamo para hacer una reserva en {{ $('Workflow Input Trigger').item.json.contacto }} a nombre de Angel Aparicio. Me gustaría reservar una mesa para el **{{ $('Workflow Input Trigger').item.json.fecha }} a las {{ $('Workflow Input Trigger').item.json.hora }}**. ¿Es posible realizar la reserva?\"*  \n\n**➡️ wait for user response**  \n\n4️⃣ **Confirmación de la Reserva:**  \n   *\"Perfecto. Confirmo la reserva en {{ $('Workflow Input Trigger').item.json.contacto }} para el **{{ $('Workflow Input Trigger').item.json.fecha }} a las {{ $('Workflow Input Trigger').item.json.hora }}**. ¿Es correcto?\"*  \n\n**➡️ wait for user response**  \n\n5️⃣ **Cierre Amable:**  \n   *\"Muchas gracias por su ayuda. Cualquier novedad, pueden comunicarse directamente conmigo. ¡Que tengan un excelente día!\"*  \n\n- **Usa end_call inmediatamente después del cierre.**  \n\n---\n\n### 🚫 **Errores a Evitar:**  \n- **Nunca decir que Lorena es asistente de {{ $('Workflow Input Trigger').item.json.contacto }}.**  \n- **Siempre llamar en nombre de Angel Aparicio.**  \n- **Nunca responder a saludos o preguntas iniciales del interlocutor.**  \n- **No cambiar la conversación en función de lo que diga el interlocutor.**  \n- **Siempre esperar la respuesta antes de continuar (wait for user response).**  \n- **No repetir textualmente toda la solicitud en la confirmación.**  \n- **No usar formato técnico de fecha y hora, sino lenguaje natural.**  ",
+              "role": "system"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -960,
+        -220
+      ],
+      "id": "c98ac026-7682-4a01-ba58-c2915e1f5647",
+      "name": "Creacion del prompt personalizado",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.retellai.com/v2/get-call/{{ $json.call_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Variables Retell1').item.json['API Key'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -480,
+        -220
+      ],
+      "id": "9782a40e-1d66-4e30-968a-2bd1b4cf8a3e",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -280,
+        -220
+      ],
+      "id": "c5d01079-c599-47f0-8e53-24468d1000d1",
+      "name": "Wait1",
+      "webhookId": "faf1701e-35ad-4c41-b8bc-cb25683ad018"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.call_status }}",
+              "rightValue": "ended",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.call_status }}",
+              "rightValue": "error",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -80,
+        -220
+      ],
+      "id": "739d51f4-6b9c-4202-ae5c-fa2116f4bfe8",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "call_transcript",
+              "value": "={{ $json.transcript }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        160,
+        -240
+      ],
+      "id": "29f22b29-2a3b-4123-b9b9-8f9834c1ff3a",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "API Key",
+              "value": "key_bdd985639eb13363fb6b140e5591",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Id telefono salida",
+              "value": "+576019178558",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Id agente",
+              "value": "agent....",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "no_contacto",
+              "value": "={{ $json.no_contacto }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1520,
+        -220
+      ],
+      "id": "afedf18d-b0be-4e33-addc-37d2b5f3a3c1",
+      "name": "Variables Retell1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.retellai.com/v2/create-phone-call",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Variables Retell1').item.json['API Key'] }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from_number\": \"{{ $('Variables Retell1').item.json['Id telefono salida'] }}\",\n  \"to_number\": \"{{ $('Normaliza el telefono1').item.json.message.content }}\",\n  \"override_agent_id\": \"{{ $('Variables Retell1').item.json['Id agente'] }}\",\n  \"retell_llm_dynamic_variables\": {\n    \"prompt\": \"{{ $json.message.content.replace(/\"\"\"/g, \"\").replace(/\\n/g, \"\\\\n\").replace(/\"/g, '\\\\\"') }}\"\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -660,
+        -220
+      ],
+      "id": "0ff67d2f-25a6-491a-9755-38e44b22cfe0",
+      "name": "Llamada Retell1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "Eres un asistente especializado en normalizar numeros de telefono para Colombia. Los telefonos de Colombia tienen el siguiente formato:\n\n+57XXXXXXXXXX\n\nDebes revisar si el numero cumple con este formato y si no cumple debes adaptarlo.\n\nSolo debes devolver el numero de telefono.\n\nEjemplos de respuesta:\n\n+573005660816",
+              "role": "system"
+            },
+            {
+              "content": "={{ $('Workflow Input Trigger').item.json.no_contacto }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -1300,
+        -220
+      ],
+      "id": "cf817f18-72a9-4892-bb2e-b4173e12c1bc",
+      "name": "Normaliza el telefono1",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Workflow Input Trigger": [
+      {
+        "json": {
+          "fecha": "hoy",
+          "hora": "8pm",
+          "concepto": "reserva",
+          "contacto": "Enzo",
+          "conversacion": "Quiero pedir una mesa para dos personas en la pizzeria Enzo para esta noche a las 8pm a nombre de Angel.",
+          "no_contacto": "3005660816"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Variables Retell1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creacion del prompt personalizado": {
+      "main": [
+        [
+          {
+            "node": "Llamada Retell1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Variables Retell1": {
+      "main": [
+        [
+          {
+            "node": "Normaliza el telefono1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Llamada Retell1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normaliza el telefono1": {
+      "main": [
+        [
+          {
+            "node": "Creacion del prompt personalizado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3d45e1fd-3749-4145-b2b5-e0c2cc5d5dbb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e0e4b720cb3656009f5ca7014be06f1fbe69abfc54f93aa2cc3ca2098ff666d6"
+  },
+  "id": "vxddCAHumDG4Nusq",
+  "tags": []
+}

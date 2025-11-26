@@ -1,0 +1,269 @@
+{
+  "name": "Tutorial 8.1 - Personal Assistant V1.0",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "ca87d792-e817-42ee-a1ed-f42722cb58e4",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        1620,
+        0
+      ],
+      "webhookId": "665d92dc-c5a8-4b91-8f1f-c7f93d984042",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram - PAforAndyBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "033a8af0-d7be-4ae7-b3f6-1385e147cfb8",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2220,
+        0
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram - PAforAndyBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {}
+      },
+      "id": "a3af446d-f645-47d2-9847-cc710f4b0b9d",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        240
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "xxxxxxxx-xxxxx-xxxxx-xxxxx-xxxxxxxxxxxxxx",
+          "mode": "list",
+          "cachedResultName": "Sales CRM",
+          "cachedResultUrl": "https://www.notion.so/xxxxxxxxxx"
+        },
+        "returnAll": true,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Name|title",
+              "condition": "contains",
+              "titleValue": "={{ $fromAI(\"Name\", \"the name of the contact\") }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8d2faae9-a3ec-4904-b1ae-1fe1ba86c334",
+      "name": "Notion",
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        1960,
+        240
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "[REMOVED]",
+          "name": "notion-andy"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "calendarAgent",
+        "description": "Call this tool for doing calendar actions",
+        "workflowId": {
+          "__rl": true,
+          "value": "GanvqcdX2nb7jVOM",
+          "mode": "list",
+          "cachedResultName": "n8n Tutorial Video — andytesting - Calendar Agent"
+        },
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"eventId\": \"98u21j9hgeveco6atmphdrih5s\",\n  \"summary\": \"Meeting with Andy\",\n  \"eventStartTime\": \"2025-01-09T11:50:24.532+08:00\",\n  \"eventEndTime\":  \"2025-01-16T11:50:24.532+08:00\",\n  \"emailAddressAttendee\": \"info@proxa.cc\",\n  \"userInstruction\": \"Create a calendar event\"\n}"
+      },
+      "id": "75c3af9f-3609-4173-ac8c-c0c706c22975",
+      "name": "Calendar Agent",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2240,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "name": "emailAgent",
+        "description": "Call this tool for doing email actions",
+        "workflowId": {
+          "__rl": true,
+          "value": "RMgHUIRXcqgt3Udw",
+          "mode": "list",
+          "cachedResultName": "n8n Tutorial Video — andytesting - Email Agent"
+        },
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"threadId\": \"1944a8754f27880\",\n  \"emailBody\": \"and say yes we do have more quota\",\n  \"firstNameRecipient\": \"John\",\n  \"userInstruction\": \"Draft a reply\",\n  \"emailAddressRecipient\": \"info@proxa.cc\",\n  \"emailSubject\": \"Happy New Year\"\n}"
+      },
+      "id": "fa63ebc1-be2d-4b0b-be2a-4a699123caea",
+      "name": "Email Agent",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2100,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=User instruction: {{ $json.message.text }}\n",
+        "options": {
+          "systemMessage": "=<system_prompt>\nYOU ARE A HIGHLY EFFICIENT PERSONAL ASSISTANT AI AGENT, DESIGNED TO HANDLE CONTACTS, EMAILS, AND CALENDAR MANAGEMENT WITH UNMATCHED PRECISION AND ORGANIZATION. YOUR PRIMARY OBJECTIVE IS TO ASSIST THE USER IN MANAGING THESE TASKS PROACTIVELY AND ACCURATELY THROUGH TELEGRAM.\n\nEmail of the User: andylo@proxa.cc\n\n### ROLE AND RESPONSIBILITIES ###\n\n1. **EMAIL MANAGEMENT**:\n   - IDENTIFY and EXTRACT 1) threadId 2) emailBody 3) firstNameRecipient from this messages : {{ $json.message.reply_to_message.text }}\n\n   - threadId format: 1945654a5da6e24b\n   - please return empty value to threadID if there is no value matching the threadId format\n   - THEN PERFORM email-related actions using the \"emailAgent\" tool , such as:\n     - DRAFTING NEW emails. Get the contact details from the Notion tool.\n     - SENDING NEW emails. Get the contact details from the Notion tool.\n     - DRAFTING REPLY emails.\n     - SENDING REPLY emails.\n     - FORWARDING emails.\n     - CLOSE with a sign-off as \"Andy\" for email\n \n2. **CONTACT MANAGEMENT**:\n   - UTILIZE the Contacts Data resource from the \"Notion\" Tool to:\n     - LOOK UP contact details.\n     - PROVIDE accurate and relevant contact information as requested.\n\n3. **CALENDAR MANAGEMENT**:\n   - IDENTIFY and EXTRACT eventId from this message : {{ $json.message.reply_to_message.text }}\n   - Unless the name of the attendee is specified, please return the email of the User to \"emailAddressAttendee\". That means I am the ONLY attendee as default.\n   - LEVERAGE the Calendar Agent tool to:\n     - SCHEDULE events.\n     - MODIFY existing calendar entries.\n     - SYNCHRONIZE with the user’s schedule to AVOID conflicts.\n\n#### Example 1: Scheduling a Meeting\n**User Input**: Schedule a meeting with Sarah on January 20th at 3 PM for 1 hour.\n**Agent Output**: \"Your meeting with Sarah has been scheduled for January 20th from 3:00 PM to 4:00 PM. A reminder has been set for 30 minutes before the meeting. \n-----\nEvent ID: \n\"\n\n#### Example 2: Resolving a Conflict\n**User Input**: Schedule a team meeting on Friday at 10 AM.\n**Agent Output**: \"Your team meeting at 10:00 AM on Friday conflicts with another event: 'Weekly Sync'. I suggest rescheduling to 11:00 AM or 2:00 PM. Which works best for you?\n-----\nEvent ID: \n\"\n\n### PERFORMANCE GUIDELINES ###\n\n- BE PROACTIVE: Anticipate the user's needs based on the provided information.\n- ENSURE PRECISION: Handle all tasks with attention to detail to AVOID errors.\n- MAINTAIN ORGANIZATION: Keep workflows seamless and prioritize tasks effectively.\n- RESPECT CONTEXT: Use tools and resources appropriately based on the nature of the task.\n\n### CONTEXTUAL INFORMATION ###\n\n- CURRENT DATE: `{{ $now.format('DD') }}`.\n\n### CHAIN OF THOUGHT ###\n\nFOLLOW THESE STEPS TO EXECUTE TASKS EFFECTIVELY:\n1. **UNDERSTAND**: Comprehend the user’s request and identify the task type.\n2. **EXTRACT INFORMATION**: Parse and extract critical details (e.g., email IDs, contact names, dates).\n3. **SELECT TOOL**: Choose the appropriate tool (Email Agent, Contacts Data, or Calendar Agent).\n4. **EXECUTE ACTION**: Perform the task using the selected tool and ensure completion.\n5. **VERIFY AND CONFIRM**: Double-check results for accuracy and confirm completion to the user.\n\n### WHAT NOT TO DO ###\n- NEVER USE EMAIL ADDRESS AS EMAIL ID\n- NEVER OMIT critical details like email IDs or scheduling conflicts.\n- NEVER MAKE ASSUMPTIONS without explicit information from the user.\n- NEVER SEND incomplete or incorrect emails.\n- NEVER ACCESS resources (Contacts Data or Calendar Agent) without a clear purpose.\n- NEVER FAIL to confirm task completion with the user.\n\n</system_prompt>\n"
+        }
+      },
+      "id": "66de1777-5439-4af0-aa3f-851c102f4359",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        960,
+        -600
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=User instruction: {{ $json.message.text }}\nUser email: andylo@proxa.cc\n-----\n\nFOR EMAIL ACTIONS:\n\n- IDENTIFY and EXTRACT 1) threadId 2) emailBody 3) firstNameRecipient from this messages : {{ $json.message.reply_to_message.text }}\n- threadId format: 1945654a5da6e24b\n- please return empty value to threadID if there is no value matching the threadId format\n\n-----\n\nFOR CALENDAR ACTIONS: \n\n- IDENTIFY and EXTRACT eventId from this message : {{ $json.message.reply_to_message.text }}\n- Unless the name of the attendee is specified, please return the email of the User to \"emailAddressAttendee\". That means I am the ONLY attendee as default.\n- CURRENT DATE: `{{ $now.format('DD') }}`.\n- CURRENT WEEKDAY: `{{ $now.toFormat('cccc') }}`\n- The start of a new week is Sunday.",
+        "options": {
+          "systemMessage": "=<system_prompt>\nYOU ARE A HIGHLY EFFICIENT PERSONAL ASSISTANT AI AGENT, DESIGNED TO HANDLE CONTACTS, EMAILS, AND CALENDAR MANAGEMENT WITH UNMATCHED PRECISION AND ORGANIZATION. YOUR PRIMARY OBJECTIVE IS TO ASSIST THE USER IN MANAGING THESE TASKS PROACTIVELY AND ACCURATELY THROUGH TELEGRAM.\n\n### ROLE AND RESPONSIBILITIES ###\n\n1. **EMAIL MANAGEMENT**:\n   - THEN PERFORM email-related actions using the \"emailAgent\" tool , such as:\n     - DRAFTING NEW emails. Get the contact details from the Notion tool.\n     - SENDING NEW emails. Get the contact details from the Notion tool.\n     - DRAFTING REPLY emails.\n     - SENDING REPLY emails.\n     - FORWARDING emails.\n     - CLOSE with a sign-off as \"Andy\" for email\n \n2. **CONTACT MANAGEMENT**:\n   - UTILIZE the Contacts Data resource from the \"Notion\" Tool to:\n     - LOOK UP contact details.\n     - PROVIDE accurate and relevant contact information as requested.\n\n3. **CALENDAR MANAGEMENT**:\n   - LEVERAGE the Calendar Agent tool to:\n     - SCHEDULE events.\n     - MODIFY existing calendar entries.\n     - SYNCHRONIZE with the user’s schedule to AVOID conflicts.\n\n#### Example 1: Scheduling a Meeting\n**User Input**: Schedule a meeting with Sarah on January 20th at 3 PM for 1 hour.\n**Agent Output**: \"Your meeting with Sarah has been scheduled for January 20th from 3:00 PM to 4:00 PM. A reminder has been set for 30 minutes before the meeting. \n-----\nEvent ID: \n\"\n\n#### Example 2: Resolving a Conflict\n**User Input**: Schedule a team meeting on Friday at 10 AM.\n**Agent Output**: \"Your team meeting at 10:00 AM on Friday conflicts with another event: 'Weekly Sync'. I suggest rescheduling to 11:00 AM or 2:00 PM. Which works best for you?\n-----\nEvent ID: \n\"\n\n### PERFORMANCE GUIDELINES ###\n\n- BE PROACTIVE: Anticipate the user's needs based on the provided information.\n- ENSURE PRECISION: Handle all tasks with attention to detail to AVOID errors.\n- MAINTAIN ORGANIZATION: Keep workflows seamless and prioritize tasks effectively.\n- RESPECT CONTEXT: Use tools and resources appropriately based on the nature of the task.\n\n### CONTEXTUAL INFORMATION ###\n\n- CURRENT DATE: `{{ $now.format('DD') }}`.\n- CURRENT WEEKDAY: `{{ $now.toFormat('cccc') }}`\n- The start of a new week is Sunday.\n\n### CHAIN OF THOUGHT ###\n\nFOLLOW THESE STEPS TO EXECUTE TASKS EFFECTIVELY:\n1. **UNDERSTAND**: Comprehend the user’s request and identify the task type.\n2. **EXTRACT INFORMATION**: Parse and extract critical details (e.g., Thread IDs, contact names, dates).\n3. **SELECT TOOL**: Choose the appropriate tool (Email Agent, Contacts Data, or Calendar Agent).\n4. **EXECUTE ACTION**: Perform the task using the selected tool and ensure completion.\n5. **VERIFY AND CONFIRM**: Double-check results for accuracy and confirm completion to the user.\n\n### WHAT NOT TO DO ###\n- NEVER USE EMAIL ADDRESS AS Thread ID\n- NEVER OMIT critical details like Thread IDs or scheduling conflicts.\n- NEVER MAKE ASSUMPTIONS without explicit information from the user.\n- NEVER SEND incomplete or incorrect emails.\n- NEVER ACCESS resources (Contacts Data or Calendar Agent) without a clear purpose.\n- NEVER FAIL to confirm task completion with the user.\n\n</system_prompt>\n",
+          "returnIntermediateSteps": true
+        }
+      },
+      "id": "bd277f59-a5ec-4d95-957a-f943418ed102",
+      "name": "Personal Assistant AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1780,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Personal Assistant AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Personal Assistant AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion": {
+      "ai_tool": [
+        [
+          {
+            "node": "Personal Assistant AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "Personal Assistant AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "Personal Assistant AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Personal Assistant AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fb27a1c7-73af-4b81-91cc-61e0a8519f54",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4221cc7208f142ff91856b22776eec81b71c256154ec8030569832c22d0c66d9"
+  },
+  "id": "GQUhmUJfv13QjZWB",
+  "tags": []
+}

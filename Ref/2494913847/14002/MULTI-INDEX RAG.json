@@ -1,0 +1,385 @@
+{
+  "name": "MULTI-INDEX RAG",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "6bf18080-b4b4-48d4-8103-337a67ac1404",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -128,
+        552
+      ]
+    },
+    {
+      "parameters": {
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "id": "c1da14a1-057d-4b3d-bc1f-76a9e51faa40",
+      "name": "Knowledge Base 1 - Technical Docs",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        80,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "id": "0ffd4623-01cc-4cce-8ae7-1466fcc6dd7e",
+      "name": "Knowledge Base 2 - Business Docs",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        80,
+        1456
+      ]
+    },
+    {
+      "parameters": {
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "id": "5b4c0cfc-4703-4a81-8231-3a285b162dc4",
+      "name": "Knowledge Base 3 - FAQ Database",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        80,
+        1632
+      ]
+    },
+    {
+      "parameters": {
+        "topK": 5
+      },
+      "id": "fd511406-1398-4f81-a070-2b5222a79074",
+      "name": "Retriever 1 - Technical",
+      "type": "@n8n/n8n-nodes-langchain.retrieverVectorStore",
+      "typeVersion": 1,
+      "position": [
+        224,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "topK": 5
+      },
+      "id": "f310878f-0c95-4544-9ba7-fc19b02659b4",
+      "name": "Retriever 2 - Business",
+      "type": "@n8n/n8n-nodes-langchain.retrieverVectorStore",
+      "typeVersion": 1,
+      "position": [
+        160,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "topK": 3
+      },
+      "id": "18925e2f-53d5-42b6-9c77-e1a2f70a2b76",
+      "name": "Retriever 3 - FAQ",
+      "type": "@n8n/n8n-nodes-langchain.retrieverVectorStore",
+      "typeVersion": 1,
+      "position": [
+        160,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Please provide a detailed technical explanation based on the documentation. Focus on implementation details, code examples, and technical specifications.",
+        "options": {
+          "systemPromptTemplate": "You are a technical documentation assistant. Use the following pieces of retrieved context to provide detailed technical explanations and answers.\nFocus on implementation details, code examples, technical specifications, and best practices.\nIf you don't know the answer, just say that you don't know, don't try to make up an answer.\nProvide comprehensive technical guidance when possible.\n----------------\nContext: {context}"
+        }
+      },
+      "id": "eeea61d5-e1d1-43e3-a91a-1624831d6fc0",
+      "name": "QA Chain 1 - Technical",
+      "type": "@n8n/n8n-nodes-langchain.chainRetrievalQa",
+      "typeVersion": 1.6,
+      "position": [
+        128,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemPromptTemplate": "You are a business process expert assistant. Use the following business documentation and process information to provide comprehensive answers about business operations, procedures, workflows, and policies.\n\nFocus on:\n- Business process explanations\n- Operational procedures\n- Policy interpretations\n- Workflow guidance\n- Best practices\n\nProvide clear, actionable business-oriented explanations. If you don't know the answer based on the business context provided, say so clearly.\n\n----------------\nContext: {context}"
+        }
+      },
+      "id": "b794d7a3-abeb-40c3-ac28-0b347ad1609d",
+      "name": "QA Chain 2 - Business",
+      "type": "@n8n/n8n-nodes-langchain.chainRetrievalQa",
+      "typeVersion": 1.6,
+      "position": [
+        168,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemPromptTemplate": "You are a helpful FAQ assistant. Use the following FAQ context to provide concise, direct answers to user questions.\nIf the answer is not in the FAQ context, say 'This question is not covered in our FAQ. Please contact support for assistance.'\nProvide clear, brief answers without unnecessary elaboration.\n----------------\nContext: {context}"
+        }
+      },
+      "id": "33ae3607-5606-46b3-9752-3dd156034ba1",
+      "name": "QA Chain 3 - FAQ",
+      "type": "@n8n/n8n-nodes-langchain.chainRetrievalQa",
+      "typeVersion": 1.6,
+      "position": [
+        168,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "8506a120-d64a-4bb8-833c-476c36fc0f3f",
+      "name": "Merge Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        592,
+        536
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert knowledge synthesizer. Your task is to analyze the answers from multiple knowledge bases and create a comprehensive, well-structured final answer.\n\nYou will receive answers from three different knowledge bases:\n1. Technical Documentation\n2. Business Documentation  \n3. FAQ Database\n\nInstructions:\n- Synthesize the information from all sources into a coherent, comprehensive answer\n- Remove any duplicate or contradictory information\n- Organize the response in a logical structure\n- For each piece of information, cite which knowledge base it came from using these labels:\n  - [Technical Docs] for technical documentation\n  - [Business Docs] for business documentation\n  - [FAQ] for FAQ database\n- If sources contradict each other, note the discrepancy and indicate which source provided which information\n- Provide a complete answer that addresses the original question thoroughly\n\nInput data from knowledge bases:\n={{ JSON.stringify($input.all(), null, 2) }}\n\nPlease provide your synthesized answer:",
+        "batching": {}
+      },
+      "id": "2a83d5f4-2108-461e-bc6a-6f694175a26d",
+      "name": "Final Answer Synthesis",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        816,
+        552
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "b5059bfc-7569-4089-8496-97890854dfeb",
+      "name": "OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -128,
+        1456
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "0391888a-5220-4e3d-a850-55d89fb3e151",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        96,
+        272
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Knowledge Base 1 - Technical Docs",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Knowledge Base 2 - Business Docs",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Knowledge Base 3 - FAQ Database",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retriever 1 - Technical": {
+      "ai_retriever": [
+        [
+          {
+            "node": "QA Chain 1 - Technical",
+            "type": "ai_retriever",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retriever 2 - Business": {
+      "ai_retriever": [
+        [
+          {
+            "node": "QA Chain 2 - Business",
+            "type": "ai_retriever",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retriever 3 - FAQ": {
+      "ai_retriever": [
+        [
+          {
+            "node": "QA Chain 3 - FAQ",
+            "type": "ai_retriever",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "QA Chain 1 - Technical",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "QA Chain 2 - Business",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "QA Chain 3 - FAQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "QA Chain 1 - Technical",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "QA Chain 2 - Business",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "QA Chain 3 - FAQ",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Final Answer Synthesis",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QA Chain 1 - Technical": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QA Chain 2 - Business": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QA Chain 3 - FAQ": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Results": {
+      "main": [
+        [
+          {
+            "node": "Final Answer Synthesis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3a1f4aeb-1183-4d8e-a634-cf8b4538e9b9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aaadb797535f05587ee95b776c942a7c3f7a46fd7aa0c9b6a9d64e1e595f8af1"
+  },
+  "id": "6U6pW0Ka6FgrlGot",
+  "tags": []
+}

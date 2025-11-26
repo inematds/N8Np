@@ -1,0 +1,615 @@
+{
+  "name": "Tutorial 20.2 - Post Threads",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Send Thread (threads.net)",
+        "height": 373.2358768014966,
+        "width": 1815.0855597421642,
+        "color": 3
+      },
+      "id": "d627b29e-4b53-42f6-ba0f-1f6a1939120a",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        260
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "0f6748c7-4c1e-4136-8107-e625914ca619",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        40,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const threadText = $(\"Edit Fields (Proxa)\").first().json.thread_text.split(\"----Thread----\").map((word) => word.trim());\n\nreturn { threadText };\n"
+      },
+      "id": "c3a209c8-129b-4735-93ec-2d4636434ea8",
+      "name": "Split Threads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "5d2053e4-8096-418a-88b0-3d7f6843d7f8",
+      "name": "Loop Over threads",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        740,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "threadText",
+        "options": {}
+      },
+      "id": "14ac919b-c023-4f5f-8865-3ac639b399e1",
+      "name": "Split Out Threads",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        560,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $runIndex }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "aa0de286-4039-46bf-b1ca-7cfd38f123ae",
+      "name": "IF First Item",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        940,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "id": "0152611b-72ae-49b4-986c-bdc980de7a49",
+      "name": "Wait Time",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1340,
+        280
+      ],
+      "webhookId": "66ffc7f1-1380-4b4a-867f-92b59a5ae849"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "prev_thread_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "108efd6f-e42b-4fee-a396-2f467eeb31d8",
+      "name": "Set ID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1660,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "id": "89dbecbb-cd1f-44f7-99cc-71334addc64e",
+      "name": "Wait Time1",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1340,
+        440
+      ],
+      "webhookId": "66ffc7f1-1380-4b4a-867f-92b59a5ae849"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e4717863-2c79-4164-a2df-72c99aaf2733",
+      "name": "Return Value",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        940,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "thread_text",
+              "value": "={{ $json.query }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0d9252fc-7ce0-4d1b-8f31-8f89e7c32738",
+      "name": "Edit Fields (Proxa)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.threads.net/access_token?grant_type=th_exchange_token&client_secret={{ $json.client_secret }}&access_token={{ $json.access_token }}",
+        "options": {}
+      },
+      "id": "fe9767ed-e413-4cf6-b8f4-a459935311b1",
+      "name": "Exchange Long Credentials",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        360,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "access_token",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "client_secret",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8f401dbf-88a8-4b5b-bdc3-d72db87b827f",
+      "name": "First Access Global",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        200,
+        60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b84e35dd-195f-4244-808c-3ed54139f312",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        40,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Exchange Long Token",
+        "height": 240,
+        "width": 600
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9a81fcb3-9730-4a24-93a0-dfbb1e8a7ca5",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "hostUrl": "=graph.threads.net",
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "=v1.0",
+        "node": "=me",
+        "edge": "threads",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "media_type",
+                "value": "TEXT"
+              },
+              {
+                "name": "text",
+                "value": "={{ $json['threadText'] }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        280
+      ],
+      "id": "a70699a3-1d46-4a0c-a884-3d549c16688b",
+      "name": "Create Thread",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "[REMOVED]",
+          "name": "Threads Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "hostUrl": "=graph.threads.net",
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "=v1.0",
+        "node": "=me",
+        "edge": "threads_publish",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "creation_id",
+                "value": "={{ $json.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        280
+      ],
+      "id": "6506d77a-5810-43b9-aca8-79f369b811fb",
+      "name": "Post Thread Data",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "[REMOVED]",
+          "name": "Threads Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "hostUrl": "=graph.threads.net",
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "=v1.0",
+        "node": "=me",
+        "edge": "threads",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "media_type",
+                "value": "TEXT"
+              },
+              {
+                "name": "text",
+                "value": "={{ $json['threadText'] }}"
+              },
+              {
+                "name": "reply_to_id",
+                "value": "={{  $('Set ID').first(0, $runIndex).json.prev_thread_id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        440
+      ],
+      "id": "7c2e6226-d5a5-4c61-9acf-65b88cbb0079",
+      "name": "Send Reply Thread",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "[REMOVED]",
+          "name": "Threads Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "hostUrl": "=graph.threads.net",
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "=v1.0",
+        "node": "=me",
+        "edge": "threads_publish",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "creation_id",
+                "value": "={{ $json.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        440
+      ],
+      "id": "7bc9d057-878b-4bbf-93e2-eac4b4ffe280",
+      "name": "Post Thread Data2",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "[REMOVED]",
+          "name": "Threads Graph account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Execute Workflow Trigger": [
+      {
+        "json": {
+          "query": "Test"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields (Proxa)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Threads": {
+      "main": [
+        [
+          {
+            "node": "Split Out Threads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over threads": {
+      "main": [
+        [
+          {
+            "node": "Return Value",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF First Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Threads": {
+      "main": [
+        [
+          {
+            "node": "Loop Over threads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF First Item": {
+      "main": [
+        [
+          {
+            "node": "Create Thread",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Reply Thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Time": {
+      "main": [
+        [
+          {
+            "node": "Post Thread Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set ID": {
+      "main": [
+        [
+          {
+            "node": "Loop Over threads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Time1": {
+      "main": [
+        [
+          {
+            "node": "Post Thread Data2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields (Proxa)": {
+      "main": [
+        [
+          {
+            "node": "Split Threads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "First Access Global": {
+      "main": [
+        [
+          {
+            "node": "Exchange Long Credentials",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "First Access Global",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Thread": {
+      "main": [
+        [
+          {
+            "node": "Wait Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Thread Data": {
+      "main": [
+        [
+          {
+            "node": "Set ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Reply Thread": {
+      "main": [
+        [
+          {
+            "node": "Wait Time1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Thread Data2": {
+      "main": [
+        [
+          {
+            "node": "Set ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "22c59419-e960-47c9-b206-192b52a4c270",
+  "meta": {
+    "instanceId": "224d837a28e1c0aaf099fa81928d4d2db95b91b450d34302ac21b661ba89b550"
+  },
+  "id": "1mdLYYhWq37yvXzU",
+  "tags": []
+}

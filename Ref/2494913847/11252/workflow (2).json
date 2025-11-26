@@ -1,0 +1,462 @@
+{
+  "name": "34 Veo 3 Fast",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -660,
+        140
+      ],
+      "id": "cd3694ed-b0ab-4da8-bdbf-e478d6fadc34",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://queue.fal.run/fal-ai/veo3/fast",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ $json.message.content }}"
+            },
+            {
+              "name": "duration",
+              "value": "8s"
+            },
+            {
+              "name": "enhance_prompt",
+              "value": "true"
+            },
+            {
+              "name": "generate_audio",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        120,
+        -60
+      ],
+      "id": "80b9bedf-55dc-4d8a-b682-ba3d3b0f1c1c",
+      "name": "VEO3",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 120
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        120,
+        140
+      ],
+      "id": "432a6c73-9808-4126-85c7-354ffc9b6bd2",
+      "name": "Wait",
+      "webhookId": "e9ca39ea-0c11-4e60-b101-213675590a99"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.response_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        120,
+        320
+      ],
+      "id": "0b782316-bd8e-4c24-b505-3bc4216375b1",
+      "name": "Get Video URL",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# 🅰🅽🅳🆈🅽🅾🅲🅾🅳🅴 𝔸𝕀 𝔸𝕔𝕒𝕕𝕖𝕞𝕪\n\n",
+        "height": 80,
+        "width": 600,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -740,
+        -200
+      ],
+      "id": "3cf881f5-baed-4577-8a1f-0d1daead4d23",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KGN9s4rNaKVAnAQ6MnQvr9GpYMAuPHT1xhDNJieV7Yk",
+          "mode": "list",
+          "cachedResultName": "Veo 3 Fast - Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KGN9s4rNaKVAnAQ6MnQvr9GpYMAuPHT1xhDNJieV7Yk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KGN9s4rNaKVAnAQ6MnQvr9GpYMAuPHT1xhDNJieV7Yk/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Pending"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -460,
+        140
+      ],
+      "id": "ceb86153-0619-410a-ae96-33f889a54028",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account - Stanley"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a AI Video Prompt assistant, base on the user input, prepare the prompt similar to the reference.",
+              "role": "system"
+            },
+            {
+              "content": "=USER INPUT:\nsubstance: {{ $json.substance }}\nliquid: {{ $json.liquid }}\nreaction: {{ $json.reaction }}\ntransformation: {{ $json.transformation }}\nart_style: {{ $json.art_style }}\n\nREFERENCE PROMPT:\nA high-quality cinematic macro shot of a black-gloved hand holding a glass petri dish filled with __substance__, placed on a sleek black laboratory surface. A dropper containing __liquid__ hovers above the __substance__. As a drop of the __liquid__ falls onto the __substance__, a __reaction__ is triggered: small voxel-style green sprouts begin emerging rapidly from the center, expanding outward in a ripple effect. The sprouts grow and transform into __transformation__, resembling the art style of __art_style__. In the final scene, the petri dish is completely filled with __ground__ and __trees__ with __trunk_color__ __trunk_shape__ trunks. Everything remains contained within the glass dish, creating a miniature voxel forest lab experiment.\n\nSAMPLE:\nA high-quality cinematic macro shot of a black-gloved hand holding a glass petri dish filled with fine gray powder, placed on a sleek black laboratory surface. A dropper containing a glowing green liquid hovers above the powder. As a drop of the green liquid falls onto the powder, a magical reaction is triggered: small voxel-style green sprouts begin emerging rapidly from the center, expanding outward in a ripple effect. The sprouts grow and transform into vibrant voxel-style grass and trees, resembling the art style of Minecraft. In the final scene, the petri dish is completely filled with pixelated voxel grass and cube-leaved voxel trees with brown blocky trunks. Everything remains contained within the glass dish, creating a miniature voxel forest lab experiment.\n\nYOUR OUTPUT:"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -240,
+        140
+      ],
+      "id": "794483f1-33d4-4858-99bc-898aab793666",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1KGN9s4rNaKVAnAQ6MnQvr9GpYMAuPHT1xhDNJieV7Yk",
+          "mode": "list",
+          "cachedResultName": "Veo 3 Fast - Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KGN9s4rNaKVAnAQ6MnQvr9GpYMAuPHT1xhDNJieV7Yk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KGN9s4rNaKVAnAQ6MnQvr9GpYMAuPHT1xhDNJieV7Yk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Get row(s) in sheet').item.json.row_number }}",
+            "Status": "Complete",
+            "Output": "={{ $json.video.url }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "substance",
+              "displayName": "substance",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "liquid",
+              "displayName": "liquid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "reaction",
+              "displayName": "reaction",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "transformation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "art_style",
+              "displayName": "art_style",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Scene",
+              "displayName": "Scene",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Output",
+              "displayName": "Output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        340,
+        140
+      ],
+      "id": "87a6f8e7-0d3b-4bc5-99f3-35e039e23664",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account - Stanley"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## VEO 3 Fast",
+        "height": 600,
+        "width": 1320,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -740,
+        -100
+      ],
+      "id": "8514b894-75e2-45f4-8fdd-f7205161f922",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {
+    "Message a model": [
+      {
+        "json": {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "A high-quality cinematic macro shot of a black-gloved hand holding a glass petri dish filled with vibrant pigment powder, placed on a sleek black laboratory surface. A dropper containing a shimmering crimson serum hovers above the powder. As a drop of the crimson serum falls onto the pigment powder, an eruptive growth reaction is triggered: small cyberpunk-inspired sprouts begin emerging rapidly from the center, expanding outward in vibrant, neon hues. The sprouts grow and transform into intricate fractal fungi, their patterns resembling the art style of cyberpunk. In the final scene, the petri dish is completely filled with these fractal fungi, with their multi-layered, glowing structures contained within the glass dish, creating a stunning cyberpunk miniature biosphere experiment.",
+            "refusal": null,
+            "annotations": []
+          },
+          "logprobs": null,
+          "finish_reason": "stop"
+        }
+      }
+    ],
+    "VEO3": [
+      {
+        "json": {
+          "status": "IN_QUEUE",
+          "request_id": "ca3bb09d-1151-42fe-a1cb-49976f12d982",
+          "response_url": "https://queue.fal.run/fal-ai/veo3/requests/ca3bb09d-1151-42fe-a1cb-49976f12d982",
+          "status_url": "https://queue.fal.run/fal-ai/veo3/requests/ca3bb09d-1151-42fe-a1cb-49976f12d982/status",
+          "cancel_url": "https://queue.fal.run/fal-ai/veo3/requests/ca3bb09d-1151-42fe-a1cb-49976f12d982/cancel",
+          "logs": null,
+          "metrics": {},
+          "queue_position": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VEO3": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Video URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video URL": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "VEO3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0f71a71d-7258-4cf4-ab0e-89b7f710dc34",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1740c26791c747bf49d93178a26934eaaffaca5ab2d087ae7e06b06ed236dff6"
+  },
+  "id": "UG1Kc8uBhIAOm0oC",
+  "tags": []
+}

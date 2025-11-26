@@ -1,0 +1,436 @@
+TOPICO 13087
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-08-23 17:21:20+00:00
+
+Total de mensagens: 21
+Midias baixadas: 9
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-08-23T18:06:09+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_13109_001.jpg
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-08-23T18:03:40+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_13108_002.jpg
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-08-23T17:58:49+00:00
+Texto:
+Aqui está o **passo a passo detalhado** para **recriar o chatbot estilo “Hormozi GPT”** usando **Pinecone Assistant**, **n8n** e um **GPT customizado**, conforme descrito no vídeo e no conteúdo da Skool (mesmo sem acesso direto):
+
+---
+
+## ⚙️ Etapa 1 – Criar o Pinecone Assistant (sem vetorização manual)
+
+### 1.1 Acesse o Pinecone ([https://app.pinecone.io/](https://app.pinecone.io/))
+
+* Vá em **Assistants** (não “Indexes”)
+* Clique em **Create Assistant**
+* Dê um nome, ex: `mosey` ou `mz`
+
+### 1.2 Faça upload dos arquivos (playbooks, PDFs etc.)
+
+* Pode ser PDF com texto ou OCR feito
+* Arraste e solte os documentos
+* Ele vai processar automaticamente e aplicar **RAG** (retrieval-augmented generation)
+
+---
+
+## 💬 Etapa 2 – Teste com interface web da Pinecone
+
+### 2.1 Escolha o modelo (ex: Claude 3.5 Sonnet, GPT-4)
+
+* Use o modelo preferido para responder via RAG
+
+### 2.2 Escreva perguntas
+
+Exemplo:
+
+> “Como posso melhorar o LTV da minha lavanderia com soluções de IA?”
+
+### 2.3 Veja o retorno com:
+
+* **Resposta baseada nos documentos**
+* **Referência das páginas**
+* **Nome do PDF de origem**
+
+---
+
+## 🔁 Etapa 3 – Requisição via API (para N8n ou GPT customizado)
+
+### 3.1 Vá em **Assistants > seu assistant > API**
+
+* Copie o **endpoint da API**
+
+  ```  https://api.pinecone.io/assistants/{nome-do-assistant}/messages
+  ```
+
+### 3.2 Gere sua A**PI Key:**
+
+* Vá em S**ettings > API Keys
+*** Crie e copie sua chave
+
+---
+
+## 🧱 Etapa 4 – Criar fluxo no n**8n
+**
+### 4.1 Crie um novo fluxo e adicione os nós:
+
+* W**ebhook **ou S**tart
+*** H**TTP Request
+*** S**et **(opcional para formatar resposta)
+
+### 4.2 Configure o nó H**TTP Request:**
+
+| Parâmetro | Valor                                                                     |
+| --------- | ------------------------------------------------------------------------- |
+| URL       | h`ttps://api.pinecone.io/assistants/mosey/messages `                      |
+| Método    | P`OST `                                                                   |
+| Headers   | A`uthorization: Bearer SUA_API_KEY `<br> C`ontent-Type: application/json `|
+| Body      | Raw JSON                                                                  |
+
+### Exemplo de Body:
+
+{```
+  "role": "user",
+  "content": "Como melhorar o LTV da minha lavanderia com IA?"
+}
+```
+### 4.3 Salve e teste
+
+---
+
+## 🤖 Etapa 5 – GPT Customizado com Webhook (opcional)
+
+Você pode integrar esse assistant com um G**PT personalizado:**
+
+1. Vá até h[ttps://chat.openai.com/gpts
+](https://chat.openai.com/gpts)2. Crie um G**PT com Webhook
+**3. Use o m**esmo endpoint **da Pinecone (via n8n ou direto)
+4. Configure a e**strutura JSON de entrada
+**5. Defina um p**rompt de sistema **inteligente (que valida, empurra de volta perguntas malformadas, etc.)
+
+---
+
+## 🧠 Etapa 6 – Atualização contínua do conhecimento (RAG)
+
+Se quiser adicionar mais conhecimento:
+
+* Converta t**ranscrições de vídeos ou podcasts **em PDF
+* Envie para o mesmo Assistant
+* Sem precisar retreinar, vetorização nem mexer no banco
+
+---
+
+## 💡 Dica Avançada: Prompt de Sistema (Anti-spam)
+
+Exemplo:
+
+> “Você só responde perguntas específicas relacionadas aos PDFs carregados. Se a pergunta for genérica, peça para o usuário reformular.”
+
+---
+
+## ✅ Conclusão – Você agora tem:
+
+* Um c**hatbot com RAG **que responde com fontes e páginas
+* Rodando e**m 5 minutos,** sem Pinecone Index manual
+* Pode usar n**8n, front-end, GPTs customizados **com o mesmo motor
+
+---
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-08-23T17:58:02+00:00
+Texto:
+## **O que são os JSON que ele compartilhou?**
+
+Eles são **estruturas de requisição HTTP**, no formato **`cURL`** ou **payloads JSON**, usados para:
+
+1. **Chamar a API do Pinecone Assistant**
+2. **Enviar uma pergunta e receber uma resposta com RAG**
+3. **Incluir metadados como nome do assistente, chave da API e prompt customizado**
+
+Ou seja, **são pedaços de configuração**, que ele:
+
+* **Transforma em requisições cURL**
+* E **importa para o N8n** usando um nó do tipo **HTTP Request (ou Webhook)**
+
+---
+
+Esse **JSON é o corpo do request** enviado via HTTP para o Pinecone Assistant.
+
+---
+
+## **Como ele usa no N8n**
+
+1. Cria um nó **"HTTP Request"**
+2. Coloca o método como `POST`
+3. Cola o **URL da API do Pinecone Assistant**
+4. Insere os **headers com API Key**
+5. Insere o **body JSON com a mensagem**
+6. O output da resposta é exibido em outro nó (ex: “Set”, “Function”, ou “Webhook Response”)
+
+---
+
+## **Resumo**
+
+* **JSONs = estrutura de chamada à API**, não são fluxos do N8n
+* Você **usa esses JSONs dentro de um nó HTTP Request**
+* Ele criou dois exemplos: um para N8n, outro para um GPT customizado (com pequenas diferenças)
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-08-23T17:56:58+00:00
+Texto:
+======================
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-08-23T17:56:21+00:00
+Texto:
+## **Resumo Geral**
+
+O criador mostra como **reconstruir o Hermozi GPT** (um chatbot caro com RAG e LangGraph) de forma simples, barata e rápida usando:
+
+* **Pinecone Assistant** (RAG pronto)
+* **N8n** (automação)
+* **Custom GPT com webhook**
+* Tudo isso feito em **1 hora de trabalho**
+
+---
+
+## **1. Pinecone Assistant: RAG simplificado**
+
+### Conceito:
+
+* Basta **arrastar e soltar PDFs**
+* Ele faz **RAG automaticamente**
+* Mostra **respostas com citações e páginas exatas**
+* Exemplo: pergunta sobre como escalar uma agência de IA de \$1M para \$1.9M
+
+### Custo:
+
+* Cerca de **US\$ 0,05 por hora**
+* Pode ligar/desligar conforme o uso
+* Aproximadamente **US\$ 5-10 por mês**
+
+---
+
+## **2. Construção no N8n (com API)**
+
+### O que foi feito:
+
+* Criou **requisição cURL** conectando Pinecone ao N8n
+* Workflow recebe a pergunta → envia ao Pinecone Assistant → retorna com resposta e referências
+
+### Funcionalidades:
+
+* Prompt configurado para "conversar" com o usuário
+* Não aceita qualquer pergunta (ex: “oi”), força clareza
+* Exemplo de pergunta: "Como melhorar o LTV da minha lavanderia?"
+
+---
+
+## **3. Integração com GPT customizado**
+
+### Integração:
+
+* Cria GPT que envia as perguntas via webhook para o Pinecone Assistant
+* O nome do assistente e a API key devem ser personalizados
+
+### Resultado:
+
+* Mesmo sistema do N8n, mas com entrada JSON do GPT
+* Pode ser usado por produtos, front-end, etc.
+
+---
+
+## **4. Atualização de base com transcrições**
+
+### Estratégia esperta:
+
+* Pegue uma transcrição de vídeo (ex: 7h de Hormozi)
+* Converta para PDF e envie para o Assistant
+* Assim, você **atualiza seu RAG sem saber vetorização**
+
+---
+
+## **5. Dicas práticas do criador**
+
+### Estilo:
+
+* Busca **resultados rápidos e práticos**
+* Evita complexidade desnecessária (ex: vetorização manual)
+* Prefere pagar barato por ferramentas que economizam tempo
+
+### Resultado final:
+
+* Um **chatbot de nível profissional (US\$ 6 mil)** construído com ferramentas acessíveis e em menos de 1 hora.
+
+---
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-08-23T17:55:47+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Mozi Bot CustomGPT.json
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-08-23T17:55:47+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Mozi Bot (Chat Trigger).json
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-08-23T17:55:47+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Custom GPT Starter Prompt.pdf
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-08-23T17:55:47+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Custom GPT Schema.pdf
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-08-23T17:55:33+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_13097_011.jpg
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-08-23T17:24:21+00:00
+Texto:
+**Reconstruí o chatbot de US$ 6 mil da Hormozi em 5 minutos... 
+Aproveite 🌹(3 maneiras)**
+
+Muitos pediram para reconstruir o Hormozi GPT - em vez do sofisticado RAG e do LangGraph, obtive o mesmo resultado em 5 minutos com o Pinecone Assistanto que torna isso idêntico à versão de US$ 6.000:
+
+→ citações de páginas exatas quando você clica em referências
+→ pesquisas em todos os manuais e recursos
+→ fundamenta respostas em estruturas específicas
+→ realmente funciona (ao contrário do original)
+
+Criei 3 versões para você (TODOS OS RECURSOS ANEXADOS A ESTA POSTAGEM):
+→ Assistente Pinecone (arrastar e soltar PDFs, pronto)
+→ Fluxo de trabalho n8n com integração de API
+→ GPT personalizado com esquema de webhook
+
+O molho secreto: o Pinecone Assistant faz o RAG automaticamente - basta carregar os arquivos e ele cuida da vetorização, sem dores de cabeça
+
+Comparação de custos: US$ 5-10/mês vs US$ 6.000
+
+Jogada bônus: pegue os streams de 7 horas do Hormozi no YouTube, converta as transcrições em PDFs, coloque-os - agora você tem ainda mais conhecimento do que o original
+
+Todos os prompts, esquemas e fluxos de trabalho incluídos nesta postagem - você pode literalmente clonar um produto de US$ 6.000 em menos de uma hora
+
+Veja q às vezes as melhores soluções são as mais preguiçosas
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-08-23T17:21:57+00:00
+Texto:
+m32 - ChatBot Hormozi $6k
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-08-23T17:21:55+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-08-23T17:21:50+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 16
+Autor: INEMA
+Data: 2025-08-23T17:21:47+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 17
+Autor: INEMA
+Data: 2025-08-23T17:21:43+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 18
+Autor: INEMA
+Data: 2025-08-23T17:21:41+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 19
+Autor: INEMA
+Data: 2025-08-23T17:21:36+00:00
+Texto:
+https://chatgpt.com/c/68a9f9ce-13ac-8328-8ea4-af6500e7f630
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 20
+Autor: INEMA
+Data: 2025-08-23T17:21:35+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 21
+Autor: INEMA
+Data: 2025-08-23T17:21:20+00:00
+Texto: [Sem texto]
+
+------------------------------
+

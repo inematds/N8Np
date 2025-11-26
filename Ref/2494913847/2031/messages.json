@@ -1,0 +1,202 @@
+[
+  {
+    "id": 2056,
+    "author": "INEMA",
+    "date": "2025-03-04T03:47:42+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2055,
+    "author": "INEMA",
+    "date": "2025-03-04T03:46:54+00:00",
+    "text": "\"/var/run/docker.sock:/var/run/docker.sock:ro\"\n    deploy:\n      mode: replicated\n      replicas: 1\n      placement:\n        constraints: [ node.role == manager ]\n    networks:\n      - traefik_public\n\nvolumes:\n  traefik_certificates:\n    external: true\n\nnetworks:\n  traefik_public:\n    external: true\n```Agora, **desplegue** o Traefik:\n```bash\ndocker stack deploy -c traefik.yaml traefik```\n\n---\n\n# 6**️⃣ Instalação do PostgreSQL e Redis\n**O n**8n **exige um banco de dados P**ostgreSQL **e um sistema de filas R**edis.**\n\nCrie o arquivo d`atabase.yaml:`\nn```ano database.yaml\n```Adicione:\nv```ersion: \"3.8\"\nservices:\n  redis:\n    image: redis:latest\n    command: [\"redis-server\", \"--appendonly\", \"yes\", \"--port\", \"6379\"]\n    networks:\n      - general_network\n    deploy:\n      mode: replicated\n      replicas: 1\n  postgres:\n    image: postgres:16.4\n    environment:\n      POSTGRES_PASSWORD: senha_segura\n    networks:\n      - general_network\n    deploy:\n      mode: replicated\n      replicas: 1\nnetworks:\n  general_network:\n    external: true\n```Agora, i**nicie **os serviços:\nd```ocker stack deploy -c database.yaml database\n```\n---\n\n# 7**️⃣ Instalação do n8n (Modo Fila)\n**Crie o arquivo n`8n.yaml:`\nn```ano n8n.yaml\n```Adicione:\nv```ersion: \"3.8\"\nservices:\n  n8n:\n    image: n8nio/n8n:latest\n    environment:\n      DB_TYPE: postgresdb\n      DB_POSTGRESDB_DATABASE: n8n_fila\n      DB_POSTGRESDB_USER: postgres\n      DB_POSTGRESDB_PASSWORD: senha_segura\n      N8N_ENCRYPTION_KEY: chave_de_32_caracteres\n      N8N_PROTOCOL: https\n      EXECUTIONS_MODE: queue\n      QUEUE_BULL_REDIS_HOST: redis\n    deploy:\n      mode: replicated\n      replicas: 1\n      placement:\n        constraints:\n          - node.role == manager\n    networks:\n      - traefik_public\n      - general_network\nnetworks:\n  traefik_public:\n    external: true\n  general_network:\n    external: true\n```Agora, d**esplegue o n8n:**\nd```ocker stack deploy -c n8n.yaml n8n\n```\nAcesse o n8n no navegador:\nh```ttps://n8n.seu-dominio.com\n```\n---\n\n# 🔥 Conclusão\nAgora você tem o n**8n rodando no modo fila em um VPS,** garantindo e**scalabilidade e alta performance!** 🎉",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2054,
+    "author": "INEMA",
+    "date": "2025-03-04T03:46:53+00:00",
+    "text": "# **🔥 Instalação PRO do n8n em um VPS (Modo Fila) 🚀**\n\n## **Requisitos prévios**\nAntes de iniciar a instalação, certifique-se de ter:\n\n✅ **Um VPS contratado**  \n✅ **Um domínio próprio**  \n\nEmbora o **n8n** não exija muitos recursos inicialmente, a instalação no **modo fila** é essencial para garantir **escalabilidade** sem problemas no futuro.  \n\n**DIFERENÇAS ENTRE OS MODOS DE INSTALAÇÃO:**  \n\n### **Modo Regular:**  \n🔹 Instância única para tudo  \n🔹 Ideal para testes e desenvolvimento  \n🔹 Funciona com nós comunitários  \n\n### **Modo Fila (Queue Mode):**  \n🔥 **Escalável para cargas elevadas**  \n🔥 Usa **instâncias separadas** para execuções e webhooks  \n🔥 **Requer PostgreSQL e Redis**  \n🔥 Ideal para **produção**  \n\n---\n\n# **1️⃣ Configuração do domínio e DNS**\nApós comprar um domínio, vá até o **painel de controle DNS** e crie os registros necessários:\n\n🔹 **Registro A**: Aponta o domínio para o IP do VPS  \n🔹 **Registros CNAME**: Criar subdomínios para cada app instalada (Exemplo: `n8n.dominio.com`)  \n\n**Dica:** Adicione caracteres antes e depois do nome do CNAME para evitar bloqueios do Google.\n\n---\n\n# **2️⃣ Acesso ao VPS**\nPara conectar ao VPS, usaremos um software SSH como **Bitvise**.  \n\n1️⃣ Insira o **IP do VPS**  \n2️⃣ Use o **usuário root**  \n3️⃣ Insira a **senha fornecida pelo provedor**  \n\nAgora podemos começar a instalar as primeiras ferramentas!  \n\n---\n\n# **3️⃣ Instalação das ferramentas de gerenciamento**\nNo terminal SSH do VPS, siga os passos abaixo:\n\n### **Atualizar pacotes do sistema**\n```sudo apt update && sudo apt upgrade -y```\nIsso garante que o sistema tenha as versões mais recentes disponíveis.\n\n### **Instalar Docker**\n```curl -fsSL https://get.docker.com -o get-docker.sh\nsh get-docker.sh```\nInstala o **Docker**, que permite executar contêineres.\n\n### **Inicializar Docker Swarm**\n```docker swarm init --advertise-addr IP_DO_SERVIDOR```\nIsso configura o **Docker Swarm** para gerenciar os serviços.\n\n### **Criar redes no Docker**\n```docker network create --driver overlay agent_network\ndocker network create --driver overlay traefik_public```\nCriamos duas redes para conectar os serviços.\n\n---\n\n# **4️⃣ Instalação do Portainer**\nO **Portainer** facilita o gerenciamento dos contêineres Docker.\n\n### **Criar diretório e configuração**\n```mkdir portainer && cd portainer\nnano portainer.yaml```\nCopie e cole o seguinte conteúdo no arquivo `portainer.yaml`:\n```version: \"3.8\"\nservices:\n  agent:\n    image: portainer/agent:2.20.1\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - /var/lib/docker/volumes:/var/lib/docker/volumes\n    networks:\n      - agent_network\n    deploy:\n      mode: global\n      placement:\n        constraints: [ node.platform.os == linux ]\n\n  portainer:\n    image: portainer/portainer-ce:2.20.1\n    command: -H tcp://tasks.agent:9001 --tlsskipverify\n    ports:\n      - 9000:9000\n    volumes:\n      - portainer_data:/data\n    networks:\n      - agent_network\n      - traefik_public\n    deploy:\n      mode: replicated\n      replicas: 1\n      placement:\n        constraints: [ node.role == manager ]\n\nnetworks:\n  traefik_public:\n    external: true\n  agent_network:\n    external: true\n\nvolumes:\n  portainer_data:\n    external: true```\nAgora, **salve e saia do editor** (`CTRL + X`, `Y`, `ENTER`).\n\n### **Implantar o Portainer**\n```docker stack deploy -c portainer.yaml portainer```\nApós alguns minutos, acesse `http://SEU_IP:9000` para configurar.\n\n---\n\n# **5️⃣ Instalação do Traefik (Proxy Reverso)**\nCriamos um arquivo `traefik.yaml`:\n```nano traefik.yaml```\nCopie e cole:\n```yaml\nversion: '3.8'\nservices:\n  traefik:\n    image: traefik:v2.11\n    command:\n      - --providers.docker=true\n      - --entrypoints.web.address=:80\n      - --entrypoints.websecure.address=:443\n      - --certificatesresolvers.le.acme.email=seuemail@gmail.com\n      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json\n    ports:\n      - \"80:80\"\n      - \"443:443\"\n    volumes:\n      - traefik_certificates:/letsencrypt\n      -",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2052,
+    "author": "INEMA",
+    "date": "2025-03-04T03:46:32+00:00",
+    "text": "==============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2051,
+    "author": "INEMA",
+    "date": "2025-03-04T03:46:29+00:00",
+    "text": "se tens duvidas, pode usar uma transcricao e tirar duvidas direto no chatgpt",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2050,
+    "author": "INEMA",
+    "date": "2025-03-04T03:37:30+00:00",
+    "text": "https://www.youtube.com/watch?v=9YPD3wtLGNU",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 2049,
+    "author": "INEMA",
+    "date": "2025-03-04T03:37:16+00:00",
+    "text": "==================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2048,
+    "author": "INEMA",
+    "date": "2025-03-04T03:37:10+00:00",
+    "text": "**Docker** e os contêineres:  \n```docker-compose pull && docker-compose up -d```\n2️⃣ Monitorar logs de erro e solucionar possíveis falhas.  \n3️⃣ Ajustar configurações para melhorar o desempenho do sistema.  \n\nSe quisermos atualizar uma aplicação específica, podemos verificar a versão mais recente no site oficial do **Docker Hub**, copiar o nome da versão e aplicar a atualização.  \n\n---\n\n## **Conclusão** (42:40)  \nAgora temos um **n8n rodando no nosso próprio VPS**, sem depender de serviços pagos!  \n\n- Instalamos o **Docker** e **Redis**.  \n- Configuramos **DNS** e criamos um banco de dados.  \n- Rodamos o **n8n** e configuramos tudo corretamente.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2047,
+    "author": "INEMA",
+    "date": "2025-03-04T03:37:10+00:00",
+    "text": "# 🔥 Como Instalar o n8n em um VPS Como um PRO 🚀 Guia Completo Passo a Passo  \n\n## **Introdução** (00:01)  \nAqui é o Carlos, e neste vídeo, vamos instalar o **n8n** em um **VPS** (servidor privado). Para isso, vamos instalar **Docker, OSRE, Redis** e, finalmente, o **n8n**.  \n\nPor que precisamos instalar tudo isso? Porque rodar o **n8n** em um VPS requer alguns recursos extras. Mas não se preocupem, parece muita coisa, mas vamos fazer tudo **passo a passo**, garantindo que ninguém se perca. Vou fornecer todo o código necessário e explicar cada detalhe.  \n\n---\n\n## **Preparação para a instalação** (00:35)  \nAgora, já estamos no ambiente de configuração. Antes de começar, precisamos de:  \n1️⃣ Um **VPS**  \n2️⃣ Um **domínio**  \n\nVocê pode adquirir um VPS onde quiser. No meu caso, estou usando a **Contabo** para o VPS e **J** para o domínio.  \n\nPrimeira etapa: **instalamos o Docker**, junto com **Contraf** e **Portainer**, que são ferramentas que facilitam a administração do VPS. Não precisa ser especialista, essas ferramentas vão ajudar bastante.  \n\nDepois, instalamos o **Redis**, que é um dos serviços que o **n8n** precisa para funcionar corretamente. O Redis é essencial para armazenar dados temporários e garantir a estabilidade da ferramenta.  \n\n---\n\n## **Configuração DNS e apontamento do domínio** (01:48)  \nPara acessar o **n8n** pelo navegador, precisamos configurar os registros **DNS** corretamente.  \n\n- Criamos um **registro tipo A** apontando para o endereço **IP** do nosso VPS.  \n- Criamos um **registro CNAME**, que ajuda a evitar bloqueios do Google. É recomendável adicionar um prefixo e um sufixo ao domínio para evitar possíveis problemas.  \n\nAgora, com os registros configurados, podemos prosseguir com a instalação.  \n\n---\n\n## **Acesso ao VPS e primeiros comandos** (04:30)  \nPrecisamos de um software para acessar remotamente nosso servidor. Eu estou usando o **Bitvise**, mas você pode utilizar outro.  \n\n1️⃣ Abrimos o Bitvise e inserimos:  \n   - O **IP do VPS**  \n   - O **usuário (root)**  \n   - A **senha** fornecida pelo provedor do VPS  \n\nDepois de conectar, abrimos o **terminal** e começamos a digitar os comandos.  \n\nPrimeiro, rodamos:  \n```sudo apt update && sudo apt upgrade -y```\nIsso garante que o sistema esteja atualizado antes de instalar qualquer coisa.  \n\n---\n\n## **Instalação do Docker e Redis** (07:25)  \nAgora, seguimos com a instalação dos componentes principais.  \n\n1️⃣ Instalamos o **Docker**, que permitirá rodar contêineres de serviços de forma isolada.  \n2️⃣ Instalamos o **Redis**, que será usado pelo **n8n**.  \n\nCada comando é executado passo a passo, garantindo que tudo esteja corretamente configurado antes de avançarmos.  \n\n---\n\n## **Configuração de rede e contêineres Docker** (10:38)  \nAgora criamos um arquivo de configuração para o **Docker Compose**, que vai gerenciar os serviços que estamos instalando.  \n\n- Criamos um arquivo `docker-compose.yml` e copiamos os comandos necessários.  \n- Salvamos o arquivo e executamos `docker-compose up -d` para subir os serviços.  \n\nSe tudo estiver certo, veremos o **Redis e Docker rodando corretamente**.  \n\n---\n\n## **Instalação do n8n e configurações finais** (14:07)  \nAgora que temos tudo pronto, seguimos com a instalação do **n8n**.  \n\n1️⃣ Criamos um novo contêiner no Docker para o **n8n**.  \n2️⃣ Configuramos os registros **DNS** adicionais necessários.  \n3️⃣ Criamos um banco de dados no **PostgreSQL** para armazenar as informações do n8n.  \n\nPara acessar, basta abrir o navegador e digitar:  \n```http://seu-dominio.com:9000```\nAqui, criamos nosso **usuário e senha** para acessar o painel do **n8n**.  \n\n---\n\n## **Testando e personalizando o n8n** (18:09)  \nAgora que o **n8n** está rodando, podemos personalizar algumas configurações:  \n\n- Criamos um novo workspace.  \n- Alteramos o nome do servidor.  \n- Configuramos variáveis de ambiente para garantir um melhor desempenho.  \n\n---\n\n## **Mantenção e Atualizações** (22:47)  \nPara manter o **n8n** atualizado e seguro, é importante realizar algumas verificações regularmente:  \n\n1️⃣ Atualizar o",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2046,
+    "author": "INEMA",
+    "date": "2025-03-04T03:32:17+00:00",
+    "text": "========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2045,
+    "author": "INEMA",
+    "date": "2025-03-04T03:32:07+00:00",
+    "text": "**e7n. Instalação PRO do n8n em um VPS (Servidor)**  \n\n⚠️ **Ponto importante**  \nSeguindo esse guia, não haverá risco de se perder em nenhuma etapa, garantindo que o n8n funcione perfeitamente no seu VPS sem complicações.  \n\n\n\n1. **Introdução**  \n  Aprendemos a instalar o n8n em um VPS de forma profissional. Esse processo nos permite ter controle total sobre a ferramenta, sem depender de serviços externos, proporcionando maior flexibilidade e segurança.  \n\n2. **Preparativos antes da instalação**  \n   Para realizar a instalação corretamente, é necessário ter um servidor privado onde o n8n será hospedado e um domínio para facilitar o acesso à plataforma. Além disso, configuramos algumas ferramentas básicas para gerenciar o servidor de forma eficiente.  \n\n3. **Configuração inicial**  \n   Antes de instalar o n8n, preparamos o ambiente garantindo que o servidor esteja pronto para ser utilizado. Também configuramos acessos e registros necessários para evitar problemas durante o uso.  \n\n4. **Instalação do n8n passo a passo**  \n   Seguindo o manual detalhado, realizamos a instalação do n8n no servidor. Durante o processo, verificamos que todos os componentes estão corretamente configurados e prontos para uso. Carlos nos guia em cada etapa, tornando o processo replicável e acessível para qualquer pessoa.  \n\n5. **Acesso e personalização**  \n   Após a instalação, acessamos o n8n e realizamos as configurações iniciais para personalizá-lo conforme nossas necessidades. Criamos um usuário, ajustamos as configurações básicas e deixamos tudo pronto para começar a usar.  \n\n6. **Manutenção e atualizações**  \nTambém nos ensina como manter o n8n funcionando corretamente, realizar atualizações quando necessário e solucionar pequenos problemas que possam surgir. Dessa forma, garantimos que o sistema opere sempre de forma eficiente.  \n\n📌 **Recursos**  \n📄 **Manual PRO – Instalação do n8n**",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2044,
+    "author": "INEMA",
+    "date": "2025-03-04T03:26:19+00:00",
+    "text": "========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2043,
+    "author": "INEMA",
+    "date": "2025-03-04T03:26:06+00:00",
+    "text": "**Instale o n8n em um VPS Como um PRO 🔥🚀**  \n\nUm passo a passo incrível, explicado nos mínimos detalhes. Esse nível PRO de explicação é raro de encontrar. Sem rodeios, sem enrolação e sem pular nenhuma etapa.  \n\n📝 E não é só isso! Além da aula, Carlos também deixou um manual super detalhado, feito com muito capricho e descrito passo a passo. Com ele, não tem como se perder. Tudo está explicado de forma clara para que qualquer consiga seguir e configurar seu próprio n8n sem complicações.  \n\n🔥 **O que você vai conseguir com esta aula?**  \n✅ Instalar o n8n em um VPS sem dificuldades, mesmo que nunca tenha mexido com servidores.  \n✅ Esquecer as limitações e a dependência de plataformas de terceiros.  \n✅ Criar automações mais rápidas, seguras e escaláveis.  \n✅ Aprender um método que pode ser aplicado a outras ferramentas Open Source para continuar evoluindo.  \n\n📌 **Essa aula é uma JOIA.** Se você quer dar o salto para o nível PRO, essa é a sua oportunidade. O link da aula está logo abaixo, assista, aplique e depois conte pra gente o que achou!  \n\n🔗 **Enlace:** Instalação PRO do n8n em um VPS (Servidor)",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2042,
+    "author": "INEMA",
+    "date": "2025-03-04T03:24:50+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2041,
+    "author": "INEMA",
+    "date": "2025-03-04T03:24:50+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2040,
+    "author": "INEMA",
+    "date": "2025-03-04T03:24:50+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2039,
+    "author": "INEMA",
+    "date": "2025-03-04T03:24:34+00:00",
+    "text": "e7n8 - Instale N8N VPS PRO 🔥🚀",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2038,
+    "author": "INEMA",
+    "date": "2025-03-04T03:24:30+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2037,
+    "author": "INEMA",
+    "date": "2025-03-04T03:24:30+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2036,
+    "author": "INEMA",
+    "date": "2025-03-04T03:24:30+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2035,
+    "author": "INEMA",
+    "date": "2025-03-04T03:24:30+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2034,
+    "author": "INEMA",
+    "date": "2025-03-04T03:24:30+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2033,
+    "author": "INEMA",
+    "date": "2025-03-04T03:24:29+00:00",
+    "text": "https://chatgpt.com/c/67c67026-c01c-8009-84e4-05f91a093ae8",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 2032,
+    "author": "INEMA",
+    "date": "2025-03-04T03:24:28+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2031,
+    "author": "INEMA",
+    "date": "2025-03-04T03:24:13+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

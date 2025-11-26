@@ -1,0 +1,568 @@
+TOPICO 10777
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-07-02 17:38:05+00:00
+
+Total de mensagens: 24
+Midias baixadas: 6
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-07-02T17:48:49+00:00
+Texto:
+https://www.youtube.com/watch?v=m-L73kW_LX0
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-07-02T17:48:34+00:00
+Texto:
+Aqui vão **hacks e otimizações práticas** para turbinar o sistema de criação de vídeos ASMR com IA no n8n:
+
+---
+
+### **1. Evite refazer partes já processadas**
+
+* Use o botão **“Pin”** em nós como:
+
+  * OpenAI (imagem)
+  * Upload para Supabase
+  * Geração de vídeo ou áudio com Fai
+* Assim, se der erro nos passos finais, você **não perde créditos nem gera tudo de novo.**
+
+---
+
+### **2. Use `.first` quando processar 1 item por vez**
+
+* Evita erro de “não sei qual item usar”.
+* Use `.item` **só se for processar múltiplos itens em paralelo.**
+
+---
+
+### **3. Reduza custos com IA**
+
+* Use imagens **mais simples** (ex: textura de vidro ou papel) para economizar tokens em OpenAI.
+* Use **vídeos de 3s** em vez de 5s se quiser escalar mais barato.
+
+---
+
+### **4. Armazene o resultado final no seu próprio banco**
+
+* Além do Google Sheets, **gravar no Supabase ou Airtable** permite criar dashboards ou conectar com seu site.
+
+---
+
+### **5. Automatize a publicação nas redes**
+
+* Após gerar o vídeo, conecte com:
+
+  * TikTok API via CapCut Web
+  * Instagram (Meta Graph API)
+  * YouTube Shorts
+* Assim, o conteúdo **sobe automaticamente.**
+
+---
+
+### **6. Crie variações de prompts**
+
+* Use fórmulas no Google Sheets para gerar:
+
+  * Texturas aleatórias
+  * Objetos inusitados
+  * Estéticas virais (ex: slime, jelly, bubble wrap)
+
+---
+
+### **7. Use Make ou n8n para monitorar o processo**
+
+* Configure alertas no Telegram ou Discord para:
+
+  * Erros no workflow
+  * Notificação de vídeo pronto
+  * Acompanhamento de produção diária
+
+---
+
+### **8. Gere thumbnails automáticas**
+
+* Use o Creatomate ou Bannerbear para gerar **capas verticais com texto chamativo**, prontos para Shorts e Reels.
+
+---
+
+### **9. Escale com múltiplas planilhas**
+
+* Crie planilhas por nicho (ex: frutas, objetos de cozinha, brinquedos) e **rode fluxos paralelos.**
+
+---
+
+### **10. Crie variações virais com elementos surpresa**
+
+* Use expressões como:
+
+  * “Before cutting, the object started to shake slightly…”
+  * “Suddenly, the knife bends as it touches the surface…”
+
+Esses detalhes criam **curiosidade** e aumentam **retenção**.
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-07-02T17:47:16+00:00
+Texto:
+============
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-07-02T17:47:13+00:00
+Texto:
+Aqui está o **passo a passo completo** para criar um sistema de **vídeos ASMR com IA no piloto automático usando o n8n**, baseado no vídeo:
+
+---
+
+### **1. Criar planilha no Google Sheets**
+
+Crie uma planilha chamada `ASMR AI Video System` com as seguintes colunas:
+
+* `Objeto` → Ex: maçã, pedra
+* `Textura` → Ex: lava, vidro, pedra
+* `Status` → valores: `pending` ou `complete`
+* `Output` → campo para receber a URL final do vídeo
+
+---
+
+### **2. Criar workflow no n8n**
+
+#### **2.1 Gatilho de Agendamento**
+
+* Use o nó **Schedule Trigger**
+* Configure para rodar automaticamente (por exemplo, a cada hora ou dia)
+
+#### **2.2 Buscar linhas da planilha**
+
+* Adicione o nó **Google Sheets > Get Rows**
+* Configure com suas credenciais Google
+* Escolha sua planilha e aba
+* Adicione filtro: `Status = pending`
+* Marque a opção: **"Retornar apenas a primeira linha correspondente"**
+
+---
+
+### **3. Criar Prompts dinâmicos**
+
+#### **3.1 Editar Campos com Add Fields**
+
+* Use o nó **Edit Fields**
+* Crie 3 campos:
+
+  * `prompt_img`
+    *Ex:* "An {{ \$json.Objeto }} with {{ \$json.Textura }} texture and a man going to cut in half with a small knife but not started yet."
+  * `prompt_video`
+    *Ex:* "An {{ \$json.Objeto }} with {{ \$json.Textura }} texture and a man going to cut in half with a small knife."
+  * `prompt_sound`
+    *Ex:* "An ASMR sound effect of cutting {{ \$json.Objeto }} with {{ \$json.Textura }} texture."
+
+---
+
+### **4. Gerar imagem com OpenAI**
+
+* Adicione o nó **OpenAI > Generate Image**
+* Use o campo `prompt_img`
+* Configure resolução: `1024x1024`
+* Gere a imagem
+
+---
+
+### **5. Upload da imagem no Supabase**
+
+* Use o nó **HTTP Request** com método `POST`
+* Configure o endpoint da **storage API** do Supabase
+* Faça upload da imagem e gere a **URL pública**
+* Guarde essa URL para usar no vídeo
+
+---
+
+### **6. Gerar vídeo com IA (Fai / Kling 2.1)**
+
+* Use o nó **HTTP Request** com método `POST`
+* Endpoint da API: `https://api.fai.tools/v1/queue`
+* Parâmetros:
+
+  * `prompt`: use `prompt_video`
+  * `image_url`: URL da imagem gerada
+  * `duration`: 5
+  * `negative_prompt`: `"blur, distortion, low quality"`
+  * `cfg_scale`: 0.5
+* Autenticação via **Header** com chave da API Fai
+
+---
+
+### **7. Recuperar URL do vídeo**
+
+* Use outro **HTTP Request** com método `GET`
+* Endpoint fornecido pela Fai
+* Pegue a URL do vídeo final gerado
+
+---
+
+### **8. Gerar som ASMR com IA (Fai + ElevenLabs)**
+
+* Use **HTTP Request > POST**
+* Modelo: `Text to Audio`
+* Use o campo `prompt_sound`
+* Defina `duration = 5`
+
+---
+
+### **9. Recuperar URL do som**
+
+* Outro **HTTP Request > GET**
+* Pegue o link final do áudio gerado
+
+---
+
+### **10. Combinar vídeo + som com Creatomate**
+
+* Use **HTTP Request > POST** para API do Creatomate
+* Crie um JSON como este:
+
+```{
+  "source": {
+    "output_format": "mp4",
+    "width": 1080,
+    "height": 1920,
+    "elements": [
+      { "type": "video", "track": 1, "source": "URL_DO_VÍDEO" },
+      { "type": "audio", "track": 2, "source": "URL_DO_ÁUDIO" }
+    ]
+  }
+}```
+
+* Use sua **API Key do Creatomate** no header de autenticação
+
+---
+
+### **11. Atualizar a planilha com o link final**
+
+* Use **Google Sheets > Update Row**
+* Use o ID da linha original
+* Mude `Status` para `complete`
+* Preencha a coluna `Output` com o link final do vídeo
+
+---
+
+### **12. Teste final**
+
+* Execute o workflow
+* Verifique se o vídeo e o áudio foram combinados corretamente
+* Veja se a planilha foi atualizada com o link final
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-07-02T17:46:13+00:00
+Texto:
+========
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-07-02T17:46:09+00:00
+Texto:
+**Resumo do vídeo: "How I Built This VIRAL AI ASMR Video System (Autopilot)"**
+
+O vídeo ensina passo a passo como criar um sistema automatizado (sem código) com o **n8n** para gerar vídeos virais de **ASMR com IA**, combinando imagens, sons e vídeos gerados por IA. A estratégia foca em criar conteúdo em massa com workflow automatizado, ideal para TikTok, YouTube e Instagram.
+
+### Estrutura do Sistema:
+
+1. **Motivação**
+
+   * Canal com apenas 20 vídeos obteve mais de 27 milhões de visualizações.
+   * ASMR com IA está viralizando rapidamente.
+
+2. **Objetivo**
+
+   * Criar vídeos de ASMR com imagens, vídeos e sons gerados por IA.
+   * Todo o processo ocorre no **piloto automático com n8n**, sem necessidade de programação.
+
+3. **Fluxo de automação (n8n):**
+
+   * **Gatilho com agendamento (Scheduler)**
+   * **Planilha do Google (Google Sheets):**
+
+     * Colunas: objeto (ex: maçã), textura (ex: lava), status (pendente ou completo), e URL de saída.
+   * **Criação de prompts (Edit Fields):**
+
+     * Geração de prompts para imagem, vídeo e som com base nos valores da planilha.
+   * **Geração de imagem com OpenAI (DALL·E)**
+   * **Upload da imagem para Supabase**
+
+     * Para obter uma URL pública da imagem.
+   * **Criação de vídeo com IA (Fai + modelo Kling 2.1)**
+
+     * Utiliza a imagem para gerar um vídeo curto (5 segundos).
+   * **Geração de som ASMR com IA (modelo de som Fai / ElevenLabs)**
+
+     * Converte o prompt em áudio ASMR.
+   * **Combinação de vídeo + som com Creatomate**
+
+     * API para juntar vídeo e áudio num único arquivo final.
+   * **Atualização da planilha com link final**
+
+     * Muda o status para “completo” e adiciona o link gerado.
+
+4. **Ferramentas Utilizadas:**
+
+   * **n8n** (automação)
+   * **Google Sheets** (controle dos dados)
+   * **OpenAI DALL·E** (imagem)
+   * **Supabase** (armazenamento e URL)
+   * **Fai (Fable AI)** (vídeo e som por IA)
+   * **Creatomate** (edição final do vídeo com som)
+
+5. **Erros e Soluções**
+
+   * Uso de `.first` vs `.item` para controlar execução em massa ou unitária.
+   * Necessidade de “fixar” (pin) nós que não devem ser executados novamente.
+
+6. **Resultado Final**
+
+   * Sistema 100% automatizado, capaz de produzir vídeos virais diariamente.
+   * Baixo custo, alta escala, sem conhecimento técnico necessário.
+
+---
+
+**Exemplo de uso no Google Sheets:**
+
+| Objeto | Textura        | Status   | URL de saída           |
+| ------ | -------------- | -------- | ---------------------- |
+| Maçã   | Lava derretida | Pendente | (gera o link do vídeo) |
+
+---
+
+**Conclusão:**
+O criador ensina a montar um sistema completo para criar **vídeos de ASMR com IA** em escala. Ideal para quem quer **monetizar conteúdo viral** com automação total. O modelo está disponível para download em sua comunidade.
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-07-02T17:45:13+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_10794_007.jpg
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-07-02T17:44:46+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_10793_008.jpg
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-07-02T17:43:51+00:00
+Texto:
+==========
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-07-02T17:43:41+00:00
+Texto:
+Prepare Prompt
+prompt_imgAn {{ $json.Object }} with {{ $json.Texture }} texture and a man going to cut in half with a small knife but not started yet.
+
+prompt_video
+An {{ $json.Object }} with {{ $json.Texture }} texture and a man going to cut in half with a small knife.
+
+prompt_sound
+An ASMR sound effect of cutting {{ $json.Object }} with {{ $json.Texture }} texture
+
+Creatomate API
+`{
+  "source": {
+    "output_format": "mp4",
+    "width": 1080,
+    "height": 1920,
+    "elements": [
+      {
+        "type": "video",
+        "track": 1,
+        "source": "{{ $('Get Video URL2').item.json.video.url }}"
+      },
+      {
+        "type": "audio",
+        "track": 2,
+        "source": "{{ $json.audio.url }}"
+      }
+    ]
+  }
+}`
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-07-02T17:43:17+00:00
+Texto:
+**Sistema de Vídeo ASMR com IA**
+
+
+**Preparar Prompt**
+`prompt_img`
+Um(a) {{ \$json.Object }} com textura {{ \$json.Texture }} e um homem prestes a cortar ao meio com uma pequena faca, mas ainda não começou.
+
+`prompt_video`
+Um(a) {{ \$json.Object }} com textura {{ \$json.Texture }} e um homem indo cortar ao meio com uma pequena faca.
+
+`prompt_sound`
+Um efeito sonoro ASMR de corte de {{ \$json.Object }} com textura {{ \$json.Texture }}
+
+**API do Creatomate**
+
+```{
+  "source": {
+    "output_format": "mp4",
+    "width": 1080,
+    "height": 1920,
+    "elements": [
+      {
+        "type": "video",
+        "track": 1,
+        "source": "{{ $('Get Video URL2').item.json.video.url }}"
+      },
+      {
+        "type": "audio",
+        "track": 2,
+        "source": "{{ $json.audio.url }}"
+      }
+    ]
+  }
+}```
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-07-02T17:43:06+00:00
+Texto:
+===========
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-07-02T17:42:26+00:00
+Texto:
+Vídeos de ASMR com IA no piloto automático
+(Tendência Viral Inclusa)
+
+O ASMR com IA está bombando no momento — esses sons e visuais estranhamente satisfatórios gerados por inteligência artificial estão viralizando no TikTok, YouTube e Instagram.
+
+ E aqui está a melhor parte:
+Você pode produzi-los em massa no piloto automático — sem precisar programar. É só arrastar, soltar e deixar rodar.
+💼 Baixe aqui o modelo de fluxo de trabalho pronto para uso.
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-07-02T17:41:10+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> 29_1_AMSR_Tutorial__Cleaned_.json
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-07-02T17:41:05+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_10786_015.jpg
+
+------------------------------
+
+MENSAGEM 16
+Autor: INEMA
+Data: 2025-07-02T17:38:26+00:00
+Texto:
+al45 - Vídeos de ASMR com IA
+
+------------------------------
+
+MENSAGEM 17
+Autor: INEMA
+Data: 2025-07-02T17:38:24+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 18
+Autor: INEMA
+Data: 2025-07-02T17:38:24+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 19
+Autor: INEMA
+Data: 2025-07-02T17:38:24+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 20
+Autor: INEMA
+Data: 2025-07-02T17:38:24+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 21
+Autor: INEMA
+Data: 2025-07-02T17:38:23+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 22
+Autor: INEMA
+Data: 2025-07-02T17:38:23+00:00
+Texto:
+https://chatgpt.com/c/68656e65-2f70-8009-a05a-2f2d25656962
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 23
+Autor: INEMA
+Data: 2025-07-02T17:38:23+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 24
+Autor: INEMA
+Data: 2025-07-02T17:38:05+00:00
+Texto: [Sem texto]
+
+------------------------------
+

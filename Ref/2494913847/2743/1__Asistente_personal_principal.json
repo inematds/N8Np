@@ -1,0 +1,801 @@
+{
+  "name": "1. Asistente personal principal",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "=1. Tu Rol y Contexto  \nRol: Eres un coordinador de agentes de automatización. Tu función es recibir solicitudes del usuario, analizarlas y derivarlas para cada agente. Tus instrucciones para los agentes deben de ser claras y detalladas con el maximo de informacion\n\nContexto: Actúas como el cerebro central que orquesta múltiples agentes, gestionando la comunicación entre ellos y garantizando un flujo de trabajo óptimo, eficiente y libre de errores.  \n\nFecha actual: {{ $now.toISO() }}  \nDía actual: {{ $now.toFormat('cccc') }}  \n\n2. Herramientas Disponibles y sus Funciones  \nCada herramienta opera dentro de su dominio específico. Debes asignar las tareas al agente correcto según la necesidad del usuario.  \n\nAgente de Documentos (Google Sheets API)  \n- Sube, organiza y gestiona archivos en Google Sheets.  \n- Responde con confirmaciones claras sobre las acciones realizadas.  \n\nAgente de Agenda (Google Calendar API)  \n- Crea, actualiza y elimina eventos en Google Calendar.  \n- Solicita confirmación antes de eliminar eventos.  \n\nAgente de Correos (Gmail API)  \n- Revisa, responde, marca como leído o borra correos electrónicos.  \n- Pregunta al usuario antes de eliminar correos.\n- Distingue siempre entre enviar un email nuevo y responder un email\n\nAgente de Llamadas (Retell API)  \n- Realiza llamadas automatizadas para reservas o citas.  \n- Obtiene números de teléfono mediante búsqueda en Internet o preguntando al usuario.  \n\nAgente de Búsqueda (SerpAPI)  \n- Realiza búsquedas en Internet y extrae información relevante.  \n- Puede buscar números de teléfono si son necesarios para otra tarea.  \n\nAgente de Cálculo (Calculadora)  \n- Ejecuta operaciones matemáticas de cualquier nivel de complejidad.  \n\n\nMentalidad  \nEres el director de una orquesta de agentes. Cada uno tiene una función específica. Asegúrate de que trabajen de manera coordinada y eficiente.  \n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1260,
+        120
+      ],
+      "id": "9e422d06-30f2-4873-a51e-78ddab9b0229",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        960,
+        520
+      ],
+      "id": "7b461a57-ebc6-4dd9-a4e7-eb804aa59c97",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        620
+      ],
+      "id": "c105a177-af0e-4ff0-af05-3ce046d32234",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        80,
+        120
+      ],
+      "id": "2b53ceee-4c70-4029-a244-e4ec01fa5856",
+      "name": "Telegram Trigger",
+      "webhookId": "600c6d64-98f1-4597-9448-1397bd15b675",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        540,
+        120
+      ],
+      "id": "2546432f-9000-424d-8383-ca4106425b5a",
+      "name": "Telegram1",
+      "webhookId": "8b826288-7a45-4a12-bbf7-e07462532efb",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        700,
+        120
+      ],
+      "id": "14f52d14-e231-4f13-8b66-9af56139cb74",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        920,
+        120
+      ],
+      "id": "14c8b403-ed67-43d7-94c5-a4720f87fa06",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "text",
+              "value": "=Este es el file_id para hacer manejo de documentos: {{ $json.message.document.thumb.file_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        540,
+        -40
+      ],
+      "id": "e12c3f54-a3b8-4451-91bd-f1eae24c8a98",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "text",
+              "value": "={{ $('Telegram Trigger').item.json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        540,
+        280
+      ],
+      "id": "ea6e5a63-f611-4627-b4c3-c8424abb23ae",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.document }}",
+                    "rightValue": "b",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Documento"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.message.voice }}",
+                    "rightValue": "d",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Texto"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        340,
+        120
+      ],
+      "id": "202d0b00-5c67-47e0-8df8-d02934935f6d",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "content": "Agente principal",
+        "height": 940,
+        "width": 1960,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -140
+      ],
+      "id": "b97a38d9-6664-4ca4-8eb1-27a51412d7cd",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "typeVersion": 1,
+      "position": [
+        1220,
+        620
+      ],
+      "id": "a4abc534-2d0f-4ca1-a8be-f739b8d10a0a",
+      "name": "SerpAPI",
+      "credentials": {
+        "serpApi": {
+          "id": "[REMOVED]",
+          "name": "SerpAPI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1700,
+        120
+      ],
+      "id": "e3ad28fb-90e2-44a5-b89c-d8c5fddb2238",
+      "name": "Telegram",
+      "webhookId": "b6c70a1b-b168-4ed3-b7d9-9826d00d3785",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "calendar_agent",
+        "description": "Utiliza esta herramienta para gestionar todo lo relacionado con Google Calendar.",
+        "workflowId": {
+          "__rl": true,
+          "value": "2qMo9AaPjoQWtTkl",
+          "mode": "list",
+          "cachedResultName": "1.1 Asistente calendario"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $fromAI(\"name\", \"Este es el nombre del asistente que estoy invitando. Déjalo en blanco si no hay nombres.\") }}",
+            "message": "={{ $fromAI(\"query\", \"Extrae la intención relacionada con Google Calendar y la fecha específica si es mencionada\") }}"
+          },
+          "matchingColumns": [
+            "query"
+          ],
+          "schema": [
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1460,
+        620
+      ],
+      "id": "eeb25ef5-941d-4a75-833b-2e2406d5bf11",
+      "name": "Google Calendar"
+    },
+    {
+      "parameters": {
+        "name": "Retell_API",
+        "description": "Utiliza esta herramienta para realizar llamadas automatizadas mediante Retell. Puede gestionar reservas, programar citas médicas y coordinar otras gestiones similares según las instrucciones del usuario.",
+        "workflowId": {
+          "__rl": true,
+          "value": "=vxddCAHumDG4Nusq",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha": "={{ $fromAI(\"fecha\", \"Extrae la fecha específica mencionada en la solicitud del usuario\") }}",
+            "hora": "={{ $fromAI(\"hora\", \"Identifica la hora específica mencionada en la solicitud del usuario\") }}",
+            "concepto": "={{ $fromAI(\"concepto\", \"Determina el propósito o tipo de cita\") }}",
+            "contacto": "={{ $fromAI(\"contacto\", \"Extrae el nombre o la información de contacto de la persona involucrada en la cita\") }}",
+            "no_contacto": "={{ $fromAI(\"no_contacto\", \"Solicita siempre el número de teléfono del contacto.\") }}",
+            "conversacion": "={{ $fromAI(\"conversacion\", \"Captura la solicitud completa del usuario sin omitir detalles, incluyendo todas las instrucciones proporcionadas en el mensaje.\") }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "hora",
+              "displayName": "hora",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "concepto",
+              "displayName": "concepto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "contacto",
+              "displayName": "contacto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "conversacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "no_contacto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        620
+      ],
+      "id": "fe09cf3a-c79e-40da-b692-333004eed4c4",
+      "name": "Retell API"
+    },
+    {
+      "parameters": {
+        "name": "gmail_api",
+        "description": "Llama a esta herramienta para gestionar todo lo relacionado con Gmail.",
+        "workflowId": {
+          "__rl": true,
+          "value": "hYrkZ2oWL0Wl2xDn",
+          "mode": "list",
+          "cachedResultName": "1.3 Asistente emails"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message": "={{ $fromAI(\"message\", \"El mensaje son instrucciones sobre lo que nuestro agente de IA de correo electrónico debe hacer (es decir, crear borrador, enviar correo, buscar correo, etc.)\") }}",
+            "name": "={{ $fromAI(\"name\", \"este es el nombre de la persona a la que estoy intentando enviar un correo electrónico\") }}",
+            "message_id": "={{ $fromAI(\"Message_ID\", \"este es el ID del mensaje al cual quiero contestar en el caso de que el usuario quiera generar una respuesta a un email especifico \") }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "message_id",
+              "displayName": "message_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1580,
+        620
+      ],
+      "id": "1df00a00-170b-4241-9822-70a2c298ed78",
+      "name": "Gmail API"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        840,
+        420
+      ],
+      "id": "f00510a7-329f-4bd1-b9a2-5c313c52ddd7",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "Google_Drive_API",
+        "description": "Llama a esta herramienta para gestionar documentos, facturas, contratos y recibos.",
+        "workflowId": {
+          "__rl": true,
+          "value": "Jx7RTHFi7oP6UZGq",
+          "mode": "list",
+          "cachedResultName": "1.2 Asistente documentos"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "file_id": "={{ $('Telegram Trigger').item.json.message.document.file_id }}"
+          },
+          "matchingColumns": [
+            "file_id"
+          ],
+          "schema": [
+            {
+              "id": "file_id",
+              "displayName": "file_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1700,
+        620
+      ],
+      "id": "d7d522fc-c6f9-41e7-acef-02f5cbfec93b",
+      "name": "Documentos"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram1": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "SerpAPI": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retell API": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail API": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Documentos": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b257b3ea-7837-41c0-a8e8-835d954b2f1d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e0e4b720cb3656009f5ca7014be06f1fbe69abfc54f93aa2cc3ca2098ff666d6"
+  },
+  "id": "lSORJaWN8UOrq0CL",
+  "tags": [
+    {
+      "createdAt": "2025-02-17T14:23:58.781Z",
+      "updatedAt": "2025-02-17T14:23:58.781Z",
+      "id": "NHn2qJP5rB3rmrd4",
+      "name": "Asistente personal TOP"
+    }
+  ]
+}

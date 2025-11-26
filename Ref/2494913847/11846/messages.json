@@ -1,0 +1,216 @@
+[
+  {
+    "id": 11871,
+    "author": "INEMA",
+    "date": "2025-07-27T23:33:19+00:00",
+    "text": "## ⚡️ HACKS PARA CRIAR E USAR AGENTES DE IA NO N8N\n\n### 1. **Use `{{ $now }}` para passar a data e hora atual para os agentes**\n\n* Evita que eventos ou tarefas sejam agendados com datas erradas.\n* Adicione isso no prompt do agente:\n\n  ```  A data atual é: {{ $now }}\n  ```\n\n---\n\n### 2. E**vite erros com campos obrigatórios usando descrições\n**\n* Exemplo: no campo “Para” do e-mail (destinatário), coloque:\n\n   ``` Este campo deve conter um e-mail válido (ex: nome@email.com)\n  \n```* Isso ajuda o modelo a gerar o conteúdo corretamente.\n\n---\n\n### 3. Nã**o deixe o agente principal fazer tarefas\n\n*** No prompt do agente principal, inclua:\n\n    ```Sua função é apenas delegar tarefas. Não execute nenhuma ação diretamente.\n  \n\n```---\n\n### 4. Use** logs para identificar falhas com precisão\n\n*** Sempre analise os age**nt logs qu**ando algo falhar.\n* Descubra que**m chamou quem, o** q**ue foi enviado e **qua**l parâmetro deu erro.\n\n**---\n\n### 5. Reu**tilize agentes com ferramentas diferentes\n\n*** Um mesmo agente (ex: e-mail) pode ser usado com ferramentas diferentes (Gmail, Outlook).\n* Basta duplicar o agente e trocar a ferramenta.\n\n---\n\n### 6. Use** o botão “Let model decide” para campos dinâmicos\n\n*** Em vez de preencher manualmente os campos, clique em:\n\n    L```et the model define this parameter\n  \n* ```Isso permite que o modelo de IA decida o conteúdo de cada campo.\n\n---\n\n### 7. Come**ce simples: 1 agente, 1 ferramenta\n\n* **Evita confusão inicial.\n* Escale gradualmente para múltiplos agentes.\n\n---\n\n### 8. Comp**artilhe memória com Session ID\n\n* **Para manter contexto entre agentes, passe o mesmo Session ID:\n\n    Us```e Telegram Chat ID ou outro identificador único\n  \n\n--```-\n\n### 9. Crie **promps específicos para cada subagente\n\n* E**xemplo no Email Agent:\n\n    Sem```pre verifique se o e-mail é válido antes de enviar. Use a ferramenta de envio apenas quando o destinatário estiver correto.\n  \n\n---```\n\n### 10. Reapro**veite modelos e ferramentas prontos\n\n* Co**pie ferramentas e prompts de outros agentes já testados.\n* Isso economiza tempo e evita erros comuns.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11870,
+    "author": "INEMA",
+    "date": "2025-07-27T23:31:28+00:00",
+    "text": "=============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11869,
+    "author": "INEMA",
+    "date": "2025-07-27T23:31:25+00:00",
+    "text": "## 🧩 PASSO A PASSO PARA CRIAR O WORKFLOW DE AGENTES NO N8N\n\n### 1. **Abrir o n8n com um canvas em branco**\n\n* Criar um novo workflow\n* Deixar o canvas limpo para adicionar os agentes\n\n---\n\n### 2. **Adicionar o AGENTE PRINCIPAL (Main Agent)**\n\n* Pressione `Tab` e escolha **\"AI Agent\"**\n* Dê um nome, ex: `Main Agent`\n* Conecte um **modelo de linguagem** via **OpenRouter**:\n\n  * Criar conta em [openrouter.ai](https://openrouter.ai/)\n  * Gerar uma **API Key**\n  * Colar a chave na conexão do modelo no n8n\n\n---\n\n### 3. **Criar o SUBAGENTE DE E-MAIL (Email Agent)**\n\n* Adicionar um novo AI Agent\n* Nome: `Email Agent`\n* Descrição: “Agente responsável por enviar e-mails”\n* Conectar ao mesmo modelo de IA (ou outro, se quiser)\n* Configurar o **User Message** como **dinâmico**, deixando o Main Agent preencher com o que deve ser feito\n\n#### Adicionar ferramenta:\n\n* Clique em `+ Tool`\n* Escolha `Gmail Tool`\n* Configure:\n\n  * Tipo: `Text`\n  * Campos dinâmicos: para, assunto, corpo\n  * Desabilite assinatura automática do n8n\n\n---\n\n### 4. **Criar o SUBAGENTE DE CALENDÁRIO (Calendar Agent)**\n\n* Mesmo processo do Email Agent\n* Nome: `Calendar Agent`\n* Descrição: “Cria eventos no Google Calendar”\n* Conectar ao mesmo modelo ou outro\n\n#### Adicionar ferramenta:\n\n* Ferramenta: `Google Calendar`\n* Operação: `Create Event`\n* Campos configurados:\n\n  * Start time\n  * End time\n  * Summary (título do evento)\n* Deixe os valores para o modelo decidir dinamicamente\n\n---\n\n### 5. **Ajustar o prompt do AGENTE PRINCIPAL**\n\n* Adicionar um **system prompt** claro:\n\n  ```  Você é um agente orquestrador. Sua função é decidir qual subagente usar para cada tarefa. Não execute ações diretamente. Apenas repasse o comando ao subagente adequado.\n  ```\n\n---\n\n### 6. L**igar os AGENTES com o AGENTE PRINCIPAL\n**\n* Em “Tools” do Main Agent:\n\n  * Adicionar E`mail Agent `como ferramenta\n  * Adicionar C`alendar Agent `como ferramenta\n\n---\n\n### 7. T**estar a comunicação via chat\n**\n* Use um nó de entrada, como T**elegram Trigger **ou W**ebhook,** para simular um usuário\n* Envie mensagens como:\n\n   ``` Crie um evento para hoje às 14h com título \"Revisar projeto\"\n  \n```\n---\n\n### 8. Co**rrigir erros observando os LOGS\n\n*** Vá até o Ag**ent Logs n**o Main Agent\n* Veja qual agente foi chamado, com qual mensagem e se houve erro\n* Ex: se data incorreta → adicionar ao system prompt:\n\n    ```A data atual é: {{ $now }}\n  \n\n```---\n\n### 9. Adi**cionar planilha de LOG (opcional)\n\n*** Use um nó Goo`gle Sheets\n* `Salve: hora, prompt, ações, tokens usados\n\n---\n\n### 10. Exp**ortar ou clonar o workflow\n\n*** Ao final, o autor disponibiliza o JSON para duplicar o workflow\n* Você pode importar esse JSON no seu ambiente n8n",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11868,
+    "author": "INEMA",
+    "date": "2025-07-27T23:31:09+00:00",
+    "text": "=========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11867,
+    "author": "INEMA",
+    "date": "2025-07-27T23:28:42+00:00",
+    "text": "exemplos \n\nAqui estão os **exemplos práticos citados no vídeo** sobre como usar um enxame de agentes de IA no **n8n**:\n\n---\n\n### 1. **Pedido complexo via Telegram (Exemplo 1)**\n\n**Comando enviado:**\n“Me envie 4 vídeos de alta performance sobre n8n no YouTube, mande por e-mail para Dexter Morgan e também me diga como está o clima hoje em Chicago.”\n\n**Ações executadas:**\n\n* **Web Agent** → consulta o clima em Chicago\n* **Contact Agent** → busca e-mail de Dexter Morgan\n* **YouTube Agent** → busca 4 vídeos relevantes sobre n8n\n* **Email Agent** → envia os vídeos e o clima por e-mail\n* **Log** → tudo é registrado em uma planilha do Google Sheets\n\n---\n\n### 2. **Pedido mais avançado (Exemplo 2)**\n\n**Comando enviado:**\n“Pegue minhas ideias de vídeos do banco de dados, faça uma pesquisa sobre elas com o Tavi (ou Perplexity), envie o resumo para o Michael Scott e agende um evento hoje às 16h para discutir.”\n\n**Ações executadas:**\n\n* **YouTube Agent** → pega ideias do banco de dados\n* **Contact Agent** → busca e-mail de Michael Scott\n* **Web Agent** → faz pesquisa sobre os vídeos com Perplexity\n* **Email Agent** → envia resumo por e-mail\n* **Calendar Agent** → agenda evento no Google Calendar às 16h com Michael\n\n---\n\n### 3. **Criação de evento com falha de data (Exemplo 3)**\n\n**Comando enviado:**\n“Crie um evento para hoje às 13h chamado almoço.”\n\n**Erro ocorrido:**\n\n* O agente marcou o evento para **27 de abril de 2024** (data antiga) porque **não sabia que “hoje” era 25 de julho de 2025**.\n\n**Correção feita:**\n\n* Foi adicionado ao prompt a variável **`{{ $now }}`** para informar a data atual aos agentes.\n\n---\n\n### 4. **Criação de evento com falha de título (Exemplo 4)**\n\n**Comando enviado:**\n“Crie um evento para hoje às 18h para jantar.”\n\n**Erro ocorrido:**\n\n* O evento foi criado, mas **sem título**.\n\n**Correção feita:**\n\n* Adicionado o campo **“summary”** (título do evento) como parâmetro no calendário para o agente preencher com o nome do evento.\n\n---\n\n### 5. **Envio de e-mail simples (Exemplo 5)**\n\n**Comando enviado:**\n“Mande um e-mail para nate@example.com perguntando se ele está tendo um bom dia.”\n\n**Erro ocorrido:**\n\n* O **e-mail não foi enviado** porque o agente não entendeu o endereço corretamente.\n\n**Correção feita:**\n\n* Ajustes nos **prompts de sistema** para garantir que o agente principal **não execute a tarefa**, mas sim **delegue** para o subagente de e-mail.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11866,
+    "author": "INEMA",
+    "date": "2025-07-27T23:26:49+00:00",
+    "text": "==========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11865,
+    "author": "INEMA",
+    "date": "2025-07-27T23:26:45+00:00",
+    "text": "## Quando usar AGENTE de IA\n\nUse quando o sistema **precisa pensar** ou **decidir o que fazer** com base no que a pessoa pediu.\n\n**Exemplos:**\n\n* Entender pedidos em linguagem natural (“avise o João e marque reunião amanhã”)\n* Escolher qual ferramenta usar\n* Lidar com comandos diferentes a cada vez\n\n---\n\n## Quando usar WORKFLOW\n\nUse quando o processo é **sempre igual**, com passos fixos, sem decisões inteligentes.\n\n**Exemplos:**\n\n* Enviar e-mail todo dia às 8h\n* Salvar formulário em planilha\n* Enviar alerta se valor for maior que X\n\n---\n\n## Regra rápida:\n\nSe precisa **pensar → AGENTE**\nSe é só **fazer → WORKFLOW**",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11864,
+    "author": "INEMA",
+    "date": "2025-07-27T23:26:19+00:00",
+    "text": "===========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11863,
+    "author": "INEMA",
+    "date": "2025-07-27T23:26:15+00:00",
+    "text": "A diferença entre **usar um agente de IA** ou **um workflow tradicional** está principalmente na **necessidade de tomada de decisão, raciocínio dinâmico** e **flexibilidade**. Veja abaixo um resumo prático com exemplos:\n\n---\n\n## Quando USAR um AGENTE de IA\n\nUse um **agente** quando o processo:\n\n* **Não é linear**\n* Exige **interpretação de comandos**\n* Precisa **escolher entre opções**\n* Envolve **contexto variável**\n* Pode se **adaptar a situações novas**\n\n### Exemplos:\n\n1. **Atendimento automatizado multicanal**\n\n   * O usuário envia: “Me avise se tiver chuva hoje e envie um e-mail para meu chefe com minha ausência”\n   * O agente entende a mensagem, consulta a previsão do tempo, verifica quem é o chefe e envia o e-mail.\n\n2. **Pesquisa e recomendação inteligente**\n\n   * “Me envie 3 vídeos bons sobre marketing no YouTube e agende uma reunião com meu time para revisar.”\n   * O agente busca vídeos, resume, agenda reunião e envia e-mail.\n\n3. **Assistente pessoal inteligente**\n\n   * Um só comando pode ativar múltiplos subagentes como:\n\n     * Buscar dados\n     * Analisar\n     * Resumir\n     * Notificar\n\n---\n\n## Quando NÃO usar agente (usar WORKFLOW)\n\nUse um **workflow tradicional** quando o processo:\n\n* É **linear e previsível**\n* **Não muda com base no input**\n* Pode ser **modelado com lógica fixa**\n* Precisa de **controle rígido de etapas**\n* Não há necessidade de interpretação complexa\n\n### Exemplos:\n\n1. **Automatizar envio de faturas**\n\n   * A cada dia 5, gerar PDF de cobrança e enviar e-mail.\n\n2. **Cadastrar novos leads em planilha**\n\n   * Recebe formulário > valida campos > grava no Google Sheets.\n\n3. **Responder automaticamente a e-mails com texto padrão**\n\n   * Se assunto contiver \"cancelamento\", responde com modelo X.\n\n---\n\n## Comparativo direto\n\n| Critério                   | Workflow Tradicional    | Agente de IA                       |\n| -------------------------- | ----------------------- | ---------------------------------- |\n| Tipo de tarefa             | Repetitiva e previsível | Variável e dinâmica                |\n| Lógica                     | Fixa (sequencial)       | Raciocínio com IA                  |\n| Necessidade de contexto    | Baixa                   | Alta                               |\n| Personalização por usuário | Limitada                | Alta (memória, histórico)          |\n| Facilidade de depuração    | Alta                    | Média (precisa ler logs do agente) |\n| Flexibilidade com comandos | Baixa                   | Alta                               |\n\n---\n\n## Regra prática para decidir:\n\n**Se o processo pode ser descrito com clareza em 5 passos fixos → use workflow.**\n**Se o processo precisa “entender” o pedido para saber o que fazer → use agente.**",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11862,
+    "author": "INEMA",
+    "date": "2025-07-27T23:24:46+00:00",
+    "text": "============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11861,
+    "author": "INEMA",
+    "date": "2025-07-27T23:24:43+00:00",
+    "text": "**Resumo completo  \"Construir um enxame de agentes de IA no n8n ficou muito fácil\":**\n\nO vídeo ensina, passo a passo, como criar um sistema com múltiplos agentes de IA (enxame de agentes) dentro de um único workflow no **n8n**, usando ferramentas **no-code**. O objetivo é construir um sistema orquestrador (agente principal) que aciona subagentes especializados para tarefas específicas (como e-mail, clima, YouTube, contatos e calendário). O autor demonstra isso em tempo real e compartilha gratuitamente os recursos para replicação.\n\n### 1. Demonstração prática do funcionamento\n\n* O autor envia um comando no Telegram pedindo:\n\n  * 4 vídeos do YouTube sobre o n8n\n  * Enviar e-mail para Dexter Morgan\n  * Informações do clima em Chicago\n* O agente orquestrador:\n\n  * Ativa os subagentes certos (web, e-mail, YouTube, contatos)\n  * Executa e registra tudo em uma planilha do Google\n\n### 2. Arquitetura do enxame de agentes\n\n* Todos os subagentes estão no **mesmo fluxo**, o que facilita testes, visualização e depuração.\n* Cada subagente tem:\n\n  * Seu próprio modelo de linguagem (GPT, Google Flash, etc.)\n  * Seus próprios prompts e especializações\n  * Pode ou não compartilhar memória via Session ID\n* Permite personalizar modelos por custo e qualidade.\n\n### 3. Segunda demonstração mais complexa\n\n* Tarefa: buscar ideias de vídeos no banco, fazer pesquisa, enviar e-mail e criar evento no calendário.\n* O sistema:\n\n  * Aciona os agentes certos\n  * Realiza pesquisas com Perplexity\n  * Cria evento no Google Calendar\n  * Envia e-mail com resumo da pesquisa\n\n### 4. Como construir do zero\n\n* Explica como usar **OpenRouter** para conectar modelos de IA.\n* Monta um exemplo básico com:\n\n  * Agente principal\n  * Subagente de e-mail com ferramenta do Gmail\n  * Subagente de calendário com integração ao Google Calendar\n* Mostra como configurar prompts e corrigir erros via logs.\n\n### 5. Boas práticas para construir agentes\n\n* Três habilidades essenciais:\n\n  1. **Ler os logs** para entender falhas e acertos.\n  2. **Criar bons prompts**, adicionando instruções claras e específicas.\n  3. **Entender como os agentes usam ferramentas** (e.g. envio de e-mails, criação de eventos).\n\n### 6. Importante distinção: workflow vs agente\n\n* **Workflows** são melhores para tarefas **determinísticas e previsíveis**.\n* **Agentes** são úteis para tarefas com **decisão, raciocínio e imprevisibilidade**.\n* A maioria das automações simples não precisa de agentes.\n\n### 7. Recursos gratuitos disponíveis\n\n* JSON para importar o fluxo completo no n8n\n* Planilha de log dos agentes\n* Template para tracking no Google Sheets\n* PDF sobre \"Reactive Prompting\"\n\n### 8. Comunidades e suporte\n\n* Comunidade gratuita com todos os arquivos e tutoriais\n* Comunidade paga com suporte técnico e dois cursos:\n\n  * \"Agent Zero\" (Fundamentos da Automação com IA)\n  * \"10 horas para 10 segundos\" (Design de automações que economizam tempo)\n\n---\n\n### Tópicos listados com exemplos\n\n1. **Agente Orquestrador**\n\n   * Decide quais subagentes acionar com base no pedido do usuário.\n   * Exemplo: Recebe uma mensagem e distribui para YouTube Agent, Weather Agent, etc.\n\n2. **Subagentes especializados**\n\n   * E-mail, YouTube, Contato, Web, Calendário.\n   * Cada um com sistema de prompts e modelo de IA próprio.\n\n3. **Uso de memória com Session ID**\n\n   * Permite compartilhamento de contexto entre agentes.\n\n4. **Erros comuns e como depurar**\n\n   * E-mail enviado com endereço inválido\n   * Evento no calendário marcado com data errada\n\n5. **Boas práticas de criação**\n\n   * Comece com poucos agentes e aumente gradualmente\n   * Faça testes com prompt simplificado\n   * Use logs para entender o que falhou\n\n6. **Ferramentas usadas**\n\n   * OpenRouter (modelos de IA)\n   * Google Sheets (log de execuções)\n   * Google Calendar\n   * Gmail\n   * Telegram (entrada de mensagens)\n\n7. **Importância de saber quando usar agentes**\n\n   * Exemplo de quando **não** usar agente: processo fixo como emitir nota fiscal\n   * Exemplo de quando usar: decisões com base em múltiplas variáveis",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11860,
+    "author": "INEMA",
+    "date": "2025-07-27T23:09:25+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11860_012.jpg"
+  },
+  {
+    "id": 11859,
+    "author": "INEMA",
+    "date": "2025-07-27T23:08:35+00:00",
+    "text": "Um Enxame de Agentes de IA no n8n Ficou Muito Fácil**\n\nComo construir um enxame de agentes de IA totalmente funcional usando ferramentas no-code no n8n.\n\nEsse framework permite que um agente principal (pai) acione vários subagentes especializados, cada um com sua própria tarefa. Essa abordagem modular melhora o desempenho, reduz o excesso de informações nos prompts e aumenta a precisão do contexto — especialmente ao lidar com consultas complexas.\n\nGraças a uma atualização recente do n8n, agora podemos manter tudo dentro de um único fluxo de trabalho, o que facilita depurar, testar e iterar — tudo de forma visual. Também explicarei quando um enxame de agentes não é a melhor escolha e como ele se compara ao uso de fluxos de IA padrão ou subfluxos.\n\n**Planilha de Log dos Agentes**\n**Planilha de Ideias para o YouTube**",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11858,
+    "author": "INEMA",
+    "date": "2025-07-27T23:07:19+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Agent Swarm Logs (file -_ make a copy).xlsx"
+  },
+  {
+    "id": 11857,
+    "author": "INEMA",
+    "date": "2025-07-27T23:07:18+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Video Ideas (file -_ make a copy).xlsx"
+  },
+  {
+    "id": 11856,
+    "author": "INEMA",
+    "date": "2025-07-27T23:05:57+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Mastering Reactive Prompting for AI Agents (1).pdf"
+  },
+  {
+    "id": 11855,
+    "author": "INEMA",
+    "date": "2025-07-27T23:05:51+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Agent Swarm.json"
+  },
+  {
+    "id": 11854,
+    "author": "INEMA",
+    "date": "2025-07-27T23:05:42+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11854_018.jpg"
+  },
+  {
+    "id": 11853,
+    "author": "INEMA",
+    "date": "2025-07-27T23:04:39+00:00",
+    "text": "ap49 - Enxame de Agentes",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11852,
+    "author": "INEMA",
+    "date": "2025-07-27T23:04:37+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11851,
+    "author": "INEMA",
+    "date": "2025-07-27T23:04:37+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11850,
+    "author": "INEMA",
+    "date": "2025-07-27T23:04:37+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11849,
+    "author": "INEMA",
+    "date": "2025-07-27T23:04:36+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11848,
+    "author": "INEMA",
+    "date": "2025-07-27T23:04:36+00:00",
+    "text": "https://chatgpt.com/c/6886b03e-3640-8331-9136-8034418f392d",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11847,
+    "author": "INEMA",
+    "date": "2025-07-27T23:04:36+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11846,
+    "author": "INEMA",
+    "date": "2025-07-27T23:04:30+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

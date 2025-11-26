@@ -1,0 +1,903 @@
+{
+  "name": "Automatización facturación LlamaParse",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1600,
+        200
+      ],
+      "id": "507131f4-5546-430a-97aa-7b2241bcd51c",
+      "name": "Telegram Trigger",
+      "webhookId": "ece1b259-075c-44b2-8071-dcecde2eac36",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "message.chat.id",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "message.chat",
+              "value": "={{ $json.message.chat }}",
+              "type": "object"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "telegram.file_id",
+              "value": "={{ $json.message.document.file_id }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "message.caption",
+              "value": "={{ $('Telegram Trigger').item.json.message.caption }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1160,
+        80
+      ],
+      "id": "052895f9-d9db-4505-8e9a-9423947b9091",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "message.chat.id",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "message.chat",
+              "value": "={{ $json.message.chat }}",
+              "type": "object"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "telegram.file_id",
+              "value": "={{ $json.message.photo.last().file_id }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "message.caption",
+              "value": "={{ $('Telegram Trigger').item.json.message.caption }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1160,
+        280
+      ],
+      "id": "bcda0505-405d-4e7f-a684-cc2c49712d6d",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "id": "94c6234a-8a46-43b5-b2d9-0b5c83f583fa",
+      "name": "Wait1",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        320,
+        320
+      ],
+      "webhookId": "17a96ed6-b5ff-47bb-a8a2-39c1eb40185a",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.document }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Documento"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.message.photo }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "array",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Imagen"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -1420,
+        200
+      ],
+      "id": "f04c253c-e630-4587-a19c-7dd77fae1e48",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Hemos recibido tu documento y lo estamos procesando...",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -700,
+        180
+      ],
+      "id": "5983ecfc-d49f-4f78-8d84-54e0b68950d8",
+      "name": "Recibido",
+      "webhookId": "a2dbf4c3-f7b5-4303-bfca-00947584a68e",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Merge').item.json.telegram.file_id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -520,
+        180
+      ],
+      "id": "f120c216-0697-4ee8-bcb6-e61e33b84d9e",
+      "name": "Descargar doc",
+      "webhookId": "433c2512-9fd8-4fed-8ef9-c84cde0d8c9f",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cloud.llamaindex.ai/api/parsing/upload",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer llx-QRzI15kwCv30PpQUIziCYyWmBiJynqiZrBdt1ugPaC6CDj2a"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "=data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0f8aa1b9-4227-40e1-9b37-8a5a6ab4fff2",
+      "name": "Subir archivo",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -320,
+        180
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "=https://api.cloud.llamaindex.ai/api/parsing/job/{{ $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer llx-QRzI15kwCv30PpQUIziCYyWmBiJynqiZrBdt1ugPaC6CDj2a"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ab03116e-485d-461d-acc3-acf52b9fcaa5",
+      "name": "Obtener info",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -100,
+        180
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "SUCCESS",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "SUCCESS"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "PENDING",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "PENDING"
+            }
+          ]
+        },
+        "options": {
+          "allMatchingOutputs": false
+        }
+      },
+      "id": "306c71aa-106a-4d9c-a605-58f0261497ae",
+      "name": "Esta listo?",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        80,
+        180
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "url": "=https://api.cloud.llamaindex.ai/api/parsing/job/{{ $json.id }}/result/markdown",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer llx-QRzI15kwCv30PpQUIziCYyWmBiJynqiZrBdt1ugPaC6CDj2a"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        80
+      ],
+      "id": "dd2dc348-75bf-4c87-8ade-c5d0402a36d2",
+      "name": "Descargar info"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Merge').item.json.telegram.file_id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        900,
+        80
+      ],
+      "id": "2b873185-bfa8-4e1d-ba0f-0f88b5571087",
+      "name": "Descargar doc1",
+      "webhookId": "433c2512-9fd8-4fed-8ef9-c84cde0d8c9f",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Basic LLM Chain').item.json.output.fecha }} - {{ $('Basic LLM Chain').item.json.output.numero_factura }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1UWaxz9Md9SOU2QqVSZhLKTDdToOyXZDl",
+          "mode": "list",
+          "cachedResultName": "Facturas Subidas",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1UWaxz9Md9SOU2QqVSZhLKTDdToOyXZDl"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1080,
+        80
+      ],
+      "id": "e8443f5d-d894-4caa-9807-79a789862dc1",
+      "name": "Subir archivo1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1b_TifIG2_azhxH_tEKzwAypoSX8Ayxu4Ja5ja8t_mYo",
+          "mode": "list",
+          "cachedResultName": "Facturas Asistente Personal",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1b_TifIG2_azhxH_tEKzwAypoSX8Ayxu4Ja5ja8t_mYo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1857715323,
+          "mode": "list",
+          "cachedResultName": "Facturas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1b_TifIG2_azhxH_tEKzwAypoSX8Ayxu4Ja5ja8t_mYo/edit#gid=1857715323"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Numero factura": "={{ $('Basic LLM Chain').item.json.output.numero_factura }}",
+            "Fecha": "={{ $('Basic LLM Chain').item.json.output.fecha }}",
+            "CIF": "={{ $('Basic LLM Chain').item.json.output.cif }}",
+            "Subtotal": "={{ $('Basic LLM Chain').item.json.output.subtotal }}",
+            "Iva": "={{ $('Basic LLM Chain').item.json.output.iva }}",
+            "Total": "={{ $('Basic LLM Chain').item.json.output.importe_total }}",
+            "Enlace factura": "={{ $json.webViewLink }}",
+            "Metodo de pago": "={{ $('Merge').item.json.message.caption }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "[REMOVED]",
+              "displayName": "Numero factura",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Fecha",
+              "displayName": "Fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "CIF",
+              "displayName": "CIF",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Subtotal",
+              "displayName": "Subtotal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Iva",
+              "displayName": "Iva",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Total",
+              "displayName": "Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Metodo de pago",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Enlace factura",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1260,
+        80
+      ],
+      "id": "6033e6c2-3ddc-4447-8abf-965cd32c9dd1",
+      "name": "Actualizar bbdd",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Merge').item.json.message.chat.id }}",
+        "text": "=Las datos que hemos reconocido son los siguientes:\n\nNumero de factura: {{ $('Basic LLM Chain').item.json.output.numero_factura }}\nFecha: {{ $('Basic LLM Chain').item.json.output.fecha }}\nCIF: {{ $('Basic LLM Chain').item.json.output.cif }}\nSubtotal: {{ $('Basic LLM Chain').item.json.output.subtotal }}€\nIVA: {{ $('Basic LLM Chain').item.json.output.iva }}€\nImporte total: {{ $('Basic LLM Chain').item.json.output.importe_total }}€\n\nLo hemos subido a la base de datos: \nhttps://shre.ink/MVsX",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1440,
+        80
+      ],
+      "id": "118c3156-8b8b-426f-838e-2c6c441f4492",
+      "name": "Mensaje confirmación",
+      "webhookId": "6d309390-a1c9-4d65-8931-4a20d6e37fbb",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -900,
+        180
+      ],
+      "id": "19241084-0b0c-4610-962e-e54f1b9c8c83",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        300
+      ],
+      "id": "d58f0efb-2bd0-418b-af4a-b27163eb95e5",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"numero_factura\": \"2024-0001\",\n  \"fecha\": \"2024-04-17\",\n  \"cif\": \"B12345678\",\n  \"subtotal\": 1451.00,\n  \"iva\": 304.71,\n  \"importe_total\": 1538.06\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        300
+      ],
+      "id": "0f618d76-8e3c-4d17-9771-df1d53bbacec",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.markdown }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Eres un asistente experto en extracción y procesamiento de datos de documentos, especializado en identificar con precisión los detalles clave de una factura."
+            },
+            {
+              "type": "HumanMessagePromptTemplate",
+              "message": "=Tu tarea: Extraer el CIF/NIF, el número de factura, la fecha de emisión, el subtotal, el impuesto (IVA) y el importe total de cualquier texto de factura proporcionado, devolviendo los datos en un JSON estructurado con máxima precisión.\n\nINSTRUCCIONES:\n\n1. Analizar la entrada\n   - Comprende el formato del documento y localiza los datos relevantes.\n\n2. Extraer los siguientes campos:\n   - Número de factura (numero_factura): Identifica el número único de factura.\n   - Fecha de emisión (fecha): Extrae la fecha etiquetada como fecha de factura.\n   - CIF o NIF (cif): Identifica el numero de identificador fiscal. Ejemplos: B12345678 o 85764785Y\n   - Subtotal (subtotal): El monto total a pagar sin impuestos\n   - Impuesto (iva): Obtiene el valor del impuesto si está explícitamente mencionado.\n   - Importe total (importe_total): Captura el monto total a pagar, incluyendo impuestos.\n\n3. Devolver la información en formato JSON con esta estructura estricta:\n   \n{\n \"numero_factura\": \"ES-001\",\n \"fecha\": \"2019-01-29\",\n \"cif\": \"77777777B\",\n \"subtotal\": 165.00,\n \"iva\": 34.65,\n \"importe_total\": 199.65\n}\n\n4. Manejo de ambigüedades\n   - Si hay varios valores posibles para un campo (por ejemplo, múltiples fechas), selecciona el más probable en función del contexto y etiquetas como \"numero_factura\", \"fecha\", \"subtotal\", \"iva\".\n\n5. Precisión absoluta\n   - No redondees valores numéricos. Extrae cantidades con el máximo nivel de detalle.\n   - Las fechas deben estar en formato YYYY-MM-DD sin excepción.\n\nProceso detallado:\n\n1. Validación de datos\n   - Comprueba que los valores extraídos tienen el formato correcto.\n   - Si un campo no es válido o no se encuentra, asigna null en la salida.\n\n2. Generación del JSON estructurado\n   - Llena la plantilla JSON con los datos obtenidos o null si faltan campos.\n\n3. Verificación del resultado\n   - Asegúrate de que el JSON generado es completo, válido y preciso.\n\nIMPORTANTE: \n- Solo responde con el JSON en el siguiente formato, no añadas nada mas:\n\n{\n \"numero_factura\": \"ES-001\",\n  \"fecha\": \"2019-01-29\",\n  \"cif\": \"77777777B\",\n  \"subtotal\": 165.00,\n  \"iva\": 34.65,\n  \"importe_total\": 199.65\n}"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        540,
+        80
+      ],
+      "id": "56316a78-228e-4808-90dd-03cc34490cee",
+      "name": "Basic LLM Chain"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Obtener info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recibido": {
+      "main": [
+        [
+          {
+            "node": "Descargar doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar doc": {
+      "main": [
+        [
+          {
+            "node": "Subir archivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subir archivo": {
+      "main": [
+        [
+          {
+            "node": "Obtener info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener info": {
+      "main": [
+        [
+          {
+            "node": "Esta listo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esta listo?": {
+      "main": [
+        [
+          {
+            "node": "Descargar info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar info": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar doc1": {
+      "main": [
+        [
+          {
+            "node": "Subir archivo1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subir archivo1": {
+      "main": [
+        [
+          {
+            "node": "Actualizar bbdd",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar bbdd": {
+      "main": [
+        [
+          {
+            "node": "Mensaje confirmación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Recibido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Descargar doc1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "57663464-7c88-48f5-abe6-e9ac84cfd87f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e0e4b720cb3656009f5ca7014be06f1fbe69abfc54f93aa2cc3ca2098ff666d6"
+  },
+  "id": "mF2yVBWMTmqtefVa",
+  "tags": []
+}

@@ -1,0 +1,652 @@
+TOPICO 12433
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-08-10 02:34:59+00:00
+
+Total de mensagens: 29
+Midias baixadas: 7
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-08-10T03:15:01+00:00
+Texto:
+Para implementar esse gerador/publicador multiplataforma no modelo que descrevemos, você vai precisar de pelo menos **3 tabelas principais** (e possivelmente tabelas auxiliares se quiser mais controle e métricas).
+
+Segue a estrutura recomendada:
+
+---
+
+### 1) Tabela `Idea` (armazenar ideias brutas)
+
+Guarda tudo que entra no sistema antes de ser processado pela IA.
+
+Campos recomendados:
+
+* `id` (PK, auto incremental) – identificador único
+* `source` (string) – origem da ideia (`slack`, `whatsapp`, `telegram`, etc.)
+* `author` (string ou ID) – quem enviou
+* `text` (longtext) – texto original da ideia
+* `created_at` (datetime) – data/hora de entrada
+* `processed` (boolean) – se já foi processada pela IA
+
+---
+
+### 2) Tabela `Content` (conteúdo gerado pela IA)
+
+Armazena todas as peças de conteúdo criadas a partir de uma `Idea`.
+
+Campos recomendados:
+
+* `id` (PK, auto incremental)
+* `idea_id` (FK → Idea.id) – para saber de onde veio
+* `platform` (enum) – `linkedin`, `facebook`, `x`, `instagram`
+* `type` (enum) – `single_post`, `thread_parent`, `thread_child`, `carousel_cover`, `carousel_slide`
+* `body` (longtext) – texto do post
+* `media_urls` (array/string) – links de imagens/vídeos (se houver)
+* `parent_id` (FK → Content.id) – para vincular filhos ao post principal (threads/carrosséis)
+* `status` (enum) – `review`, `approved`, `published`, `error`
+* `scheduled_time` (datetime) – quando deve ser publicado
+* `published_at` (datetime) – quando foi publicado
+* `external_post_id` (string) – ID retornado pela API da rede social
+* `version` (string) – controle de versões do conteúdo
+* `hash` (string) – hash para anti-duplicação
+* `error_reason` (string) – log de erro se falhou
+
+---
+
+### 3) Tabela `Metrics` (métricas e performance)
+
+Armazena o desempenho dos conteúdos publicados.
+
+Campos recomendados:
+
+* `id` (PK, auto incremental)
+* `content_id` (FK → Content.id)
+* `platform` (enum)
+* `external_post_id` (string)
+* `likes` (int)
+* `comments` (int)
+* `shares` (int)
+* `clicks` (int)
+* `impressions` (int)
+* `captured_at` (datetime) – data/hora da coleta
+
+---
+
+### Tabelas opcionais para mais controle
+
+#### 4) `Media` (biblioteca de imagens/vídeos)
+
+Para armazenar mídias geradas e reutilizá-las.
+
+#### 5) `CTAs` (biblioteca de chamadas para ação)
+
+Snippets prontos que a IA pode usar no conteúdo.
+
+#### 6) `Prompts` (guia de voz/estilo)
+
+Armazena prompts-base por plataforma para manter consistência de tom.
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-08-10T03:12:54+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_12464_002.jpg
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-08-10T03:11:25+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_12463_003.jpg
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-08-10T02:44:41+00:00
+Texto:
+formato com engajamento (sheet/BI).
+
+12. A/B e multi-variante leve
+    • Gere 2–3 variações por peça e escolha por heurística (ex.: 70/30).
+    • Promova a vencedora para evergreen.
+    Exemplo: título curto vs. título com número; compare alcance/CTR.
+    Pergunta: como não triplicar o trabalho? Resposta: faça A/B só em 20% das peças.
+
+13. Cache semântico e reaproveitamento
+    • Guarde embeddings das ideias; se nova ideia for similar >85%, sugerir atualização em vez de novo post.
+    • Banco de “ângulos” vencedores por tema.
+    Exemplo: ideia “automação no varejo” reaproveita bullets campeões.
+    Pergunta: risco de repetição? Resposta: injete variação de exemplos e CTA.
+
+14. Modo rascunho e sanidade
+    • Botão de “dry-run”: simula publicação, mas só grava preview.
+    • Checklists automáticos antes do approve.
+    Exemplo: campos obrigatórios, links válidos, tamanho ok, CTA presente.
+    Pergunta: dá para aprovar em massa? Resposta: sim, regra: se score de sanidade ≥90, aprova em lote.
+
+15. Failover de entrada e saída
+    • Se Slack cair, rode fallback via e-mail/Telegram.
+    • Se API de rede falhar, reprograme para próxima janela útil.
+    Exemplo: tabela de preferências: x→clientA, fallback→clientB.
+    Pergunta: como não perder a janela? Resposta: reescalone scheduled\_time +15 min e notifique.
+
+Exemplos rápidos
+• Anti-duplicação: ao salvar um post para LinkedIn com mesmo hash de outro em review, marque review\_skip e anexe nota “duplicado do id 412”.
+• Thread no X: pai 500 com filhos 501–503; falha no 502; no retry publique 502–503 com in\_reply\_to do último publicado.
+• Carrossel: 1 capa + 7 slides; valida 8 áreas de texto com margem de 10%; gera 3 capas e escolhe pela taxa histórica.
+
+Perguntas e respostas diretas
+• Como escalar sem perder qualidade? Use guardrails, checklist de sanidade e A/B limitado a 20%.
+• Como decidir horários? Teste 2 janelas por rede por 2 semanas e fixe a melhor até a próxima revisão.
+• Como padronizar voz? Um único prompt-guia com exemplos bons/ruins e regras claras de proibição.
+• Como reduzir erros de API? Idempotência, backoff com jitter e DLQ com alerta.
+• Como provar ROI? UTM consistente, planilha/BI com CTR, alcance e conversão por plataforma e formato.
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-08-10T02:44:41+00:00
+Texto:
+Hacks práticos para o gerador/publicador multiplataforma
+
+1. Anti-duplicação e versionamento
+   • Gere um hash do body + platform + parent\_id para bloquear duplicatas.
+   • Use versionamento semântico (v1.2.0) em Content para saber o que mudou.
+   Exemplo: hash = sha256(`${platform}:${parent_id}:${body}`). Se já existir, marcar como review\_skip.
+   Pergunta comum: como atualizar um post revisado? Resposta: incremente a versão e gere novo hash; se published, criar nova entrada com referência à anterior.
+
+2. Idempotência e reprocessamento seguro
+   • Use idempotency\_key = idea\_id ou content\_id por chamada de API.
+   • Antes de publicar, consulte external\_post\_id; se existir, pule.
+   Exemplo: ao publicar no X, salve tweet\_id; em retry, verifique e apenas anexe filhos que faltam.
+   Pergunta: e se cair no meio da thread? Resposta: recalcule a cadeia pelos filhos não publicados e continue a partir do último tweet\_id.
+
+3. Backoff inteligente e DLQ
+   • Retries com exponencial e jitter (p.ex., 2s, 5s, 11s).
+   • Dead-letter queue: mova itens com 3 falhas para status=error e alerte.
+   Exemplo: ao falhar no Instagram, marque error\_reason e reencaminhe para uma fila de revisão.
+   Pergunta: como evitar loops? Resposta: limite de tentativas por plataforma e carimbo last\_attempt\_at.
+
+4. Agendamento tático por plataforma
+   • Janelas de publicação por time zone e público (manhã, almoço, fim do dia).
+   • Respeite cadência: X aceita mais frequência; LinkedIn menos.
+   Exemplo: rule engine simples: platform=x → até 6/dia; linkedin → 1–2/dia.
+   Pergunta: como testar horários? Resposta: rode A/B com scheduled\_time em blocos de 2 semanas e compare CTR.
+
+5. Biblioteca de CTAs e ganchos reutilizáveis
+   • Mantenha snippets por objetivo: tráfego, engajamento, captura.
+   • Enriquecer prompts com 2–3 CTAs alternativos por peça.
+   Exemplo: “Quer o checklist? Comente ‘checklist’.”, “Salve para usar depois.”
+   Pergunta: como evitar repetição? Resposta: rotacione CTAs por janela e registre uso em Content.meta.
+
+6. Afinador de tom por marca
+   • Um único prompt-guia com voz, proibições e exemplos positivos/negativos.
+   • Adapte para cada rede (formal no LinkedIn, direto no X).
+   Exemplo: inclua 3 frases de referência da marca e 3 que nunca usar.
+   Pergunta: dá para personalizar por persona? Resposta: sim, adicione persona\_id e injete nuances no system prompt.
+
+7. Pré-validação de limites e formatos
+   • Valide tamanho de caracteres por rede antes de gravar em Content.
+   • Quebre automaticamente textos longos em thread/slide.
+   Exemplo: se >280 no X, split por ponto mantendo contexto no primeiro tweet.
+   Pergunta: e hashtags? Resposta: limite a 2–4 relevantes; gere lista branca por nicho.
+
+8. Imagens e carrossel com margem de segurança
+   • Template 16:9 com safe area para títulos e CTAs.
+   • Gere variações de capa (3 opções) e escolha por taxa histórica.
+   Exemplo: overlay de 8–10% de margem interna para texto.
+   Pergunta: como evitar texto cortado? Resposta: use bounding boxes fixas e teste automático em mockups.
+
+9. Normalização de links e UTM
+   • Padronize domínios, encurtadores e UTMs por campanha.
+   • Remova parâmetros indesejados antes de salvar.
+   Exemplo: utm\_source=linkedin\&utm\_medium=social\&utm\_campaign=automacao\_q3.
+   Pergunta: como medir por thread? Resposta: use utm\_content com child\_index.
+
+10. Guardrails de segurança e compliance
+    • Filtro de PII e termos sensíveis antes de publicar.
+    • Lista de bloqueio por setor (ex.: claims regulatórios).
+    Exemplo: se detectar telefone/email em texto, exigir approval manual.
+    Pergunta: e direitos autorais? Resposta: valide mídia com banco interno ou use apenas imagens geradas/stock licenciado.
+
+11. Observabilidade e auditoria
+    • Log estruturado por content\_id com latência, status, external\_post\_id.
+    • Dashboard por plataforma: taxa de erro, tempo médio de publicação, CTR.
+    Exemplo: métricas mínimas: created→approved, approved→published, erros por motivo.
+    Pergunta: como saber o que rende? Resposta: correlacione CTA, horário e
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-08-10T02:43:37+00:00
+Texto:
+=============
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-08-10T02:43:34+00:00
+Texto:
+Fluxo 2 no n8n: Publicação
+
+1. Cron
+   • A cada 1 min (ou intervalo desejado).
+
+2. Buscar aprovados e vencidos
+   • HTTP Request → Tbl: GET Content onde status=approved AND scheduled\_time ≤ now
+   • Traga também os filhos associados (thread/slide) do mesmo idea\_id ou parent\_id.
+
+3. Agrupar por plataforma e por parent
+   • Function: separe parent de children.
+   • Monte lotes: \[parent, children\[]]
+
+4. Publicar por plataforma
+   a) X/Twitter
+   • HTTP node ou credencial nativa.
+   • Postar parent; capturar external\_post\_id
+   • Postar children encadeando in\_reply\_to
+   b) LinkedIn e Facebook
+   • Publicação simples do body (e imagem se houver).
+   c) Instagram
+   • Se carrossel: criar álbum; se single: post único.
+
+5. Atualizar status
+   • Para cada peça publicada: PATCH Content.status=published, published\_at=now, external\_post\_id=retornado
+
+6. Tratamento de erros
+   • On Error: PATCH status=error e mensagem de erro em um campo log (opcional).
+   • Retry com Backoff para falhas transitórias.
+
+Exemplo de publicação no X
+Registros aprovados:
+• id=190 (thread\_parent), filhos: 189, 191, 192
+Ação:
+• Posta 190 → recebe tweet\_id A
+• Posta 189, 191, 192 com in\_reply\_to=A
+• Atualiza todos para published com seus external\_post\_id
+
+Perguntas rápidas e respostas
+Como aprovar conteúdo?
+• No Tbl, mude Content.status de review para approved e defina scheduled\_time.
+
+Posso usar WhatsApp/Telegram no lugar do Slack?
+• Sim. Troque o nó de entrada pelo conector desejado. O restante do fluxo não muda.
+
+Preciso publicar em todas as redes?
+• Não. Filtre por platform antes de publicar. Você pode rodar ramos específicos.
+
+Como garantir coerência de marca?
+• Use um único prompt-guia de tom/voz e insira diretrizes no System Prompt dos nós de IA.
+
+Como evitar flood no X?
+• Loteie e espaçe as threads; respeite limites da API; use scheduled\_time.
+
+Dicas práticas
+• Normalize status: review → approved → published → error.
+• Sempre salve external\_post\_id para auditoria e deleção se necessário.
+• Valide tamanhos máximos por plataforma antes de publicar.
+• Para Instagram carrossel, gere imagens a partir dos textos antes de publicar.
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-08-10T02:43:25+00:00
+Texto:
+=========
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-08-10T02:43:22+00:00
+Texto:
+Passo a passo para montar o gerador e publicador multiplataforma
+
+Pré-requisitos
+
+1. Contas/API: Slack, X/Twitter, LinkedIn, Facebook, Instagram.
+2. Banco: Teable/Tbl (duas tabelas: Idea e Content).
+3. LLM: OpenAI ou outro conector no n8n.
+4. n8n em produção com credenciais salvas.
+
+Esquema de dados no Tbl
+Tabela Idea
+• id (auto)
+• text (texto da ideia original)
+• source (ex.: slack)
+• author (opcional)
+• created\_at (auto)
+
+Tabela Content
+• id (auto)
+• idea\_id (relaciona com Idea.id)
+• platform (linkedin, facebook, x, instagram)
+• type (post, thread\_parent, thread\_child, carousel\_cover, carousel\_slide)
+• body (texto)
+• media\_urls (lista, opcional)
+• parent\_id (para thread/slide encadear no pai)
+• status (review, approved, published, error)
+• scheduled\_time (datetime)
+• published\_at (datetime, opcional)
+• external\_post\_id (id retornado pela rede)
+
+Fluxo 1 no n8n: Geração de conteúdo
+
+1. Slack Trigger
+   • Ouça um canal específico.
+   Exemplo: #ideias-conteudo
+
+2. Limpeza/parse da mensagem
+   • Function node: normaliza, remove menções, extrai “ideia”.
+   Saída: { idea\_text: "sua ideia limpa", source:"slack" }
+
+3. Criar registro em Idea
+   • HTTP Request → Tbl: POST /idea
+   Body: { text, source, author }
+
+4. Extrair pontos-chave com IA
+   • OpenAI (Chat Completions) com prompt para lista de 5–10 bullets.
+   Exemplo de instrução: “Converta a ideia em bullets práticos de alto valor e tom profissional. Retorne JSON.”
+
+5. Gerar conteúdos por plataforma
+   • Function node separa rotas:
+   a) LinkedIn/Facebook: 1 post conciso, com CTA leve
+   b) X/Twitter: 1 tweet pai + 3–6 filhos (um por bullet)
+   c) Instagram: 1 slide de capa + 5–10 slides com hooks, dicas e encerramento
+   • Para cada peça, montar objeto Content com status=review e scheduled\_time vazio (ou sugerido).
+
+6. Gravar tudo na Content
+   • HTTP Request → Tbl: bulk insert em Content
+   • Garantir parent\_id correto para thread/slide e platform setada.
+
+7. Auditoria mínima
+   • Set: devolva contagens por plataforma e os IDs criados.
+
+Exemplos no Fluxo 1
+Entrada Slack
+“Automação salva tempo. Quero um post sobre por onde começar a automatizar no pequeno varejo.”
+
+Bullets gerados (resumo)
+• Mapear tarefas repetitivas
+• Começar por planilhas
+• Integração com WhatsApp e e-mail
+• Métricas semanais
+• Iterar em ciclos curtos
+
+LinkedIn/Facebook (body)
+“Automação no varejo começa simples: mapeie tarefas repetitivas, puxe dados de planilhas e automatize mensagens padrão. Em semanas você libera horas da equipe e mede impacto. Qual tarefa você automatizaria primeiro?”
+
+X/Twitter
+Tweet pai: “Automação prática no varejo em 5 passos rápidos:”
+Filhos: um por bullet, curtos e objetivos.
+
+Instagram
+Slide 1 (capa): “Automação no varejo: comece aqui”
+Slides 2–6: um por bullet; último com chamada leve para ação.
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-08-10T02:42:23+00:00
+Texto:
+============
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-08-10T02:42:20+00:00
+Texto:
+Resumo:
+
+Automação completa de geração e publicação de conteúdo, dividida em dois fluxos:
+
+• Fluxo de geração: Recebe ideias pelo Slack (ou WhatsApp, Telegram, etc.), armazena na base de dados (Tbl), gera automaticamente conteúdos para LinkedIn, Facebook, Instagram (carrosséis) e X/Twitter (threads).
+
+• Fluxo de publicação: Após aprovação na base de dados, busca conteúdos agendados, organiza posts principais e filhos (carrosséis ou threads) e publica automaticamente em cada plataforma, atualizando o status para “Publicado”.
+
+Destaques:
+• Organização por ID para agrupar conteúdo relacionado.
+• Estrutura adaptada para diferentes formatos de post (único, carrossel, thread).
+• Funciona para múltiplas redes sociais e pode ser expandido.
+• Demonstração mostra postagens no X com threads e no Instagram com carrosséis.
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-08-10T02:40:44+00:00
+Texto:
+================
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-08-10T02:40:38+00:00
+Texto:
+Publicador de Mídias Sociais Multiplataforma
+
+Divisão da Solução:
+
+Gerador de Conteúdo Multiplataforma
+
+• Disparo por mensagens no Slack: Monitora um canal específico no Slack para qualquer nova mensagem e baixa seu texto.
+
+• Extração de “Ideia de Conteúdo”: Processa o texto da mensagem para criar um campo estruturado “Ideia” para uso posterior.
+
+• Salvar ideia no banco de dados: Registra a ideia extraída como um novo registro na tabela “Idea” (Teable).
+
+• Extração de detalhes com IA: Envia a ideia para o GPT-4 para extrair pontos-chave em formato de lista.
+
+• Criação de conteúdo em múltiplos formatos:
+– Post para LinkedIn/Facebook: Gera um post conciso e focado em valor, seguindo diretrizes de marca.
+– Tweets: Cria tweets independentes (um por ponto-chave) para o X/Twitter.
+– Carrossel para Instagram: Divide a ideia em 5 a 20 slides (ganchos, dicas e conclusões).
+
+• Preparação para revisão: Armazena cada peça de conteúdo na tabela “Content” com status “Review” e etiquetas de plataforma, sem publicar de imediato.
+
+Publicador de Conteúdo Multiplataforma
+
+• Consulta agendada: A cada minuto (configurável), consulta a tabela “Content” por registros com “Status = Approved” e “Scheduled Time ≤ agora”.
+
+• Separação de registros: Distingue postagens principais de postagens filhas (respostas ou continuação).
+
+• Agrupamento de filhas: Caso existam, reúne todas as respostas em um único lote junto com a principal.
+
+• Orquestração com Agente de IA: Usa um nó de agente de IA para:
+– Publicar no LinkedIn e Facebook via suas APIs.
+– Publicar tweet principal/thread no X/Twitter (encadeando postagens filhas).
+
+• Atualização de status: Após a publicação bem-sucedida em cada plataforma, atualiza o registro original para “Published”.
+
+Caso de Negócio / Uso
+Solução: Um sistema pronto “da ideia ao post” que recebe brainstorming bruto (notas de voz ou texto do Slack), gera automaticamente conteúdo refinado para múltiplas plataformas, agenda e publica em escala — exigindo mínima intervenção humana além da revisão inicial.
+
+Proposta de Valor
+
+• Escalabilidade e Eficiência: Elimina fluxos manuais de redação e publicação — equipes de marketing fazem em minutos o que antes levava horas.
+
+• Consistência e Governança: Garante que cada conteúdo siga a voz da marca e diretrizes de conformidade, reduzindo riscos de erros.
+
+• Velocidade para o Mercado: Rápida transição da ideia ao post publicado, crucial para liderança de opinião ou campanhas reativas.
+
+Compradores / Setores Ideais
+
+• Agências de Marketing Digital: Gerenciam várias contas de clientes no LinkedIn, Facebook, Twitter, Instagram — automatiza criação e agendamento.
+
+• Serviços Profissionais e Consultoria: Líderes de pensamento que precisam de presença constante e de alta qualidade sem equipes grandes de conteúdo.
+
+• Empresas SaaS e de Tecnologia: Com atualizações frequentes de produto, blogs e anúncios — automatizam divulgação e engajamento.
+
+• Marcas de E-Commerce e Varejo: Promovem novas coleções ou promoções relâmpago em vários canais com esforço mínimo.
+
+• Empresas de Mídia e Editoriais: Distribuem conteúdo editorial de forma inteligente para maximizar alcance.
+
+• Equipes de Comunicação Interna: Automatizam anúncios internos (RH, operações) via rascunhos do Slack e publicação automática em canais da intranet.
+
+Recursos
+Cross Platform Content Gen (JSON1)
+Cross Platform Content Gen (JSON2)
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-08-10T02:40:29+00:00
+Texto:
+===========
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-08-10T02:39:17+00:00
+Texto:
+Sistema multiplataforma que transforma ideias brutas do Slack em conteúdo pronto para LinkedIn, Facebook, Twitter e Instagram, com revisão, agendamento e publicação automática.
+
+Resumo dos pontos principais:
+
+• Captura ideias do Slack e salva em banco de dados
+• Extrai detalhes com IA (GPT-4) e gera posts, tweets e carrosséis
+• Armazena para revisão antes de publicar
+• Publica automaticamente em múltiplas redes no horário agendado
+• Atualiza status após postagem bem-sucedida
+
+Benefícios:
+• Mais rapidez e eficiência na criação de conteúdo
+• Consistência e padronização da comunicação
+• Escalabilidade para múltiplos clientes ou marcas
+
+Público-alvo:
+• Agências de marketing digital
+• Consultorias e empresas de serviços
+• SaaS, e-commerce, varejo, mídia e comunicação interna
+
+------------------------------
+
+MENSAGEM 16
+Autor: INEMA
+Data: 2025-08-10T02:38:24+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> 2_1_Cross_Platform_Content_Generator (2).json
+
+------------------------------
+
+MENSAGEM 17
+Autor: INEMA
+Data: 2025-08-10T02:38:24+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> 2_2_Cross_Platform_Content_Publisher (2).json
+
+------------------------------
+
+MENSAGEM 18
+Autor: INEMA
+Data: 2025-08-10T02:38:15+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_12446_018.jpg
+
+------------------------------
+
+MENSAGEM 19
+Autor: INEMA
+Data: 2025-08-10T02:36:59+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_12445_019.jpg
+
+------------------------------
+
+MENSAGEM 20
+Autor: INEMA
+Data: 2025-08-10T02:35:52+00:00
+Texto:
+m25 - Cross Platform Content Gen
+
+------------------------------
+
+MENSAGEM 21
+Autor: INEMA
+Data: 2025-08-10T02:35:42+00:00
+Texto:
+....
+
+------------------------------
+
+MENSAGEM 22
+Autor: INEMA
+Data: 2025-08-10T02:35:40+00:00
+Texto:
+...
+
+------------------------------
+
+MENSAGEM 23
+Autor: INEMA
+Data: 2025-08-10T02:35:39+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 24
+Autor: INEMA
+Data: 2025-08-10T02:35:37+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 25
+Autor: INEMA
+Data: 2025-08-10T02:35:33+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 26
+Autor: INEMA
+Data: 2025-08-10T02:35:29+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 27
+Autor: INEMA
+Data: 2025-08-10T02:35:25+00:00
+Texto:
+https://chatgpt.com/c/6898039e-7730-8326-be6d-b2bc72851c39
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 28
+Autor: INEMA
+Data: 2025-08-10T02:35:15+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 29
+Autor: INEMA
+Data: 2025-08-10T02:34:59+00:00
+Texto: [Sem texto]
+
+------------------------------
+

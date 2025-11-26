@@ -1,0 +1,375 @@
+{
+  "name": "6. Smart Action Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "trigger": [
+          "message"
+        ],
+        "channelId": {
+          "__rl": true,
+          "value": "C0904PTBGPJ",
+          "mode": "list",
+          "cachedResultName": "smart-actions"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slackTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "cf3f2b18-6d31-4608-9f92-a783dc483c77",
+      "name": "Slack Trigger",
+      "webhookId": "9315f12c-d308-41b7-946b-1bb23864f743",
+      "credentials": {
+        "slackApi": {
+          "id": "[REMOVED]",
+          "name": "Maaz Smart Action Slack Connection"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.files[0].url_private_download }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "6be2ac07-be0e-41f6-ab6e-192628f954ec",
+      "name": "Download Audio",
+      "credentials": {
+        "slackApi": {
+          "id": "[REMOVED]",
+          "name": "Maaz Smart Action Slack Connection"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        440,
+        0
+      ],
+      "id": "e41b1a4a-51a1-417e-be30-4ea5fcb0dc11",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "Mark PromptAdviser API 06/10/25"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "You are an intelligent and smart action agent. Your job is to execute the action prompted by the user. For each action you will be provided the right tool to execute it. You will not ask any follow up questions and just proceed with the defaults/assumptions\n\nHere are a list of actions you currently have:\n\n- Calendar Events: Call the google calendar tool to create event if tasked. If missing parameters then assume it yourself. For example if no duration is provided then just use 30 minutes as default. \n\n- Lead Management in Trello: \n     - You have access to a lead management pipeline which you can use to either add a new lead or update an existing one.\n     - When tasked with Adding a lead:\n           1. Find all Lead Stages List ID's through the trello tool which returns all lists in the lead management pipeline\n           2. Add a Lead to the card that matches the stage. If no stage was provided then add the lead in \"New Lead' stage\n\n      - When tasked with updating a lead: \n           1. Find all Lead Stages List ID's through the trello tool which returns all lists in the lead management pipeline\n           2. Find the Lead mentioned by going over each list/stage and extract their card id\n           3. Update the lead according to the instructions. If asked to change stage then change it to the new list id. If asked to add description than concatenate it with the old description and then update it."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        872,
+        0
+      ],
+      "id": "ad7dac86-2712-4270-bbb8-32871a042e80",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        220
+      ],
+      "id": "7781148a-ac30-49cf-bcb1-3f634da4c451",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "Mark PromptAdviser API 06/10/25"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "maaz@promptadvisers.com",
+          "mode": "list",
+          "cachedResultName": "maaz@promptadvisers.com"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "additionalFields": {
+          "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description', ``, 'string') }}",
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', `This will be the title of the meeting`, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        780,
+        220
+      ],
+      "id": "f44ed9ea-9e83-488f-ae41-853b8f2bb1ca",
+      "name": "Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Maaz Google Calendar Connection"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "You have access to a Lead Management Pipeline. You can create cards in the pipeline according to the action. \n\nTo find the right list use the Get all Lists tool to get their list ids and use them here. The lists are the stages the lead has to go through in order.",
+        "listId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('List_ID', `Use the are the lists you have to chose from depending on the lead. Use the List Id in this field you get from the previous tool. If no stage is provided then use the id of \"New Lead\" List`, 'string') }}",
+        "name": "={{ $fromAI('Name', `Name of the Lead will be the title of the card`, 'string') }}",
+        "description": "={{ $fromAI('Description', `Add all the key details mentioned about the lead here`, 'string') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.trelloTool",
+      "typeVersion": 1,
+      "position": [
+        900,
+        220
+      ],
+      "id": "7067d967-2b9d-4880-a1cd-f2082c35bae1",
+      "name": "Add Lead in Trello",
+      "credentials": {
+        "trelloApi": {
+          "id": "[REMOVED]",
+          "name": "Maaz Trello account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "list",
+        "operation": "getAll",
+        "id": "s2Wn06IR",
+        "returnAll": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.trelloTool",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        220
+      ],
+      "id": "cbc8cf8f-a6dd-4bd2-bb6d-53402442553c",
+      "name": "Get All Lead Stages",
+      "credentials": {
+        "trelloApi": {
+          "id": "[REMOVED]",
+          "name": "Maaz Trello account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "You have access to a Lead Management Pipeline. If you are tasked to update a lead then use this tool to find the lead first and then update it. \n\nHere each list is a stage itself",
+        "resource": "list",
+        "operation": "getCards",
+        "id": "[REMOVED]",
+        "returnAll": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.trelloTool",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        220
+      ],
+      "id": "377f227a-98e2-45db-b853-7d1da592f0af",
+      "name": "Get All Leads",
+      "credentials": {
+        "trelloApi": {
+          "id": "[REMOVED]",
+          "name": "Maaz Trello account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "You have access to a Lead Management Pipeline. If you are tasked to update a lead then first find all lead stages List id, then find the lead's card id and then lastly use this tool to update the lead.\n\nHere each list is a stage itself",
+        "operation": "update",
+        "id": {
+          "__rl": true,
+          "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Card', `Use the Card ID of the lead you found and use it to update its content`, 'string') }}",
+          "mode": "id"
+        },
+        "updateFields": {
+          "desc": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description', `If any key Details are to be added about the lead, then concatenate the new details with the old details and update it here.`, 'string') }}",
+          "idList": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('List_ID', `If you were asked to change the stage of the lead then use that stages' list id here to update`, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.trelloTool",
+      "typeVersion": 1,
+      "position": [
+        1260,
+        220
+      ],
+      "id": "437f5a59-856e-4ae0-ab86-092bc3c84bb9",
+      "name": "Update Lead",
+      "credentials": {
+        "trelloApi": {
+          "id": "[REMOVED]",
+          "name": "Maaz Trello account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Slack Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Audio": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Add Lead in Trello": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Lead Stages": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Leads": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lead": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d309acd1-ea36-4420-82c6-9636b09b1e00",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aaadb797535f05587ee95b776c942a7c3f7a46fd7aa0c9b6a9d64e1e595f8af1"
+  },
+  "id": "SsujSeFATPzJ0zSL",
+  "tags": []
+}

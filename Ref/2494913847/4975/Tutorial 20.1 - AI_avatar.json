@@ -1,0 +1,1549 @@
+{
+  "name": "Headless avatar",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -60,
+        500
+      ],
+      "id": "2b64f1aa-47b3-47a0-9474-3d1480da8e6d",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1yyMiLI3hFZ_4seBaEQhV8INQsxE1JF9NhBSiWFnhfcQ",
+          "mode": "list",
+          "cachedResultName": "17.3 Video avatar: AI Surfer v2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yyMiLI3hFZ_4seBaEQhV8INQsxE1JF9NhBSiWFnhfcQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Video Queue",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yyMiLI3hFZ_4seBaEQhV8INQsxE1JF9NhBSiWFnhfcQ/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "on"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        120,
+        500
+      ],
+      "id": "2be9d94e-c61b-4b9e-9bc7-819c719e2938",
+      "name": "Get Configuration",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "=youtube_transcript_api {{ $json['video reference id'] }} --languages en"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        280,
+        500
+      ],
+      "id": "66371dad-bcd0-4a09-891b-819f937cde94",
+      "name": "Get Transcript"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "anthropic/claude-3.7-sonnet",
+          "mode": "list",
+          "cachedResultName": "ANTHROPIC/CLAUDE-3.7-SONNET"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Create a concise engaging video transcript for a 30 seconds summarize video (~100 words) video related to the transcript in {{ $('Get Configuration').item.json.language }} language. The transcript is related to {{ $('Get Configuration').item.json.topic }}.\n\n1. Hook viewers immediately with a bold question surprising fact or relatable story\n2. Structure clearly: opening (0–10 seconds) spark curiosity body (10–20 seconds) present 2-3 key points using storytelling stats or examples closing (20-30 seconds) end with a strong CTA or thought-provoking question\n3. Use conversational energetic tone (short sentences active voice no jargon)\n4. Tailor language to [insert audience eg busy professionals]\n5. Add urgency or emotion (eg Imagine Don’t miss)\n6. Output Requirements:\n- No emojis symbols or bracketed visual descriptions (eg [woman crying])\n- No line breaks or formatting write as single continuous text\n- Dont add any style or implies emphasis to the text (eg you *know* what), don't wrap text with an asterisk \"*\"\n7. Avoid fluff keep dynamic and scannable",
+              "role": "system"
+            },
+            {
+              "content": "={{ $json.stdout }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        440,
+        500
+      ],
+      "id": "fd7c6d8d-d61a-4d92-b0cc-5ad8bea89bf0",
+      "name": "Claude prepare transcript",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "##  Get transcript",
+        "height": 260,
+        "width": 940,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        440
+      ],
+      "id": "94f01522-33ac-4ba9-8a09-0931d4422aef",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "##  Create fish audio",
+        "height": 240,
+        "width": 740,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        740
+      ],
+      "id": "bff2401c-e5eb-45d3-bcb1-98d010ded9c6",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.fish.audio/v1/tts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.message.content }}"
+            },
+            {
+              "name": "reference_id",
+              "value": "={{ $('Get Configuration').item.json.voice }}"
+            },
+            {
+              "name": " format",
+              "value": "mp3"
+            },
+            {
+              "name": "prosody.speed",
+              "value": "={{ $('Get Configuration').item.json.speed }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -40,
+        800
+      ],
+      "id": "a594fa7d-331c-4e34-9f96-c77ee06bb28c",
+      "name": "Fish Audio Create Voice",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fish Audio Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://blpxittjdrbenzczlmaa.supabase.co/storage/v1/object/n8n/{{ $now.format('yyyy-MM-dd_hhmmss')}}_17_3_lipsync_audio.{{ $binary.data.fileExtension }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        120,
+        800
+      ],
+      "id": "713371ce-b04b-4910-920b-9e5b13d11def",
+      "name": "Upload Audio",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://blpxittjdrbenzczlmaa.supabase.co/storage/v1/object/public/{{ $json.Key }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        280,
+        800
+      ],
+      "id": "1126eca4-b576-4d54-958f-8053b4a6d808",
+      "name": "Re-download File"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "timestamp_granularities[]",
+              "value": "word"
+            },
+            {
+              "name": "model",
+              "value": "whisper-1"
+            },
+            {
+              "name": "response_format",
+              "value": "verbose_json"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8f196813-79b0-4472-b465-05580e5163b5",
+      "name": "Open AI Whisper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        800
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Create Lipsync Video",
+        "height": 260,
+        "width": 1520
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        1020
+      ],
+      "id": "8a3b641f-d17d-49ad-9a92-cbe69d5fb8d3",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://queue.fal.run/fal-ai/sync-lipsync",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "video_url",
+              "value": "={{ $('Get Configuration').item.json.video }}"
+            },
+            {
+              "name": "audio_url",
+              "value": "=https://blpxittjdrbenzczlmaa.supabase.co/storage/v1/object/public/{{ $('Upload Audio').item.json.Key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        140,
+        1100
+      ],
+      "id": "cf99ee51-e354-423a-aad6-c40df42b12a8",
+      "name": "Generate Lip-Sync",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://queue.fal.run/fal-ai/sync-lipsync/requests/{{ $json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        1100
+      ],
+      "id": "8d0ef7da-b488-4e60-878e-a405ddf76cda",
+      "name": "Get Lip Sync Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://blpxittjdrbenzczlmaa.supabase.co/storage/v1/object/n8n/{{ $now.format('yyyy-MM-dd_hhmmss')}}_17_3_lipsync.mp4",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        1100
+      ],
+      "id": "e8ae7ebd-1bdd-4514-915b-799c8a8d18c2",
+      "name": "Upload Video",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.video.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        1100
+      ],
+      "id": "509b21d5-65be-4baf-947b-53abcb19dd82",
+      "name": "Download Lipsync Video"
+    },
+    {
+      "parameters": {
+        "jsCode": "const all = $input.all();\n\nreturn all.map(item => {\n  const words = item.json.words;  \n\n  const result = [];\n  for (let i = 0; i < words.length; i += 3) {\n    const chunk = words.slice(i, i + 3);\n    result.push({\n      words: chunk.map(word => word.word.charAt(0).toUpperCase() + word.word.slice(1)).join(' '),\n      start: chunk[0].start,\n      end: chunk[chunk.length - 1].end,\n    });\n  }\n  \n  return {\n      chunks: result,\n  };\n})\n\n\n"
+      },
+      "id": "31618e92-20b9-40ad-b5ac-2c3ff145833e",
+      "name": "Combine Transcript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -40,
+        1100
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Create Upper Part Video",
+        "height": 260,
+        "width": 1560,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        1320
+      ],
+      "id": "8b7023c3-4e2a-4fa5-851c-198fc3794326",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "url": "=https://blpxittjdrbenzczlmaa.supabase.co/storage/v1/object/public/{{ $json.Key }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1060,
+        1100
+      ],
+      "id": "75779558-c7f0-4be7-9b48-b55b5b0ca72a",
+      "name": "Re-download File1"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "./youtube/lower.mp4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1240,
+        1100
+      ],
+      "id": "8bcc3ecf-150e-47e8-961e-ea8d21499307",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "command": "=ffmpeg \\\n  -ss {{ $('Get Configuration').item.json['starting seconds'] }} -i ./youtube/temp.mp4 \\\n  -i ./youtube/lower.mp4 \\\n  -i ./youtube/bgm.mp3 \\\n  -filter_complex \"\\\n    [0:v]scale=1080:760:force_original_aspect_ratio=increase,crop=1080:760[top];\\\n    [1:v]scale=1080:1160:force_original_aspect_ratio=increase,crop=1080:1160[bottom];\\\n    [top][bottom]vstack[stacked];\\\n    [1:a]volume=1.0[lower_audio];\\\n    [2:a]volume=0.03[bgm];\\\n    [lower_audio][bgm]amix=inputs=2:duration=first[aout]\\\n  \" \\\n  -map \"[stacked]\" \\\n  -map \"[aout]\" \\\n  -c:v libx264 \\\n  -c:a aac \\\n  -r 25 \\\n  -t $(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ./youtube/lower.mp4) \\\n  ./youtube/concate.mp4 \\\n  -y"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        340,
+        1400
+      ],
+      "id": "8eff1600-3ad2-4302-913e-828e399ae7fa",
+      "name": "Concate Video"
+    },
+    {
+      "parameters": {
+        "jsCode": "const transcript = $(\"Combine Transcript\").first().json.chunks;\n\n// Parameters\nconst maxWidth = 1080 * 0.8; // 80% of 1080px\nconst baseFontSize = 70;     // Default size for short text\nconst avgCharWidth = 0.6;    // Estimated average character width in px per fontsize point\n\nconst commands = transcript.map((item) => {\n  const start = parseFloat(item.start).toFixed(2);\n  const end = parseFloat(item.end).toFixed(2);\n\n  const text = item.words.replaceAll(\"'\", \"\"); // Escape single quotes if needed\n\n  // Estimate the required font size to fit within maxWidth\n  const estimatedFontSize = Math.min(\n    baseFontSize,\n    Math.floor(maxWidth / (text.length * avgCharWidth))\n  );\n\n  return `drawtext=text='  ${text}  ':enable='between(t,${start},${end})':x=(w-text_w)/2:y=(h-text_h)/2-120:fontsize=${estimatedFontSize}:fontfile='Rubik-Black.ttf':fontcolor=black:box=1:boxcolor=yellow@1:boxborderw=5`;\n}).join(\",\");\n\nreturn [{ json: { drawtextCommands: commands } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        1400
+      ],
+      "id": "20a3ede6-6853-4c4b-a9d1-1a61f68b6df1",
+      "name": "Change to FFMPEG Code"
+    },
+    {
+      "parameters": {
+        "command": "=ffmpeg -i ./youtube/concate.mp4 -vf \"{{ $('Change to FFMPEG Code').item.json.drawtextCommands }}\" -c:a copy ./youtube/output.mp4 -y"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        700,
+        1400
+      ],
+      "id": "341b7c88-62d5-47d4-a7c8-c470c6b42484",
+      "name": "Add Transcript"
+    },
+    {
+      "parameters": {
+        "fileSelector": "./youtube/output.mp4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        860,
+        1400
+      ],
+      "id": "6252d435-1c23-47ad-82f9-9e5e7d1f120f",
+      "name": "Preview Final"
+    },
+    {
+      "parameters": {
+        "command": "=yt-dlp -x --audio-format mp3 -o \"./youtube/bgm\" \"https://www.youtube.com/watch?v={{ $('Get Configuration').item.json['music id'] }}\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        1400
+      ],
+      "id": "d29b1fd1-742d-47af-bfc6-d1c681b1b8c5",
+      "name": "Download Music"
+    },
+    {
+      "parameters": {
+        "command": "=yt-dlp -o \"./youtube/temp\" \"https://www.youtube.com/watch?v={{ $('Get Configuration').item.json['video reference id'] }}\" -f \"bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        140,
+        1400
+      ],
+      "id": "732c16cf-7a1f-42e4-9df7-1315b84f31b6",
+      "name": "Download Youtube Video"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://blpxittjdrbenzczlmaa.supabase.co/storage/v1/object/n8n/{{ $now.format('yyyy-MM-dd_hhmmss')}}_17_3_final.mp4",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        1400
+      ],
+      "id": "d41e0294-ba1c-42cf-ad10-361daba7edbd",
+      "name": "Upload Final Video",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1yyMiLI3hFZ_4seBaEQhV8INQsxE1JF9NhBSiWFnhfcQ",
+          "mode": "list",
+          "cachedResultName": "17.3 Video avatar: AI Surfer v2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yyMiLI3hFZ_4seBaEQhV8INQsxE1JF9NhBSiWFnhfcQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Video Queue",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yyMiLI3hFZ_4seBaEQhV8INQsxE1JF9NhBSiWFnhfcQ/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Get Configuration').all()[$itemIndex].json.row_number }}",
+            "status": "done",
+            "result": "=https://blpxittjdrbenzczlmaa.supabase.co/storage/v1/object/public/{{ $json.Key }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "language",
+              "displayName": "language",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "voice",
+              "displayName": "voice",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "video",
+              "displayName": "video",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "speed",
+              "displayName": "speed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "result",
+              "displayName": "result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1220,
+        1400
+      ],
+      "id": "7f7727be-65ab-4849-94c6-5f603f5ad61f",
+      "name": "Update Record",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets Account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        320,
+        1100
+      ],
+      "id": "126acacd-1fce-40dd-a18a-8eab98a1c6ca",
+      "name": "Wait",
+      "webhookId": "6d1e1e7d-c8c1-4be1-b63f-7e5122ed9c39"
+    }
+  ],
+  "pinData": {
+    "Generate Lip-Sync": [
+      {
+        "json": {
+          "status": "IN_QUEUE",
+          "request_id": "04fd5197-adac-473f-9257-caa8e32dade0",
+          "response_url": "https://queue.fal.run/fal-ai/sync-lipsync/requests/04fd5197-adac-473f-9257-caa8e32dade0",
+          "status_url": "https://queue.fal.run/fal-ai/sync-lipsync/requests/04fd5197-adac-473f-9257-caa8e32dade0/status",
+          "cancel_url": "https://queue.fal.run/fal-ai/sync-lipsync/requests/04fd5197-adac-473f-9257-caa8e32dade0/cancel",
+          "logs": null,
+          "metrics": {},
+          "queue_position": 0
+        }
+      }
+    ],
+    "Claude prepare transcript": [
+      {
+        "json": {
+          "logprobs": null,
+          "finish_reason": "stop",
+          "native_finish_reason": "stop",
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "Ever wondered what sets OpenAI's Imagen apart? It's the remarkable ability to maintain character consistency across different styles. Watch as David Medina demonstrates how Imagen understands user intent through its powerful language model. Unlike other generators that simply follow text prompts, Imagen grasps context brilliantly. See a low-poly penguin mage transform into a professionally painted miniature, then into crystal with realistic light reflections—all while preserving the character's essential features. The model intuitively interprets what you want without requiring exhaustive details. This intelligence to understand characters and make sophisticated edits represents a game-changing advancement in AI image generation. What would you create with this technology?",
+            "refusal": null,
+            "reasoning": null
+          }
+        }
+      }
+    ],
+    "Open AI Whisper": [
+      {
+        "json": {
+          "task": "transcribe",
+          "language": "english",
+          "duration": 52.47999954223633,
+          "text": "Ever wondered what sets OpenAI's Imogen apart? It's the remarkable ability to maintain character consistency across different styles. Watch as David Medina demonstrates how Imogen understands user intent through its powerful language model. Unlike other generators that simply follow text prompts, Imogen grasps context brilliantly. See a low-poly penguin mage transform into a professionally painted miniature, then into crystal with realistic light reflections, all while preserving the character's essential features. The model intuitively interprets what you want without requiring exhaustive details. This intelligence to understand characters and make sophisticated edits represents a game-changing advancement in AI image generation. What would you create with this technology?",
+          "words": [
+            {
+              "word": "Ever",
+              "start": 0,
+              "end": 0.7200000286102295
+            },
+            {
+              "word": "wondered",
+              "start": 0.7200000286102295,
+              "end": 1
+            },
+            {
+              "word": "what",
+              "start": 1,
+              "end": 1.340000033378601
+            },
+            {
+              "word": "sets",
+              "start": 1.340000033378601,
+              "end": 1.6399999856948853
+            },
+            {
+              "word": "OpenAI's",
+              "start": 1.6399999856948853,
+              "end": 2.819999933242798
+            },
+            {
+              "word": "Imogen",
+              "start": 2.819999933242798,
+              "end": 2.819999933242798
+            },
+            {
+              "word": "apart",
+              "start": 2.819999933242798,
+              "end": 3.4000000953674316
+            },
+            {
+              "word": "It's",
+              "start": 3.740000009536743,
+              "end": 3.859999895095825
+            },
+            {
+              "word": "the",
+              "start": 3.859999895095825,
+              "end": 4.159999847412109
+            },
+            {
+              "word": "remarkable",
+              "start": 4.159999847412109,
+              "end": 4.599999904632568
+            },
+            {
+              "word": "ability",
+              "start": 4.599999904632568,
+              "end": 5.059999942779541
+            },
+            {
+              "word": "to",
+              "start": 5.059999942779541,
+              "end": 5.78000020980835
+            },
+            {
+              "word": "maintain",
+              "start": 5.78000020980835,
+              "end": 5.78000020980835
+            },
+            {
+              "word": "character",
+              "start": 5.78000020980835,
+              "end": 6.340000152587891
+            },
+            {
+              "word": "consistency",
+              "start": 6.340000152587891,
+              "end": 6.980000019073486
+            },
+            {
+              "word": "across",
+              "start": 6.980000019073486,
+              "end": 7.639999866485596
+            },
+            {
+              "word": "different",
+              "start": 7.639999866485596,
+              "end": 8.220000267028809
+            },
+            {
+              "word": "styles",
+              "start": 8.220000267028809,
+              "end": 8.600000381469727
+            },
+            {
+              "word": "Watch",
+              "start": 8.9399995803833,
+              "end": 9.600000381469727
+            },
+            {
+              "word": "as",
+              "start": 9.600000381469727,
+              "end": 9.960000038146973
+            },
+            {
+              "word": "David",
+              "start": 9.960000038146973,
+              "end": 10.239999771118164
+            },
+            {
+              "word": "Medina",
+              "start": 10.239999771118164,
+              "end": 10.579999923706055
+            },
+            {
+              "word": "demonstrates",
+              "start": 10.579999923706055,
+              "end": 11.260000228881836
+            },
+            {
+              "word": "how",
+              "start": 11.260000228881836,
+              "end": 11.680000305175781
+            },
+            {
+              "word": "Imogen",
+              "start": 11.680000305175781,
+              "end": 11.9399995803833
+            },
+            {
+              "word": "understands",
+              "start": 11.9399995803833,
+              "end": 12.5600004196167
+            },
+            {
+              "word": "user",
+              "start": 12.5600004196167,
+              "end": 13.15999984741211
+            },
+            {
+              "word": "intent",
+              "start": 13.15999984741211,
+              "end": 13.600000381469727
+            },
+            {
+              "word": "through",
+              "start": 13.600000381469727,
+              "end": 13.9399995803833
+            },
+            {
+              "word": "its",
+              "start": 13.9399995803833,
+              "end": 14.239999771118164
+            },
+            {
+              "word": "powerful",
+              "start": 14.239999771118164,
+              "end": 14.760000228881836
+            },
+            {
+              "word": "language",
+              "start": 14.760000228881836,
+              "end": 15.180000305175781
+            },
+            {
+              "word": "model",
+              "start": 15.180000305175781,
+              "end": 15.84000015258789
+            },
+            {
+              "word": "Unlike",
+              "start": 16.31999969482422,
+              "end": 16.5
+            },
+            {
+              "word": "other",
+              "start": 16.5,
+              "end": 16.979999542236328
+            },
+            {
+              "word": "generators",
+              "start": 16.979999542236328,
+              "end": 17.360000610351562
+            },
+            {
+              "word": "that",
+              "start": 17.360000610351562,
+              "end": 17.780000686645508
+            },
+            {
+              "word": "simply",
+              "start": 17.780000686645508,
+              "end": 18.15999984741211
+            },
+            {
+              "word": "follow",
+              "start": 18.15999984741211,
+              "end": 18.540000915527344
+            },
+            {
+              "word": "text",
+              "start": 18.540000915527344,
+              "end": 18.979999542236328
+            },
+            {
+              "word": "prompts",
+              "start": 18.979999542236328,
+              "end": 19.360000610351562
+            },
+            {
+              "word": "Imogen",
+              "start": 20.239999771118164,
+              "end": 20.239999771118164
+            },
+            {
+              "word": "grasps",
+              "start": 20.239999771118164,
+              "end": 20.8799991607666
+            },
+            {
+              "word": "context",
+              "start": 20.8799991607666,
+              "end": 21.579999923706055
+            },
+            {
+              "word": "brilliantly",
+              "start": 21.579999923706055,
+              "end": 22.260000228881836
+            },
+            {
+              "word": "See",
+              "start": 22.979999542236328,
+              "end": 23.059999465942383
+            },
+            {
+              "word": "a",
+              "start": 23.059999465942383,
+              "end": 23.459999084472656
+            },
+            {
+              "word": "low",
+              "start": 23.459999084472656,
+              "end": 23.860000610351562
+            },
+            {
+              "word": "poly",
+              "start": 23.860000610351562,
+              "end": 23.959999084472656
+            },
+            {
+              "word": "penguin",
+              "start": 23.959999084472656,
+              "end": 24.399999618530273
+            },
+            {
+              "word": "mage",
+              "start": 24.399999618530273,
+              "end": 24.739999771118164
+            },
+            {
+              "word": "transform",
+              "start": 24.739999771118164,
+              "end": 25.3799991607666
+            },
+            {
+              "word": "into",
+              "start": 25.3799991607666,
+              "end": 25.700000762939453
+            },
+            {
+              "word": "a",
+              "start": 25.700000762939453,
+              "end": 26.079999923706055
+            },
+            {
+              "word": "professionally",
+              "start": 26.079999923706055,
+              "end": 26.479999542236328
+            },
+            {
+              "word": "painted",
+              "start": 26.479999542236328,
+              "end": 27
+            },
+            {
+              "word": "miniature",
+              "start": 27,
+              "end": 27.420000076293945
+            },
+            {
+              "word": "then",
+              "start": 27.420000076293945,
+              "end": 28.18000030517578
+            },
+            {
+              "word": "into",
+              "start": 28.18000030517578,
+              "end": 28.6200008392334
+            },
+            {
+              "word": "crystal",
+              "start": 28.6200008392334,
+              "end": 28.940000534057617
+            },
+            {
+              "word": "with",
+              "start": 28.940000534057617,
+              "end": 29.3799991607666
+            },
+            {
+              "word": "realistic",
+              "start": 29.3799991607666,
+              "end": 30
+            },
+            {
+              "word": "light",
+              "start": 30,
+              "end": 30.5
+            },
+            {
+              "word": "reflections",
+              "start": 30.5,
+              "end": 31.079999923706055
+            },
+            {
+              "word": "all",
+              "start": 31.860000610351562,
+              "end": 32.040000915527344
+            },
+            {
+              "word": "while",
+              "start": 32.040000915527344,
+              "end": 32.29999923706055
+            },
+            {
+              "word": "preserving",
+              "start": 32.29999923706055,
+              "end": 32.7400016784668
+            },
+            {
+              "word": "the",
+              "start": 32.7400016784668,
+              "end": 33.099998474121094
+            },
+            {
+              "word": "character's",
+              "start": 33.099998474121094,
+              "end": 33.619998931884766
+            },
+            {
+              "word": "essential",
+              "start": 33.619998931884766,
+              "end": 34.13999938964844
+            },
+            {
+              "word": "features",
+              "start": 34.13999938964844,
+              "end": 34.63999938964844
+            },
+            {
+              "word": "The",
+              "start": 35.380001068115234,
+              "end": 35.47999954223633
+            },
+            {
+              "word": "model",
+              "start": 35.47999954223633,
+              "end": 35.779998779296875
+            },
+            {
+              "word": "intuitively",
+              "start": 35.779998779296875,
+              "end": 36.560001373291016
+            },
+            {
+              "word": "interprets",
+              "start": 36.560001373291016,
+              "end": 37.18000030517578
+            },
+            {
+              "word": "what",
+              "start": 37.18000030517578,
+              "end": 37.439998626708984
+            },
+            {
+              "word": "you",
+              "start": 37.439998626708984,
+              "end": 37.63999938964844
+            },
+            {
+              "word": "want",
+              "start": 37.63999938964844,
+              "end": 37.91999816894531
+            },
+            {
+              "word": "without",
+              "start": 37.91999816894531,
+              "end": 38.380001068115234
+            },
+            {
+              "word": "requiring",
+              "start": 38.380001068115234,
+              "end": 39.02000045776367
+            },
+            {
+              "word": "exhaustive",
+              "start": 39.02000045776367,
+              "end": 39.91999816894531
+            },
+            {
+              "word": "details",
+              "start": 39.91999816894531,
+              "end": 40.36000061035156
+            },
+            {
+              "word": "This",
+              "start": 41.040000915527344,
+              "end": 41.36000061035156
+            },
+            {
+              "word": "intelligence",
+              "start": 41.36000061035156,
+              "end": 42.040000915527344
+            },
+            {
+              "word": "to",
+              "start": 42.040000915527344,
+              "end": 42.380001068115234
+            },
+            {
+              "word": "understand",
+              "start": 42.380001068115234,
+              "end": 42.900001525878906
+            },
+            {
+              "word": "characters",
+              "start": 42.900001525878906,
+              "end": 43.439998626708984
+            },
+            {
+              "word": "and",
+              "start": 43.439998626708984,
+              "end": 43.7400016784668
+            },
+            {
+              "word": "make",
+              "start": 43.7400016784668,
+              "end": 43.97999954223633
+            },
+            {
+              "word": "sophisticated",
+              "start": 43.97999954223633,
+              "end": 44.79999923706055
+            },
+            {
+              "word": "edits",
+              "start": 44.79999923706055,
+              "end": 45.380001068115234
+            },
+            {
+              "word": "represents",
+              "start": 45.58000183105469,
+              "end": 46.459999084472656
+            },
+            {
+              "word": "a",
+              "start": 46.459999084472656,
+              "end": 46.86000061035156
+            },
+            {
+              "word": "game",
+              "start": 46.86000061035156,
+              "end": 47.220001220703125
+            },
+            {
+              "word": "changing",
+              "start": 47.220001220703125,
+              "end": 47.52000045776367
+            },
+            {
+              "word": "advancement",
+              "start": 47.52000045776367,
+              "end": 48.099998474121094
+            },
+            {
+              "word": "in",
+              "start": 48.099998474121094,
+              "end": 48.560001373291016
+            },
+            {
+              "word": "AI",
+              "start": 48.560001373291016,
+              "end": 48.86000061035156
+            },
+            {
+              "word": "image",
+              "start": 48.86000061035156,
+              "end": 49.18000030517578
+            },
+            {
+              "word": "generation",
+              "start": 49.18000030517578,
+              "end": 49.7400016784668
+            },
+            {
+              "word": "What",
+              "start": 49.900001525878906,
+              "end": 50.34000015258789
+            },
+            {
+              "word": "would",
+              "start": 50.34000015258789,
+              "end": 50.52000045776367
+            },
+            {
+              "word": "you",
+              "start": 50.52000045776367,
+              "end": 50.779998779296875
+            },
+            {
+              "word": "create",
+              "start": 50.779998779296875,
+              "end": 51.08000183105469
+            },
+            {
+              "word": "with",
+              "start": 51.08000183105469,
+              "end": 51.29999923706055
+            },
+            {
+              "word": "this",
+              "start": 51.29999923706055,
+              "end": 51.599998474121094
+            },
+            {
+              "word": "technology",
+              "start": 51.599998474121094,
+              "end": 52.119998931884766
+            }
+          ]
+        }
+      }
+    ],
+    "Get Lip Sync Video": [
+      {
+        "json": {
+          "video": {
+            "url": "https://v3.fal.media/files/elephant/5MOCd_IGEIUns3WgDYDOM_output.mp4",
+            "content_type": "video/mp4",
+            "file_name": "output.mp4",
+            "file_size": 12496261
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Configuration": {
+      "main": [
+        [
+          {
+            "node": "Get Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Transcript": {
+      "main": [
+        [
+          {
+            "node": "Claude prepare transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude prepare transcript": {
+      "main": [
+        [
+          {
+            "node": "Fish Audio Create Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fish Audio Create Voice": {
+      "main": [
+        [
+          {
+            "node": "Upload Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Audio": {
+      "main": [
+        [
+          {
+            "node": "Re-download File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-download File": {
+      "main": [
+        [
+          {
+            "node": "Open AI Whisper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Lip-Sync": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Lip Sync Video": {
+      "main": [
+        [
+          {
+            "node": "Download Lipsync Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Lipsync Video": {
+      "main": [
+        [
+          {
+            "node": "Upload Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open AI Whisper": {
+      "main": [
+        [
+          {
+            "node": "Combine Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Transcript": {
+      "main": [
+        [
+          {
+            "node": "Generate Lip-Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Video": {
+      "main": [
+        [
+          {
+            "node": "Re-download File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-download File1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Download Music",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Concate Video": {
+      "main": [
+        [
+          {
+            "node": "Change to FFMPEG Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Change to FFMPEG Code": {
+      "main": [
+        [
+          {
+            "node": "Add Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Transcript": {
+      "main": [
+        [
+          {
+            "node": "Preview Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Music": {
+      "main": [
+        [
+          {
+            "node": "Download Youtube Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Youtube Video": {
+      "main": [
+        [
+          {
+            "node": "Concate Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preview Final": {
+      "main": [
+        [
+          {
+            "node": "Upload Final Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Final Video": {
+      "main": [
+        [
+          {
+            "node": "Update Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Lip Sync Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c27a9f07-a88d-4929-8110-41add06c123b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a4cc9f2b8e4c7d47b2c0138be4534e81486e75db00ad43fc07e678b675d1b412"
+  },
+  "id": "t43od6cV9nAoCros",
+  "tags": []
+}

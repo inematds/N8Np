@@ -1,0 +1,289 @@
+{
+  "name": "My workflow 4",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "get",
+        "channelId": "UCwT"
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        -1000,
+        60
+      ],
+      "id": "6b4ee3c3-9bed-4fe8-bb3c-abe6b19c86ba",
+      "name": "Get Subscriber",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "get",
+        "videoId": "K-cTuj_QVac",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        -780,
+        60
+      ],
+      "id": "bb1a9363-1b55-4a3a-a9ec-4ae97ef501b4",
+      "name": "Get VIews",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const views = $input.first().json.statistics.viewCount;\nconst subsciber = $(\"Get Subscriber\").first().json.statistics.subscriberCount;\n\nreturn { url: encodeURIComponent(`https://api.andynocode.com/preview/thumbnail/1?viewsCurrent=${views}&subscribersCurrent=${subsciber}&profileImage=https://api.andynocode.com/assets/img/profile.png&viewport_width=1080&viewport_height=1920&format=jpg&block_ads=true&block_cookie_banners=true&block_banners_by_heuristics=false&block_trackers=true&delay=0&timeout=60&response_type=by_format&image_quality=80`) }"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -520,
+        260
+      ],
+      "id": "c79ff4c1-99fc-4d39-a45f-3c2b35bff72e",
+      "name": "Prepare Thumbnail URL"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/upload/youtube/v3/thumbnails/set",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "videoId",
+              "value": "HXVSrRFZQW8"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -100,
+        260
+      ],
+      "id": "d233bb32-a380-43da-9b95-49f76fe1cc53",
+      "name": "Update Youtube Thumbnail",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account - GCP n8n Video Project"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "update",
+        "videoId": "HXVSrRFZQW8",
+        "title": "=v:{{ $('Get VIews').item.json.statistics.viewCount }},s:{{ $('Get Subscriber').item.json.statistics.subscriberCount }}",
+        "regionCode": "HK",
+        "categoryId": "1",
+        "updateFields": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        -80
+      ],
+      "id": "68682de5-bd27-4472-a574-9583da373b1a",
+      "name": "Update YouTube Title",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 1. Get Youtube Data in Real-time",
+        "height": 260,
+        "width": 420
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        -20
+      ],
+      "id": "f1bd2c3e-fc4d-4a91-9d6f-c22fdd47078d",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## 2. Update Youtube Title in Real-time\n",
+        "height": 240,
+        "width": 660,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -580,
+        -160
+      ],
+      "id": "e167efa2-7b8c-4288-bfa0-632df47f6eb9",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## 3. Update Youtube thumbnail\n",
+        "height": 260,
+        "width": 680,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -580,
+        180
+      ],
+      "id": "2bcdb8d2-cc40-47f9-af64-3528ad09da3f",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1240,
+        60
+      ],
+      "id": "105cca37-781f-452b-ba0f-ff1945c52c5f",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.screenshotone.com/take?&viewport_width=1280&viewport_height=720&format=jpg&block_ads=true&block_cookie_banners=true&block_banners_by_heuristics=false&block_trackers=true&delay=0&timeout=60&response_type=by_format&scroll_into_view_adjust_top=0&image_quality=80&url={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -300,
+        260
+      ],
+      "id": "6edb6694-3fd7-4fad-b028-5653638a7021",
+      "name": "Get Andynodecode Thumbnail",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "[REMOVED]",
+          "name": "Screenshot One Stanley"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get Subscriber": {
+      "main": [
+        [
+          {
+            "node": "Get VIews",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get VIews": {
+      "main": [
+        [
+          {
+            "node": "Update YouTube Title",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare Thumbnail URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Thumbnail URL": {
+      "main": [
+        [
+          {
+            "node": "Get Andynodecode Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Subscriber",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Andynodecode Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Update Youtube Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "",
+  "meta": {
+    "instanceId": "1740c26791c747bf49d93178a26934eaaffaca5ab2d087ae7e06b06ed236dff6"
+  },
+  "tags": []
+}

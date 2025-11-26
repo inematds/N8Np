@@ -1,0 +1,751 @@
+{
+  "name": "2.2 Cross-Platform Content Publisher",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here's the content to post:\n\nParent: {{ $json.parent.toJsonString() }}\n\n\nChildren: {{ $json.children.toJsonString() }}",
+        "options": {
+          "systemMessage": "You are an intelligent Content Publisher across multiple social platforms including LinkedIn, Facebook, X/Twitter, Instagram. Your job is to get post the content to which the platform it is for. If the Platform key contains \"LinkedIn\" & \"Facebook\" then you will use the LinkedIn and Facebook Tools to post the content. \n\nFor X/Twitter, there may instances where you will be provided a parent and children content. These are to create threads. You will first post the parent using the tool to post parent tweet and then under the parent you will post the first child content and then the second child under the first child and so on to continue the thread using the second tool to post child tweets. \n\n\nAfter you are done posting the content, you are to update the records of all content parent and children one by one to set their status to published."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1920,
+        -240
+      ],
+      "id": "82081fd3-0061-4656-9786-4afb012aa867",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1760,
+        60
+      ],
+      "id": "fb43c942-7c29-4bfc-b40b-196ab0cb6a6b",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "Mark PromptAdviser API 06/10/25"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -560,
+        -240
+      ],
+      "id": "de36531c-2b93-40e4-a6bf-bb0f2b191e39",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "Teable Base ID",
+              "value": "bsedtDCV8UUwARhGG6I",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Teable Idea Table ID",
+              "value": "tblKPEOP13NVho34o4U",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Teable Content Table ID",
+              "value": "tblqSOQ3c6bei8jihPG",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "filter",
+              "value": "={\"conjunction\":\"and\",\"filterSet\":[{\"fieldId\":\"Scheduled Time\",\"operator\":\"isOnOrBefore\",\"value\":{\"mode\":\"exactDate\",\"exactDate\":\"{{ $json.timestamp }}\",\"timeZone\":\"America/Toronto\"}},{\"fieldId\":\"Status\",\"operator\":\"is\",\"value\":\"Approved\"}]}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -340,
+        -240
+      ],
+      "id": "320f0446-8d97-4d7e-9ea5-9f43711a9092",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "url": "=https://app.teable.io/api/table/{{ $('Edit Fields1').item.json['Teable Content Table ID'] }}/record?filter={{ $json.filter.urlEncode() }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -120,
+        -240
+      ],
+      "id": "622e355d-ec3f-4f76-bbf2-a1f03faf6b32",
+      "name": "Teable: Check Content for Publish",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "maaz Teable Content Generator Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.fields.Children }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        320,
+        -240
+      ],
+      "id": "115321ac-6981-4e50-a21e-9ccdd8327ed9",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "records",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        100,
+        -240
+      ],
+      "id": "45832c85-092f-4128-a3e2-33e5b2171751",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "fields.Children",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        540,
+        -340
+      ],
+      "id": "c851bfaf-618b-45e5-837d-59498baf3808",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "url": "=https://app.teable.io/api/table/{{ $('Edit Fields1').item.json['Teable Content Table ID'] }}/record/{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        760,
+        -340
+      ],
+      "id": "59b75b22-0781-4358-9151-a3ad9ef60b4c",
+      "name": "Teable: Get all Children Content",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "maaz Teable Content Generator Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "fields"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        -340
+      ],
+      "id": "acaf4ba2-1dcf-4160-8616-4cb77aed6862",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "fields.Content",
+              "value": "={{ $json.fields.Content }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "fields['Platform(s)']",
+              "value": "={{ $json.fields['Platform(s)'] }}",
+              "type": "array"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "fields.ID",
+              "value": "={{ $json.fields.ID }}",
+              "type": "number"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "fields.Media",
+              "value": "={{ $json.fields.Media }}",
+              "type": "array"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "fields.record_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "fields.update_endpoint",
+              "value": "=https://app.teable.io/api/table/{{ $('Edit Fields1').item.json['Teable Content Table ID'] }}/record/{{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        980,
+        -340
+      ],
+      "id": "8abdea31-b888-4401-8174-e37393b0fe3b",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "parent.record_id",
+              "value": "={{ $('If').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "parent.Content",
+              "value": "={{ $('If').item.json.fields.Content }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "parent['Platform(s)']",
+              "value": "={{ $('If').item.json.fields['Platform(s)'] }}",
+              "type": "array"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "children",
+              "value": "={{ $json.fields }}",
+              "type": "array"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Teable Base ID",
+              "value": "={{ $('Edit Fields1').item.json['Teable Base ID'] }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Teable Idea Table ID",
+              "value": "={{ $('Edit Fields1').item.json['Teable Idea Table ID'] }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Teable Content Table ID",
+              "value": "={{ $('Edit Fields1').item.json['Teable Content Table ID'] }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "parent.update_endpoint",
+              "value": "=https://app.teable.io/api/table/{{ $('Edit Fields1').item.json['Teable Content Table ID'] }}/record/{{ $('If').item.json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1420,
+        -340
+      ],
+      "id": "32429cdb-c500-4ecd-a3aa-80b07bd98a73",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "parent",
+              "value": "={{ $json.fields }}",
+              "type": "object"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Teable Base ID",
+              "value": "={{ $('Edit Fields1').item.json['Teable Base ID'] }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Teable Idea Table ID",
+              "value": "={{ $('Edit Fields1').item.json['Teable Idea Table ID'] }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Teable Content Table ID",
+              "value": "={{ $('Edit Fields1').item.json['Teable Content Table ID'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1420,
+        -140
+      ],
+      "id": "e7608c2a-5dbc-4466-b487-0d4ad83921d6",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1640,
+        -240
+      ],
+      "id": "19bff3ae-c9ad-4613-b469-887eb6e08ece",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Text', `Paste the content from the \"Content\" key here`, 'string') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.linkedInTool",
+      "typeVersion": 1,
+      "position": [
+        1900,
+        180
+      ],
+      "id": "022ada71-df95-4ceb-82c5-087bb39b8869",
+      "name": "LinkedI Post"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.facebookGraphApiTool",
+      "typeVersion": 1,
+      "position": [
+        2320,
+        160
+      ],
+      "id": "951b2294-b7c1-4713-b246-b1ba3fbd0fe7",
+      "name": "Facebook Post"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Create Single or Parent Tweet in X using this tool. If you are tasked to created a thread then add the children using the other X tool using the tweet id you get from here",
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Text', `Paste the \"Content\" key here`, 'string') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.twitterTool",
+      "typeVersion": 2,
+      "position": [
+        2040,
+        140
+      ],
+      "id": "e4afdbac-c276-43f4-ac63-00986ce85658",
+      "name": "Post SIngle/Parent Tweet",
+      "credentials": {
+        "twitterOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Maaz X account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "To Create a thread in X for a tweet use this tool to continue from a parent tweet already posted from other tool.",
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Text', `Paste the \"Content\" key here`, 'string') }}",
+        "additionalFields": {
+          "inReplyToStatusId": {
+            "__rl": true,
+            "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Reply_to_Tweet', `If there are children content, then post the first child under the id of the parent content then the second child under the id of the first child and so on and so forth`, 'string') }}",
+            "mode": "id"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.twitterTool",
+      "typeVersion": 2,
+      "position": [
+        2180,
+        140
+      ],
+      "id": "149a1aaf-8baa-4610-976f-db3f22f990e9",
+      "name": "X Post for Children/Thread",
+      "credentials": {
+        "twitterOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Maaz X account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Make an http request to update the content record in database to change the status to Published",
+        "method": "PATCH",
+        "url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('URL', `Use the \"update_endpoint\" value here to call the right api endpoint to update the records status to publish. Each parent and children have their own endpoint so be careful in updating the right record`, 'string') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "record.fields.Status",
+              "value": "Published"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        2340,
+        0
+      ],
+      "id": "6a955dc4-42c5-4869-a51d-7e6fddfb5892",
+      "name": "Update Record",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "maaz Teable Content Generator Auth"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Teable: Check Content for Publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Teable: Check Content for Publish": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Teable: Get all Children Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Teable: Get all Children Content": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedI Post": {
+      "ai_tool": [
+        []
+      ]
+    },
+    "Facebook Post": {
+      "ai_tool": [
+        []
+      ]
+    },
+    "Post SIngle/Parent Tweet": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "X Post for Children/Thread": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Record": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "15c0d32f-e74a-45c0-8828-15c9bcca680a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aaadb797535f05587ee95b776c942a7c3f7a46fd7aa0c9b6a9d64e1e595f8af1"
+  },
+  "id": "tLyUmr81UTUvdXty",
+  "tags": []
+}

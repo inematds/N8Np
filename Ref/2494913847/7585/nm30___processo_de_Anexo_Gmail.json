@@ -1,0 +1,315 @@
+{
+  "name": "nm30 - processo de Anexo Gmail",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Check if message contains attachments\nconst hasAttachments = item => {\n  // Check if attachments array exists and has entries\n  if (item.json.attachments && Array.isArray(item.json.attachments) && item.json.attachments.length > 0) {\n    return true;\n  }\n  \n  // Also check for binary data that could contain attachments\n  if (item.binary) {\n    const binaryKeys = Object.keys(item.binary);\n    for (const key of binaryKeys) {\n      if (item.binary[key].mimeType !== 'text/plain' && item.binary[key].mimeType !== 'text/html') {\n        return true;\n      }\n    }\n  }\n  \n  return false;\n};\n\n// Get attachment type if exists\nconst getAttachmentTypes = (item) => {\n  const types = new Set();\n  \n  // Check explicit attachments array\n  if (item.json.attachments && Array.isArray(item.json.attachments)) {\n    item.json.attachments.forEach(attachment => {\n      if (attachment.contentType) {\n        types.add(attachment.contentType.split('/')[0]);\n      }\n    });\n  }\n  \n  // Check binary data\n  if (item.binary) {\n    const binaryKeys = Object.keys(item.binary);\n    for (const key of binaryKeys) {\n      if (item.binary[key].mimeType !== 'text/plain' && item.binary[key].mimeType !== 'text/html') {\n        const mainType = item.binary[key].mimeType.split('/')[0];\n        types.add(mainType);\n      }\n    }\n  }\n  \n  return Array.from(types);\n};\n\nconst inputItems = $input.all();\nconst outputItems = [];\n\nfor (const item of inputItems) {\n  // Determine if the message has attachments\n  const hasAttachment = hasAttachments(item);\n  \n  // Get types of attachments if any\n  const attachmentTypes = hasAttachment ? getAttachmentTypes(item) : [];\n  \n  const newItem = {\n    json: {\n      ...item.json,\n      hasAttachment,\n      attachmentTypes,\n      // Create simple flags for common attachment types\n      hasImageAttachment: attachmentTypes.includes('image'),\n      hasPdfAttachment: attachmentTypes.some(type => item.json.attachments?.some(a => a.contentType === 'application/pdf') || \n                                              (item.binary && Object.values(item.binary).some(b => b.mimeType === 'application/pdf'))),\n      hasDocumentAttachment: attachmentTypes.includes('application') || \n                             (item.binary && Object.values(item.binary).some(b => \n                               b.mimeType.includes('document') || \n                               b.mimeType.includes('msword') || \n                               b.mimeType.includes('officedocument'))),\n      attachmentNames: item.json.attachments ? item.json.attachments.map(a => a.filename) : \n                      (item.binary ? Object.values(item.binary).map(b => b.fileName).filter(name => name) : []),\n      // Create a user-friendly summary\n      attachmentSummary: hasAttachment ? \n        `Email contains ${attachmentTypes.length} type(s) of attachments: ${attachmentTypes.join(', ')}` : \n        'Email has no attachments'\n    }\n  };\n  \n  // Keep binary data intact\n  if (item.binary) {\n    newItem.binary = item.binary;\n  }\n  \n  outputItems.push(newItem);\n}\n\nreturn outputItems;"
+      },
+      "id": "fbdf8852-122a-42ab-b41a-178a6f6db745",
+      "name": "Analyze Attachments1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1840,
+        840
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.hasAttachment }}",
+              "value2": "={{true}}"
+            }
+          ]
+        }
+      },
+      "id": "e5fb29c2-4e1e-4a84-8256-60bafe7a5e0b",
+      "name": "Has Attachments?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1620,
+        840
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.hasImageAttachment }}",
+              "value2": "={{true}}"
+            }
+          ]
+        }
+      },
+      "id": "eb9d2c96-0ef5-4b89-a8da-50862dd9a5fa",
+      "name": "Is Image?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1400,
+        740
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.hasPdfAttachment }}",
+              "value2": "={{true}}"
+            }
+          ]
+        }
+      },
+      "id": "caed5fe0-d71e-4205-a932-a54e54c76b8a",
+      "name": "Is PDF?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1180,
+        840
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process image attachment\nconst item = $input.item;\nreturn {\n  json: {\n    ...item.json,\n    message: \"Processing image attachment(s)\",\n    imageAttachments: item.json.attachmentNames.filter(name => {\n      const ext = name.split('.').pop().toLowerCase();\n      return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'tiff'].includes(ext);\n    })\n  },\n  binary: item.binary\n};"
+      },
+      "id": "71136041-e2c2-48a8-a19a-d62d86147acf",
+      "name": "Process Image1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process PDF attachment\nconst item = $input.item;\nreturn {\n  json: {\n    ...item.json,\n    message: \"Processing PDF attachment(s)\",\n    pdfAttachments: item.json.attachmentNames.filter(name => name.toLowerCase().endsWith('.pdf'))\n  },\n  binary: item.binary\n};"
+      },
+      "id": "fdaba646-1175-44d6-879d-5c47c0442237",
+      "name": "Process PDF1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        740
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.hasDocumentAttachment }}",
+              "operation": "equals",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "id": "82c8cb3f-68e5-43cf-86b2-d9566186341d",
+      "name": "Is Document?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        940
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process document attachment\nconst item = $input.item;\nreturn {\n  json: {\n    ...item.json,\n    message: \"Processing document attachment(s)\",\n    documentAttachments: item.json.attachmentNames.filter(name => {\n      const ext = name.split('.').pop().toLowerCase();\n      return ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'rtf', 'odt', 'ods', 'odp'].includes(ext);\n    })\n  },\n  binary: item.binary\n};"
+      },
+      "id": "e7494efe-53be-46c0-bbe3-a70d0851c774",
+      "name": "Process Document1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -740,
+        940
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process for no attachments case\nconst item = $input.item;\nreturn {\n  json: {\n    ...item.json,\n    message: \"Email has no attachments\"\n  }\n};"
+      },
+      "id": "3b890040-8a6c-439b-93af-e5ab7684bb6e",
+      "name": "No Attachments1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        940
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "923d6c7d-4a87-414b-963c-782e97ed5de2",
+      "name": "Merge1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        -740,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2060,
+        840
+      ],
+      "id": "6159f663-d570-44bb-9357-a308cb273891",
+      "name": "Gmail Trigger2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail account n14"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Analyze Attachments1": {
+      "main": [
+        [
+          {
+            "node": "Has Attachments?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Attachments?1": {
+      "main": [
+        [
+          {
+            "node": "Is Image?1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Attachments1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Image?1": {
+      "main": [
+        [
+          {
+            "node": "Process Image1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is PDF?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is PDF?1": {
+      "main": [
+        [
+          {
+            "node": "Process PDF1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Document?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Image1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process PDF1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Is Document?1": {
+      "main": [
+        [
+          {
+            "node": "Process Document1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger2": {
+      "main": [
+        [
+          {
+            "node": "Analyze Attachments1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ae0a8e3e-5a75-47cf-a48e-dce890812e6b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "zzM2QlKBXU6xCin6",
+  "tags": []
+}

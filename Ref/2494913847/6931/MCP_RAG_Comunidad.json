@@ -1,0 +1,313 @@
+{
+  "name": "MCP RAG Comunidad",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "academia"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0cb579ac-3568-432b-bfe8-8adae5c1d84f",
+      "name": "MCP Server Trigger",
+      "webhookId": "b88a8d56-de78-499e-8f52-28dcd2e179b6"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Search_Query', ``, 'string') }}",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1_bPUq_IIlsQYwSFUd_cZOpqSK6NDSYzp",
+            "mode": "list",
+            "cachedResultName": "RAG test",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1_bPUq_IIlsQYwSFUd_cZOpqSK6NDSYzp"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTool",
+      "typeVersion": 3,
+      "position": [
+        -100,
+        240
+      ],
+      "id": "f1122841-054a-4f3e-8df1-1fec6e0129a3",
+      "name": "Google Drive1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "deleteFile",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('File', ``, 'string') }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTool",
+      "typeVersion": 3,
+      "position": [
+        60,
+        240
+      ],
+      "id": "c385fe5a-be08-4d94-bbee-01aba51db8dd",
+      "name": "Google Drive2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "carga_datos_rag",
+        "description": "Esta tool se llama para cargar la informacion de los archivos en el RAG.",
+        "workflowId": {
+          "__rl": true,
+          "value": "pfLH2bcotO7x65bS",
+          "mode": "list",
+          "cachedResultName": "Rag Semantico"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_file": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('id_file', ``, 'string') }}",
+            "fileName": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fileName', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "id_file"
+          ],
+          "schema": [
+            {
+              "id": "id_file",
+              "displayName": "id_file",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "fileName",
+              "displayName": "fileName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [
+        340,
+        240
+      ],
+      "id": "4d52f30b-84c4-4693-a345-144ddf415a6b",
+      "name": "Rag Semantico"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "base_conocimiento",
+        "toolDescription": "=Esta es la base de conocimiento para resolver todas las consultas del usuario que tenga que ver con el RAG.",
+        "tableName": {
+          "__rl": true,
+          "value": "documents_RAG_tradicional",
+          "mode": "list",
+          "cachedResultName": "documents_RAG_tradicional"
+        },
+        "topK": 5,
+        "options": {
+          "queryName": "search_documents_RAG_tradicional"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.1,
+      "position": [
+        500,
+        220
+      ],
+      "id": "f6e468ba-bce0-4bd5-8ae5-4d889e9eb102",
+      "name": "Supabase Vector Store2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        460,
+        420
+      ],
+      "id": "5d505622-bdc6-414b-a456-050d01194c80",
+      "name": "Embeddings OpenAI2",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "eliminar_rag",
+        "description": "Esta tool se llama cuando el cliente quiere eliminar un archivo del RAG ",
+        "workflowId": {
+          "__rl": true,
+          "value": "a0iMDnF5pYrCAzXa",
+          "mode": "list",
+          "cachedResultName": "Eliminar del RAG"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "file_name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('file_name', ``, 'string') }}",
+            "id_file": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('id_file', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "id_file"
+          ],
+          "schema": [
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "id_file",
+              "displayName": "id_file",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [
+        200,
+        240
+      ],
+      "id": "bb9c0762-67e2-4da3-9b0e-e5d3384ad490",
+      "name": "Eliminar archivo"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive1": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive2": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rag Semantico": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store2": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eliminar archivo": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0fe2d54a-f79a-4018-8993-160749c9ed6c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "1L6P5AuytR3x4jLu",
+  "tags": []
+}

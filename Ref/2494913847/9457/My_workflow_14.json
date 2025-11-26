@@ -1,0 +1,1255 @@
+{
+  "name": "My workflow 14",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Sistema de Análise de Vídeo Inteligente",
+        "formDescription": "Faça upload de um vídeo ou cole um link para análise completa com IA",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Tipo de Input",
+              "fieldType": "select",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Arquivo de Vídeo",
+              "fieldType": "file",
+              "multipleFiles": false
+            },
+            {
+              "fieldLabel": "Link do Vídeo"
+            },
+            {
+              "fieldLabel": "Tipo de Análise",
+              "fieldType": "select",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "WhatsApp para Resposta (com código do país)",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Instruções Específicas (opcional)",
+              "fieldType": "textarea"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        440
+      ],
+      "id": "93b0cdad-7df5-4096-aa53-36e0f48fb0bb",
+      "name": "📋 Formulário de Entrada",
+      "webhookId": "video-analysis-form"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "video-analysis",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        440,
+        640
+      ],
+      "id": "c5247bf5-167c-4a01-8641-a580f36f0d70",
+      "name": "📲 Webhook Evolution",
+      "webhookId": "video-analysis-webhook"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body?.event }}",
+                    "rightValue": "messages.upsert",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "leftValue": "={{ $json.body?.data?.key?.fromMe }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "evolution_message"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json['Tipo de Input'] }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "form_submission"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        660,
+        640
+      ],
+      "id": "95f6a74f-a046-4d37-a722-3d5446b882c5",
+      "name": "🔀 Roteador de Entrada"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "input_type",
+              "value": "form",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "video_type",
+              "value": "={{ $json['Tipo de Input'] }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "analysis_type",
+              "value": "={{ $json['Tipo de Análise'] }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "whatsapp_number",
+              "value": "={{ $json['WhatsApp para Resposta (com código do país)'] }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "video_link",
+              "value": "={{ $json['Link do Vídeo'] }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "instructions",
+              "value": "={{ $json['Instruções Específicas (opcional)'] || 'Análise padrão' }}",
+              "type": "string"
+            },
+            {
+              "id": "7",
+              "name": "session_id",
+              "value": "={{ $now.format('yyyyMMddHHmmss') }}_{{ Math.floor(Math.random() * 1000) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        440
+      ],
+      "id": "01b86781-a205-4c68-ae5d-276a0c88b2d4",
+      "name": "📝 Processar Formulário"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "input_type",
+              "value": "evolution",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "whatsapp_number",
+              "value": "={{ $json.body.data.key.remoteJid }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "message_text",
+              "value": "={{ $json.body.data.message.conversation || $json.body.data.message.extendedTextMessage?.text }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "video_url",
+              "value": "={{ $json.body.data.message.videoMessage?.url }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "session_id",
+              "value": "={{ $now.format('yyyyMMddHHmmss') }}_{{ Math.floor(Math.random() * 1000) }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "analysis_type",
+              "value": "Apenas Análise Textual",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        640
+      ],
+      "id": "81b4267d-93a1-48a2-9e34-e0c7e3093141",
+      "name": "📱 Processar Evolution"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Prueba",
+        "remoteJid": "={{ $json.whatsapp_number }}",
+        "messageText": "🤖 *Sistema de Análise de Vídeo*\n\n⏳ Processando seu vídeo...\n📋 Tipo: {{ $json.analysis_type }}\n🆔 Sessão: {{ $json.session_id }}\n\n_Aguarde alguns momentos, o resultado será enviado em breve._",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        640
+      ],
+      "id": "5108c8bb-413b-4f6e-94d6-11a8f14794a3",
+      "name": "⏳ Mensagem Processando",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.video_type }}",
+                    "rightValue": "Arquivo de Vídeo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "file_upload"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.video_type }}",
+                    "rightValue": "Link do Vídeo (YouTube, etc.)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "video_link"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.input_type }}",
+                    "rightValue": "evolution",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "evolution_video"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1320,
+        620
+      ],
+      "id": "4ccfe4ac-ca07-4ffe-a4db-d3fdd0aec235",
+      "name": "🎬 Roteador de Vídeo"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/upload/v1beta/files",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Goog-Upload-Command",
+              "value": "start, upload, finalize"
+            },
+            {
+              "name": "X-Goog-Upload-Header-Content-Length",
+              "value": "={{ $binary.data.fileSize }}"
+            },
+            {
+              "name": "X-Goog-Upload-Header-Content-Type",
+              "value": "{{ $binary.data.mimeType }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "{{ $binary.data.mimeType }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        -60
+      ],
+      "id": "fd1ccf4f-180b-47f1-9da1-556f243590aa",
+      "name": "📤 Upload Arquivo",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "[REMOVED]",
+          "name": "Query Auth yt API TDS"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1760,
+        -140
+      ],
+      "id": "de04e59f-6fe0-4809-8836-55a3eb0661eb",
+      "name": "⏱️ Aguardar Processamento",
+      "webhookId": "wait-video-processing"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"fileData\": {\n            \"fileUri\": \"{{ $json.file?.uri || $('upload-file').item.json.file.uri }}\",\n            \"mimeType\": \"{{ $json.file?.mimeType || $('upload-file').item.json.file.mimeType }}\"\n          }\n        },\n        {\n          \"text\": \"{{ $('form-processor').item.json.instructions || $('evolution-processor').item.json.message_text || 'Analise detalhadamente este vídeo, descrevendo seu conteúdo, principais pontos, contexto e insights relevantes.' }}\"\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"temperature\": 0.4,\n    \"topK\": 32,\n    \"topP\": 1,\n    \"maxOutputTokens\": 4096\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        -140
+      ],
+      "id": "07ae1e9a-303f-498d-879b-aa5599b3b4c7",
+      "name": "🧠 Análise com Gemini",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "[REMOVED]",
+          "name": "Query Auth yt API TDS"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"{{ $('form-processor').item.json.instructions || $('evolution-processor').item.json.message_text || 'Analise este vídeo do YouTube em detalhes, fornecendo insights, resumo e pontos principais.' }}\"\n        },\n        {\n          \"file_data\": {\n            \"file_uri\": \"{{ $json.video_link || $('form-processor').item.json.video_link }}\"\n          }\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"temperature\": 0.4,\n    \"topK\": 32,\n    \"topP\": 1,\n    \"maxOutputTokens\": 4096\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        520
+      ],
+      "id": "2e65bc5c-7a33-40ca-9996-ecb3f5d1c39f",
+      "name": "🔗 Análise de Link",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "[REMOVED]",
+          "name": "Query Auth yt API TDS"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.analysis_type }}",
+                    "rightValue": "Apenas Análise Textual",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text_only"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.analysis_type }}",
+                    "rightValue": "Criar Aplicativo/Apresentação",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "create_app"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.analysis_type }}",
+                    "rightValue": "Relatório com Gráficos",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "create_report"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2200,
+        0
+      ],
+      "id": "edf607b3-bf35-4154-b210-63c8efa15f92",
+      "name": "📊 Roteador de Saída"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "analysis_result",
+              "value": "={{ $json.candidates?.[0]?.content?.parts?.[0]?.text || 'Erro na análise' }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "session_id",
+              "value": "={{ $('form-processor').item.json.session_id || $('evolution-processor').item.json.session_id }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "whatsapp_number",
+              "value": "={{ $('form-processor').item.json.whatsapp_number || $('evolution-processor').item.json.whatsapp_number }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2500,
+        -340
+      ],
+      "id": "9bc0eff9-c047-41ca-88af-6e1888744559",
+      "name": "📝 Resposta Textual"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4.1",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2520,
+        80
+      ],
+      "id": "4c71a700-f4c6-4e56-a1bf-976342e795cc",
+      "name": "🤖 LLM Gerador",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Baseado nesta análise de vídeo:\n\n{{ $('analyze-video').item.json.candidates?.[0]?.content?.parts?.[0]?.text || $('analyze-link').item.json.candidates?.[0]?.content?.parts?.[0]?.text }}\n\nCrie um aplicativo web completo usando HTML, CSS e JavaScript vanilla.",
+        "options": {
+          "systemMessage": "Você é um desenvolvedor expert que cria aplicativos web completos e funcionais. Com base na análise de vídeo fornecida, crie um aplicativo HTML completo que:\n\n1. Seja responsivo e moderno\n2. Inclua CSS estilizado e profissional\n3. Tenha JavaScript funcional\n4. Seja relacionado ao conteúdo do vídeo\n5. Inclua interações práticas\n6. Use as melhores práticas de desenvolvimento\n\nRetorne APENAS o código HTML completo, sem explicações."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        2420,
+        -140
+      ],
+      "id": "5b6911f8-2d3a-41c8-a3a7-8e1242ea1c97",
+      "name": "🚀 Gerador de App"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4.1",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2520,
+        480
+      ],
+      "id": "c13db78a-22c7-4778-89c6-74de264c6260",
+      "name": "📊 LLM Relatório",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Baseado nesta análise de vídeo:\n\n{{ $('analyze-video').item.json.candidates?.[0]?.content?.parts?.[0]?.text || $('analyze-link').item.json.candidates?.[0]?.content?.parts?.[0]?.text }}\n\nCrie um relatório HTML completo com gráficos usando Chart.js.",
+        "options": {
+          "systemMessage": "Você é um analista de dados expert que cria relatórios visuais impressionantes. Com base na análise de vídeo fornecida, crie um relatório HTML completo que:\n\n1. Inclua gráficos interativos usando Chart.js\n2. Tenha design profissional e responsivo\n3. Apresente insights visuais dos dados do vídeo\n4. Inclua métricas e KPIs relevantes\n5. Use cores e styling modernos\n6. Tenha seções bem organizadas\n\nRetorne APENAS o código HTML completo com Chart.js incorporado, sem explicações."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        2420,
+        260
+      ],
+      "id": "af84dc9d-d95a-4173-b7a8-c558c59a4624",
+      "name": "📈 Gerador de Relatório"
+    },
+    {
+      "parameters": {
+        "name": "app_{{ $('form-processor').item.json.session_id || $('evolution-processor').item.json.session_id }}.html",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "generated_apps",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3020,
+        -40
+      ],
+      "id": "a9d6a098-9eb4-4322-aea0-2de2d4b24b70",
+      "name": "💾 Salvar App",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "relatorio_{{ $('form-processor').item.json.session_id || $('evolution-processor').item.json.session_id }}.html",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "generated_reports",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3020,
+        360
+      ],
+      "id": "41f92eca-25a2-4bc8-8642-672aaa3f4b1f",
+      "name": "💾 Salvar Relatório",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Prueba",
+        "remoteJid": "={{ $json.whatsapp_number }}",
+        "messageText": "✅ *Análise Completa!*\n\n📋 *Sessão:* {{ $json.session_id }}\n⏰ *Concluída em:* {{ $now.format('dd/MM/yyyy HH:mm') }}\n\n📝 *Resultado da Análise:*\n{{ $json.analysis_result.substring(0, 1000) }}{{ $json.analysis_result.length > 1000 ? '...' : '' }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        2800,
+        -340
+      ],
+      "id": "0ca25f6d-33b1-4b32-80ed-21f978b4895c",
+      "name": "📱 Enviar Texto",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Prueba",
+        "remoteJid": "={{ $('form-processor').item.json.whatsapp_number || $('evolution-processor').item.json.whatsapp_number }}",
+        "messageText": "🚀 *Aplicativo Criado com Sucesso!*\n\n📋 *Sessão:* {{ $('form-processor').item.json.session_id || $('evolution-processor').item.json.session_id }}\n⏰ *Criado em:* {{ $now.format('dd/MM/yyyy HH:mm') }}\n\n🔗 *Link do Aplicativo:*\n{{ $json.webViewLink }}\n\n📱 *Acesse pelo navegador para ver seu app personalizado baseado na análise do vídeo!*",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        3240,
+        -40
+      ],
+      "id": "6c59f744-a4f3-4ba7-b5dd-1f73f88c2248",
+      "name": "📱 Enviar App",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Prueba",
+        "remoteJid": "={{ $('form-processor').item.json.whatsapp_number || $('evolution-processor').item.json.whatsapp_number }}",
+        "messageText": "📊 *Relatório com Gráficos Gerado!*\n\n📋 *Sessão:* {{ $('form-processor').item.json.session_id || $('evolution-processor').item.json.session_id }}\n⏰ *Gerado em:* {{ $now.format('dd/MM/yyyy HH:mm') }}\n\n🔗 *Link do Relatório:*\n{{ $json.webViewLink }}\n\n📈 *Visualize os gráficos e insights detalhados baseados na análise do seu vídeo!*",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        3240,
+        360
+      ],
+      "id": "4d4e95ba-29ab-445b-9292-592df602ccb2",
+      "name": "📱 Enviar Relatório",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Prueba",
+        "remoteJid": "={{ $('form-processor').item.json.whatsapp_number || $('evolution-processor').item.json.whatsapp_number }}",
+        "messageText": "❌ *Erro no Processamento*\n\n📋 *Sessão:* {{ $('form-processor').item.json.session_id || $('evolution-processor').item.json.session_id }}\n⏰ *Erro em:* {{ $now.format('dd/MM/yyyy HH:mm') }}\n\n🚨 *Detalhes do Erro:*\n{{ $json.error?.message || 'Erro desconhecido durante o processamento' }}\n\n🔄 *Por favor, tente novamente ou entre em contato com o suporte.*",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        2500,
+        660
+      ],
+      "id": "6085b06b-193b-4d47-b066-f7023669fe47",
+      "name": "⚠️ Enviar Erro",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "error_details",
+              "value": "={{ $json }}",
+              "type": "object"
+            },
+            {
+              "id": "2",
+              "name": "timestamp",
+              "value": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "session_id",
+              "value": "={{ $('form-processor').item.json.session_id || $('evolution-processor').item.json.session_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2200,
+        660
+      ],
+      "id": "f87d7ca7-e2bc-4873-b92d-8b5129cc0fb6",
+      "name": "🛠️ Tratamento de Erro"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2800,
+        -40
+      ],
+      "id": "afe40e17-9fc0-431a-8f24-6c058e8df760",
+      "name": "📄 Converter App"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2800,
+        360
+      ],
+      "id": "c88df50b-e53e-4661-b584-18b752c0adfe",
+      "name": "📄 Converter Relatório"
+    },
+    {
+      "parameters": {
+        "content": "# 🎯 Sistema Completo de Análise de Vídeo\n\n## ✨ Funcionalidades Principais:\n- 📋 Formulário web para upload\n- 📲 Webhook Evolution para WhatsApp\n- 🎬 Suporte a arquivo e link de vídeo\n- 🧠 Análise com Gemini 2.0 Flash\n- 📝 Três tipos de saída:\n  - Análise textual\n  - Aplicativo web\n  - Relatório com gráficos\n- ⏳ Mensagens de status\n- 🛠️ Tratamento robusto de erros\n- 💾 Salvamento automático no Drive",
+        "height": 400,
+        "width": 400,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        40,
+        -440
+      ],
+      "id": "4c1dc17b-242e-4f9d-9dda-7f06a19bfc9e",
+      "name": "📋 Visão Geral"
+    },
+    {
+      "parameters": {
+        "content": "# 🔧 Configurações Necessárias\n\n## 📊 Credenciais:\n- Google Gemini API Key\n- OpenRouter API Key  \n- Evolution API\n- Google Drive OAuth2\n\n## 📁 Pastas no Drive:\n- generated_apps\n- generated_reports\n\n## 🌐 Webhooks:\n- Formulário: /webhook/video-analysis-form\n- Evolution: /webhook/video-analysis",
+        "height": 400,
+        "width": 400,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        40,
+        20
+      ],
+      "id": "c8b74838-50e6-4462-b2b0-ece5064bf14c",
+      "name": "⚙️ Setup"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "📋 Formulário de Entrada": {
+      "main": [
+        [
+          {
+            "node": "🔀 Roteador de Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📲 Webhook Evolution": {
+      "main": [
+        [
+          {
+            "node": "🔀 Roteador de Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 Roteador de Entrada": {
+      "main": [
+        [
+          {
+            "node": "📱 Processar Evolution",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📝 Processar Formulário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Processar Formulário": {
+      "main": [
+        [
+          {
+            "node": "⏳ Mensagem Processando",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📱 Processar Evolution": {
+      "main": [
+        [
+          {
+            "node": "⏳ Mensagem Processando",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⏳ Mensagem Processando": {
+      "main": [
+        [
+          {
+            "node": "🎬 Roteador de Vídeo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎬 Roteador de Vídeo": {
+      "main": [
+        [
+          {
+            "node": "📤 Upload Arquivo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🔗 Análise de Link",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🔗 Análise de Link",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🛠️ Tratamento de Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📤 Upload Arquivo": {
+      "main": [
+        [
+          {
+            "node": "⏱️ Aguardar Processamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🛠️ Tratamento de Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⏱️ Aguardar Processamento": {
+      "main": [
+        [
+          {
+            "node": "🧠 Análise com Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 Análise com Gemini": {
+      "main": [
+        [
+          {
+            "node": "📊 Roteador de Saída",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🛠️ Tratamento de Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Análise de Link": {
+      "main": [
+        [
+          {
+            "node": "📊 Roteador de Saída",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🛠️ Tratamento de Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Roteador de Saída": {
+      "main": [
+        [
+          {
+            "node": "📝 Resposta Textual",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🚀 Gerador de App",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📈 Gerador de Relatório",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Resposta Textual": {
+      "main": [
+        [
+          {
+            "node": "📱 Enviar Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🚀 Gerador de App": {
+      "main": [
+        [
+          {
+            "node": "📄 Converter App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📈 Gerador de Relatório": {
+      "main": [
+        [
+          {
+            "node": "📄 Converter Relatório",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📄 Converter App": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📄 Converter Relatório": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar Relatório",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar App": {
+      "main": [
+        [
+          {
+            "node": "📱 Enviar App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar Relatório": {
+      "main": [
+        [
+          {
+            "node": "📱 Enviar Relatório",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🛠️ Tratamento de Erro": {
+      "main": [
+        [
+          {
+            "node": "⚠️ Enviar Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 LLM Gerador": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "🚀 Gerador de App",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 LLM Relatório": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "📈 Gerador de Relatório",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "tags": []
+}

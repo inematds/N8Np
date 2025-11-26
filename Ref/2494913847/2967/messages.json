@@ -1,0 +1,173 @@
+[
+  {
+    "id": 3434,
+    "author": "INEMA",
+    "date": "2025-03-17T23:02:12+00:00",
+    "text": "Tem o ap5 com informações e no va versão",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2993,
+    "author": "INEMA",
+    "date": "2025-03-12T06:27:56+00:00",
+    "text": "\"Descrição do vídeo\",\n  \"width\": 1080,\n  \"height\": 1920\n}\n```- **Saída:** URL da imagem gerada.\n\n---\n\n### **🎥 3. Transformação de Imagens em Vídeos com Runway**\n- **Nó:** \"HTTP Request\"  \n- **Método:** POST  \n- **URL:** `https://api.runwayml.com/v1/generate-video`  \n- **Headers:**  \n  - `Authorization: Bearer SUA_API_KEY`\n- **Body:**  \n```json\n{\n  \"prompt_image\": \"URL da imagem gerada\",\n  \"model\": \"gen-3a-turbo\",\n  \"aspect_ratio\": \"9:16\",\n  \"duration\": 5\n}```\n- S**aída: **URL do vídeo gerado.\n\n---\n\n### 🎵 4. Geração de Áudio com 11 Labs\n- N**ó: **\"HTTP Request\"  \n- M**étodo: **POST  \n- U**RL: **h`ttps://api.elevenlabs.io/v1/generate-sound ` \n- H**eaders: ** \n  - A`uthorization: Bearer SUA_API_KEY\n`- B**ody: ** \n{```\n  \"text\": \"Ambiente sonoro baseado no tema do vídeo\",\n  \"duration\": 20\n}\n```- S**aída: **URL do áudio gerado.\n\n---\n\n### 📂 5. Upload do Áudio para Google Drive\n- N**ó: **\"Google Drive\"\n- A**ção: **\"Upload File\"\n- C**onfiguração: ** \n  - Arquivo: Á**udio gerado\n**  - C**ompartilhar publicamente\n**\n---\n\n### 🎬 6. Combinar Vídeo e Áudio no Creatomate\n- N**ó: **\"HTTP Request\"  \n- M**étodo: **POST  \n- U**RL: **h`ttps://api.creatomate.com/v1/render-video\n`- H**eaders: ** \n  - A`uthorization: Bearer SUA_API_KEY\n`- B**ody: ** \n{```\n  \"video_sources\": [\"URL dos vídeos curtos\"],\n  \"audio_source\": \"URL do áudio\",\n  \"text_sources\": [\"Título do vídeo\"]\n}\n```- S**aída: **URL do vídeo final.\n\n---\n\n### 📤 7. Upload para YouTube\n- N**ó: **\"YouTube\"\n- A**ção: **\"Upload Video\"\n- C**onfiguração: ** \n  - Vídeo: A**rquivo renderizado\n**  - Status: \"**Não listado\"\n**  - Título: T**ítulo do vídeo\n**\n---\n\n### 📩 8. Notificação e Atualização da Planilha\n- N**ó: **\"Google Sheets\" → Atualizar status para \"**Processado\" ** \n- N**ó: **\"Email\" → Enviar notificação de vídeo publicado.\n\n---\n\n## ✅** Conclusão\n**Com esse fluxo, seu canal do YouTube pode p**ublicar vídeos automáticos enquanto você dorme! **😴💡  \n\nSe quiser personalizar, pode:  \n✅ Melhorar os prompts para IA  \n✅ Criar vídeos mais longos  \n✅ Automatizar a geração de ideias de vídeos  \n\nAgora é só testar! 🚀",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2992,
+    "author": "INEMA",
+    "date": "2025-03-12T06:27:56+00:00",
+    "text": "Aqui está o **passo a passo detalhado** para você automatizar a criação e publicação de vídeos **Shorts sem rosto** no YouTube usando **n8n, IA e automação**.\n\n---\n\n## **🔧 Ferramentas e Serviços Necessários**\nAntes de começar, você precisará configurar algumas ferramentas:\n\n1. **n8n** – Plataforma de automação  \n   - Acesse: [https://n8n.io](https://n8n.io/)  \n   - Pode ser usado na nuvem (n8n.cloud) ou instalado localmente.  \n   \n2. **Planilhas Google** – Para armazenar ideias de vídeos  \n   - Crie uma planilha com colunas: **Título, Status, Link do vídeo**  \n   \n3. **Flux (via Pi API)** – Para gerar imagens com IA  \n   - Acesse: [https://piapi.xyz](https://piapi.xyz/)  \n   - Crie uma conta e obtenha a **chave da API**  \n\n4. **Runway ML** – Para transformar imagens em vídeos  \n   - Acesse: [https://runwayml.com](https://runwayml.com/)  \n   - Crie uma conta e gere sua **API Key**  \n\n5. **11 Labs** – Para gerar áudio para os vídeos  \n   - Acesse: [https://elevenlabs.io](https://elevenlabs.io/)  \n   - Cadastre-se e obtenha a **API Key**  \n\n6. **Creatomate** – Para unir vídeo e áudio e renderizar o arquivo final  \n   - Acesse: [https://creatomate.com](https://creatomate.com/)  \n   - Crie uma conta gratuita e gere sua **API Key**  \n\n7. **YouTube Data API** – Para publicar vídeos automaticamente  \n   - Vá para: [https://console.cloud.google.com](https://console.cloud.google.com/)  \n   - Crie um projeto, ative a **YouTube Data API v3** e gere uma **chave de API**  \n\n---\n\n## **🚀 Passo a Passo para Configurar o Projeto**\n\n### **1️⃣ Criar a Planilha do Google**\nNo Google Sheets, crie uma planilha chamada **Shorts Automáticos** com as colunas:\n\n| Título                  | Status  | Link do Vídeo |\n|-------------------------|---------|--------------|\n| Viking Conquistador    | A fazer |              |\n| Cyberpunk Futurista    | A fazer |              |\n| Cowboys do Velho Oeste | A fazer |              |\n\n> **Obs:** O fluxo de trabalho buscará sempre a **primeira linha com status \"A fazer\"** para processar.\n\n---\n\n### **2️⃣ Criar o Fluxo de Automação no n8n**\nAgora, vamos criar um fluxo no **n8n** para conectar todos os serviços.\n\n1. **📌 Criar um novo fluxo no n8n**\n   - Acesse o n8n e crie um novo fluxo de trabalho.\n\n2. **📄 Adicionar um nó de \"Google Sheets\"**\n   - Configurar **conexão com o Google Sheets**.\n   - Configurar para buscar a **primeira linha com Status = \"A fazer\"**.\n\n3. **🤖 Criar um nó de \"Geração de Imagem com IA (Flux via Pi API)\"**\n   - Enviar a descrição do vídeo para a API **Flux**.\n   - Receber **URLs das imagens** geradas.\n\n4. **🎥 Criar um nó de \"Geração de Vídeo com Runway\"**\n   - Enviar **as imagens** para a API **Runway**.\n   - Receber **URLs dos vídeos curtos**.\n\n5. **🎵 Criar um nó de \"Geração de Áudio com 11 Labs\"**\n   - Enviar **o estilo do vídeo** para gerar um áudio correspondente.\n   - Receber **URL do arquivo de áudio**.\n\n6. **🔄 Criar um nó de \"Upload no Google Drive\"**\n   - Enviar o **áudio gerado** para o Drive.\n   - **Compartilhar o link publicamente**.\n\n7. **🖼️ Criar um nó de \"Edição Final no Creatomate\"**\n   - Unir **os vídeos curtos e o áudio**.\n   - Renderizar o **vídeo final**.\n\n8. **📤 Criar um nó de \"Upload no YouTube\"**\n   - Enviar o vídeo final para o YouTube.\n   - Definir **título, descrição e privacidade (não listado).**\n\n9. **📊 Atualizar a Planilha do Google**\n   - Mudar o status para **\"Processado\"**.\n   - Adicionar o **link do vídeo publicado**.\n\n10. **📩 Enviar notificação por e-mail**\n   - Enviar um e-mail avisando que o **Short foi publicado**.\n\n---\n\n## **🛠️ Configurando Cada Serviço no n8n**\n\n### **📄 1. Google Sheets**\n- **Nó:** \"Google Sheets\"\n- **Ação:** \"Read Row\"\n- **Configuração:**  \n  - Planilha: **Shorts Automáticos**  \n  - Buscar **a primeira linha onde \"Status\" = \"A fazer\"**  \n\n---\n\n### **🤖 2. Geração de Imagens com Flux**\n- **Nó:** \"HTTP Request\"  \n- **Método:** POST  \n- **URL:** `https://api.piapi.xyz/v1/task/image/generate`  \n- **Headers:**  \n  - `x-api-key: SUA_CHAVE_DA_API`  \n- **Body:**  \n```json\n{\n  \"model\": \"flux\",\n  \"task_type\": \"text-to-image\",\n  \"input\":",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 2991,
+    "author": "INEMA",
+    "date": "2025-03-12T06:27:33+00:00",
+    "text": "===========",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2990,
+    "author": "INEMA",
+    "date": "2025-03-12T06:27:28+00:00",
+    "text": "Trabalho**\n1. **Planilha do Google** → Obtém ideias para vídeos  \n2. **Geração de imagem** → Converte os prompts em imagens usando **Flux**  \n3. **Conversão de imagens para vídeos** → Utiliza **Runway** para criar vídeos animados  \n4. **Geração de áudio** → **11 Labs** cria efeitos sonoros de acordo com o estilo do vídeo  \n5. **Upload no Google Drive** → Para armazenar os arquivos de áudio  \n6. **Renderização do vídeo final** → Utiliza **Creatomate** para combinar vídeo e áudio  \n7. **Upload automático no YouTube** → O vídeo é enviado para o canal e listado como **não listado**  \n8. **Atualização da planilha** → Registra o status do vídeo e adiciona o link final  \n9. **Notificação por e-mail** → Informa que um novo short foi criado e está pronto para revisão  \n\n---\n\n### **Oportunidades de Melhoria**\n- **Aprimorar os prompts** para gerar imagens mais precisas  \n- **Aumentar a duração dos vídeos** (atualmente são 20 segundos)  \n- **Gerar ideias de vídeos automaticamente** para preencher a planilha do Google  \n- **Testar modelos alternativos** para geração de imagens e vídeos  \n\n### **Custo por Vídeo**\n- **Geração de imagens**: **~$0,06**  \n- **Geração de vídeos**: **~$1,00**  \n- **Geração de áudio (11 Labs)**: **Incluso no plano de $5/mês**  \n- **Creatomate**: **Plano gratuito cobre boa parte dos usos**  \n\nSe você pretende criar um canal automatizado de shorts no YouTube, este fluxo de trabalho pode ser um ótimo ponto de partida!  \n\n🚀",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2989,
+    "author": "INEMA",
+    "date": "2025-03-12T06:27:28+00:00",
+    "text": "**Como Automatizei Shorts Sem Rosto com IA no n8n (modelo gratuito) - YouTube**  \n\n\nHoje estou muito animado para compartilhar este fluxo de trabalho que desenvolvi e que vai te ajudar a gerar e publicar shorts sem rosto com IA no piloto automático. Assim que isso estiver rodando, você poderá gerar quantos shorts quiser por dia. Basicamente, você poderá crescer um canal do YouTube enquanto dorme.  \n\nE a melhor parte é que estou fornecendo todos os recursos que você precisa para configurar isso gratuitamente! Basta entrar na minha comunidade gratuita no **Skool** e todos os recursos estarão lá.  \n\nVamos direto para uma demonstração e depois destrinchamos cada nó do fluxo de trabalho para entender como funciona.  \n\nAqui está a aparência do fluxo de trabalho. Antes de testá-lo, vamos dar uma olhada nesta planilha do Google que contém todas as ideias que acionam o fluxo. Aqui está ela:  \n\n- Já criamos quatro vídeos diferentes (vamos ver daqui a pouco).  \n- O status dos vídeos está como \"criado\", o status de publicação está como \"processado\" e o link final do vídeo está aqui também.  \n\nPara rodar o fluxo de trabalho, sua planilha precisa estar configurada exatamente assim. Você poderá baixar esse modelo para garantir que tudo seja mapeado corretamente.  \n\nQuando rodamos o fluxo, ele pega a linha com status \"a fazer\" e gera um vídeo baseado nos temas definidos. No nosso exemplo, ele está gerando um vídeo sobre \"Futuristic Cyberpunk Rebels\" com os animais **tigre, urso, rinoceronte e porco**.  \n\n Agora, de volta ao n8n, ao rodar o fluxo de teste, ele extrai essa linha da planilha e insere os quatro animais e o estilo no agente de geração de prompts para imagens.  \n\nEstou usando um **agente** para testar diferentes modelos de geração de imagens. Atualmente, estou rodando com o **Flux**, que gera as imagens a partir do texto.  \n\nDepois que os prompts são limpos (removendo quebras de linha e pontuações desnecessárias), os enviamos para a API de **texto para imagem**. A geração das imagens leva cerca de **90 segundos**.  \n\nAssim que as imagens são geradas, elas são alimentadas em um **gerador de vídeo a partir de imagens**. O processo de conversão leva mais **2 minutos**.  \n\nAgora que as imagens foram processadas, passamos para o nó seguinte, que cria os vídeos a partir delas.  \n\nEnquanto isso, vamos dar uma olhada nos vídeos finalizados:  \n\n- **Vikings conquistadores de animais**  \n- **Cowboys do Velho Oeste**  \n\nCada vídeo tem um **áudio diferente**, que foi gerado com **11 Labs** com base no estilo do vídeo.  \n\nAgora, voltamos ao fluxo para verificar o progresso. O sistema está baixando os vídeos finalizados e gerando o áudio correspondente.  \n\n O áudio está sendo criado pela **11 Labs** e será adicionado ao vídeo. Em seguida, o arquivo é enviado ao **Google Drive** e compartilhado publicamente.  \n\nDepois disso, combinamos tudo e renderizamos o vídeo final com o serviço **Creatomate**. O tempo de renderização é de **25 segundos**.  \n\nPor fim, baixamos o vídeo e fazemos o upload automático para o **YouTube**.  \n\n### **Resultado Final**\n- **Vídeo gerado**: ✅  \n- **Planilha do Google atualizada**: ✅  \n- **Notificação por e-mail enviada**: ✅  \n\nPodemos acessar a planilha para ver que o status foi atualizado para \"processado\" e o link do vídeo final foi adicionado.  \n\nAgora podemos clicar no link e conferir o vídeo.  \n\n Aqui estão alguns exemplos dos vídeos finalizados:  \n\n- **Cyberpunk Futurista**  \n- **Guerreiros Egípcios** (esse teve alguns efeitos sonoros estranhos 😅)  \n\nOs primeiros vídeos foram gerados com **Cling**, enquanto os últimos usaram **Runway**.  \n\n**Diferença entre Cling e Runway:**  \n- **Cling** tem maior qualidade, mas leva **6 minutos** para processar um vídeo e tem limitação de taxa de requisição na API.  \n- **Runway** é **mais rápido** e tem menos restrições.  \n\nNo final, decidimos usar **Runway** para otimizar o tempo de geração.  \n\n Agora, vamos conferir nossa caixa de e-mails. Recebemos uma notificação com o título do short processado e o link para o vídeo no YouTube.  \n\n### **Resumo do Fluxo de",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2986,
+    "author": "INEMA",
+    "date": "2025-03-12T06:19:53+00:00",
+    "text": "https://www.youtube.com/watch?v=Gc03J27xmBc&t=12s",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 2980,
+    "author": "INEMA",
+    "date": "2025-03-12T04:05:39+00:00",
+    "text": "**Faceless Shorts System V2**\n\nPiapi: [https://piapi.ai/](https://piapi.ai/)\n\nElevenLabs: [https://elevenlabs.io](https://elevenlabs.io/app/home)\n\nTemplate de Video https://creatomate.com/\n\nGoogle Sheet Template (make a copy):  Anexo\n\nCreatomate template source code:\n\n`{\n  \"output_format\": \"mp4\",\n  \"width\": 1080,\n  \"height\": 1920,\n  \"elements\": [\n    {\n      \"id\": \"87e27d0a-394f-4083-8cab-081494799fa3\",\n      \"name\": \"Video-1\",\n      \"type\": \"video\",\n      \"track\": 1,\n      \"time\": 0,\n      \"duration\": 5,\n      \"source\": \"placeholder\",\n      \"dynamic\": true\n    },\n    {\n      \"id\": \"91fd56b8-43a2-4c54-9e7f-274f9c82a1e\",\n      \"name\": \"Video-2\",\n      \"type\": \"video\",\n      \"track\": 1,\n      \"time\": 5,\n      \"duration\": 5,\n      \"source\": \"placeholder\",\n      \"dynamic\": true\n    },\n    {\n      \"id\": \"389075bc-c76b-423a-bc7d-8aea1e560e28\",\n      \"name\": \"Video-3\",\n      \"type\": \"video\",\n      \"track\": 1,\n      \"time\": 10,\n      \"duration\": 5,\n      \"source\": \"placeholder\",\n      \"dynamic\": true\n    },\n    {\n      \"id\": \"6f8a2d3c-51b9-4e67-a5d2-9c7b384b6e2f\",\n      \"name\": \"Video-4\",\n      \"type\": \"video\",\n      \"track\": 1,\n      \"time\": 15,\n      \"duration\": 5,\n      \"source\": \"placeholder\",\n      \"dynamic\": true\n    },\n    {\n      \"id\": \"5e92f4a7-12c3-4d8b-b5f3-7a6e8d2b9c1e\",\n      \"name\": \"Audio-Track\",\n      \"type\": \"audio\",\n      \"track\": 2,\n      \"time\": 0,\n      \"duration\": 20,\n      \"source\": \"placeholder\",\n      \"dynamic\": true\n    },\n    {\n      \"id\": \"a1b2c3d4-e5f6-4g7h-8i9j-0k1l2m3n4o5p\",\n      \"name\": \"Text-1\",\n      \"type\": \"text\",\n      \"track\": 3,\n      \"time\": 0,\n      \"duration\": 5,\n      \"x\": 540,\n      \"y\": 293.1046,\n      \"text\": \"Dynamic Text 1\",\n      \"font_family\": \"Arial\",\n      \"font_size\": 80,\n      \"background_color\": \"rgba(0,0,0,0.65)\",\n      \"fill_color\": \"#ffffff\",\n      \"dynamic\": true\n    },\n    {\n      \"id\": \"q9w8e7r6-t5y4-3u2i-1o0p-a9s8d7f6g5h4\",\n      \"name\": \"Text-2\",\n      \"type\": \"text\",\n      \"track\": 3,\n      \"time\": 5,\n      \"duration\": 5,\n      \"x\": 540,\n      \"y\": 293.1046,\n      \"text\": \"Dynamic Text 2\",\n      \"font_family\": \"Arial\",\n      \"font_size\": 80,\n      \"background_color\": \"rgba(0,0,0,0.65)\",\n      \"fill_color\": \"#ffffff\",\n      \"dynamic\": true\n    },\n    {\n      \"id\": \"j4k5l6m7-n8o9-p0a1-s2d3-f4g5h6j7k8l9\",\n      \"name\": \"Text-3\",\n      \"type\": \"text\",\n      \"track\": 3,\n      \"time\": 10,\n      \"duration\": 5,\n      \"x\": 540,\n      \"y\": 293.1046,\n      \"text\": \"Dynamic Text 3\",\n      \"font_family\": \"Arial\",\n      \"font_size\": 80,\n      \"background_color\": \"rgba(0,0,0,0.65)\",\n      \"fill_color\": \"#ffffff\",\n      \"dynamic\": true\n    },\n    {\n      \"id\": \"z1x2c3v4-b5n6-m7a8-s9d0-f1g2h3j4k5l6\",\n      \"name\": \"Text-4\",\n      \"type\": \"text\",\n      \"track\": 3,\n      \"time\": 15,\n      \"duration\": 5,\n      \"x\": 540,\n      \"y\": 293.1046,\n      \"text\": \"Dynamic Text 4\",\n      \"font_family\": \"Arial\",\n      \"font_size\": 80,\n      \"background_color\": \"rgba(0,0,0,0.65)\",\n      \"fill_color\": \"#ffffff\",\n      \"dynamic\": true\n    }\n  ]\n}`",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 2979,
+    "author": "INEMA",
+    "date": "2025-03-12T04:04:25+00:00",
+    "text": "ap4",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Faceless Shorts Template.xlsx"
+  },
+  {
+    "id": 2978,
+    "author": "INEMA",
+    "date": "2025-03-12T04:04:14+00:00",
+    "text": "ap4",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "FacelessShortsSystem.json"
+  },
+  {
+    "id": 2977,
+    "author": "INEMA",
+    "date": "2025-03-12T04:03:56+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_2977_011.jpg"
+  },
+  {
+    "id": 2976,
+    "author": "INEMA",
+    "date": "2025-03-12T04:03:15+00:00",
+    "text": "Criação e Publicação de Shorts no YouTube 📺\n\nComo automatizar a criação de conteúdo configurando um fluxo de trabalho para gerar vídeo e áudio, renderizar tudo junto e postar automaticamente no YouTube – totalmente sem intervenção manual.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2975,
+    "author": "INEMA",
+    "date": "2025-03-12T04:02:51+00:00",
+    "text": "Incorporado geração de Imagens junto",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2974,
+    "author": "INEMA",
+    "date": "2025-03-12T04:02:31+00:00",
+    "text": "ap4 - Youtube Shorts SBS v2",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2973,
+    "author": "INEMA",
+    "date": "2025-03-12T04:02:28+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2972,
+    "author": "INEMA",
+    "date": "2025-03-12T04:02:27+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2971,
+    "author": "INEMA",
+    "date": "2025-03-12T04:02:27+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2970,
+    "author": "INEMA",
+    "date": "2025-03-12T04:02:27+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2969,
+    "author": "INEMA",
+    "date": "2025-03-12T04:02:27+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2968,
+    "author": "INEMA",
+    "date": "2025-03-12T04:02:26+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 2967,
+    "author": "INEMA",
+    "date": "2025-03-12T04:01:53+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

@@ -1,0 +1,447 @@
+{
+  "name": "nm38 - Farmacia 2 Resposta",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "farmacia-responses",
+        "options": {}
+      },
+      "id": "72e0e97f-ba97-4cdd-93d9-5d16068d0fd3",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        -1480,
+        810
+      ],
+      "webhookId": "farmacia-response-webhook"
+    },
+    {
+      "parameters": {},
+      "id": "936e9cc4-d7f1-4669-9b87-722c64e44bc2",
+      "name": "Extract Response Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -1260,
+        810
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT r.*, c.name as client_name, c.phone as client_phone, c.email as client_email\nFROM receitas r\nLEFT JOIN clientes c ON r.client_id = c.id\nWHERE r.order_id = '{{$json.orderId}}'\nAND r.status = 'budget_ready'\nLIMIT 1",
+        "options": {}
+      },
+      "id": "33c8bb84-c026-4f2b-8a07-3cfc11a5d857",
+      "name": "Get Order Details",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        -1040,
+        810
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "e03b62d5-e535-4187-8404-a432399f5111",
+      "name": "Is Approve?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        -820,
+        789
+      ],
+      "outputs": [
+        "Approve",
+        "Other"
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "4fa7f893-351e-4838-a196-78469fc36152",
+      "name": "Is Negotiate?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        1189
+      ],
+      "outputs": [
+        "Negotiate",
+        "Cancel"
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "receitas",
+        "options": {}
+      },
+      "id": "8de79be1-16b4-4be0-b55f-534c85b0ab81",
+      "name": "Update Order Approved",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        -380,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "name": "🏥 {{$json.order_id}} - {{$json.client_name}}",
+        "additionalFields": {
+          "due": "={{$now.plus({days: 2}).toISO()}}"
+        }
+      },
+      "id": "9d19e4a2-6044-4842-9ddf-d44c34ba03b3",
+      "name": "Create Trello Card",
+      "type": "n8n-nodes-base.trello",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "pageId": {
+          "__rl": true,
+          "mode": "url",
+          "value": ""
+        },
+        "title": "{{$json.order_id}} - {{$json.client_name}}",
+        "options": {}
+      },
+      "id": "3885b2b1-8c31-45cc-b7b2-dfcdbd2a240c",
+      "name": "Create Notion Page",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        -140
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "requestOptions": {}
+      },
+      "id": "bf383fab-b2a0-49d6-94a8-f4954c0a78d7",
+      "name": "Confirm Approve WhatsApp",
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        460
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$env.SMTP_FROM}}",
+        "toEmail": "={{$json.client_email}}",
+        "subject": "✅ Pedido Aprovado - {{$json.order_id}}",
+        "options": {}
+      },
+      "id": "106a646a-0b39-4f12-a703-f09a1d5bfce7",
+      "name": "Confirm Approve Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        60
+      ],
+      "webhookId": "ffe92fbc-ab47-492d-b07e-3afd2fee5f6e",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "receitas",
+        "options": {}
+      },
+      "id": "198a6236-afa9-4272-a664-4968380bc05b",
+      "name": "Update Order Negotiate",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        -380,
+        860
+      ]
+    },
+    {
+      "parameters": {
+        "text": ":handshake: *Cliente Solicitou Negociação*\n\n:clipboard: *Pedido:* `{{$json.order_id}}`\n:bust_in_silhouette: *Cliente:* {{$json.client_name}}\n:phone: *Telefone:* {{$json.client_phone}}\n:email: *Email:* {{$json.client_email}}\n:moneybag: *Valor Original:* R$ {{$json.budget_data.summary.finalTotal.toFixed(2)}}\n\n*Medicamentos:*\n{{$json.budget_data.medications.map(m => `• ${m.name} ${m.dosage} - ${m.quantity} un - R$ ${m.total.toFixed(2)}`).join('\\n')}}\n\n:arrow_right: <{{$env.ADMIN_URL}}/negotiate/{{$json.order_id}}|Negociar Agora>",
+        "otherOptions": {}
+      },
+      "id": "0f98be9c-3150-4209-ba98-0162d98ec4a5",
+      "name": "Notify Negotiate Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        910
+      ],
+      "webhookId": "a3f7e21b-e66d-46f9-b366-3085d9c71ef1"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "requestOptions": {}
+      },
+      "id": "4706d9b0-981d-4ce1-b184-8b624944fd5f",
+      "name": "Confirm Negotiate WhatsApp",
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        1110
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "receitas",
+        "options": {}
+      },
+      "id": "3fa3e09f-af20-41c7-a668-56274e87adff",
+      "name": "Update Order Cancel",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        -380,
+        1360
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "requestOptions": {}
+      },
+      "id": "f850fcd8-b458-425f-ac19-edaa21f48a4c",
+      "name": "Confirm Cancel WhatsApp",
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        1360
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "text": ":chart_with_downwards_trend: *Pedido Cancelado*\n\n:x: `{{$json.order_id}}` - {{$json.client_name}}\n:moneybag: Valor perdido: R$ {{$json.budget_data.summary.finalTotal.toFixed(2)}}\n:timer: Tempo até cancelamento: {{$json.timeToCancel}} minutos\n\nAção recomendada: Analisar motivo do cancelamento",
+        "otherOptions": {}
+      },
+      "id": "53e572ca-134f-42c3-bc29-9365d80f614c",
+      "name": "Notify Cancel Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        1560
+      ],
+      "webhookId": "43725675-9907-47b1-8978-58bff427d802",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {},
+      "id": "d0a54729-7be4-45ce-a9b4-38941bc21512",
+      "name": "Prepare Audit Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        710
+      ]
+    },
+    {
+      "parameters": {
+        "schema": "public",
+        "table": "audit_logs",
+        "options": {}
+      },
+      "id": "2d698442-37b3-4483-b163-c4ac00335d9d",
+      "name": "Save Audit Log",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        60,
+        710
+      ],
+      "continueOnFail": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Response": {
+      "main": [
+        [
+          {
+            "node": "Extract Response Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Response Data": {
+      "main": [
+        [
+          {
+            "node": "Get Order Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Order Details": {
+      "main": [
+        [
+          {
+            "node": "Is Approve?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Approve?": {
+      "main": [
+        [
+          {
+            "node": "Update Order Approved",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Negotiate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Negotiate?": {
+      "main": [
+        [
+          {
+            "node": "Update Order Negotiate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Order Cancel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Order Approved": {
+      "main": [
+        [
+          {
+            "node": "Create Trello Card",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create Notion Page",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Confirm Approve WhatsApp",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Confirm Approve Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare Audit Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Order Negotiate": {
+      "main": [
+        [
+          {
+            "node": "Notify Negotiate Slack",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Confirm Negotiate WhatsApp",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare Audit Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Order Cancel": {
+      "main": [
+        [
+          {
+            "node": "Confirm Cancel WhatsApp",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify Cancel Slack",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare Audit Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Audit Log": {
+      "main": [
+        [
+          {
+            "node": "Save Audit Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "888bbfc6-b152-4f32-9edd-9080d5d70e5d",
+  "meta": {
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "92KusPYyQKl0RcEA",
+  "tags": []
+}

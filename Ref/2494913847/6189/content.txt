@@ -1,0 +1,302 @@
+TOPICO 6189
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-04-22 21:37:34+00:00
+
+Total de mensagens: 23
+Midias baixadas: 7
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-04-22T22:12:36+00:00
+Texto:
+Logger`.
+8. Cuidar para o logger não ter erros internos.
+9. Facilita manutenção e análise de múltiplos fluxos.
+10. Pode ser usado para dezenas de workflows diferentes com **1 único logger**.
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-04-22T22:12:35+00:00
+Texto:
+### Resumo Geral:
+O vídeo ensina como criar um **fluxo de tratamento centralizado de erros no n8n**. A ideia é que qualquer workflow ativo que apresentar erro, dispare um **workflow específico de captura de erro**, que registra o erro em uma **planilha do Google Sheets** e envia uma **notificação por Slack ou e-mail**. É possível associar esse fluxo de erro a múltiplos workflows.
+
+---
+
+### Passo a Passo com Exemplos
+
+1. **Criar Workflow de Teste com Erro**
+   - Configure um fluxo com um trigger (ex: Telegram).
+   - Adicione uma ação que pode falhar propositalmente (ex: modelo de chat sem configuração).
+   - Ative esse fluxo.
+
+   *Exemplo:* 
+   - Workflow: “Ultimate Assistant”
+   - Trigger: Telegram
+   - Erro proposital: remover modelo de chat
+
+2. **Criar Workflow de Tratamento de Erro (Error Logger)**
+   - Crie novo fluxo chamado `Error Logger`.
+   - Primeiro nó: `Error Trigger` (não precisa configurar nada).
+
+   *Esse nó escuta qualquer erro de fluxo ativo vinculado a ele.*
+
+3. **Vincular Workflow Principal ao Workflow de Erro**
+   - Vá nas configurações do workflow principal.
+   - Configure o campo “Error Workflow” com o nome do fluxo `Error Logger`.
+
+   *Assim, sempre que o workflow principal falhar, o n8n executa automaticamente o workflow de erro.*
+
+4. **Registrar o erro em uma Planilha Google**
+   - Adicione o nó “Google Sheets”.
+   - Ação: `Append Row`.
+   - Configure colunas para:
+     - Timestamp (`{{$now}}` com formatação opcional)
+     - Nome do Workflow
+     - URL do Workflow
+     - Nome do Node que causou erro
+     - Mensagem do Erro
+
+   *Exemplo de planilha:*
+   ```   | Timestamp           | Workflow Name       | URL                                | Node              | Error Message                          |
+   |---------------------|---------------------|-------------------------------------|-------------------|----------------------------------------|
+   | 2025-04-22 18:20:33 | Ultimate Assistant  | https://n8n.io/workflow/1234...     | ChatModel         | Chat model subnode must be connected.  |
+   ```
+
+5. N**otificação por Slack (ou e-mail)
+**   - Adicione o nó “Slack” com ação “Send Message”.
+   - Configure o canal (ex: #errors).
+   - Monte a mensagem com expressões:
+      ```    Workflow Error: {{$json["workflow"]["name"]}}
+     Node: {{$json["node"]["name"]}}
+     Time: {{$now}}
+     Message: {{$json["error"]["message"]}}
+     [Ver execução]({{$json["workflow"]["url"]}})
+     
+```   - Desative a opção “Include link to workflow” para evitar o texto padrão do n8n.
+
+6. Ex**emplo de Disparo Real
+ **  - Enviar mensagem “Hey” no Telegram.
+   - Com erro proposital (sem modelo de chat), o workflow principal falha.
+   - O Er`ror Logger é` ativado automaticamente.
+   - Uma nova linha aparece na planilha.
+   - Notificação aparece no Slack.
+
+7. Er**ros que NÃO Disparam o Workflow de Erro
+ **  - Se o fluxo executa “verde” mas internamente algo falha (ex: API sem autenticação), nã**o será tratado como erro pelo n8n.
+**   - Para esses casos, seria necessário capturar a falha manualmente (ex: checando resposta da API).
+
+8. Er**ro proposital para testar
+ **  - Alterar uma variável mal intencionadamente (ex: se`ssionIDD e`m vez de `sessionID`).
+   - Executar novamente.
+   - Verificação: linha na planilha + notificação no Slack com detalhes atualizados.
+
+9. Li**mitações e Cuidados
+ **  - O próprio workflow de erro (`Error Logger`) raramente deve falhar, já que apenas lê dados e os insere.
+   - Caso falhe com frequência, é sinal de problemas mais profundos (ex: autenticação, excesso de lógica complexa).
+
+---
+
+### Conclusão
+Esse método:
+- Centraliza o tratamento de erros.
+- Facilita o debug com link direto à execução.
+- Ajuda a manter registros para análise posterior.
+
+---
+
+### Tópicos Resumidos em Lista
+
+1. Criar workflow com erro proposital.
+2. Criar workflow de erro com nó Er`ror Trigger.
+`3. Ativar e vincular workflow principal ao Er`ror Logger.
+`4. Logar dados em Google Sheets.
+5. Enviar notificação via Slack ou outro canal.
+6. Testar com erro real.
+7. Entender quando o erro nã**o d**ispara o `Error
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-04-22T22:12:17+00:00
+Texto:
+==============
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-04-22T21:50:40+00:00
+Texto:
+dublado em portugues
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-04-22T21:50:32+00:00
+Texto:
+https://www.youtube.com/watch?v=bTF3tACqPRU
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-04-22T21:50:08+00:00
+Texto:
+,
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-04-22T21:50:07+00:00
+Texto:
+,
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-04-22T21:49:03+00:00
+Texto:
+Resumo direto em tópicos:
+
+- Criar um fluxo chamado `Error Logger` com o nó `Error Trigger`.
+- Vincular esse fluxo a todos os workflows ativos que deseja monitorar (em *Settings > Error Workflow*).
+- Quando qualquer workflow falhar, o `Error Logger` é acionado automaticamente.
+- O logger registra os erros em uma planilha Google Sheets (timestamp, nome do workflow, nó, mensagem e link).
+- Envia também uma notificação no Slack com os mesmos dados.
+- Só erros que “quebram” o fluxo (executam em vermelho) disparam o logger.
+- Ideal para centralizar e automatizar o controle de falhas em projetos com múltiplos fluxos.
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-04-22T21:40:22+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Error Logs (file -_ make a copy).xlsx
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-04-22T21:40:16+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Error_Logger.json
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-04-22T21:39:27+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_6201_011.jpg
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-04-22T21:38:49+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_6200_012.jpg
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-04-22T21:38:20+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_6199_013.jpg
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-04-22T21:37:43+00:00
+Texto:
+Controle de Error Fluxo
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-04-22T21:37:40+00:00
+Texto:
+........
+
+------------------------------
+
+MENSAGEM 16
+Autor: INEMA
+Data: 2025-04-22T21:37:40+00:00
+Texto:
+......
+
+------------------------------
+
+MENSAGEM 17
+Autor: INEMA
+Data: 2025-04-22T21:37:39+00:00
+Texto:
+.....
+
+------------------------------
+
+MENSAGEM 18
+Autor: INEMA
+Data: 2025-04-22T21:37:39+00:00
+Texto:
+....
+
+------------------------------
+
+MENSAGEM 19
+Autor: INEMA
+Data: 2025-04-22T21:37:39+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 20
+Autor: INEMA
+Data: 2025-04-22T21:37:39+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 21
+Autor: INEMA
+Data: 2025-04-22T21:37:39+00:00
+Texto:
+https://chatgpt.com/c/68080dee-9e90-8009-8771-f5107e7d0592
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 22
+Autor: INEMA
+Data: 2025-04-22T21:37:38+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 23
+Autor: INEMA
+Data: 2025-04-22T21:37:34+00:00
+Texto: [Sem texto]
+
+------------------------------
+

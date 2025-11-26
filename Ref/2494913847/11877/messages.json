@@ -1,0 +1,222 @@
+[
+  {
+    "id": 12107,
+    "author": "INEMA",
+    "date": "2025-07-31T15:40:31+00:00",
+    "text": "Sim! **Você precisa instalar o `n8n-mcp` localmente** na sua máquina antes de usar com o Claude Desktop.\n\nO `Claude` apenas **executa o comando `npx -y n8n-mcp`**, mas para isso funcionar corretamente, o pacote `n8n-mcp` precisa estar disponível no seu ambiente.\n\n---\n\n## ✅ Passo a passo para instalar o `n8n-mcp` localmente\n\n### 1. Verifique se o Node.js está instalado\n\nNo terminal (CMD ou PowerShell):\n\n```node -v```\n\nSe não estiver, instale via [https://nodejs.org](https://nodejs.org/) (versão 18 ou superior recomendada).\n\n---\n\n### 2. Instale o `n8n-mcp` globalmente (opcional, mas evita erros de cache)\n\n```npm install -g n8n-mcp```\n\nSe preferir apenas local via `npx`, você pode pular esse passo, **mas instale antes os binários necessários com esse comando:**\n\n```npx -y n8n-mcp --help```\n\n> Isso força o download do pacote e testa se o `n8n-mcp` está funcionando localmente.\n\n---\n\n### 3. Teste manualmente\n\nNo terminal:\n\n```npx -y n8n-mcp```\n\nSe aparecer:\n\n```[n8n-mcp] MCP server listening on stdio```\n\n→ Está funcionando.\n\nSe aparecer erro E`BUSY,` t`oken inválido,` t`imeout,` etc., você deve corrigir isso antes do Claude conseguir usar.\n\n---\n\n### 4. Confirme no c`laude.config.json `que está assim:\n\n\"```n8n-mcp\": {\n  \"command\": \"npx\",\n  \"args\": [\"-y\", \"n8n-mcp\"],\n  \"env\": {\n    \"MCP_MODE\": \"stdio\",\n    \"N8N_API_URL\": \"https://seu-n8n-online\",\n    \"N8N_API_KEY\": \"SEU_TOKEN\"\n  }\n}\n```\n---\n\n### ✅ Conclusão\n\n| Etapa                          | Obrigatório?  | Observação                           |\n| ------------------------------ | ------------- | ------------------------------------ |\n| Ter Node.js instalado          | Sim           | Para rodar qualquer coisa com n`px ` |\n| Rodar n`px -y n8n-mcp `uma vez | Sim           | Garante que o Claude consiga acessar |\n| Instalar globalmente           | Não, mas útil | Evita erros com cache local do npx   |",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 12106,
+    "author": "INEMA",
+    "date": "2025-07-31T15:40:18+00:00",
+    "text": "===================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12105,
+    "author": "INEMA",
+    "date": "2025-07-31T15:34:20+00:00",
+    "text": "Vamos fazer o **passo a passo completo para usar o Claude Desktop com uma instância do n8n na nuvem**, usando `n8n-mcp` para criar automações conversacionais reais.\n\n---\n\n## ✅ ETAPA 1 — Acesso à sua instância do n8n na nuvem\n\nCertifique-se de que você **consegue acessar** sua instância n8n pelo navegador:\n\nExemplo:\n\n`https://agente.inema.online`\n\nSe abrir a interface do n8n, continue.\n\n---\n\n## ✅ ETAPA 2 — Verifique se a API está acessível\n\nAbra no navegador:\n\nh`ttps://agente.inema.online/rest/workflows\n`\n* Se pedir login ou der erro 401, a **autenticação básica está ativa\n*** Se der ti`meout o`u re`fused, `há problemas de rede ou o proxy está bloqueando\n\n---\n\n## ✅ ETAPA 3 — Gere um novo token no painel do n8n\n\n1. Acesse: ht`tps://agente.inema.online\n2`. Vá em:\n\n     ` Settings → Personal Access Tokens\n   \n3`. Clique em \"Cr**eate\", n**omeie como cla`ude-mcp ou` similar\n4. Copie o token gerado\n5. Man**tenha visível para o próximo passo\n\n-**--\n\n## ✅ ETAPA 4 — Atualize o cla`ude.config.json\n\nA`bra o arquivo em:\n\nC:\\`Users\\seu_usuario\\.claude\\claude.config.json\n\nS`ubstitua ou adicione o bloco abaixo:\n\n{\n  ```\"mcpServers\": {\n    \"n8n-mcp\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"n8n-mcp\"],\n      \"env\": {\n        \"MCP_MODE\": \"stdio\",\n        \"LOG_LEVEL\": \"error\",\n        \"DISABLE_CONSOLE_OUTPUT\": \"true\",\n        \"N8N_API_URL\": \"https://agente.inema.online\",\n        \"N8N_API_KEY\": \"SEU_TOKEN_AQUI\"\n      }\n    },\n    \"n8n-mcp-docs\": {\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"mcp-remote@latest\",\n        \"https://gitmcp.io/czlonkowski/n8n-mcp\"\n      ]\n    }\n  }\n}\n\nSu```bstitua \"SEU`_TOKEN_AQUI\" pel`o token copiado da etapa anterior.\n\n---\n\n## ✅ ETAPA 5 — Teste a conexão com curl`\n\nNo` terminal (CMD ou PowerShell):\n\ncurl``` -H \"Authorization: Bearer SEU_TOKEN_AQUI\" https://agente.inema.online/rest/workflows\n\n* ```Se retornar JSON → ✅ OK\n* Se der Unau`thorized → G`ere novo token e revise\n* Se der Time`out → V`erifique servidor, firewall ou proxy\n\n---\n\n## ✅ ETAPA 6 — Verifique a autenticação básica\n\nSe sua instância exigir logi**n e senha (Basic Auth) alé**m do token, Claude não **vai conseguir se conectar com apenas o token.\n\n#**## Soluções:\n\n* Desativar no .env` do `servidor:\n\n    N8```N_BASIC_AUTH_ACTIVE=false\n  \n* O```u usar Claude localmente com um n8n local\n\n---\n\n## ✅ ETAPA 7 — Reinicie o Claude Desktop\n\n1. Feche completamente o Claude\n2. Reabra e aguarde 30 segundos\n3. Verifique se o MCP n8n-`mcp apa`rece com 39 tools\n\n---\n\n## ✅ ETAPA 8 — Teste com um prompt\n\nUse este prompt no Claude:\n\nCrie``` um fluxo no n8n com webhook de entrada que recebe nome e e-mail e salva em uma planilha do Google Sheets. Adicione sticky notes explicando cada etapa.\n\n--```-\n\n## ✅ Pronto! Agora você tem:\n\n| Item                             | Status |\n| -------------------------------- | ------ |\n| Instância n8n na nuvem           | ✅      |\n| API funcional                    | ✅      |\n| Token válido                     | ✅      |\n| Claude Desktop com n8n-mcp ativo | ✅      |\n| Fluxo testado com prompt         | ✅      |\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12104,
+    "author": "INEMA",
+    "date": "2025-07-31T15:34:13+00:00",
+    "text": "===================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12103,
+    "author": "INEMA",
+    "date": "2025-07-31T15:33:32+00:00",
+    "text": "Abaixo está o **passo a passo completo e atualizado para configurar do zero o Claude Desktop com `n8n-mcp` funcional**, incluindo:\n\n* Claude Desktop\n* `n8n` (pode ser local ou hospedado)\n* Token de API\n* Configuração do `claude.config.json`\n* Validação via terminal\n\n---\n\n## ✅ ETAPA 1 — Subir sua instância do n8n (caso ainda não tenha)\n\n### 🖥️ A) **Local (recomendado para testes)**\n\nSe quiser rodar localmente com Docker:\n\n```docker run -it --rm \\\n  -p 5678:5678 \\\n  -e N8N_BASIC_AUTH_ACTIVE=false \\\n  -e N8N_HOST=localhost \\\n  n8nio/n8n```\n\nAcesse: http://localhost:5678\n→ Siga o assistente e gere um usuário.\n\n---\n\n## ✅ ETAPA 2 — Gerar token de API no n8n\n\n1. Acesse sua instância n8n (ex: http://localhost:5678 ou sua URL online)\n2. Vá em:\n\n   ```   Settings → Personal Access Tokens → Create Token\n   ```\n3. Copie o token completo\n4. Guarde para o próximo passo\n\n---\n\n## ✅ ETAPA 3 — Editar c`laude.config.json\n`\n### 📂 Local do arquivo:\n\nC```:\\Users\\seu_usuario\\.claude\\claude.config.json\n```\n### 🧩 Conteúdo mínimo necessário:\n\n{\n```  \"mcpServers\": {\n    \"n8n-mcp\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"n8n-mcp\"],\n      \"env\": {\n        \"MCP_MODE\": \"stdio\",\n        \"LOG_LEVEL\": \"error\",\n        \"DISABLE_CONSOLE_OUTPUT\": \"true\",\n        \"N8N_API_URL\": \"http://localhost:5678\",\n        \"N8N_API_KEY\": \"SEU_TOKEN_AQUI\"\n      }\n    },\n    \"n8n-mcp-docs\": {\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"mcp-remote@latest\",\n        \"https://gitmcp.io/czlonkowski/n8n-mcp\"\n      ]\n    }\n  }\n}\n\n```> Se usar instância online, substitua \"h`ttp://localhost:5678\" p`ela sua URL real.\n\n---\n\n## ✅ ETAPA 4 — Testar a API com cu`rl\n\n`Abra o terminal e rode:\n\ncu```rl -H \"Authorization: Bearer SEU_TOKEN_AQUI\" http://localhost:5678/rest/workflows\n\n```Se funcionar, verá um JSON com os workflows.\nSe aparecer Un`authorized, `volte ao painel e gere um novo token.\n\n---\n\n## ✅ ETAPA 5 — Rodar o n8`n-mcp m`anualmente (opcional)\n\nnp```x -y n8n-mcp\n\n```Você deve ver algo como:\n\n[n```8n-mcp] MCP server listening on stdio\n\n```Se der erro EBUSY ou similar, feche o Claude Desktop, limpe o cache do npx:\n\nrd ```/s /q \"%LOCALAPPDATA%\\npm-cache\\_npx\"\n\n-```--\n\n## ✅ ETAPA 6 — Abrir o Claude Desktop\n\n1. Feche completamente o Claude Desktop\n2. Reabra\n3. Aguarde 30 segundos\n4. Verifique se aparece:\n\nMCP```: n8n-mcp (39 tools disponíveis)\n\n-```--\n\n## ✅ ETAPA 7 — Usar prompt no Claude\n\nExemplo de prompt para testar:\n\nCrie``` uma automação no n8n que:\n- Inicia com webhook\n- Recebe nome e e-mail\n- Salva os dados em Google Sheets\n- Adicione sticky notes explicando cada etapa\n\n--```-\n\n### 🧠 Observação:\n\n* n8n-`mcp-docs só `fornece docu**mentação dos nodes\n* n**8n-`mcp per`mite ação** real na sua instância n8n\n* A**mbos são recomendados juntos\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 12102,
+    "author": "INEMA",
+    "date": "2025-07-31T15:32:51+00:00",
+    "text": "=============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11897,
+    "author": "INEMA",
+    "date": "2025-07-28T03:26:55+00:00",
+    "text": "farei live para explicar em detalhes",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11896,
+    "author": "INEMA",
+    "date": "2025-07-28T03:22:41+00:00",
+    "text": "============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11895,
+    "author": "INEMA",
+    "date": "2025-07-28T03:22:35+00:00",
+    "text": "`{\n  \"nodes\": [\n    {\n      \"parameters\": {\n        \"Content\": \"## Sticky Note Title\\nText of the sticky note\"\n      },\n      \"type\": \"n8n-nodes-base.stickyNote\",\n      \"typeVersion\": 1,\n      \"position\": [\n        1400,\n        460\n      ],\n      \"id\": \"ae2905d1-915d-4aa2-a9b7-e65b97152a9f\",\n      \"name\": \"Sticky Note 2\"\n    }\n  ],\n  \"connections\": {},\n  \"pinData\": {},\n  \"meta\": {\n    \"credentialsTemplateIdConfigured\": true,\n    \"instanceId\": \"95e5abe2c516b8321bb8796e708c4860a5b5cb91751e9d19\"\n  }\n}`",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11894,
+    "author": "INEMA",
+    "date": "2025-07-28T03:22:22+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11894_010.jpg"
+  },
+  {
+    "id": 11893,
+    "author": "INEMA",
+    "date": "2025-07-28T03:21:48+00:00",
+    "text": "============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11892,
+    "author": "INEMA",
+    "date": "2025-07-28T03:21:44+00:00",
+    "text": "deployed workflow\n2. n8n_list_executions() - Monitor execution status\n3. n8n_update_partial_workflow() - Fix issues using diffs\n\n## Response Structure\n\n1. **Discovery**: Show available nodes and options\n2. **Pre-Validation**: Validate node configurations first\n3. **Configuration**: Show only validated, working configs\n4. **Building**: Construct workflow with validated components\n5. **Workflow Validation**: Full workflow validation results\n6. **Deployment**: Deploy only after all validations pass\n7. **Post-Validation**: Verify deployment succeeded\n\n## Example Workflow\n\n### 1. Discovery & Configuration\nsearch_nodes({query: 'slack'})\nget_node_essentials('n8n-nodes-base.slack')\n\n### 2. Pre-Validation\nvalidate_node_minimal('n8n-nodes-base.slack', {resource:'message', operation:'send'})\nvalidate_node_operation('n8n-nodes-base.slack', fullConfig, 'runtime')\n\n### 3. Build Workflow\n// Create workflow JSON with validated configs\n\n### 4. Workflow Validation\nvalidate_workflow(workflowJson)\nvalidate_workflow_connections(workflowJson)\nvalidate_workflow_expressions(workflowJson)\n\n### 5. Deploy (if configured)\nn8n_create_workflow(validatedWorkflow)\nn8n_validate_workflow({id: createdWorkflowId})\n\n### 6. Update Using Diffs\nn8n_update_partial_workflow({\n  workflowId: id,\n  operations: [\n    {type: 'updateNode', nodeId: 'slack1', changes: {position: [100, 200]}}\n  ]\n})\n\n## Important Rules\n\n- ALWAYS validate before building\n- ALWAYS validate after building\n- NEVER deploy unvalidated workflows\n- USE diff operations for updates (80-90% token savings)\n- STATE validation results clearly\n- FIX all errors before proceeding",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11891,
+    "author": "INEMA",
+    "date": "2025-07-28T03:21:44+00:00",
+    "text": "Instrução do Projeto\n\n\nYou are an expert in n8n automation software using n8n-MCP tools. Your role is to design, build, and validate n8n workflows with maximum accuracy and efficiency.\n\nCrie as Automações em Lingua Portuguesa Brasileira\n\n## Core Workflow Process\n\n1. **ALWAYS start new conversation with**: `tools_documentation()` to understand best practices and available tools.\n\n2. **Discovery Phase** - Find the right nodes:\n   - Think deeply about user request and the logic you are going to build to fulfill it. Ask follow-up questions to clarify the user's intent, if something is unclear. Then, proceed with the rest of your instructions.\n   - `search_nodes({query: 'keyword'})` - Search by functionality\n   - `list_nodes({category: 'trigger'})` - Browse by category\n   - `list_ai_tools()` - See AI-capable nodes (remember: ANY node can be an AI tool!)\n\n3. **Configuration Phase** - Get node details efficiently:\n   - `get_node_essentials(nodeType)` - Start here! Only 10-20 essential properties\n   - `search_node_properties(nodeType, 'auth')` - Find specific properties\n   - `get_node_for_task('send_email')` - Get pre-configured templates\n   - `get_node_documentation(nodeType)` - Human-readable docs when needed\n   - It is good common practice to show a visual representation of the workflow architecture to the user and asking for opinion, before moving forward. \n\n4. **Pre-Validation Phase** - Validate BEFORE building:\n   - `validate_node_minimal(nodeType, config)` - Quick required fields check\n   - `validate_node_operation(nodeType, config, profile)` - Full operation-aware validation\n   - Fix any validation errors before proceeding\n\n5. **Building Phase** - Create the workflow:\n   - Use validated configurations from step 4\n   - Connect nodes with proper structure\n   - Add error handling where appropriate\n   - Use expressions like $json, $node[\"NodeName\"].json\n\n   - Incorporates sticky notes following the \"base sticky note\" structure\n\n   - Build the workflow in an artifact for easy editing downstream (unless the user asked to create in n8n instance)\n\n6. **Workflow Validation Phase** - Validate complete workflow:\n   - `validate_workflow(workflow)` - Complete validation including connections\n   - `validate_workflow_connections(workflow)` - Check structure and AI tool connections\n   - `validate_workflow_expressions(workflow)` - Validate all n8n expressions\n   - Fix any issues found before deployment\n\n7. **Deployment Phase** (if n8n API configured):\n   - `n8n_create_workflow(workflow)` - Deploy validated workflow\n   - `n8n_validate_workflow({id: 'workflow-id'})` - Post-deployment validation\n   - `n8n_update_partial_workflow()` - Make incremental updates using diffs\n   - `n8n_trigger_webhook_workflow()` - Test webhook workflows\n\n## Key Insights\n\n- **USE CODE NODE ONLY WHEN IT IS NECESSARY** - always prefer to use standard nodes over code node. Use code node only when you are sure you need it.\n- **VALIDATE EARLY AND OFTEN** - Catch errors before they reach deployment\n- **USE DIFF UPDATES** - Use n8n_update_partial_workflow for 80-90% token savings\n- **ANY node can be an AI tool** - not just those with usableAsTool=true\n- **Pre-validate configurations** - Use validate_node_minimal before building\n- **Post-validate workflows** - Always validate complete workflows before deployment\n- **Incremental updates** - Use diff operations for existing workflows\n- **Test thoroughly** - Validate both locally and after deployment to n8n\n\nThe input that the user will provide can be:\n• An idea for an automation workflow they want to build.\n• An audio transcription explaining how to carry out an automation.\n\n## Validation Strategy\n\n### Before Building:\n1. validate_node_minimal() - Check required fields\n2. validate_node_operation() - Full configuration validation\n3. Fix all errors before proceeding\n\n### After Building:\n1. validate_workflow() - Complete workflow validation\n2. validate_workflow_connections() - Structure validation\n3. validate_workflow_expressions() - Expression syntax check\n\n### After Deployment:\n1. n8n_validate_workflow({id}) - Validate",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11890,
+    "author": "INEMA",
+    "date": "2025-07-28T03:20:46+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11890_014.jpg"
+  },
+  {
+    "id": 11889,
+    "author": "INEMA",
+    "date": "2025-07-28T03:19:52+00:00",
+    "text": "{\n  \"mcpServers\": {\n    \"n8n-mcp\": {\n      \"command\": \"npx\",\n      \"args\": [\"n8n-mcp\"],\n      \"env\": {\n        \"MCP_MODE\": \"stdio\",\n        \"LOG_LEVEL\": \"error\",\n        \"DISABLE_CONSOLE_OUTPUT\": \"true\",\n        \"N8N_API_URL\": \"https://your-n8n-instance.com\",\n        \"N8N_API_KEY\": \"your-api-key\"\n      }\n    }\n  }\n}",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11888,
+    "author": "INEMA",
+    "date": "2025-07-28T03:19:26+00:00",
+    "text": "https://github.com/czlonkowski/n8n-mcp",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11887,
+    "author": "INEMA",
+    "date": "2025-07-28T03:18:56+00:00",
+    "text": "Configurando MCP no Claude Desktop",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11886,
+    "author": "INEMA",
+    "date": "2025-07-28T03:18:36+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11886_018.jpg"
+  },
+  {
+    "id": 11885,
+    "author": "INEMA",
+    "date": "2025-07-28T03:17:56+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11885_019.jpg"
+  },
+  {
+    "id": 11884,
+    "author": "INEMA",
+    "date": "2025-07-28T03:17:00+00:00",
+    "text": "nm59 - Automação n8n-MCP Github",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11883,
+    "author": "INEMA",
+    "date": "2025-07-28T03:16:58+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11882,
+    "author": "INEMA",
+    "date": "2025-07-28T03:16:58+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11881,
+    "author": "INEMA",
+    "date": "2025-07-28T03:16:57+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11880,
+    "author": "INEMA",
+    "date": "2025-07-28T03:16:57+00:00",
+    "text": "e33",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11879,
+    "author": "INEMA",
+    "date": "2025-07-28T03:16:57+00:00",
+    "text": "https://chatgpt.com/c/6886b9a7-dec4-832f-99f8-cda010fb8c27",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11878,
+    "author": "INEMA",
+    "date": "2025-07-28T03:16:56+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11877,
+    "author": "INEMA",
+    "date": "2025-07-28T03:16:48+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

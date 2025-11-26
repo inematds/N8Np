@@ -1,0 +1,958 @@
+TOPICO 14299
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-09-18 02:39:37+00:00
+
+Total de mensagens: 46
+Midias baixadas: 19
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-09-20T05:27:54+00:00
+Texto:
+Podem usar o Claude Code para migrar este projeto
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-09-20T03:15:28+00:00
+Texto:
+Comando para o Relatorio
+
+npx ccusage@lastest
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-09-20T03:14:13+00:00
+Texto:
+usando para testes com o claude desktop
+Midia: MessageMediaPhoto -> photo_14399_003.jpg
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-09-18T03:08:58+00:00
+Texto:
+### Hacks de Desenvolvimento
+
+* **Reutilizar workflows**: coloque toda a lógica de chamada em um subworkflow único (Call Master) e invoque via Webhook interno; isso evita duplicar fluxos para on-demand, manhã, noite, domingo.
+* **Templates no ****Bolt.new**: crie um template padrão de tela (login, onboarding, dashboard) e apenas duplique e personalize, reduzindo tempo de design.
+* **Autocompletar preferências**: quando o usuário não preencher, atribua defaults (ex.: voz masculina, horário padrão) para evitar falhas.
+
+---
+
+### Hacks de Automação
+
+* **Polling com guardrails**: use *Wait* de 30s entre checagens no n8n em vez de loops, para não travar execução.
+* **Gerar resumos curtos automáticos**: depois da transcrição, sempre resuma em no máximo 5 frases e armazene; isso mantém memória limpa e leve.
+* **Liberar número automaticamente**: se a chamada cair ou travar, defina timeout (ex.: 5 min) e force liberação do número no Sheets.
+
+---
+
+### Hacks de Personalização
+
+* **Prompts dinâmicos**: personalize o prompt do agente incluindo nome, preferências e último resumo. Isso faz o usuário sentir que o agente “lembra”.
+* **Gatilhos emocionais**: configure frases padrão (ex.: “vamos respirar juntos”) para reforçar suporte sem inventar diagnóstico.
+* **Multi-voz**: ofereça opção de trocar entre vozes diferentes (ex.: neutra, jovem, mais calma). Isso aumenta adesão.
+
+---
+
+### Hacks de Escalabilidade
+
+* **Usar Supabase no lugar do Firebase/Sheets**: melhora a performance e facilita buscas complexas (embeddings, histórico).
+* **Logging em separado**: mande logs técnicos (erros, tempos de resposta, falhas de API) para uma aba exclusiva no Sheets ou para um banco.
+* **Cache de preferências**: mantenha preferências em memória curta no n8n (Redis ou até no próprio contexto da execução) para evitar múltiplas consultas ao Sheets.
+
+---
+
+### Hacks de Segurança
+
+* **Rota de emergência real**: configure no n8n um caminho que envia SMS ou e-mail automático para suporte se detectar palavras-chave de crise.
+* **Anonimização de dados**: use apenas IDs internos no fluxo e nunca envie e-mail/telefone no prompt do agente.
+* **Aviso ético no onboarding**: deixe claro que não substitui um terapeuta humano — isso protege legalmente o projeto.
+
+---
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-09-18T03:07:56+00:00
+Texto:
+====================
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-09-18T03:07:54+00:00
+Texto:
+sumo a partir do log de turnos
+
+# 12) Perguntas rápidas com respostas
+
+* Onde personalizar a voz? No payload do assistant no Vapi: campo voice = male/female/…
+* Como guardar a memória curta e longa? Curta: última conversa em memories.lastSummary; Longa: adicionar linha em calls e manter histórico.
+* Como evitar erros do agente? Fluxos lineares, poucas ferramentas por agente, validações explícitas e checagens condicionais.
+* Posso trocar Firebase por Supabase? Sim: autenticação e tabelas ficam ainda mais simples para queries; adapte os nós HTTP/DB.
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-09-18T03:07:54+00:00
+Texto:
+mbers (marcar isAvailable=false)
+7. Iniciar chamada outbound no Vapi via HTTP Request
+8. Loop de polling a cada 30s até status ended
+9. Buscar transcrição e resumo do Vapi (ou gerar resumo via LLM no n8n)
+10. Salvar resumo em memories, atualizar users.lastCallAt e calls
+11. Liberar número (isAvailable=true)
+12. Notificar o app (ex.: webhook de “call-ended” do seu front-end)
+
+Exemplo de prompt do agente (resumo)
+
+```Você é um companheiro de apoio emocional para adultos. Estilo: empático, respeitoso, pausas naturais. Nunca faz diagnósticos. Sugere respirações e roteiros breves. Se detectar crise (risco de dano), encerre com orientação: procurar ajuda local e linhas de apoio. Personalize usando: {nome}, {timezone}, {topics}, histórico: {lastSummary}.```
+
+Exemplos de chamadas HTTP ao Vapi (ajuste aos endpoints reais)
+
+* Criar/atualizar assistant
+
+P```OST https://api.vapi.ai/assistants
+Authorization: Bearer {{$env.VAPI_API_KEY}}
+Content-Type: application/json
+
+{
+  "name": "Therapist-{{userId}}",
+  "voice": "{{voiceGender}}",
+  "prompt": "…prompt acima…",
+  "language": "pt-BR"
+}
+```
+* Iniciar chamada
+
+PO```ST https://api.vapi.ai/calls
+Authorization: Bearer {{$env.VAPI_API_KEY}}
+Content-Type: application/json
+
+{
+  "assistantName": "Therapist-{{userId}}",
+  "to": "{{phone}}",
+  "from": "{{reservedNumber}}"
+}
+
+```* Buscar status/transcrição
+
+GET``` https://api.vapi.ai/calls/{{callId}}
+Authorization: Bearer {{$env.VAPI_API_KEY}}
+
+E```xemplo de resumo pós-chamada (LLM node)
+
+Resu```ma a conversa em 5 linhas:
+1) estado emocional
+2) gatilhos principais
+3) exercícios praticados
+4) progresso vs. última sessão
+5) próxima micro-ação
+Saída breve em pt-BR.
+
+# ```7) Workflows 4–6: Chamadas agendadas
+
+Objetivo
+
+* Disparar rotinas por preferência: manhã, noite, domingo.
+
+Nós
+
+* Schedule Trigger (cron) por preferência
+* Ler preferences filtrando quem marcou a opção
+* Para cada userId, chamar um Subworkflow reutilizando o fluxo de “call-on-demand” (ou mover a lógica para um Workflow Reusable e invocar via Webhook interno)
+
+Dica
+
+* Padronize a lógica de chamada em um único fluxo e só mude o gatilho (on-demand vs cron).
+
+# 8) Workflow 7: Relatório semanal
+
+Objetivo
+
+* Sextas, entre 08–18h, coletar usuários, puxar últimos resumos e enviar e-mail.
+
+Nós
+
+* Cron
+* Google Sheets (listar users)
+* Para cada user: ler memories e preferences
+* Code/LLM para compor e-mail
+* SMTP ou Gmail node (em produção, use provedor transacional)
+
+Exemplo de assunto e corpo
+
+Assun```to: Seu progresso semanal
+
+Corpo: Olá, {{nome}}. Principais avanços desta semana: …
+Próxima micro-ação sugerida: …
+Se quiser ajustar horários, acesse: {{link_dashboard}}
+
+# 9```) Segurança e conformidade
+
+* Mensagens claras: o agente não substitui terapia; em emergência, procurar serviços locais e linhas 188 (CVV) no Brasil.
+* Guardrails no fluxo: se “crise” → rota de emergência (notificação/e-mail + instruções ao usuário).
+* Para lançar publicamente em saúde: avaliar requisitos legais (ex.: LGPD; se for EUA, HIPAA).
+
+Exemplo de bloco de emergência (texto curto para o agente)
+
+Se o u```suário mencionar risco iminente de dano a si ou a terceiros:
+1) ser empático
+2) encorajar contato imediato com serviço de emergência local
+3) encerrar a sessão com instruções claras
+
+# 10```) Checklist de testes
+
+* Criar conta, concluir onboarding, verificar gravação correta no Sheets
+* Fazer chamada on-demand; confirmar ligação, encerramento, transcrição, resumo e atualização das planilhas
+* Alternar preferências e disparar chamada agendada
+* Simular frase de crise e validar rota de emergência
+* Testar indisponibilidade de números e liberação ao final
+
+# 11) Erros comuns e correções
+
+* Webhook 401/403: URL incorreta no front-end ou n8n sem URL pública
+* Google Sheets não atualiza: credencial/escopo inválido ou cabeçalho da planilha diferente do esperado
+* Chamada não inicia: número não reservado, payload do Vapi fora do padrão, ou quota
+* Polling infinito: não faça while sem Wait; use repetir a cada 30s com condição de saída
+* Transcrição vazia: confirme endpoint de transcript do Vapi ou gere re
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-09-18T03:07:54+00:00
+Texto:
+nu
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-09-18T03:07:54+00:00
+Texto:
+Aqui vai um passo a passo direto para você replicar o projeto do vídeo (Vapi + n8n + Bolt.new + Firebase + Google Sheets), com exemplos práticos.
+
+# 1) Preparar contas e chaves
+
+* Criar projeto no n8n 1.104.x (ou superior) e habilitar nós HTTP Request, Code, Google Sheets, E-mail/SMTP ou Gmail, LLM da sua preferência.
+* Criar conta no Vapi e gerar API Key.
+* Criar projeto no Firebase (Authentication com e-mail/senha).
+* Criar uma planilha no Google Sheets e uma credencial de Service Account com acesso de edição.
+* Definir variáveis de ambiente no n8n:
+
+  * VAPI\_API\_KEY
+  * FIREBASE\_WEB\_API\_KEY
+  * GOOGLE\_SHEETS\_CREDENTIALS\_JSON
+  * SHEET\_ID
+  * APP\_WEBHOOK\_BASE (URL pública do seu n8n)
+
+Exemplo de .env local para referência
+
+```VAPI_API_KEY=sk_vapi_xxx
+FIREBASE_WEB_API_KEY=AIzaSyXXXX
+GOOGLE_SHEETS_CREDENTIALS_JSON={"type":"service_account","project_id":"..."}
+SHEET_ID=1AbCdEfGhIjKlMnOpQr
+APP_WEBHOOK_BASE=https://seu-n8n.com```
+
+# 2) Modelar dados
+
+Planilhas sugeridas no Google Sheets:
+
+* users: userId, fullName, email, phone, timezone, createdAt, lastCallAt, status
+* preferences: userId, morning (bool), evening (bool), sunday (bool), voiceGender, topics
+* numbers: phoneNumber, isAvailable (bool), lastUsedAt
+* calls: callId, userId, startedAt, endedAt, durationSec, status
+* memories: userId, lastSummary, lastEmotions, historyPointer
+
+Exemplo de linha em preferences
+
+u```serId: abc123
+morning: TRUE
+evening: FALSE
+sunday: TRUE
+voiceGender: male
+topics: stress, work-life
+```
+# 3) Construir o front-end no Bolt.new
+
+Páginas mínimas
+
+* Sign up / login com Firebase Auth (e-mail e senha)
+* Onboarding com 5 perguntas e coleta de timezone, telefone, gênero de voz e preferências
+* Dashboard com botões: Iniciar sessão, Ver progresso, Ajustar preferências
+
+Ações do front-end
+
+* Ao concluir onboarding: POST para APP\_WEBHOOK\_BASE/onboarding
+* Ao clicar Iniciar sessão: POST para APP\_WEBHOOK\_BASE/call-on-demand
+* Ao alterar preferências: POST para APP\_WEBHOOK\_BASE/prefs-changed
+
+Exemplo de POST do onboarding (no front-end)
+
+aw```ait fetch(`${APP_WEBHOOK_BASE}/onboarding`, {
+  method: 'POST',
+  headers: {'Content-Type':'application/json'},
+  body: JSON.stringify({
+    userId, fullName, email, phone, timezone,
+    q1, q2, q3, q4, q5,
+    preferences: { morning:true, evening:false, sunday:true, voiceGender:'male', topics:['stress','work'] }
+  })
+});
+
+```# 4) Workflow 1: Onboarding (n8n)
+
+Objetivo
+
+* Receber dados do formulário, normalizar, gravar no Sheets e responder 200 OK.
+
+Nós
+
+* Webhook POST /onboarding
+* Code (normalização e validação)
+* Google Sheets (Append/Upsert em users e preferences)
+* Response (200)
+
+Exemplo de Code node para extrair campos
+
+co```nst b = $json;
+return [
+  {
+    userId: b.userId,
+    fullName: b.fullName?.trim(),
+    email: b.email?.toLowerCase(),
+    phone: b.phone?.replace(/\D/g,''),
+    timezone: b.timezone,
+    q: [b.q1,b.q2,b.q3,b.q4,b.q5].filter(Boolean),
+    preferences: b.preferences || {}
+  }
+];
+
+```# 5) Workflow 2: Atualização de preferências
+
+Objetivo
+
+* Receber mudanças do usuário e sincronizar no Sheets.
+
+Nós
+
+* Webhook POST /prefs-changed
+* Code (validar userId e campos)
+* Google Sheets (Update em preferences por userId)
+* Response (200)
+
+Exemplo de payload esperado
+
+{
+```  "userId": "abc123",
+  "preferences": {
+    "morning": false,
+    "evening": true,
+    "sunday": false,
+    "voiceGender": "female",
+    "topics": ["anxiety","focus"]
+  }
+}
+
+```# 6) Workflow 3: Chamada sob demanda
+
+Objetivo
+
+* Checar segurança, personalizar agente, iniciar chamada no Vapi, acompanhar status, obter transcrição, resumir e atualizar perfil.
+
+Etapas
+
+1. Webhook POST /call-on-demand com userId
+2. Buscar usuário e preferências no Sheets
+3. Checagem de segurança
+
+   * Usar nó de LLM moderando um texto curto como: “há risco imediato de autoagressão/suicídio?” com resposta binária.
+   * Se risco: acionar caminho de emergência (notificar equipe e encerrar).
+4. Preparar prompt do agente de voz
+5. Criar/atualizar Assistant no Vapi via HTTP Request
+6. Reservar um número disponível na sheet
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-09-18T03:07:22+00:00
+Texto:
+====================
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-09-18T03:07:21+00:00
+Texto:
+=====================
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-09-18T03:07:18+00:00
+Texto:
+### Contexto do Hackathon
+
+* Primeiro hackathon da comunidade **AI Automation Society Plus**.
+* Prêmio principal: **US\$ 5.000**.
+* Vencedor: **Azim K**, estudante de ensino médio com apenas **6 meses de experiência** em IA e automação.
+
+---
+
+### O Projeto Vencedor
+
+* **Aplicativo web de saúde mental**.
+* **Front-end**: Bolt.new (web app customizado).
+* **Back-end**: 9 workflows no n8n.
+* **Agente de voz**: Vapi.
+* **Autenticação e dados**: Google Firebase + Google Sheets.
+
+---
+
+### Funcionamento do App
+
+* Cadastro inicial com nome, e-mail, senha e preferências.
+* Onboarding com **perguntas personalizadas** para ajustar o perfil.
+* Usuário recebe ligações do agente de voz (terapeuta virtual).
+* Conversas são **transcritas e resumidas**, alimentando o perfil do usuário.
+* O agente se **torna mais personalizado** a cada interação.
+
+---
+
+### Estrutura dos Workflows (n8n)
+
+1. **Onboarding**
+
+   * Captura dados via webhook.
+   * Atualiza perfis no Google Sheets.
+
+2. **Chamadas**
+
+   * Workflow linear que dispara ligações via Vapi.
+   * Controle de disponibilidade de números.
+   * Verificação de segurança (emergências redirecionadas).
+
+3. **Preferências do usuário**
+
+   * Atualização de perfis e agendamentos (ex.: manhã, noite, domingos).
+
+4. **Relatórios semanais**
+
+   * Coleta informações dos perfis.
+   * Gera resumo e envia por e-mail.
+
+---
+
+### Diferenciais Técnicos
+
+* Workflows **lineares e controlados** (menos erros e mais previsibilidade).
+* **Personalização contínua** do agente de voz para cada usuário.
+* **Verificações de segurança** integradas (emergências redirecionadas).
+* Estrutura pronta para escalar, mas ainda precisaria de **compliance em saúde (ex.: HIPAA)**.
+
+---
+
+### Planos de Azim
+
+* Projeto nasceu como **prova de conceito** no hackathon.
+* Possibilidade de buscar **financiamento** para lançar publicamente.
+* Já possui **agência de criação de voice agents** para clientes.
+* Compartilha **templates e tutoriais** em seu YouTube e comunidade própria.
+
+---
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-09-18T03:06:40+00:00
+Texto:
+==================================
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-09-18T03:06:37+00:00
+Texto:
+Resumo do vídeo: *This Vapi + n8n Voice Agent Won \$5,000 in Just 21 Days*
+
+1. Contexto do hackathon
+
+* O vídeo apresenta o projeto vencedor do primeiro hackathon da comunidade AI Automation Society Plus, com prêmio de US\$ 5.000.
+* O ganhador foi Azim K, estudante de ensino médio, com apenas 6 meses de experiência em IA e automação.
+
+2. O projeto vencedor
+
+* Aplicativo web de saúde mental.
+* Front-end: Bolt.new (app web personalizado).
+* Back-end: 9 workflows no n8n.
+* Agente de voz: Vapi.
+* Autenticação e armazenamento: Google Firebase + Google Sheets.
+
+3. Funcionamento do app
+
+* Usuário faz cadastro e responde a perguntas de onboarding para personalizar a experiência.
+* O agente de voz entra em contato por ligação, conduzindo conversas terapêuticas com tom natural.
+* As conversas são transcritas e resumidas; os dados alimentam o perfil do usuário, tornando o agente cada vez mais personalizado.
+
+4. Estrutura dos workflows no n8n
+
+* Onboarding: captura dados via webhook e atualiza perfis no Google Sheets.
+* Chamadas: workflows lineares que disparam ligações via Vapi, controlam disponibilidade de números e fazem verificações de segurança (ex.: redirecionamento em caso de emergência).
+* Atualização de preferências: permite que o usuário personalize perfis e horários de ligação.
+* Relatórios semanais: extrai dados dos perfis e envia resumos por e-mail.
+
+5. Diferenciais técnicos
+
+* Design linear e controlado, com checagens de segurança e falhas.
+* Personalização contínua do agente de voz para cada usuário.
+* Estrutura escalável, embora precise de compliance (ex.: HIPAA) para uso real em saúde mental.
+
+6. Planos de Azim
+
+* O app foi criado como prova de conceito.
+* Considera buscar financiamento para levar a ideia ao público.
+* Já atua em agência criando agentes de voz para clientes e compartilha templates e tutoriais no YouTube e comunidade própria.
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-09-18T03:05:55+00:00
+Texto:
+====================
+
+------------------------------
+
+MENSAGEM 16
+Autor: INEMA
+Data: 2025-09-18T03:05:52+00:00
+Texto:
+Este Vapi + n8n Voice Agent ganhou US\$ 5.000 em apenas 21 dias
+
+Neste vídeo, vamos explorar a submissão vencedora do nosso primeiro hackathon da comunidade, onde o prêmio principal foi de US\$ 5.000.
+Entre centenas de participantes, o vencedor foi @Azim K, um estudante do ensino médio que vinha experimentando com IA e ferramentas de automação por apenas cerca de seis meses.
+
+Na entrevista, Azim nos mostra o aplicativo web de saúde mental que ele desenvolveu, utilizando o Vapi para o agente de voz, o n8n para os fluxos de trabalho de back-end e o Bolt.new para o aplicativo web no front-end.
+Ele explica como abordou o desafio, as decisões por trás da construção e o que planeja fazer em seguida.
+
+Essa conversa é ao mesmo tempo inspiradora e prática, mostrando o que é possível quando se combina criatividade com o poder da automação de IA.
+
+------------------------------
+
+MENSAGEM 17
+Autor: INEMA
+Data: 2025-09-18T03:05:25+00:00
+Texto:
+=========================
+
+------------------------------
+
+MENSAGEM 18
+Autor: INEMA
+Data: 2025-09-18T03:05:06+00:00
+Texto:
+=========================
+
+------------------------------
+
+MENSAGEM 19
+Autor: INEMA
+Data: 2025-09-18T03:05:01+00:00
+Texto:
+Agosto - Azim K
+
+
+O tema do Hackathon de agosto foi **agentes de voz**. Azeem conquistou o primeiro lugar e ganhou o prêmio em dinheiro de **US\$ 5.000** ao criar um aplicativo web completo com agente de voz e back-end em n8n para ajudar pessoas com saúde mental e terapia assistida por IA.
+
+---
+
+### Bolt.new Project
+
+* Vídeo Tutorial
+* Download: **"Bolt Project Zip"**
+
+---
+
+### Vapi Inbound Assistant
+
+* Vídeo Tutorial
+* Download: **"n8n Inbound Assistant"**
+
+#### Configuração das Ferramentas do Vapi Inbound Assistant
+
+São 4 ferramentas:
+
+1. **bookCalendar**
+
+   * Descrição: Agenda uma consulta com um terapeuta licenciado após verificar disponibilidade e confirmar com o usuário.
+   * Parâmetros:
+
+     * notes: Observações ou tópicos que o usuário deseja discutir
+     * requestedTime: Data/hora solicitada (formato YYYY-MM-DDTHH\:mm)
+     * therapistGender: Gênero preferido do terapeuta (masculino, feminino, sem preferência)
+   * Server URL: Webhook do n8n
+
+2. **checkAvailability**
+
+   * Descrição: Verifica disponibilidade no calendário para marcar uma consulta.
+   * Parâmetros:
+
+     * preferredTime: Data/hora preferida (formato YYYY-MM-DDTHH\:mm)
+   * Server URL: Webhook do n8n
+
+3. **suggestActivities**
+
+   * Descrição: Sugere atividades relevantes e personalizadas com base nos interesses e localização do usuário.
+   * Parâmetros:
+
+     * sending: Se deve enviar atividades e como (SMS ou e-mail)
+     * location: Cidade/país do usuário
+     * interests: Interesses, hobbies ou atividades mencionadas pelo usuário
+     * emailAddress: Endereço de e-mail para receber sugestões
+   * Server URL: Webhook do n8n
+
+4. **answerFaq**
+
+   * Descrição: Responde perguntas do usuário e fornece recursos/conselhos simples não clínicos.
+   * Parâmetros:
+
+     * query: Pergunta ou necessidade do usuário
+   * Server URL: Webhook do n8n
+
+---
+
+### 9 Workflows no n8n
+
+* Vídeo Tutorial
+* Download: **"n8n Workflows Zip"**
+
+---
+
+### Links Úteis de IA
+
+* **Vapi Voice Agents**: [https://vapi.ai/?aff=azim](https://vapi.ai/?aff=azim)
+* **Modelos de Chat Gratuitos**: Google AI Studio → aistudio.google.com
+* **Microsoft Azure OpenAI API** (US\$ 1000+ em créditos): [https://portal.startups.microsoft.com/signup](https://portal.startups.microsoft.com/signup)
+* **OpenRouter** (acesso a vários modelos): [https://openrouter.ai/](https://openrouter.ai/)
+* **OpenAI API** (simples e comum): [https://openai.com/api/](https://openai.com/api/)
+
+---
+
+Parabéns @Azim K!!
+
+### Recursos
+
+* Bolt Project Zip
+* n8n Inbound Assistant
+* n8n Workflows Zip
+
+---
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 20
+Autor: INEMA
+Data: 2025-09-18T03:03:59+00:00
+Texto:
+============================
+
+------------------------------
+
+MENSAGEM 21
+Autor: INEMA
+Data: 2025-09-18T03:03:54+00:00
+Texto:
+Aqui está o resumo estruturado do vídeo **“I Built a Voice AI Web App In 2 Weeks (Nate Herk's Hackathon)”**:
+
+---
+
+### Contexto
+
+* Criador desenvolveu o app **Salassium** em menos de 2 semanas para um hackathon.
+* Objetivo: oferecer **apoio em saúde mental** acessível através de agentes de voz personalizados.
+
+---
+
+### Funcionalidades principais do Salassium
+
+* **Companheiro de IA personalizado**, que aprende e adapta-se ao longo das conversas.
+* **Quatro modos de suporte**:
+
+  1. Chamadas sob demanda
+  2. Check-ins matinais
+  3. Reflexões noturnas
+  4. Ligações aos domingos
+* Usuário pode escolher:
+
+  * Gênero da voz do agente
+  * Preferências de suporte (ex.: motivação matinal, reflexão noturna)
+  * Áreas de foco (ansiedade, estresse, humor etc.)
+
+---
+
+### Demonstração ao vivo
+
+* Usuário cria conta, confirma e-mail e responde **5 perguntas de onboarding**.
+* Teste de ligação sob demanda:
+
+  * Agente de voz conversa sobre **sono, estresse e meditação**.
+  * Faz exercícios simples de respiração e meditação guiada.
+  * Demonstra tom **humano, empático e natural**.
+
+---
+
+### Estrutura técnica
+
+* **Bolt.new** para front-end customizado.
+* **9 workflows no n8n** integrando:
+
+  * Webhooks
+  * Checagem de segurança (crises/emergências)
+  * Gestão de perfil no Google Sheets
+  * Criação/atualização de agentes no **Vapi**
+  * Controle de números de telefone disponíveis
+  * Registro de chamadas, transcrição e resumos
+* **Google Sheets** usado para armazenar perfis, histórico e IDs de agentes.
+
+---
+
+### Funcionalidades extras
+
+* **Agente de voz inbound**: qualquer pessoa pode ligar para um número e:
+
+  * Receber sugestões de atividades (via Perplexity + envio por SMS/e-mail)
+  * Marcar consultas com terapeutas licenciados (integrado ao Google Calendar)
+  * Tirar dúvidas (FAQ + RAG com recursos e conselhos simples)
+
+---
+
+### Impacto e visão
+
+* Mostra que **IA pode democratizar o acesso à saúde mental**.
+* Salassium poderia funcionar como **projeto sem fins lucrativos**, oferecendo suporte gratuito.
+* Todos os **9 workflows, o projeto Bolt e os recursos** estão disponíveis para consulta.
+
+------------------------------
+
+MENSAGEM 22
+Autor: INEMA
+Data: 2025-09-18T03:02:48+00:00
+Texto:
+https://www.youtube.com/watch?v=zLQyCSunKGI
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 23
+Autor: INEMA
+Data: 2025-09-18T03:01:54+00:00
+Texto:
+[This Vapi + n8n Voice Agent Won $5,000 in J
+ust 21 Day](https://www.youtube.com/watch?v=7siRW0My05o)s
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 24
+Autor: INEMA
+Data: 2025-09-18T03:01:22+00:00
+Texto:
+====================
+
+------------------------------
+
+MENSAGEM 25
+Autor: INEMA
+Data: 2025-09-18T03:01:07+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14321_025.jpg
+
+------------------------------
+
+MENSAGEM 26
+Autor: INEMA
+Data: 2025-09-18T02:59:16+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14320_026.jpg
+
+------------------------------
+
+MENSAGEM 27
+Autor: INEMA
+Data: 2025-09-18T02:58:22+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14319_027.jpg
+
+------------------------------
+
+MENSAGEM 28
+Autor: INEMA
+Data: 2025-09-18T02:57:36+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14318_028.jpg
+
+------------------------------
+
+MENSAGEM 29
+Autor: INEMA
+Data: 2025-09-18T02:56:35+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14317_029.jpg
+
+------------------------------
+
+MENSAGEM 30
+Autor: INEMA
+Data: 2025-09-18T02:55:35+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14316_030.jpg
+
+------------------------------
+
+MENSAGEM 31
+Autor: INEMA
+Data: 2025-09-18T02:54:41+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14315_031.jpg
+
+------------------------------
+
+MENSAGEM 32
+Autor: INEMA
+Data: 2025-09-18T02:53:44+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14314_032.jpg
+
+------------------------------
+
+MENSAGEM 33
+Autor: INEMA
+Data: 2025-09-18T02:52:47+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14313_033.jpg
+
+------------------------------
+
+MENSAGEM 34
+Autor: INEMA
+Data: 2025-09-18T02:52:01+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14312_034.jpg
+
+------------------------------
+
+MENSAGEM 35
+Autor: INEMA
+Data: 2025-09-18T02:46:26+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> project-bolt-sb1-ffthe2qc (1).zip
+
+------------------------------
+
+MENSAGEM 36
+Autor: INEMA
+Data: 2025-09-18T02:46:26+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Inbound Assistant (1).json
+
+------------------------------
+
+MENSAGEM 37
+Autor: INEMA
+Data: 2025-09-18T02:46:26+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> All_n8n_Workflow_Blueprints.zip
+
+------------------------------
+
+MENSAGEM 38
+Autor: INEMA
+Data: 2025-09-18T02:39:49+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14307_038.jpg
+
+------------------------------
+
+MENSAGEM 39
+Autor: INEMA
+Data: 2025-09-18T02:39:44+00:00
+Texto:
+ap62 - Vapi Inbound Assistent - Mental Assistente
+
+------------------------------
+
+MENSAGEM 40
+Autor: INEMA
+Data: 2025-09-18T02:39:43+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 41
+Autor: INEMA
+Data: 2025-09-18T02:39:43+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 42
+Autor: INEMA
+Data: 2025-09-18T02:39:43+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 43
+Autor: INEMA
+Data: 2025-09-18T02:39:43+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 44
+Autor: INEMA
+Data: 2025-09-18T02:39:43+00:00
+Texto:
+https://chatgpt.com/c/68cb6da2-9310-832a-8e1d-0e27b2393966
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 45
+Autor: INEMA
+Data: 2025-09-18T02:39:42+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 46
+Autor: INEMA
+Data: 2025-09-18T02:39:37+00:00
+Texto: [Sem texto]
+
+------------------------------
+

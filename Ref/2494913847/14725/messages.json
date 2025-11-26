@@ -1,0 +1,195 @@
+[
+  {
+    "id": 14748,
+    "author": "INEMA",
+    "date": "2025-10-03T03:22:42+00:00",
+    "text": "para michael@exemplo.com e agende almoço hoje às 14:00 com bob@exemplo.com.\n\n16. Tratamento de erros e estabilidade\n\n* Se uma chamada falhar, faça retry com backoff.\n* Se o agente confundir argumentos, sanitize antes (regex de e-mail, datas ISO, títulos não vazios).\n* Se expor muitas ferramentas diretas causar erro, reduza e mantenha apenas via sub-agentes.\n\n# Passo a passo 5 — Medir e escolher por ROI\n\n17. Criar planilha de avaliação\n\n* Colunas: caso de teste, modelo, custo estimado, tokens in/out, latência, nota, observações.\n* Preencher automaticamente via nós Set/Append Sheet no fluxo.\n\n18. Decidir por caso de uso\n\n* Para codificação longa e coerência de projeto, testar primeiro Sonnet 4.5.\n* Para custo menor em tarefas básicas, testar GPT-4.1/5.\n* Fixar um modelo padrão por tarefa e documentar quando trocar.\n\n# Tópicos com exemplos rápidos\n\nConexão do modelo\n\n* O que fazer: criar credencial e testar hello.\n* Exemplo: se Sonnet 4.5 via Anthropic retornar erro de top_p/temperature, usar OpenRouter e repetir.\n\nCriação de conteúdo\n\n* O que fazer: mesmo prompt, trocar apenas o modelo e comparar formato/qualidade.\n* Exemplo: e-mail HTML sobre sono; Sonnet 4.5 tende a formatar mais rico; GPT-5 pode trazer fontes.\n\nContexto grande\n\n* O que fazer: converter PDF para .txt, chunking, perguntas objetivas.\n* Exemplo: 100k tokens em ~8–10 chunks; injetar só 2–3 chunks relevantes por pergunta.\n\nFerramentas com sub-agentes\n\n* O que fazer: encapsular busca, contatos, e-mail e calendário em sub-workflows.\n* Exemplo: pedido único dispara os quatro e retorna confirmação final.\n\nMedição e custo\n\n* O que fazer: rodar 50–200 casos, registrar custo/latência/nota.\n* Exemplo: escolher o modelo por ROI, não por hype.\n\n# Perguntas rápidas com respostas\n\n1. Preciso de prompt de sistema longo?\n\n* Não. Um prompt mínimo funciona bem; foque em dar dados corretos e boas ferramentas.\n\n2. Por que meu agente erra argumentos de ferramenta?\n\n* Falta de validação. Adicione checagens de e-mail/data e normalize parâmetros antes de chamar o nó.\n\n3. Quantas ferramentas diretas posso expor?\n\n* Poucas. Prefira sub-agentes. Muitos tools diretos aumentam chance de erro de parsing.\n\n4. Como lidar com documentos que passam de 200k tokens?\n\n* Chunking + RAG: traga apenas os trechos relevantes por consulta.\n\n5. Quando Sonnet 4.5 compensa?\n\n* Codificação, sessões longas e coerência entre muitos arquivos. Teste contra custo real.\n\n6. Quantos casos para um benchmark confiável?\n\n* 50–200 por tarefa. Dez casos servem só como sinal inicial.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14747,
+    "author": "INEMA",
+    "date": "2025-10-03T03:22:41+00:00",
+    "text": "# Passo a passo 1 — Conectar o Claude Sonnet 4.5 ao n8n\n\n1. Criar credencial\n\n   * Opção A Anthropic: acesse o console da Anthropic, cadastre um cartão e gere uma API key.\n   * Opção B OpenRouter (recomendado se o Sonnet 4.5 der erro de parâmetros): crie uma conta no OpenRouter e gere uma API key.\n\n2. Adicionar credencial no n8n\n\n   * Em Credentials, crie uma credencial para Anthropic ou OpenRouter e cole a API key.\n\n3. Criar workflow base\n\n   * Adicione um nó Manual Trigger.\n   * Adicione um nó AI Agent ou Chat Model.\n   * Modelo: selecione Claude Sonnet 4.5.\n   * System prompt mínimo: Você é um assistente útil. Data/hora: {{ $now }}.\n   * Teste com a mensagem hello.\n   * Se aparecer erro de top_p/temperature via Anthropic, troque o provedor do nó para OpenRouter e selecione novamente sonnet-4.5.\n\n# Passo a passo 2 — Experimento de criação de conteúdo (comparar modelos)\n\n4. Preparar o prompt de teste\n\n   * Mensagem do usuário: Crie um e-mail em HTML, tom profissional, sobre os efeitos de dormir pouco. Inclua seções e recomendações.\n\n5. Rodar com 3 modelos\n\n   * Troque apenas o modelo do nó e execute três vezes: GPT-4.1, Claude Sonnet 4.5, GPT-5.\n   * Compare clareza, estrutura, presença de fontes e formatação HTML.\n\n6. Opcional: enviar por e-mail\n\n   * Adicione nó Email Send (SMTP) depois do AI Agent.\n   * Mapear o HTML gerado para o campo HTML Body.\n   * Enviar para um destinatário de teste.\n\nExemplo de prompt rápido para o nó\nCrie um e-mail em HTML responsivo sobre os efeitos da privação de sono em adultos. Use título, subtítulos, bullets e uma seção de recomendações práticas. Linguagem clara e objetiva.\n\n# Passo a passo 3 — Experimento de contexto com documento grande\n\n7. Preparar o documento\n\n   * Converta o PDF alvo para .txt localmente (fica mais simples/estável que extrair no fluxo).\n   * Salve como apple_10k.txt dentro do host do n8n.\n\n8. Carregar o texto no fluxo\n\n   * Nó Read Binary File → apple_10k.txt.\n   * Nó Move Binary Data → to JSON (texto em field: doc).\n   * Nó Function para chunking do texto em partes de 3–5 mil tokens aproximados (por tamanho em caracteres).\n\nSugestão de Function para chunking\nconst text = $json.doc;\nconst maxChars = 12000; // ~3–4k tokens aproximados\nconst chunks = [];\nfor (let i = 0; i < text.length; i += maxChars) {\nchunks.push({ chunk: text.slice(i, i + maxChars) });\n}\nreturn chunks.map(c => ({ json: c }));\n\n9. Avaliar perguntas\n\n   * Crie um nó Set com um array de perguntas objetivas (ex.: receita, lucro, guidance, riscos).\n   * Use Split In Batches para iterar pelas perguntas.\n   * Em cada iteração, passe a pergunta + 2–3 chunks relevantes para o AI Agent.\n   * Registre a resposta e, se tiver gabarito, calcule uma nota de 0 a 5 em um Function.\n\n10. Comparar modelos e custo\n\n* Execute o mesmo lote de perguntas com GPT-5 e depois com Sonnet 4.5.\n* Salve por execução: modelo, média de acerto, tokens de entrada/saída (se disponível no provedor), custo estimado e latência.\n* Para ter confiança, rode 50–200 perguntas. Com 10 perguntas é só indicativo.\n\n# Passo a passo 4 — Ferramentas com sub-agentes (evita sobrecarga)\n\n11. Criar sub-workflow ResearchAgent\n\n* Entrada: query.\n* Nós internos: um buscador (Tavily/HTTP Request/Perplexity) → AI Agent para síntese curta → saída JSON {summary, sources}.\n\n12. Criar sub-workflow ContactAgent\n\n* Entrada: nome.\n* Origem simples: Google Sheets ou uma tabela local com Colunas [name, email].\n* Saída: {email} validado.\n\n13. Criar sub-workflow EmailAgent\n\n* Entrada: {to, subject, html}.\n* Nó Email Send (SMTP).\n* Valide o formato de e-mail antes de enviar.\n\n14. Criar sub-workflow CalendarAgent\n\n* Entrada: {title, start, attendees}.\n* Nó Google Calendar (Create Event) ou outro calendário.\n* Saída: {eventId, link}.\n\n15. Orquestrar no workflow principal\n\n* Nó AI Agent principal recebe uma instrução em linguagem natural e decide a sequência.\n* Em vez de expor 10 ferramentas direto ao agente, chame os sub-workflows via Execute Workflow ou HTTP Node interno.\n* Exemplo de pedido único:\n  Pesquise as últimas novidades sobre agentes de voz, envie um resumo",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14746,
+    "author": "INEMA",
+    "date": "2025-10-03T03:22:17+00:00",
+    "text": "=============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14745,
+    "author": "INEMA",
+    "date": "2025-10-03T03:22:14+00:00",
+    "text": "Passo a Realizar\n\n1. Criar credencial na Anthropic ou no OpenRouter.\n2. Gerar chave de API.\n3. Colar a chave no n8n e salvar.\n4. Selecionar modelo Claude Sonnet 4.5.\n5. Criar agente de IA no n8n.\n6. Testar com prompt simples (ex.: “hello”).\n7. Se der erro no Sonnet 4.5 via Anthropic → usar OpenRouter.\n8. Experimento 1: pedir criação de e-mail HTML (sem system prompt).\n9. Comparar saída com GPT-4.1 e GPT-5.\n10. Experimento 2: carregar PDF grande (~100k tokens).\n11. Fazer perguntas ao documento e medir acerto/custo entre modelos.\n12. Experimento 3: conectar ferramentas (e-mail, calendário, busca).\n13. Testar pedido único (ex.: pesquisar tema + enviar e-mail + agendar evento).\n14. Se muitas ferramentas derem erro → agrupar em sub-agentes/subworkflows.\n15. Validar argumentos antes de enviar (e-mail válido, data correta).\n16. Repetir testes com 50–200 exemplos para avaliar custo x desempenho.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14744,
+    "author": "INEMA",
+    "date": "2025-10-03T03:20:35+00:00",
+    "text": "=============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14743,
+    "author": "INEMA",
+    "date": "2025-10-03T03:20:31+00:00",
+    "text": "+ embeddings + RAG; traga apenas os chunks relevantes em cada consulta e mantenha um índice vetorial.\n\n4. Posso deixar o agente agir sem sistema prompt?\n\n* Resposta: sim, modelos fortes funcionam com prompts mínimos, mas melhores resultados vêm quando você fornece contexto, ferramentas e validações adequadas.\n\n5. O que fazer quando o agente \"se perde\" ao chamar ferramentas?\n\n* Resposta: modularize (sub-agents), valide args, reduzir número de ferramentas simultâneas e adicionar checks de integridade antes da execução.\n\n6. Quantos exemplos devo rodar em um benchmark?\n\n* Resposta: idealmente 100–200 para obter estatísticas confiáveis (média, desvio, custo por execução).\n\n7. Como reduzir custos sem perder qualidade?\n\n* Resposta: usar modelos menores para tasks simples, compressão de prompts, RAG para reduzir tokens enviados e escolher o modelo por ROI (custo vs melhoria de acurácia).",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14742,
+    "author": "INEMA",
+    "date": "2025-10-03T03:20:31+00:00",
+    "text": "# Hacks práticos extraídos do vídeo (Claude Sonnet 4.5 + n8n)\n\n1. Use OpenRouter para contornar bugs e acessar versões beta\n\n* O que fazer: conectar Sonnet 4.5 via OpenRouter em vez do console direto da Anthropic para evitar erros de parâmetros (top_p, temperature) e, quando disponível, obter janelas de contexto maiores (beta/enterprise).\n* Exemplo: criar chave no OpenRouter → colar em n8n como credencial → selecionar sonnet-4.5 via OpenRouter.\n\n2. Teste custo x desempenho com avaliações objetivas\n\n* O que fazer: rodar avaliações comparativas (ex.: 100+ casos) medindo precisão e tokens usados (input/output) antes de escolher modelo para produção.\n* Exemplo: rodar a mesma tarefa em Sonnet 4.5 e GPT5, coletar score médio e custo por execução; escolha com base em ROI.\n\n3. Gerencie a janela de contexto com chunking e RAG quando for > limite\n\n* O que fazer: dividir documentos enormes em chunks, indexar embeddings e usar RAG (recuperação + contexto) para manter respostas precisas sem pressionar o token limit.\n* Exemplo: PDF de 120 páginas → dividir em pedaços de ~3–5k tokens → criar embeddings → trazer apenas os chunks relevantes ao agente.\n\n4. Evite sobrecarregar o agente com muitas ferramentas diretas — agrupe em sub-agentes/subworkflows\n\n* O que fazer: em vez de dar 10 ferramentas soltas, encapsular funcionalidades (email, calendário, pesquisa) em sub-agents que fazem validação de argumentos e falha controlada.\n* Exemplo: Agente \"Contato\" (busca e validação de e-mails) + Agente \"EnvioEmail\" (formatação e envio) → agente principal invoca sub-agents.\n\n5. Use prompts mínimos do sistema quando o modelo já for forte, mas forneça contexto e ferramentas específicas\n\n* O que fazer: testes mostraram que Sonnet 4.5 entrega muito mesmo com prompts de sistema simples; ainda assim forneça dados e ferramentas corretas.\n* Exemplo: system: \"Você é um assistente útil.\" + payload com data/hora + tool args bem formatados.\n\n6. Validar e sanitizar argumentos de ferramenta antes do envio\n\n* O que fazer: scripts de pré-validação (email válido, formato de data) para evitar erros de parsing gerados pelo agente ao chamar ferramentas.\n* Exemplo: checar regex de e-mail e converter datas ISO antes de passar ao nó de envio.\n\n7. Otimize custo monitorando tokens e ajustando frequência de chamadas\n\n* O que fazer: comprimir prompts, limpar contexto irrelevante e controlar frequência de run em automações caras.\n* Exemplo: usar templates compactos para instruções repetitivas e armazenar contexto longo no vector DB em vez de mandar tudo a cada chamada.\n\n8. Use avaliações com amostras diversificadas e N grande (50–200) para decisões robustas\n\n* O que fazer: não confiar em 10 samples; medir variância, custo e latência.\n* Exemplo: rodar 200 queries de busca de fatos e comparar média, desvio padrão e custo total.\n\n9. Trate falhas como parte do fluxo — rollback, retries e logs legíveis\n\n* O que fazer: implementar retry exponencial, fallback (usar outro modelo ou sub-agent) e logs que permitam reproduzir inputs/outputs.\n* Exemplo: se Sonnet retorna erro de parsing em tool call → retry com sanitização dos args → se falhar, usar GPT-4.1 como fallback.\n\n10. Aproveite Sonnet 4.5 para tarefas de codificação/engenharia e processos long-running\n\n* O que fazer: delegar correção de código, geração de testes e manutenção de longas sessões de codificação a Sonnet, com checkpoints e revisão humana.\n* Exemplo: pipeline que pede ao agente gerar PR + testes unitários + resumo das mudanças; humano revisa antes do merge.\n\n---\n\nPerguntas frequentes rápidas (com respostas)\n\n1. Qual modelo escolher: Sonnet 4.5 ou GPT5?\n\n* Resposta: depende do caso. Sonnet 4.5 costuma brilhar em codificação, raciocínio técnico e tarefas long-run; GPT5 pode ser mais barato por token. Compare precisão vs custo em 100+ testes para decidir.\n\n2. Como evitar problema de parâmetros (top_p, temperature) em Anthropic?\n\n* Resposta: usar OpenRouter como roteador ou garantir que o SDK/cliente esteja atualizado; sanitizar parâmetros antes do envio.\n\n3. Como lidar com PDFs enormes (100k+ tokens)?\n\n* Resposta: chunk",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14741,
+    "author": "INEMA",
+    "date": "2025-10-03T03:19:40+00:00",
+    "text": "==================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14740,
+    "author": "INEMA",
+    "date": "2025-10-03T03:19:36+00:00",
+    "text": "### Lançamento do Claude Sonnet 4.5\n\n* Modelo lançado em 29/09/2025 pela Anthropic.\n* Disponível via web, iOS, Android e API.\n* Criado para ajudar em **codificação, construção de agentes, fluxos de negócios/pesquisa** e uso de computadores como um assistente humano.\n* Se destaca em **tarefas de longo prazo**, mantendo coerência em grandes bases de código.\n\n### Comparação com outros modelos da família Claude\n\n* Haiku → mais rápido e barato.\n* Sonnet → equilíbrio entre custo e desempenho.\n* Opus → máxima capacidade de raciocínio, mas bem mais caro.\n* Sonnet 4.5 mantém o mesmo preço do Sonnet 4, mas supera em **memória, codificação, automação real e tarefas práticas**.\n\n### Contexto e Limitações\n\n* Janela de contexto: **200k tokens** (até 1 milhão em planos beta/enterprise via OpenRouter).\n* Ainda abaixo de concorrentes como GPT-4.1 (1M) e Gemini (2,5M), mas muito além de usos básicos.\n\n### Benchmarks e Desempenho\n\n* **SWE-Bench Verified (engenharia de software): 77–82%**, nível de programador profissional.\n* Supera GPT-5 e Codex em tarefas de programação.\n* Melhor em áreas críticas: **finanças, medicina, direito e ciência**, oferecendo respostas mais precisas e de nível especializado.\n\n### Experimentos práticos no vídeo\n\n1. **Criação de conteúdo**\n\n   * Teste de geração de e-mail HTML sobre falta de sono.\n   * GPT-4.1 → resultado simples.\n   * Sonnet 4.5 → mais detalhado, colorido e bem estruturado.\n   * GPT-5 → profissional, com fontes, considerado ligeiramente melhor.\n\n2. **Avaliação de contexto (PDF 100k tokens)**\n\n   * GPT-5 obteve **4,2/5**.\n   * Sonnet 4.5 obteve **4,3/5**, levemente superior, mas com custo maior.\n   * Observação: para testes reais seriam necessários 100+ casos, não apenas 10.\n\n3. **Chamadas de ferramentas (n8n)**\n\n   * Sonnet 4.5 conectado a e-mail, calendário e busca.\n   * Conseguiu:\n\n     * Pesquisar tema (agentes de voz).\n     * Enviar e-mail com resumo.\n     * Criar evento de calendário.\n   * Melhor desempenho quando as ferramentas foram agrupadas em sub-agentes, evitando sobrecarga.\n\n### Conclusões do criador\n\n* Sonnet 4.5 não é “o rei dos LLMs”, mas se mostra **fortíssimo para codificação, agentes e automações complexas**.\n* Cada modelo tem pontos fortes → escolha deve ser feita pelo caso de uso (custo, contexto, raciocínio, especialidade).\n* O avanço reduz a barreira para iniciantes em automação (mesmo sem saber programar).\n* Impacto esperado em setores-chave como **finanças, medicina, direito, ciência e programação**.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14739,
+    "author": "INEMA",
+    "date": "2025-10-03T03:18:26+00:00",
+    "text": "===============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14738,
+    "author": "INEMA",
+    "date": "2025-10-03T03:18:20+00:00",
+    "text": "Construa QUALQUER COISA com Claude Sonnet 4.5 e n8n AI Agents\nNeste vídeo, eu explico em detalhes o novo modelo Claude Sonnet 4.5 da Anthropic e mostro o que há de novo nesse lançamento. Eu abordo seus pontos fortes, fracos e como ele se compara no uso real.\n\nDepois, mostro passo a passo como conectar rapidamente um agente de IA ao Sonnet 4.5 e colocá-lo à prova. Realizamos três experimentos: primeiro, criação de conteúdo em comparação com outros modelos; segundo, uma avaliação da janela de contexto para ver como ele lida com perguntas; e terceiro, conectando-o a várias ferramentas para atuar como um assistente definitivo.\n\nSe você tem curiosidade sobre esse novo modelo e como ele pode mudar o jogo da automação, este vídeo vai te dar uma visão clara do que ele realmente é capaz de fazer.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14737,
+    "author": "INEMA",
+    "date": "2025-10-03T03:18:01+00:00",
+    "text": "Dublado",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14736,
+    "author": "INEMA",
+    "date": "2025-10-03T03:17:57+00:00",
+    "text": "https://www.youtube.com/watch?v=X80ljdCPM_U",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14735,
+    "author": "INEMA",
+    "date": "2025-10-03T03:17:13+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Sonnet 4.5 __ n8n.pdf"
+  },
+  {
+    "id": 14734,
+    "author": "INEMA",
+    "date": "2025-10-03T03:16:43+00:00",
+    "text": "ap64 - Construa QUALQUER COISA  Claude Sonnet 4.5",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14733,
+    "author": "INEMA",
+    "date": "2025-10-03T03:16:42+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14732,
+    "author": "INEMA",
+    "date": "2025-10-03T03:16:41+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14731,
+    "author": "INEMA",
+    "date": "2025-10-03T03:16:41+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14730,
+    "author": "INEMA",
+    "date": "2025-10-03T03:16:40+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14729,
+    "author": "INEMA",
+    "date": "2025-10-03T03:16:40+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14728,
+    "author": "INEMA",
+    "date": "2025-10-03T03:16:40+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14727,
+    "author": "INEMA",
+    "date": "2025-10-03T03:16:39+00:00",
+    "text": "https://chatgpt.com/c/68df3fc5-8068-8321-b77e-5ac7eb394d5f",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14726,
+    "author": "INEMA",
+    "date": "2025-10-03T03:16:39+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14725,
+    "author": "INEMA",
+    "date": "2025-10-03T03:16:34+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

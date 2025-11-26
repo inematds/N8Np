@@ -1,0 +1,133 @@
+[
+  {
+    "id": 9712,
+    "author": "INEMA",
+    "date": "2025-06-15T03:36:49+00:00",
+    "text": "https://www.youtube.com/watch?v=2olXNu6_b6Y",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9711,
+    "author": "INEMA",
+    "date": "2025-06-15T03:36:35+00:00",
+    "text": "**Passo a passo da automação do Pinterest com n8n + Claude 3.7 Sonnet + Flux**\n\nEste fluxo automatiza a criação de postagens no Pinterest com geração de conteúdo, imagem, upload e registro em planilha.\n\n---\n\n### 1. **Configuração Inicial**\n\n* Crie um novo workflow no **n8n**.\n* Ative o **gatilho (Trigger)** — pode ser agendado (1x por dia) ou manual.\n\n---\n\n### 2. **Geração do Conteúdo com Claude 3.7 Sonnet**\n\n* Adicione o nó **Advanced AI (LLM Chain)**.\n* Modelo: **Claude 3.7 Sonnet** via **OpenRouter**.\n* Prompt:\n  `Crie um post envolvente para Pinterest com dicas de saúde. Use linguagem vibrante e tom amigável.`\n* Saída: Título, legenda, estrutura (em JSON).\n\n---\n\n### 3. **Geração do Prompt de Imagem**\n\n* Adicione outro nó **LLM Chain**.\n* Prompt:\n  `Gere um prompt de imagem hiper-realista de um alimento saudável.`\n* Use histórico de frutas anteriores para evitar repetição.\n* Saída: JSON com prompt formatado.\n\n---\n\n### 4. **Geração da Imagem com Flux**\n\n* Adicione um nó **HTTP Request** (POST).\n* URL: API do Flux Image Model.\n* Envie o prompt no corpo (JSON).\n* Resultado: imagem em **base64**.\n\n---\n\n### 5. **Conversão e Armazenamento da Imagem**\n\n* Nó: **Convert Base64 to File**.\n* Nó: **Google Cloud Storage**.\n\n  * Armazene com nome do tipo: `imagem-{ID}-{índice}`.\n  * Gere e salve o **link público da imagem**.\n\n---\n\n### 6. **Registro no Google Sheets**\n\n* Conecte com a planilha via **Google Sheets Node**.\n* Operação: `Append Row`.\n* Campos:\n\n  * Título\n  * Legenda\n  * Link da imagem\n  * Status = `Aguardando postagem`\n  * Data de criação\n\n---\n\n### 7. **Captura de Tela de Pré-visualização (opcional)**\n\n* Nó: **HTTP Request**.\n* API: **ScreenshotOne**.\n* Entrada: URL da landing page do post.\n* Saída: imagem da página, que também pode ser armazenada.\n\n---\n\n### 8. **Criação do Post no Pinterest**\n\n* Nó: **HTTP Request (POST)**.\n* URL: `https://api-sandbox.pinterest.com/v5/pins` (ou produção).\n* Headers:\n\n  * Authorization: `Bearer {sua_token_do_app_Pinterest}`\n* Corpo JSON:\n\n  * board\\_id\n  * title\n  * description\n  * media\\_source (URL da imagem)\n  * link (URL do site)\n\n---\n\n### 9. **Atualização do Status no Google Sheets**\n\n* Operação: `Update Row`.\n* Critério: `status` vazio → atualize para:\n\n  * Status = `Postado`\n  * Data de postagem = `agora`\n\n---\n\n### 10. **Uso de Redis (opcional)**\n\n* Armazene temporariamente:\n\n  * IDs de boards\n  * Lista de frutas usadas (para variar imagem)\n\n---\n\n### Resultado Final:\n\nVocê terá 5 postagens completas no Pinterest com:\n\n* Texto gerado por IA\n* Imagem única gerada\n* Registro completo na planilha\n* Totalmente automático e escalável",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9710,
+    "author": "INEMA",
+    "date": "2025-06-15T03:35:58+00:00",
+    "text": "**Resumo da Automação de Pinterest com n8n + Claude 3.7 Sonnet + Flux (sem código)**\n\nEste projeto automatiza a criação e publicação de postagens no Pinterest, com geração de conteúdo e imagem, tudo controlado por n8n.\n\n**Passo a passo da automação:**\n\n1. **Geração do Conteúdo**\n\n   * Utiliza Claude 3.7 Sonnet via OpenRouter para criar textos com dicas fitness.\n   * O prompt gera título, legenda, estrutura e formato amigável para o Pinterest.\n\n2. **Geração de Imagens**\n\n   * Um segundo prompt cria descrições de imagens detalhadas (com variação de frutas para evitar repetição).\n   * As imagens são geradas com o modelo Flux (via HTTP request) e armazenadas em Google Cloud Storage como arquivos base64 convertidos.\n\n3. **Organização em Planilha**\n\n   * Os dados são salvos no Google Sheets: link da imagem, título, legenda, status da postagem, data, entre outros campos.\n\n4. **Criação de Capturas de Tela**\n\n   * Usa um serviço de screenshot (ScreenshotOne) para capturar páginas da web e gerar imagens adicionais.\n\n5. **Publicação no Pinterest**\n\n   * Usa API do Pinterest (modo sandbox ou produção).\n   * Cria quadros (boards), faz upload da imagem, título, legenda e vincula aos dados da planilha.\n   * Atualiza o status da postagem para \"Postado\" no Google Sheets.\n\n6. **Credenciais e Integrações**\n\n   * Claude 3.7 e Flux via OpenRouter com chave de API.\n   * Armazenamento em nuvem com Google Cloud.\n   * Dados e controle via Google Sheets.\n   * Redis usado para armazenar IDs temporários e controle de fluxo.\n\n**Exemplos de uso:**\n\n* Criar posts automáticos para nichos (como saúde e bem-estar).\n* Agendar e publicar conteúdos personalizados diariamente no Pinterest.\n* Manter rastreamento e status de cada publicação via planilha integrada.\n\n**Técnicas usadas:**\n\n* Engenharia de prompt avançada.\n* Uso de IA para texto e imagem.\n* HTTP requests e automações no n8n.\n* Armazenamento e controle com Google Sheets e Redis.\n\nEssa automação permite gerar tráfego gratuito para sites a partir do Pinterest de forma 100% automatizada.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9709,
+    "author": "INEMA",
+    "date": "2025-06-15T03:31:39+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Pinterest Post (1).xlsx"
+  },
+  {
+    "id": 9708,
+    "author": "INEMA",
+    "date": "2025-06-15T03:31:34+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Tutorial_14_4_Pinterest_Automation_Get_Free_Traffic_with_n8n_No.json"
+  },
+  {
+    "id": 9707,
+    "author": "INEMA",
+    "date": "2025-06-15T03:31:25+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_9707_006.jpg"
+  },
+  {
+    "id": 9706,
+    "author": "INEMA",
+    "date": "2025-06-15T03:31:04+00:00",
+    "text": "al32 - Pinterest",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9705,
+    "author": "INEMA",
+    "date": "2025-06-15T03:30:31+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9704,
+    "author": "INEMA",
+    "date": "2025-06-15T03:30:31+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9703,
+    "author": "INEMA",
+    "date": "2025-06-15T03:30:31+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9702,
+    "author": "INEMA",
+    "date": "2025-06-15T03:30:27+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9701,
+    "author": "INEMA",
+    "date": "2025-06-15T03:30:26+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9700,
+    "author": "INEMA",
+    "date": "2025-06-15T03:30:26+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9699,
+    "author": "INEMA",
+    "date": "2025-06-15T03:30:26+00:00",
+    "text": "https://chatgpt.com/c/684e3dbe-9d38-8009-8bac-d89827717b2e",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9698,
+    "author": "INEMA",
+    "date": "2025-06-15T03:30:24+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9697,
+    "author": "INEMA",
+    "date": "2025-06-15T03:30:15+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

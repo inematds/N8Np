@@ -1,0 +1,431 @@
+{
+  "name": "sample_custom_gpt_action",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Request: {{ $json.body }}\n\nAction needed: {{ $json.action || \"determine from request\" }}\n\nAnalyze this request and respond with either STORE or SEARCH.",
+        "options": {
+          "systemMessage": "You are a conversation handler. Analyze the incoming request to determine if the user wants to STORE a new conversation thread or SEARCH for existing conversations. Respond with either \"STORE\" or \"SEARCH\" based on the request intent. For storing, the request should contain thread_summary and thread_label. For searching, look for search queries or keywords."
+        }
+      },
+      "id": "5c3ec04a-85f3-4c4b-ba88-cc82459411be",
+      "name": "Decision Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -1112,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $('Decision Agent').item.json.output }}",
+              "rightValue": "STORE",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "10764d91-6e88-4159-91d0-30e740fcc311",
+      "name": "Route Decision",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -624,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "conversations"
+        },
+        "options": {
+          "queryName": "match_conversations"
+        }
+      },
+      "id": "668f5a4f-f603-4d26-b4c9-2ea4b31d3169",
+      "name": "Store Conversation",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -224,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search for conversation threads by keywords or content similarity",
+        "tableName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "conversations"
+        },
+        "options": {
+          "queryName": "match_conversations"
+        }
+      },
+      "id": "aacb57dc-70f9-4a8c-a1d1-97cf29b4d163",
+      "name": "Search Conversations",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -1120,
+        744
+      ]
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.pageContent }}",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "id": "2c429919-adf4-4981-8818-f11f65851958",
+      "name": "Document Processor",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -48,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "id": "e4d2eb5b-5085-46b3-aef1-efed63701e96",
+      "name": "Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        32,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "id": "33dd4373-a3e8-45c6-b05c-0e0fc4e1a4f2",
+      "name": "OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -256,
+        1024
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "92089292-ddec-4245-bc59-42de2266723e",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1248,
+        744
+      ]
+    },
+    {
+      "parameters": {
+        "fieldsUi": {
+          "fieldValues": []
+        }
+      },
+      "id": "fe69e893-094b-445f-a9e9-20c7bcfac8ca",
+      "name": "Supabase Tool",
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        -832,
+        744
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "pageContent",
+              "value": "={{ $('Webhook Trigger').item.json.body.thread_summary }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "metadata",
+              "value": "={{ JSON.stringify({ \"thread_label\": $('Webhook Trigger').item.json.body.thread_label, \"timestamp\": new Date().toISOString() }) }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ecd18ffd-2fa0-4d61-8ede-fb85b589136a",
+      "name": "Prepare Store Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -400,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = $input.all();\nreturn results.map(item => ({\n  thread_label: item.json.metadata?.thread_label,\n  content_preview: item.json.pageContent?.substring(0, 200) + \"...\",\n  similarity_score: item.json.score,\n  timestamp: item.json.metadata?.timestamp\n}));"
+      },
+      "id": "d679a3f0-51f1-41e3-9b33-e2a7286f71e3",
+      "name": "Format Search Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -40,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "c6bdded0-95c6-4eba-aa10-3b87229f42a3",
+      "name": "Return Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        320,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/conversation-handler",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "3881c25c-6f43-4e62-b177-b6a63f0e3178",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1472,
+        520
+      ],
+      "webhookId": "68582bb2-6712-471e-be77-49c694428117"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Decision Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Conversations": {
+      "ai_tool": [
+        [
+          {
+            "node": "Decision Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Decision Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision Agent": {
+      "main": [
+        [
+          {
+            "node": "Route Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Decision": {
+      "main": [
+        [
+          {
+            "node": "Prepare Store Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Search Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Store Data": {
+      "main": [
+        [
+          {
+            "node": "Store Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Document Processor",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document Processor": {
+      "ai_document": [
+        [
+          {
+            "node": "Store Conversation",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Store Conversation",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Search Conversations",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Conversation": {
+      "main": [
+        [
+          {
+            "node": "Return Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Search Results": {
+      "main": [
+        [
+          {
+            "node": "Return Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Decision Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7e4df735-cf96-4b0d-94bd-bf2bbc4b2d24",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aaadb797535f05587ee95b776c942a7c3f7a46fd7aa0c9b6a9d64e1e595f8af1"
+  },
+  "id": "uUQPOhyu1JG5PsdO",
+  "tags": []
+}

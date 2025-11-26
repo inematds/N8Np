@@ -1,0 +1,291 @@
+{
+  "name": "2. Imagen",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "gpt-image-1"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "name": "size",
+              "value": "1024x1536"
+            },
+            {
+              "name": "quality",
+              "value": "high"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -500,
+        20
+      ],
+      "id": "009892fc-a87b-4aaf-8e0f-bcd69563a297",
+      "name": "Generate Image",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data[0].b64_json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -284,
+        20
+      ],
+      "id": "fda1688c-1ad6-490e-8e2c-5e9834204536",
+      "name": "Convert to Binary"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "Tipo de imagen"
+            },
+            {
+              "name": "Publicacion"
+            },
+            {
+              "name": "Info_relevante"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1100,
+        20
+      ],
+      "id": "c8fcca57-5aa3-4269-902b-932de2bc56ae",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Texto de la publicación:\n{{ $json.Publicacion }}\nTipo de imagen:\n{{ $json['Tipo de imagen'] }}\nInformación relevante:\n{{ $json.Info_relevante }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Actua como un experto en creación de prompts para crear imagenes para publicaciones de redes sociales. Tu objetivo es crear el mejor prompt para crear una imagen llamativa para una publicacion de redes sociales.  IMPORTANTE: -Responde solo con el prompt para la imagen. -Respeta el estilo de la imagen"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        -880,
+        20
+      ],
+      "id": "b9886787-8703-4d5f-bd20-50b4afab51da",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -792,
+        240
+      ],
+      "id": "d8b9e3c1-2db5-4ceb-9326-3c5885d45fbe",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "imagen.png",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "10ES_-Bwsb7eHICJtlyNe3aYhHhyUcYPW",
+          "mode": "list",
+          "cachedResultName": "Publicaciones Prueba",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/10ES_-Bwsb7eHICJtlyNe3aYhHhyUcYPW"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -64,
+        20
+      ],
+      "id": "243daa94-9576-41a2-bdcd-7b4c6ab76d6c",
+      "name": "Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "file id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "URL Imagen",
+              "value": "={{ $json.webViewLink }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Prompt Imagen",
+              "value": "={{ $('Basic LLM Chain').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        156,
+        20
+      ],
+      "id": "0b49b39e-e22e-4986-9c8b-9185570d1f7b",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "Tipo de imagen": "Infografía con gráfica",
+          "Publicacion": "🌟 ¿Por qué las marcas con valores auténticos generan más afinidad? 🌟\n\nEn 2024, un estudio revela que el 62% de los consumidores en EE.UU. prefieren comprar productos y servicios de marcas que reflejan sus valores personales. Aquí te cuento por qué esto es clave para tu negocio:\n\n🔹 Conectan emocionalmente: Las marcas con valores claros generan una conexión profunda y auténtica con su audiencia.\n🔹 Construyen confianza: Cuando una marca actúa coherentemente con sus valores, gana credibilidad.\n🔹 Fidelizan clientes: La afinidad no solo atrae, también retiene clientes a largo plazo.\n\nInfografía: La gráfica muestra cómo el 62% de los consumidores priorizan marcas que comparten sus valores frente a otras que no.\n\n¿Tu marca comunica sus valores de forma clara? ¿Quieres que te ayudemos a definirlos y transmitirlos?\n\n#MarketingConValores #BrandAffinity #Marketing2024",
+          "Info_relevante": "En 2024, el 62% de los consumidores en EE.UU. prefieren comprar marcas que reflejan sus valores personales."
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Generate Image": {
+      "main": [
+        [
+          {
+            "node": "Convert to Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Generate Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to Binary": {
+      "main": [
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "391d36e5-31f2-474e-94ba-1bcdaf0c674e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "maWXZEFGdZjSXVFp",
+  "tags": []
+}

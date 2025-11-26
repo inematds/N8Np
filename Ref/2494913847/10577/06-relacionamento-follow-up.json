@@ -1,0 +1,648 @@
+{
+  "name": "Agente Relacionamento e Follow-up",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "relacionamento-clientes",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-relacionamento",
+      "name": "Webhook Relacionamento",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "relacionamento-clientes-imobiliaria"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"processing\",\n  \"agent\": \"Relacao_Clientes_Ativos\"\n}"
+      },
+      "id": "resposta-webhook",
+      "name": "Resposta Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "cronExpression": "0 9 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "cron-follow-up",
+      "name": "Cron Follow-up Semanal (Segunda 9h)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        240,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "cronExpression": "0 10 1 * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-newsletter",
+      "name": "Cron Newsletter Mensal (1º dia 10h)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        240,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Analisar contexto e determinar tipo de relacionamento\nconst contexto = JSON.parse($json.contexto);\nconst mensagem = contexto.mensagem_original.toLowerCase();\nconst cliente = contexto.dados_entrada.cliente;\nconst canal = contexto.canal;\n\n// Determinar tipo de interação de relacionamento\nlet tipo_relacionamento = 'geral';\nlet intencao_cliente = 'informacao';\n\n// Detectar intenções específicas\nconst intencoes = {\n  feedback: ['feedback', 'avaliação', 'opinião', 'como foi', 'experiência'],\n  novidades: ['novidades', 'novo', 'lançamento', 'disponível', 'chegou'],\n  status_processo: ['status', 'andamento', 'processo', 'documentos', 'aprovação'],\n  reagendamento: ['reagendar', 'remarcar', 'mudar horário', 'cancelar'],\n  indicacao: ['indicar', 'amigo', 'conhecido', 'família', 'recomendação'],\n  satisfacao: ['satisfeito', 'contente', 'feliz', 'obrigado', 'parabéns'],\n  reclamacao: ['problema', 'reclamação', 'insatisfeito', 'ruim', 'erro'],\n  duvida: ['dúvida', 'pergunta', 'como', 'quando', 'onde', 'por que']\n};\n\n// Detectar intenção principal\nfor (const [intencao, palavras] of Object.entries(intencoes)) {\n  if (palavras.some(palavra => mensagem.includes(palavra))) {\n    intencao_cliente = intencao;\n    break;\n  }\n}\n\n// Determinar tipo de relacionamento baseado no histórico do cliente\nif (cliente) {\n  const ultimaInteracao = new Date(cliente.ultima_interacao);\n  const agora = new Date();\n  const diasSemInteracao = Math.floor((agora - ultimaInteracao) / (1000 * 60 * 60 * 24));\n  \n  if (diasSemInteracao > 30) {\n    tipo_relacionamento = 'reativacao';\n  } else if (diasSemInteracao > 7) {\n    tipo_relacionamento = 'follow_up';\n  } else {\n    tipo_relacionamento = 'ativo';\n  }\n  \n  // Verificar se tem visitas agendadas\n  if (cliente.status === 'ativo') {\n    tipo_relacionamento = 'pos_visita';\n  }\n}\n\n// Analisar sentimento da mensagem\nlet sentimento = 'neutro';\nconst palavrasPositivas = ['bom', 'ótimo', 'excelente', 'perfeito', 'adorei', 'gostei', 'obrigado'];\nconst palavrasNegativas = ['ruim', 'péssimo', 'problema', 'erro', 'insatisfeito', 'reclamação'];\n\nif (palavrasPositivas.some(palavra => mensagem.includes(palavra))) {\n  sentimento = 'positivo';\n} else if (palavrasNegativas.some(palavra => mensagem.includes(palavra))) {\n  sentimento = 'negativo';\n}\n\nreturn {\n  json: {\n    contexto_original: contexto,\n    tipo_relacionamento: tipo_relacionamento,\n    intencao_cliente: intencao_cliente,\n    sentimento: sentimento,\n    cliente_dados: cliente,\n    canal: canal,\n    origem: 'interacao_direta'\n  }\n};"
+      },
+      "id": "analisar-relacionamento",
+      "name": "Analisar Tipo de Relacionamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar histórico recente do cliente\nSELECT \n  i.created_at,\n  i.canal,\n  i.tipo,\n  i.agente_responsavel,\n  i.satisfacao_cliente\nFROM interacoes i\nWHERE i.cliente_id = '{{ $json.cliente_dados.id }}'\nORDER BY i.created_at DESC\nLIMIT 5;",
+        "options": {}
+      },
+      "id": "buscar-historico",
+      "name": "Buscar Histórico do Cliente",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gerar resposta personalizada de relacionamento\nconst dados = $json;\nconst tipo = dados.tipo_relacionamento;\nconst intencao = dados.intencao_cliente;\nconst sentimento = dados.sentimento;\nconst cliente = dados.cliente_dados;\nconst canal = dados.canal;\nconst historico = $input.all().slice(1); // Histórico do segundo input\n\nconst nomeCliente = cliente?.nome?.split(' ')[0] || 'Cliente';\n\n// Templates de resposta por tipo de relacionamento\nconst templates = {\n  ativo: {\n    whatsapp: {\n      feedback: `Oi ${nomeCliente}! 😊\\n\\nQue bom ter seu feedback! Sua opinião é muito importante para nós.\\n\\nComo foi sua experiência até agora? Tem alguma sugestão de como podemos melhorar? 💭`,\n      novidades: `Oi ${nomeCliente}! 🏠\\n\\nTenho novidades incríveis para você! Chegaram imóveis novos que podem te interessar.\\n\\nQuer que eu te envie as opções que combinam com seu perfil? 📱`,\n      status_processo: `Oi ${nomeCliente}! 📋\\n\\nVou verificar o status do seu processo agora mesmo!\\n\\nEm alguns minutos te envio todas as atualizações. Qualquer dúvida, é só falar! ✅`,\n      satisfacao: `${nomeCliente}, que alegria receber seu retorno! 🎉\\n\\nFicamos muito felizes em saber que está satisfeito(a)! \\n\\nContinuamos trabalhando para te oferecer o melhor atendimento sempre! 💪`,\n      reclamacao: `${nomeCliente}, peço desculpas pelo ocorrido! 😔\\n\\nVou resolver isso imediatamente e garantir que não aconteça novamente.\\n\\nPode me dar mais detalhes para eu entender melhor a situação? 🔍`,\n      duvida: `Oi ${nomeCliente}! 🤔\\n\\nClaro, vou esclarecer sua dúvida!\\n\\nPode me explicar melhor o que você gostaria de saber? Estou aqui para ajudar! 💡`\n    },\n    email: {\n      feedback: `Olá ${nomeCliente}!\\n\\nObrigado por entrar em contato. Seu feedback é muito valioso para nós.\\n\\nGostaria de saber mais detalhes sobre sua experiência para continuarmos melhorando nossos serviços.`,\n      novidades: `Olá ${nomeCliente}!\\n\\nTemos novidades que podem interessar você! Novos imóveis foram cadastrados em nosso sistema.\\n\\nGostaria de receber uma seleção personalizada baseada em suas preferências?`,\n      status_processo: `Olá ${nomeCliente}!\\n\\nVou verificar o status atual do seu processo e te enviar todas as informações atualizadas em breve.\\n\\nQualquer dúvida adicional, estou à disposição.`\n    }\n  },\n  \n  follow_up: {\n    whatsapp: `Oi ${nomeCliente}! 👋\\n\\nTudo bem? Faz um tempinho que não conversamos!\\n\\nComo anda sua busca pelo imóvel ideal? Surgiu alguma dúvida ou posso te ajudar com alguma coisa? 🏠\\n\\nTenho algumas novidades que podem te interessar! 😊`,\n    email: `Olá ${nomeCliente}!\\n\\nEspero que esteja tudo bem! \\n\\nGostaria de saber como anda sua busca pelo imóvel ideal e se posso ajudar em alguma coisa.\\n\\nTemos recebido novos imóveis que podem atender suas necessidades.`\n  },\n  \n  reativacao: {\n    whatsapp: `Oi ${nomeCliente}! 😊\\n\\nSentimos sua falta! Como você está?\\n\\nVi que faz um tempo que não conversamos... Ainda está procurando imóvel? 🏠\\n\\nTemos muitas novidades incríveis que chegaram! Quer dar uma olhada? 👀`,\n    email: `Olá ${nomeCliente}!\\n\\nSentimos sua falta! Espero que esteja tudo bem.\\n\\nGostaria de saber se ainda tem interesse em imóveis, pois temos recebido muitas opções novas.\\n\\nSe desejar, posso enviar uma seleção atualizada baseada em suas preferências anteriores.`\n  },\n  \n  pos_visita: {\n    whatsapp: `Oi ${nomeCliente}! 🏠\\n\\nComo foi a visita? Gostou do imóvel?\\n\\nFiquei curioso(a) para saber sua impressão! \\n\\nSe tiver alguma dúvida ou quiser ver outros imóveis, é só falar! 😊`,\n    email: `Olá ${nomeCliente}!\\n\\nGostaria de saber como foi sua visita ao imóvel.\\n\\nSua opinião é muito importante para nós. Se tiver interesse ou dúvidas, estou à disposição para ajudar.`\n  }\n};\n\n// Selecionar resposta apropriada\nlet resposta = '';\n\nif (templates[tipo] && templates[tipo][canal] && templates[tipo][canal][intencao]) {\n  resposta = templates[tipo][canal][intencao];\n} else if (templates[tipo] && templates[tipo][canal]) {\n  resposta = templates[tipo][canal];\n} else if (templates[tipo] && templates[tipo].whatsapp) {\n  resposta = templates[tipo].whatsapp;\n} else {\n  // Resposta padrão\n  if (canal === 'whatsapp') {\n    resposta = `Oi ${nomeCliente}! 😊\\n\\nObrigado por entrar em contato!\\n\\nComo posso te ajudar hoje? Estou aqui para esclarecer qualquer dúvida! 💪`;\n  } else {\n    resposta = `Olá ${nomeCliente}!\\n\\nObrigado por entrar em contato. Como posso ajudá-lo hoje?`;\n  }\n}\n\n// Personalizar baseado no sentimento\nif (sentimento === 'negativo' && !resposta.includes('desculpas')) {\n  if (canal === 'whatsapp') {\n    resposta += `\\n\\n🚨 *Atenção especial:* Vou priorizar seu atendimento para resolver qualquer questão rapidamente!`;\n  } else {\n    resposta += `\\n\\nVou priorizar seu atendimento para resolver qualquer questão o mais rápido possível.`;\n  }\n}\n\n// Determinar próximas ações\nlet proximas_acoes = [];\nlet requer_hitl = false;\n\nif (sentimento === 'negativo' || intencao === 'reclamacao') {\n  requer_hitl = true;\n  proximas_acoes.push('escalar_para_supervisor');\n}\n\nif (intencao === 'novidades') {\n  proximas_acoes.push('enviar_imoveis_novos');\n}\n\nif (tipo === 'reativacao') {\n  proximas_acoes.push('atualizar_preferencias');\n}\n\nreturn {\n  json: {\n    resposta: resposta,\n    tipo_relacionamento: tipo,\n    intencao_detectada: intencao,\n    sentimento: sentimento,\n    proximas_acoes: proximas_acoes,\n    requer_hitl: requer_hitl,\n    dados_contexto: dados\n  }\n};"
+      },
+      "id": "gerar-resposta-relacionamento",
+      "name": "Gerar Resposta de Relacionamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar clientes para follow-up semanal\nSELECT \n  c.*,\n  EXTRACT(DAYS FROM NOW() - c.ultima_interacao) as dias_sem_contato\nFROM clientes c\nWHERE c.status = 'ativo'\n  AND c.ultima_interacao < NOW() - INTERVAL '7 days'\n  AND c.ultima_interacao > NOW() - INTERVAL '30 days'\nORDER BY c.score_qualificacao DESC, c.ultima_interacao ASC\nLIMIT 20;",
+        "options": {}
+      },
+      "id": "buscar-clientes-follow-up",
+      "name": "Buscar Clientes para Follow-up",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        460,
+        600
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar clientes ativos para newsletter mensal\nSELECT \n  c.*,\n  COUNT(i.id) as total_interacoes\nFROM clientes c\nLEFT JOIN interacoes i ON c.id = i.cliente_id \n  AND i.created_at >= NOW() - INTERVAL '30 days'\nWHERE c.status = 'ativo'\n  AND c.email IS NOT NULL\n  AND c.email != ''\nGROUP BY c.id\nORDER BY c.score_qualificacao DESC\nLIMIT 100;",
+        "options": {}
+      },
+      "id": "buscar-clientes-newsletter",
+      "name": "Buscar Clientes para Newsletter",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        460,
+        900
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar lista de clientes para follow-up\nconst clientes = $input.all();\nconst mensagensFollowUp = [];\n\nfor (const clienteItem of clientes) {\n  const cliente = clienteItem.json;\n  const nome = cliente.nome?.split(' ')[0] || 'Cliente';\n  const diasSemContato = cliente.dias_sem_contato;\n  \n  let mensagem = '';\n  \n  if (diasSemContato <= 10) {\n    // Follow-up suave\n    mensagem = `Oi ${nome}! 😊\\n\\nTudo bem? Como anda sua busca pelo imóvel ideal?\\n\\nTenho algumas novidades que podem te interessar! Quer dar uma olhada? 🏠`;\n  } else if (diasSemContato <= 20) {\n    // Follow-up médio\n    mensagem = `Oi ${nome}! 👋\\n\\nSentimos sua falta! Como você está?\\n\\nChegaram imóveis novos incríveis! Que tal darmos uma olhada juntos? 🎯`;\n  } else {\n    // Follow-up de reativação\n    mensagem = `Oi ${nome}! 🌟\\n\\nOlha só quem apareceu nas nossas pesquisas! Como você está?\\n\\nTemos muitas novidades desde nossa última conversa. Ainda está procurando imóvel? 🏠✨`;\n  }\n  \n  mensagensFollowUp.push({\n    cliente_id: cliente.id,\n    nome: cliente.nome,\n    telefone: cliente.telefone,\n    email: cliente.email,\n    mensagem: mensagem,\n    dias_sem_contato: diasSemContato,\n    score: cliente.score_qualificacao\n  });\n}\n\nreturn {\n  json: {\n    total_clientes: mensagensFollowUp.length,\n    mensagens_follow_up: mensagensFollowUp,\n    data_processamento: new Date().toISOString()\n  }\n};"
+      },
+      "id": "processar-follow-up",
+      "name": "Processar Follow-up Semanal",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gerar newsletter mensal personalizada\nconst clientes = $input.all();\n\n// Buscar imóveis em destaque (simulado - seria uma query real)\nconst imoveisDestaque = [\n  {\n    codigo: 'IMO001234',\n    tipo: 'Apartamento',\n    bairro: 'Vila Madalena',\n    valor: 850000,\n    quartos: 3,\n    destaque: 'Lançamento exclusivo'\n  },\n  {\n    codigo: 'IMO001235', \n    tipo: 'Casa',\n    bairro: 'Pinheiros',\n    valor: 1200000,\n    quartos: 4,\n    destaque: 'Oportunidade única'\n  }\n];\n\nconst newslettersPersonalizadas = [];\n\nfor (const clienteItem of clientes) {\n  const cliente = clienteItem.json;\n  const nome = cliente.nome?.split(' ')[0] || 'Cliente';\n  \n  // Personalizar baseado no perfil do cliente\n  let imoveisFiltrados = imoveisDestaque;\n  if (cliente.localizacao_preferida) {\n    imoveisFiltrados = imoveisDestaque.filter(i => \n      i.bairro.toLowerCase().includes(cliente.localizacao_preferida.toLowerCase())\n    );\n  }\n  \n  if (imoveisFiltrados.length === 0) {\n    imoveisFiltrados = imoveisDestaque.slice(0, 2);\n  }\n  \n  const imoveisFormatados = imoveisFiltrados.map(imovel => \n    `🏠 ${imovel.codigo} - ${imovel.tipo}\\n` +\n    `📍 ${imovel.bairro}\\n` +\n    `💰 R$ ${imovel.valor.toLocaleString('pt-BR')}\\n` +\n    `🛏️ ${imovel.quartos} quartos\\n` +\n    `⭐ ${imovel.destaque}`\n  ).join('\\n\\n');\n  \n  const newsletter = {\n    cliente_id: cliente.id,\n    nome: cliente.nome,\n    email: cliente.email,\n    assunto: `${nome}, novidades incríveis da nossa imobiliária! 🏠`,\n    conteudo: `Olá ${nome}!\\n\\n` +\n              `Esperamos que esteja tudo bem! 😊\\n\\n` +\n              `Este mês temos novidades especiais para você:\\n\\n` +\n              `🌟 DESTAQUES DO MÊS:\\n\\n${imoveisFormatados}\\n\\n` +\n              `📈 MERCADO IMOBILIÁRIO:\\n` +\n              `O mercado está aquecido e é um ótimo momento para investir!\\n\\n` +\n              `💡 DICA DO MÊS:\\n` +\n              `Financiamentos estão com taxas atrativas. Que tal simular?\\n\\n` +\n              `🤝 Estamos aqui para ajudar você a encontrar o imóvel dos seus sonhos!\\n\\n` +\n              `Qualquer dúvida, é só responder este e-mail!\\n\\n` +\n              `Abraços,\\nEquipe Imobiliária`,\n    total_interacoes: cliente.total_interacoes || 0\n  };\n  \n  newslettersPersonalizadas.push(newsletter);\n}\n\nreturn {\n  json: {\n    total_newsletters: newslettersPersonalizadas.length,\n    newsletters: newslettersPersonalizadas,\n    data_processamento: new Date().toISOString()\n  }\n};"
+      },
+      "id": "gerar-newsletter",
+      "name": "Gerar Newsletter Personalizada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.dados_contexto.canal }}",
+              "rightValue": "whatsapp",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-canal",
+      "name": "Canal WhatsApp?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.WHATSAPP_API_URL }}/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.WHATSAPP_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $json.dados_contexto.contexto_original.dados_entrada.from }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.resposta }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "enviar-whatsapp",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "{{ $vars.SMTP_FROM_EMAIL }}",
+        "toEmail": "={{ $json.dados_contexto.contexto_original.dados_entrada.email }}",
+        "subject": "Acompanhamento - Sua busca por imóveis",
+        "emailType": "text",
+        "message": "={{ $json.resposta }}",
+        "options": {}
+      },
+      "id": "enviar-email",
+      "name": "Enviar Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        400
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "[REMOVED]",
+          "name": "SMTP Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "id": "split-follow-up",
+      "name": "Split Follow-up em Lotes",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        900,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 10,
+        "options": {}
+      },
+      "id": "split-newsletter",
+      "name": "Split Newsletter em Lotes",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        900,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.telefone }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-telefone",
+      "name": "Tem Telefone?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.WHATSAPP_API_URL }}/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.WHATSAPP_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $json.telefone }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.mensagem }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "enviar-follow-up-whatsapp",
+      "name": "Enviar Follow-up WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1340,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "{{ $vars.SMTP_FROM_EMAIL }}",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.assunto }}",
+        "emailType": "text",
+        "message": "={{ $json.conteudo }}",
+        "options": {}
+      },
+      "id": "enviar-newsletter-email",
+      "name": "Enviar Newsletter Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        900
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "[REMOVED]",
+          "name": "SMTP Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "interacoes"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cliente_id": "={{ $json.dados_contexto.cliente_dados.id }}",
+            "canal": "={{ $json.dados_contexto.canal }}",
+            "tipo": "saida",
+            "mensagem": "={{ $json.resposta }}",
+            "agente_responsavel": "Relacao_Clientes_Ativos",
+            "contexto": "={{ JSON.stringify({ tipo_relacionamento: $json.tipo_relacionamento, intencao: $json.intencao_detectada, sentimento: $json.sentimento }) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "registrar-interacao",
+      "name": "Registrar Interação",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Relacionamento": {
+      "main": [
+        [
+          {
+            "node": "Resposta Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Analisar Tipo de Relacionamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron Follow-up Semanal (Segunda 9h)": {
+      "main": [
+        [
+          {
+            "node": "Buscar Clientes para Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron Newsletter Mensal (1º dia 10h)": {
+      "main": [
+        [
+          {
+            "node": "Buscar Clientes para Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisar Tipo de Relacionamento": {
+      "main": [
+        [
+          {
+            "node": "Buscar Histórico do Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Histórico do Cliente": {
+      "main": [
+        [
+          {
+            "node": "Gerar Resposta de Relacionamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Resposta de Relacionamento": {
+      "main": [
+        [
+          {
+            "node": "Canal WhatsApp?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Clientes para Follow-up": {
+      "main": [
+        [
+          {
+            "node": "Processar Follow-up Semanal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Clientes para Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Gerar Newsletter Personalizada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Follow-up Semanal": {
+      "main": [
+        [
+          {
+            "node": "Split Follow-up em Lotes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Newsletter Personalizada": {
+      "main": [
+        [
+          {
+            "node": "Split Newsletter em Lotes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Canal WhatsApp?": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Registrar Interação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Email": {
+      "main": [
+        [
+          {
+            "node": "Registrar Interação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Follow-up em Lotes": {
+      "main": [
+        [
+          {
+            "node": "Tem Telefone?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Newsletter em Lotes": {
+      "main": [
+        [
+          {
+            "node": "Enviar Newsletter Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem Telefone?": {
+      "main": [
+        [
+          {
+            "node": "Enviar Follow-up WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "relacionamento",
+      "name": "Relacionamento"
+    }
+  ],
+  "triggerCount": 3,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

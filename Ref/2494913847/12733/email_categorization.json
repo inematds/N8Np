@@ -1,0 +1,618 @@
+{
+  "name": "email_categorization",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "customEmailConfig": "[\"ALL\"]"
+        }
+      },
+      "id": "a1f1770a-ef1b-4616-a809-b82d56833cdb",
+      "name": "IMAP Email Fetcher",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2.1,
+      "position": [
+        -2864,
+        1440
+      ],
+      "credentials": {
+        "imap": {
+          "id": "[REMOVED]",
+          "name": "mark@promptadvisers.com IMAP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Email Deduplication & Preprocessing\nconst processedEmails = new Map();\nconst emailThreads = new Map();\nconst cleanedEmails = [];\n\n// Helper function to clean email content\nfunction cleanEmailContent(content) {\n  if (!content) return '';\n  \n  // Remove common signatures and boilerplate\n  const signaturePatterns = [\n    /--\\s*\\n[\\s\\S]*$/,  // Standard signature delimiter\n    /_{10,}[\\s\\S]*$/,   // Underscore separators\n    /Sent from my [\\w\\s]+$/i,  // Mobile signatures\n    /Best regards?[\\s\\S]*$/i,\n    /Kind regards?[\\s\\S]*$/i,\n    /Sincerely[\\s\\S]*$/i,\n    /Thanks?[\\s\\S]*$/i,\n    /This email was sent from[\\s\\S]*$/i,\n    /Confidentiality Notice[\\s\\S]*$/i,\n    /CONFIDENTIAL[\\s\\S]*$/i\n  ];\n  \n  let cleaned = content;\n  signaturePatterns.forEach(pattern => {\n    cleaned = cleaned.replace(pattern, '');\n  });\n  \n  // Remove excessive whitespace\n  cleaned = cleaned.replace(/\\n{3,}/g, '\\n\\n');\n  cleaned = cleaned.trim();\n  \n  return cleaned;\n}\n\n// Helper function to detect automated emails\nfunction isAutomatedEmail(email) {\n  const automatedPatterns = [\n    /no-?reply/i,\n    /noreply/i,\n    /donotreply/i,\n    /auto-?reply/i,\n    /notification/i,\n    /alert/i,\n    /system/i,\n    /daemon/i,\n    /mailer-daemon/i,\n    /postmaster/i\n  ];\n  \n  const fromEmail = email.from?.toLowerCase() || '';\n  const subject = email.subject?.toLowerCase() || '';\n  \n  // Check sender patterns\n  if (automatedPatterns.some(pattern => pattern.test(fromEmail))) {\n    return true;\n  }\n  \n  // Check subject patterns\n  const automatedSubjects = [\n    /out of office/i,\n    /auto-?reply/i,\n    /delivery failure/i,\n    /undelivered mail/i,\n    /bounce/i,\n    /newsletter/i,\n    /subscription/i,\n    /unsubscribe/i\n  ];\n  \n  return automatedSubjects.some(pattern => pattern.test(subject));\n}\n\n// Helper function to extract email metadata\nfunction extractMetadata(email) {\n  return {\n    messageId: email.messageId || email['message-id'] || null,\n    inReplyTo: email.inReplyTo || email['in-reply-to'] || null,\n    references: email.references || [],\n    threadId: null, // Will be set during thread reconstruction\n    from: email.from,\n    to: email.to,\n    cc: email.cc || [],\n    bcc: email.bcc || [],\n    subject: email.subject,\n    date: email.date || email.receivedDate,\n    hasAttachments: (email.attachments && email.attachments.length > 0) || false,\n    attachmentCount: email.attachments ? email.attachments.length : 0,\n    priority: email.priority || 'normal',\n    isRead: email.flags?.includes('\\\\Seen') || false,\n    isFlagged: email.flags?.includes('\\\\Flagged') || false,\n    folder: email.folder || 'INBOX',\n    account: email.account || 'unknown'\n  };\n}\n\n// Process all input items\nfor (const item of $input.all()) {\n  const email = item.json;\n  \n  // Skip if no message ID (can't deduplicate properly)\n  const messageId = email.messageId || email['message-id'];\n  if (!messageId) {\n    console.log('Skipping email without Message-ID');\n    continue;\n  }\n  \n  // Skip if already processed (deduplication)\n  if (processedEmails.has(messageId)) {\n    console.log(`Skipping duplicate email: ${messageId}`);\n    continue;\n  }\n  \n  // Skip automated emails\n  if (isAutomatedEmail(email)) {\n    console.log(`Skipping automated email: ${email.subject}`);\n    continue;\n  }\n  \n  // Extract metadata\n  const metadata = extractMetadata(email);\n  \n  // Clean email content\n  const cleanedBody = cleanEmailContent(email.body || email.text || '');\n  const cleanedHtml = email.html ? cleanEmailContent(email.html) : null;\n  \n  // Skip if content is too short after cleaning\n  if (cleanedBody.length < 50 && (!cleanedHtml || cleanedHtml.length < 50)) {\n    console.log(`Skipping email with insufficient content: ${email.subject}`);\n    continue;\n  }\n  \n  // Create processed email object\n  const processedEmail = {\n    ...email,\n    metadata,\n    cleanedBody,\n    cleanedHtml,\n    originalBody: email.body || email.text,\n    originalHtml: email.html,\n    contentLength: cleanedBody.length,\n    processedAt: new Date().toISOString()\n  };\n  \n  // Mark as processed\n  processedEmails.set(messageId, processedEmail);\n  cleanedEmails.push(processedEmail);\n}\n\n// Reconstruct email threads\nfor (const email of cleanedEmails) {\n  const metadata = email.metadata;\n  \n  // If email has In-Reply-To, try to find parent\n  if (metadata.inReplyTo) {\n    const parentEmail = cleanedEmails.find(e => e.metadata.messageId === metadata.inReplyTo);\n    if (parentEmail) {\n      // Use parent's thread ID or create new one\n      metadata.threadId = parentEmail.metadata.threadId || parentEmail.metadata.messageId;\n      // Update parent if it doesn't have a thread ID yet\n      if (!parentEmail.metadata.threadId) {\n        parentEmail.metadata.threadId = parentEmail.metadata.messageId;\n      }\n    }\n  }\n  \n  // If no thread ID yet, check references\n  if (!metadata.threadId && metadata.references && metadata.references.length > 0) {\n    for (const ref of metadata.references) {\n      const refEmail = cleanedEmails.find(e => e.metadata.messageId === ref);\n      if (refEmail && refEmail.metadata.threadId) {\n        metadata.threadId = refEmail.metadata.threadId;\n        break;\n      }\n    }\n  }\n  \n  // If still no thread ID, use message ID as thread root\n  if (!metadata.threadId) {\n    metadata.threadId = metadata.messageId;\n  }\n}\n\n// Group emails by thread for final organization\nconst threadGroups = new Map();\nfor (const email of cleanedEmails) {\n  const threadId = email.metadata.threadId;\n  if (!threadGroups.has(threadId)) {\n    threadGroups.set(threadId, []);\n  }\n  threadGroups.get(threadId).push(email);\n}\n\n// Sort emails within threads by date\nfor (const [threadId, emails] of threadGroups) {\n  emails.sort((a, b) => new Date(a.metadata.date) - new Date(b.metadata.date));\n  \n  // Add thread position metadata\n  emails.forEach((email, index) => {\n    email.metadata.threadPosition = index;\n    email.metadata.threadLength = emails.length;\n    email.metadata.isThreadRoot = index === 0;\n  });\n}\n\n// Prepare final output with processing statistics\nconst stats = {\n  totalProcessed: cleanedEmails.length,\n  totalThreads: threadGroups.size,\n  duplicatesRemoved: $input.all().length - cleanedEmails.length,\n  averageContentLength: cleanedEmails.reduce((sum, email) => sum + email.contentLength, 0) / cleanedEmails.length || 0\n};\n\nconsole.log('Email processing complete:', stats);\n\n// Return all cleaned emails as separate items\nreturn cleanedEmails.map(email => ({ json: email }));"
+      },
+      "id": "075de02d-f759-4dbb-8d1a-5a0dcde5ef29",
+      "name": "Email Deduplication & Preprocessing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2416,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 50,
+        "options": {
+          "reset": true
+        }
+      },
+      "id": "abed1712-d2db-4cde-a756-20b67ae434e7",
+      "name": "Batch Email Processor",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -2192,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following email and categorize it into one of these categories: customer_request, support_ticket, lead_interaction, internal_communication, strategic_decision, project_discussion.\n\nEmail Details:\nSender: {{ $json.sender }}\nSubject: {{ $json.subject }}\nContent: {{ $json.content }}\n\nPlease provide a structured response with:\n1. Category (one of the six categories above)\n2. Confidence score (0-100)\n\nFormat your response as:\nCategory: [category_name]\nConfidence: [score]",
+        "batching": {}
+      },
+      "id": "bf67df7b-7abd-4b62-8107-faa6937a240d",
+      "name": "Email Categorization Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1968,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an email importance scoring system. Analyze the following email and assign an importance score from 1-10 based on these criteria:\n\n**Scoring Criteria:**\n1. **Sender Importance (1-3 points):**\n   - CEO, C-level executives, board members: 3 points\n   - Key customers, major clients, VIP contacts: 3 points\n   - Direct manager, department heads: 2 points\n   - Team members, regular contacts: 1 point\n   - Unknown/external senders: 0 points\n\n2. **Topic Relevance (1-2 points):**\n   - Core business operations, strategic initiatives: 2 points\n   - Department-specific important matters: 1 point\n   - General information, newsletters: 0 points\n\n3. **Action Items & Urgency (1-2 points):**\n   - Immediate action required, deadlines mentioned: 2 points\n   - Future action items, follow-ups needed: 1 point\n   - No action required: 0 points\n\n4. **Financial Implications (1-2 points):**\n   - Revenue impact, budget decisions, contracts: 2 points\n   - Cost considerations, expense approvals: 1 point\n   - No financial impact: 0 points\n\n5. **Strategic Value (1-1 point):**\n   - Strategic partnerships, competitive intelligence, market opportunities: 1 point\n   - Routine communications: 0 points\n\n**Email to analyze:**\nFrom: {{ $json.from }}\nTo: {{ $json.to }}\nSubject: {{ $json.subject }}\nBody: {{ $json.body }}\n\nProvide your analysis in this format:\n- Sender Importance: [score]/3 - [reasoning]\n- Topic Relevance: [score]/2 - [reasoning]\n- Action Items: [score]/2 - [reasoning]\n- Financial Impact: [score]/2 - [reasoning]\n- Strategic Value: [score]/1 - [reasoning]\n- **Total Importance Score: [total]/10**\n- **Priority Level: [High/Medium/Low]** (High: 8-10, Medium: 5-7, Low: 1-4)",
+        "batching": {}
+      },
+      "id": "06c912c8-86d6-42d7-a656-c51016ce323d",
+      "name": "Importance Scoring Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1616,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Extract comprehensive metadata from the following email in JSON format. Analyze the email content and return a structured JSON object with the following fields:\n\n{\n  \"participants\": [\"list of email participants including sender and recipients\"],\n  \"keywords\": [\"list of 5-10 key terms and topics\"],\n  \"entities\": {\n    \"companies\": [\"company names mentioned\"],\n    \"products\": [\"product names mentioned\"],\n    \"people\": [\"person names mentioned\"],\n    \"locations\": [\"locations mentioned\"]\n  },\n  \"sentiment\": \"positive/negative/neutral\",\n  \"action_items\": [\"list of tasks or action items mentioned\"],\n  \"summary\": \"A concise 2-sentence summary of the email content\",\n  \"attachments\": [\"list of attachment names if any\"],\n  \"language\": \"detected language code (e.g., en, es, fr)\",\n  \"department\": \"likely department this email relates to (sales, support, hr, finance, etc.)\"\n}\n\nEmail to analyze:\n{{ $json.subject }}\n{{ $json.text }}\n\nReturn only the JSON object, no additional text.",
+        "batching": {}
+      },
+      "id": "fd0294c4-319a-4bee-954d-13751bf9aba6",
+      "name": "Metadata Enrichment Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1264,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Parse LLM Metadata Response and combine with email data\nconst item = $input.item.json;\n\n// Extract the LLM response (assuming it comes from the previous metadata enrichment chain)\nconst llmResponse = item.output || item.text || item.response || '';\n\nlet parsedMetadata = {};\nlet parseError = null;\n\ntry {\n  // Try to parse JSON response from LLM\n  if (typeof llmResponse === 'string') {\n    // Clean the response - remove markdown code blocks if present\n    const cleanedResponse = llmResponse\n      .replace(/```json\\s*/gi, '')\n      .replace(/```\\s*/g, '')\n      .trim();\n    \n    parsedMetadata = JSON.parse(cleanedResponse);\n  } else if (typeof llmResponse === 'object') {\n    parsedMetadata = llmResponse;\n  }\n} catch (error) {\n  parseError = error.message;\n  console.log('Failed to parse LLM metadata response:', error.message);\n  console.log('Raw response:', llmResponse);\n  \n  // Fallback: try to extract key-value pairs using regex\n  try {\n    const fallbackMetadata = {};\n    const keyValueRegex = /[\"']?(\\w+)[\"']?\\s*:\\s*[\"']?([^,}\\n]+)[\"']?/g;\n    let match;\n    \n    while ((match = keyValueRegex.exec(llmResponse)) !== null) {\n      const key = match[1].toLowerCase();\n      const value = match[2].replace(/[\"']/g, '').trim();\n      fallbackMetadata[key] = value;\n    }\n    \n    if (Object.keys(fallbackMetadata).length > 0) {\n      parsedMetadata = fallbackMetadata;\n      parseError = null;\n    }\n  } catch (fallbackError) {\n    console.log('Fallback parsing also failed:', fallbackError.message);\n  }\n}\n\n// Validate and clean extracted metadata\nconst validatedMetadata = {\n  category: parsedMetadata.category || parsedMetadata.type || 'uncategorized',\n  importance: parsedMetadata.importance || parsedMetadata.priority || 'medium',\n  urgency: parsedMetadata.urgency || 'normal',\n  sentiment: parsedMetadata.sentiment || 'neutral',\n  keywords: Array.isArray(parsedMetadata.keywords) \n    ? parsedMetadata.keywords \n    : (parsedMetadata.keywords ? parsedMetadata.keywords.split(',').map(k => k.trim()) : []),\n  summary: parsedMetadata.summary || parsedMetadata.description || '',\n  actionRequired: parsedMetadata.actionRequired || parsedMetadata.action_required || false,\n  confidenceScore: parseFloat(parsedMetadata.confidenceScore || parsedMetadata.confidence || 0.5)\n};\n\n// Ensure importance is within valid range\nconst validImportance = ['low', 'medium', 'high', 'critical'];\nif (!validImportance.includes(validatedMetadata.importance.toLowerCase())) {\n  validatedMetadata.importance = 'medium';\n}\n\n// Ensure urgency is within valid range\nconst validUrgency = ['low', 'normal', 'high', 'urgent'];\nif (!validUrgency.includes(validatedMetadata.urgency.toLowerCase())) {\n  validatedMetadata.urgency = 'normal';\n}\n\n// Ensure sentiment is within valid range\nconst validSentiment = ['positive', 'neutral', 'negative'];\nif (!validSentiment.includes(validatedMetadata.sentiment.toLowerCase())) {\n  validatedMetadata.sentiment = 'neutral';\n}\n\n// Combine with existing email data\nconst enrichedEmail = {\n  // Original email data\n  id: item.id || item.messageId || `email_${Date.now()}`,\n  subject: item.subject || '',\n  from: item.from || '',\n  to: item.to || '',\n  date: item.date || item.receivedDate || new Date().toISOString(),\n  body: item.body || item.text || item.content || '',\n  \n  // Previously extracted data (from categorization and importance scoring)\n  category: item.category || validatedMetadata.category,\n  importanceScore: item.importanceScore || item.importance || validatedMetadata.importance,\n  \n  // Newly parsed and validated metadata\n  metadata: validatedMetadata,\n  \n  // Processing information\n  processingInfo: {\n    parsedAt: new Date().toISOString(),\n    parseError: parseError,\n    rawLlmResponse: llmResponse,\n    hasValidMetadata: Object.keys(parsedMetadata).length > 0\n  }\n};\n\n// Add quality score based on metadata completeness\nconst metadataFields = Object.keys(validatedMetadata);\nconst completedFields = metadataFields.filter(field => {\n  const value = validatedMetadata[field];\n  return value !== null && value !== undefined && value !== '' && \n         (Array.isArray(value) ? value.length > 0 : true);\n});\n\nenrichedEmail.qualityScore = completedFields.length / metadataFields.length;\n\nreturn { json: enrichedEmail };"
+      },
+      "id": "908a3dca-bc9c-4493-ad55-5dc3ee842162",
+      "name": "Parse LLM Metadata Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -912,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $('Parse LLM Metadata Response').item.json.importance_score }}",
+              "rightValue": 6,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            },
+            {
+              "id": "id-2",
+              "leftValue": "={{ $('Parse LLM Metadata Response').item.json.word_count }}",
+              "rightValue": 50,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            },
+            {
+              "id": "id-3",
+              "leftValue": "={{ $('Parse LLM Metadata Response').item.json.is_automated }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "false"
+              }
+            },
+            {
+              "id": "id-4",
+              "leftValue": "={{ $('Parse LLM Metadata Response').item.json.has_business_value }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "ebd4f571-8dd6-41d9-8995-f45ed8a8e834",
+      "name": "Quality Filter",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -688,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "document_id",
+              "value": "={{ $('Parse LLM Metadata Response').item.json.email_id || 'email_' + $now.toUnixInteger() + '_' + Math.random().toString(36).substr(2, 9) }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "embedding_text",
+              "value": "={{ ($('Parse LLM Metadata Response').item.json.subject || '') + '\\n\\n' + ($('Parse LLM Metadata Response').item.json.body || '').replace(/<[^>]*>/g, '').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "retention_priority",
+              "value": "={{ $('Parse LLM Metadata Response').item.json.importance_score >= 8 ? 'high' : $('Parse LLM Metadata Response').item.json.importance_score >= 5 ? 'medium' : 'low' }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "metadata",
+              "value": "={{ JSON.stringify({ \"sender\": $('Parse LLM Metadata Response').item.json.sender, \"subject\": $('Parse LLM Metadata Response').item.json.subject, \"category\": $('Parse LLM Metadata Response').item.json.category, \"importance_score\": $('Parse LLM Metadata Response').item.json.importance_score, \"date\": $('Parse LLM Metadata Response').item.json.date, \"keywords\": $('Parse LLM Metadata Response').item.json.keywords || [] }) }}",
+              "type": "object"
+            },
+            {
+              "id": "id-5",
+              "name": "vector_namespace",
+              "value": "={{ 'emails_' + ($('Parse LLM Metadata Response').item.json.category || 'general').toLowerCase().replace(/[^a-z0-9]/g, '_') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {
+          "ignoreConversionErrors": false,
+          "dotNotation": true
+        }
+      },
+      "id": "8adda72d-1d60-414e-83ab-b311615449fb",
+      "name": "Format for RAG",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -464,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4"
+        },
+        "options": {
+          "maxTokens": "[REMOVED]",
+          "temperature": 0.1
+        }
+      },
+      "id": "ed770955-ebb6-48d9-9598-c83d82f0fc35",
+      "name": "OpenAI GPT-4 Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1896,
+        1664
+      ]
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "id": "fe359891-8af9-4681-a46e-6c94be00bf03",
+      "name": "OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        1056
+      ]
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 200
+      },
+      "id": "4e69a30b-8588-4ea2-ae32-bb7157647ff1",
+      "name": "Token Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterTokenSplitter",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        1264
+      ]
+    },
+    {
+      "parameters": {
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "sender",
+                "value": "={{ $json.from }}"
+              },
+              {
+                "name": "subject",
+                "value": "={{ $json.subject }}"
+              },
+              {
+                "name": "category",
+                "value": "={{ $json.category }}"
+              },
+              {
+                "name": "importance_score",
+                "value": "={{ $json.importanceScore }}"
+              },
+              {
+                "name": "date",
+                "value": "={{ $json.date }}"
+              },
+              {
+                "name": "document_type",
+                "value": "email"
+              }
+            ]
+          }
+        }
+      },
+      "id": "c2422ba9-53c5-4b8e-ad2e-2c1c8f2a3a0c",
+      "name": "Email Document Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -112,
+        1056
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "mode": "id",
+          "value": "email-storage"
+        },
+        "options": {
+          "pineconeNamespace": "emails_organized"
+        }
+      },
+      "id": "c09ded11-0061-4d3c-8b53-1d4ab47cff4c",
+      "name": "Pinecone Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        -208,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "name",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "name",
+          "value": "processed_emails"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email_id": "={{ $json.document_id }}",
+            "subject": "={{ $json.subject }}",
+            "sender": "={{ $json.from }}",
+            "recipients": "={{ JSON.stringify($json.to) }}",
+            "email_date": "={{ $json.date }}",
+            "category": "={{ $json.category }}",
+            "importance_score": "={{ $json.importanceScore }}",
+            "sentiment": "={{ $json.metadata.sentiment }}",
+            "keywords": "={{ JSON.stringify($json.metadata.keywords) }}",
+            "summary": "={{ $json.metadata.summary }}",
+            "action_required": "={{ $json.metadata.actionRequired }}",
+            "confidence_score": "={{ $json.metadata.confidenceScore }}",
+            "retention_priority": "={{ $json.retention_priority }}",
+            "vector_namespace": "={{ $json.vector_namespace }}",
+            "embedding_text": "={{ $json.embedding_text }}",
+            "metadata_json": "={{ JSON.stringify($json.metadata) }}",
+            "quality_score": "={{ $json.qualityScore }}",
+            "processed_at": "={{ $now }}",
+            "created_at": "={{ $now }}"
+          }
+        },
+        "options": {
+          "queryBatching": "transaction",
+          "skipOnConflict": true,
+          "replaceEmptyStrings": true
+        }
+      },
+      "id": "38bbb7cf-3328-439e-9a60-c92e67e7b0c7",
+      "name": "PostgreSQL Storage",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -104,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.vectordb.com/export",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_API_KEY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0d43c121-363d-4b06-8a4d-6ca64375a08d",
+      "name": "Vector DB Export API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -104,
+        1632
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "ea0b6b44-65b5-4d25-b9b3-dc89bff9f5f5",
+      "name": "Merge Email Accounts",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -2640,
+        1424
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "IMAP Email Fetcher": {
+      "main": [
+        [
+          {
+            "node": "Merge Email Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Email Accounts": {
+      "main": [
+        [
+          {
+            "node": "Email Deduplication & Preprocessing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Deduplication & Preprocessing": {
+      "main": [
+        [
+          {
+            "node": "Batch Email Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Email Processor": {
+      "main": [
+        [
+          {
+            "node": "Email Categorization Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Categorization Chain": {
+      "main": [
+        [
+          {
+            "node": "Importance Scoring Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Importance Scoring Chain": {
+      "main": [
+        [
+          {
+            "node": "Metadata Enrichment Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metadata Enrichment Chain": {
+      "main": [
+        [
+          {
+            "node": "Parse LLM Metadata Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse LLM Metadata Response": {
+      "main": [
+        [
+          {
+            "node": "Quality Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality Filter": {
+      "main": [
+        [
+          {
+            "node": "Format for RAG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-4 Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Email Categorization Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Importance Scoring Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Metadata Enrichment Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Email Document Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Document Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format for RAG": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PostgreSQL Storage",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Vector DB Export API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "de3ca88f-9a0f-444b-8d66-4a2dbaf18630",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aaadb797535f05587ee95b776c942a7c3f7a46fd7aa0c9b6a9d64e1e595f8af1"
+  },
+  "id": "qF096izCaNFf5at9",
+  "tags": []
+}

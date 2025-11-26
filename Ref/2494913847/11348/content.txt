@@ -1,0 +1,542 @@
+TOPICO 11348
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-07-13 05:15:36+00:00
+
+Total de mensagens: 22
+Midias baixadas: 9
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-07-13T06:05:05+00:00
+Texto:
+dublado
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-07-13T06:04:54+00:00
+Texto:
+https://www.youtube.com/watch?v=RUr5_GqYzCg
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-07-13T05:26:35+00:00
+Texto:
+## 🚀 Hacks para a Primeira Automação (Testar Modelos)
+
+### 1️⃣ **Evite gastar créditos com modelos repetidos**
+
+* Antes de enviar o prompt para um modelo, verifique se já existe uma resposta para aquele modelo e prompt na planilha:
+
+  * **Node: Google Sheets - Lookup Rows**
+  * Condição:
+
+    * Prompt = atual
+    * Modelo = atual
+  * Se já existir → **Pule o modelo no loop** usando um **If Node**.
+
+---
+
+### 2️⃣ **Execute só nos modelos relevantes**
+
+* No Node que lista os modelos (GET `/models`), adicione filtro direto no n8n com Regex:
+
+  ```  {{$json["name"].match(/gpt-|claude|gemini/i)}}
+  ```
+* Isso evita rodar em modelos irrelevantes ou experimentais.
+
+---
+
+### 3️⃣ **Use paralelismo no loop**
+
+* Configure o Loop com **“Execute Concurrently”** para rodar em vários modelos ao mesmo tempo.
+* Coloque um limite (ex: 3 ou 5) para não sobrecarregar a API.
+
+---
+
+### 4️⃣ **Controle o uso de tokens**
+
+* Muitos modelos têm limites de tokens.
+* Adicione um Node **Set** antes de enviar o prompt para truncar textos longos:
+
+  ```  {{$json["Prompt"].slice(0, 4000)}}
+  ```
+
+---
+
+### 5️⃣ **Crie uma aba “Logs”**
+
+* Salve:
+
+  * Nome do modelo
+  * Tempo de execução
+  * Status da API (200, 429, etc)
+  * Erros
+* Assim você identifica quais modelos estão lentos ou dando erro.
+
+---
+
+---
+
+## 🚀 Hacks para a Segunda Automação (Juiz)
+
+### 6️⃣ **Personalize o Juiz**
+
+* No System Prompt do “Juiz” você pode ajustar o estilo da análise:
+  Exemplo:
+
+  > “Você é um especialista técnico e imparcial. Priorize modelos com respostas concisas e aplicáveis para negócios. Não valorize floreios criativos.”
+
+* Para avaliação criativa:
+
+  > “Escolha os modelos com respostas mais inovadoras, engraçadas ou surpreendentes.”
+
+---
+
+### 7️⃣ **Divida em categorias**
+
+* Peça ao Juiz para dar os **top 3 por categoria**:
+
+  * Concisão
+  * Criatividade
+  * Custo-benefício
+* Exemplo de System Prompt:
+
+  > “Avalie respostas em 3 categorias: Clareza, Criatividade e Preço. Para cada uma, dê o top 3 modelos com justificativas.”
+
+---
+
+### 8️⃣ **Comparação por métrica**
+
+* No n8n, calcule a média de palavras, emojis, ou tokens das respostas para ajudar o Juiz.
+
+  * Use um Node **Function** para analisar o texto.
+
+---
+
+---
+
+## 💡 Hacks Gerais
+
+### 9️⃣ **Automação contínua**
+
+* Configure o gatilho da primeira automação para rodar quando **um novo prompt for adicionado** à planilha.
+* Node: Google Sheets - Trigger → On New Row.
+
+---
+
+### 🔟 **Notificações no Telegram**
+
+* Após o “Juiz” escolher os melhores, envie resumo no Telegram com:
+
+  * Prompt
+  * Top 3 modelos
+  * Justificativa
+* Use o módulo **Telegram - Send Message**.
+
+---
+
+### 🔥 Extra: Custos em tempo real
+
+* Na aba `Results`, adicione cálculo:
+  `=Preço por 1k tokens * Nº tokens usados`
+* Assim você já sabe o custo de cada modelo.
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-07-13T05:25:48+00:00
+Texto:
+=================
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-07-13T05:25:43+00:00
+Texto:
+O **passo a passo completo** para você criar as **duas automações no n8n**:
+
+✅ A primeira que testa todos os modelos do **OpenRouter** com um prompt.
+✅ A segunda que atua como **“Juiz”** para escolher os melhores modelos com base nos resultados.
+✅ Tudo integrado com **Google Sheets**.
+
+---
+
+### 🌟 Visão geral do fluxo
+
+1. **Primeira automação**:
+
+   * Pega prompts da planilha.
+   * Roda o prompt em todos os modelos via OpenRouter API.
+   * Salva os resultados no Google Sheets.
+
+2. **Segunda automação (Juiz)**:
+
+   * Analisa os resultados da primeira.
+   * Escolhe os top 3 modelos com explicação.
+   * Salva na aba “Judge” do Google Sheets.
+
+---
+
+## 🚀 Passo a passo: Primeira automação (Testar modelos)
+
+### 1️⃣ Preparar o ambiente
+
+* Crie uma planilha no Google Sheets com:
+
+  * Aba `Prompts`
+
+    * Coluna A: `Prompt`
+  * Aba `Results`
+
+    * Aqui o n8n vai preencher com os resultados.
+
+* Gere uma **API Key** no OpenRouter:
+
+  * [https://openrouter.ai/](https://openrouter.ai/) → Configurações → API Keys.
+
+* Gere credenciais do **Google Sheets API**:
+
+  * Ative a API no Google Cloud.
+  * Gere credenciais OAuth2 ou Service Account.
+  * Pegue o JSON de credenciais.
+
+---
+
+### 2️⃣ Configurar no n8n
+
+**Crie um novo workflow chamado `Test Models OpenRouter`.**
+
+---
+
+#### 🔹 Node 1: Google Sheets - Read Rows
+
+* Ação: **Read Rows**
+* Credencial: Sua conta Google Sheets configurada.
+* Planilha: `Prompts`
+* Limite: 1 (pega o último prompt).
+
+---
+
+#### 🔹 Node 2: HTTP Request - Listar modelos OpenRouter
+
+* Método: `GET`
+* URL: `https://openrouter.ai/api/v1/models`
+* Cabeçalho:
+
+  * `Authorization`: `Bearer SUA_API_KEY`
+* Saída: JSON com lista de modelos disponíveis.
+
+---
+
+#### 🔹 Node 3: Set - Filtrar modelos
+
+* Escolha apenas modelos desejados (ex.: OpenAI, Anthropic, Gemini).
+* Configure filtro no campo `Name`:
+
+  ```  {{$json["name"].match(/openai|anthropic|gemini/i)}}
+  ```
+
+---
+
+#### 🔹 Node 4: Loop - Executar Prompt em cada modelo
+
+* Configure um **Loop Over Items** para cada modelo filtrado.
+* Dentro do loop:
+
+  * **HTTP Request - Enviar Prompt**
+
+    * Método: `POST`
+    * URL: `https://openrouter.ai/api/v1/chat/completions`
+    * Cabeçalho:
+
+      * `Authorization`: `Bearer SUA_API_KEY`
+      * `Content-Type`: `application/json`
+    * Corpo:
+
+      ```      {
+        "model": "{{$json["id"]}}",
+        "messages": [
+          {
+            "role": "user",
+            "content": "{{$node["Google Sheets - Read Rows"].json["Prompt"]}}"
+          }
+        ]
+      }
+      ```
+  * Salve resposta, modelo, data e versão.
+
+---
+
+#### 🔹 Node 5: Google Sheets - Append Row
+
+* Planilha: `Results`
+* Colunas:
+
+  * Prompt
+  * Modelo
+  * Resposta
+  * Data
+  * Contexto
+  * Preço
+
+---
+
+---
+
+## 🚀 Passo a passo: Segunda automação (Juiz)
+
+### 1️⃣ Crie um novo workflow chamado `Judge Best Models`.
+
+---
+
+#### 🔹 Node 1: Google Sheets - Read Rows
+
+* Aba: `Results`
+* Leia todas as linhas para análise.
+
+---
+
+#### 🔹 Node 2: HTTP Request - Analisar com “Juiz”
+
+* Método: `POST`
+* URL: `https://openrouter.ai/api/v1/chat/completions`
+* Cabeçalho:
+
+  * `Authorization`: `Bearer SUA_API_KEY`
+  * `Content-Type`: `application/json`
+* Corpo:
+
+  ```  {
+    "model": "gpt-4", 
+    "messages": [
+      {
+        "role": "system",
+        "content": "Você é um juiz imparcial avaliando respostas de modelos de linguagem. Escolha os 3 melhores com base em clareza, criatividade e relevância."
+      },
+      {
+        "role": "user",
+        "content": "Aqui estão as respostas dos modelos para o prompt: {{list of responses}}"
+      }
+    ]
+  }
+  ```
+* Substitua `{{list of responses}}` por uma concatenação das respostas dos modelos.
+
+---
+
+#### 🔹 Node 3: Google Sheets - Append Row
+
+* Aba: `Judge`
+* Colunas:
+
+  * Prompt
+  * Top 3 Modelos
+  * Justificativa
+
+---
+
+---
+
+## 🎁 Resultado final
+
+* Aba `Results`: lista de todos os modelos testados com suas respostas.
+* Aba `Judge`: resumo com os 3 melhores modelos e o porquê.
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-07-13T05:24:02+00:00
+Texto:
+============
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-07-13T05:23:58+00:00
+Texto:
+O vídeo mostra como criar uma automação no **n8n** usando o **OpenRouter** para testar e comparar rapidamente diferentes modelos de IA (como GPT-4, Claude, Gemini, LLaMA, etc.) com o mesmo prompt, ajudando a escolher o melhor modelo para um projeto específico.
+
+Aqui está o resumo com os pontos principais:
+
+1. **Problema identificado**
+
+   * Há muitos modelos novos de IA surgindo semanalmente.
+   * Testar e comparar manualmente cada modelo é caótico e demorado.
+
+2. **Solução criada**
+
+   * Uma automação no n8n que:
+
+     * Executa um prompt em todos os modelos disponíveis no OpenRouter.
+     * Registra os resultados em uma planilha do Google Sheets.
+     * Permite filtrar quais modelos testar (ex: OpenAI, Anthropic, Google ou apenas modelos open-source).
+
+3. **Funcionalidade extra: “Juiz”**
+
+   * Uma segunda automação atua como “juiz” e avalia as respostas.
+   * Define os 3 melhores modelos com base em critérios ajustáveis (ex.: concisão, criatividade).
+   * Escreve o ranking em uma aba separada na planilha.
+
+4. **Fluxo da automação**
+
+   * Pega os prompts da planilha.
+   * Lista todos os modelos disponíveis no OpenRouter via API.
+   * Filtra para evitar modelos desnecessários.
+   * Executa os prompts em cada modelo selecionado.
+   * Salva os resultados na planilha com detalhes do modelo, contexto, preço e parâmetros.
+   * Evita repetir testes para o mesmo prompt e modelo.
+
+5. **Benefícios**
+
+   * Elimina o trabalho manual de copiar/colar resultados.
+   * Permite comparar outputs de todos os modelos rapidamente.
+   * Reduz o consumo de créditos do OpenRouter ao evitar execuções repetidas.
+   * Suporta tanto modelos proprietários quanto open-source.
+
+6. **Detalhes técnicos**
+
+   * Usa gatilho agendado ou execução manual no n8n.
+   * Integra Google Sheets e OpenRouter com API keys.
+   * Pode ser configurado para rodar em novos prompts automaticamente.
+
+7. **Extras oferecidos**
+
+   * Workflow da automação está disponível nos links do vídeo.
+   * Acesso ao segundo workflow com hacks está na comunidade paga do autor.
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-07-13T05:21:34+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Models' Output Analyzer (2).xlsx
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-07-13T05:21:34+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Models' Output Analyzer (3).xlsx
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-07-13T05:21:09+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Model Output Analyzer (1).json
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-07-13T05:21:09+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Model Output Judge (1).json
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-07-13T05:21:01+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_11360_012.jpg
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-07-13T05:19:37+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_11359_013.jpg
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-07-13T05:15:47+00:00
+Texto:
+m22 - **Comparador modelos AI n8n + OpenRouter**
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-07-13T05:15:44+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 16
+Autor: INEMA
+Data: 2025-07-13T05:15:43+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 17
+Autor: INEMA
+Data: 2025-07-13T05:15:43+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 18
+Autor: INEMA
+Data: 2025-07-13T05:15:43+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 19
+Autor: INEMA
+Data: 2025-07-13T05:15:43+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 20
+Autor: INEMA
+Data: 2025-07-13T05:15:43+00:00
+Texto:
+https://chatgpt.com/c/6873429d-3c14-8009-908d-2e5b3b1c86e8
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 21
+Autor: INEMA
+Data: 2025-07-13T05:15:42+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 22
+Autor: INEMA
+Data: 2025-07-13T05:15:36+00:00
+Texto: [Sem texto]
+
+------------------------------
+

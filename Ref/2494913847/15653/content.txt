@@ -1,0 +1,524 @@
+TOPICO 15653
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-11-07 05:22:51+00:00
+
+Total de mensagens: 23
+Midias baixadas: 7
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-11-07T05:35:23+00:00
+Texto:
+tração de fato.
+   * Resposta: mensura a eficácia do método.
+
+10. Provenance automático
+
+    * Ex.: incluir doc_id/url na resposta.
+    * Resposta: facilita checagem.
+
+11. Pré-filtragem para economizar tokens
+
+    * Ex.: filtros em Supabase antes do LLM.
+    * Resposta: reduz custo.
+
+12. Teste large context windows com cuidado
+
+    * Ex.: 60k tokens em avaliações.
+    * Resposta: bom para precisão, caro.
+
+13. Verificadores automáticos pós-resposta
+
+    * Ex.: soma checada por script.
+    * Resposta: evita aceitar hallucinations.
+
+14. Tool calling & memory para dados sensíveis
+
+    * Ex.: get_user_profile(user_id).
+    * Resposta: mais seguro/eficiente.
+
+15. Geração automática de datasets e prompts
+
+    * Ex.: pedir ao LLM para criar 100 queries de teste.
+    * Resposta: útil para prototipagem.
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-11-07T05:35:23+00:00
+Texto:
+tag timestamp.
+* Pergunta: overlap aumenta custo?
+
+  * Resposta: sim, mas evita perda de contexto entre chunks.
+
+9. Teste com avaliações “needle-in-haystack” e métricas reais
+
+* Hack: crie queries de avaliação específicas (buscar pequeno fato dentro de muitos docs) e meça precisão/recall/latência/custo.
+* Exemplo: 100 perguntas sobre fatos pontuais; compare vetores vs full-context vs SQL.
+* Pergunta: quanto devo pagar por essa avaliação?
+
+  * Resposta: depende do modelo; use amostras representativas antes de rodar em larga escala.
+
+10. Tracking de proveniência e verificação em cadeia (provenance)
+
+* Hack: sempre retorne para o usuário a fonte (doc_id, url, timestamp) usada para formar a resposta. Implementar um “footnote” automático.
+* Exemplo: resposta: “Segundo Doc A (video_id X, t=03:12–03:45)…”
+* Pergunta: isso impede hallucinations?
+
+  * Resposta: reduz risco e facilita checagem humana, mas não elimina totalmente.
+
+11. Estratégias de custo: filtrar antes de passar para LLM
+
+* Hack: aplique filtros/SQL para reduzir o conjunto antes de chamar LLMs caros. Use modelos menores para etapas de triagem.
+* Exemplo: rodar pré-filtros em Supabase, depois chamar LLM só com subset.
+* Pergunta: models menores são seguros?
+
+  * Resposta: para triagem sim; validação final em modelo maior.
+
+12. Use janelas de contexto grandes quando possível (heavy models) — mas com cuidado
+
+* Hack: se você tem acesso a modelos com grandes context windows, teste full-context e compare; em muitos casos dá melhores resultados.
+* Exemplo: 60k tokens em system prompt funcionou melhor em avaliações do Nate.
+* Pergunta: é sempre melhor?
+
+  * Resposta: não — é caro e lento; bom para casos onde precisão supera custo.
+
+13. Guardrails e checks automatizados pós-resposta
+
+* Hack: sempre rode um verificador automático: checar números, datas, somas, links válidos. Se o verificador falhar, reexecute outra estratégia (ex.: pedir para rodar SQL).
+* Exemplo: LLM responde total_revenue=5196 → verificador soma as linhas e confirma.
+* Pergunta: como construir esse verificador?
+
+  * Resposta: scripts simples em JS/Python que parseiam a resposta e checam contra DB/queries.
+
+14. Ferramentas que ajudam: chain-of-thought control, tool calling, memory
+
+* Hack: use tool-calling para consultas precisas e “memory” para contexto persistente de usuário. Evite expor memória sensível a vetorização sem cuidado.
+* Exemplo: usar tool get_user_profile(user_id) em vez de passar todos os dados no prompt.
+* Pergunta: memory melhora as respostas?
+
+  * Resposta: sim, para personalização; cuidado com privacidade.
+
+15. Automação de criação de prompts e test dataset pelo próprio ChatGPT
+
+* Hack: gere exemplos sintéticos e o system prompt via LLM (pede para gerar dados de teste e queries) — economiza tempo para validar agentes.
+* Exemplo: “Gere 50 perguntas típicas que usuários fariam sobre vendas e as respostas esperadas.”
+* Pergunta: confiar nesses dados sintéticos?
+
+  * Resposta: servem para teste inicial; sempre valide com dados reais depois.
+
+# Lista final — tópicos + exemplos + respostas às perguntas (resumido)
+
+1. Seleção por tipo de pergunta
+
+   * Ex.: agregação → SQL; resumo → full-context.
+   * Resposta: escolha conforme necessidade de ordem/precisão.
+
+2. Metadata em vetores
+
+   * Ex.: {doc_id, t_start, t_end, url}.
+   * Resposta: essencial para rastreabilidade.
+
+3. Tabelas → não chunkize
+
+   * Ex.: vendas em DB → SQL.
+   * Resposta: chunk = erro para cálculos.
+
+4. Tool calls para docs grandes
+
+   * Ex.: Google Doc como ferramenta.
+   * Resposta: economiza tokens.
+
+5. Full-context quando ordem importa
+
+   * Ex.: resumo cronológico de webinar.
+   * Resposta: caro, mas preciso.
+
+6. Abordagem híbrida
+
+   * Ex.: vetor → candidates → SQL/verifier.
+   * Resposta: melhor equilíbrio acurácia/custo.
+
+7. Schema explícito no system prompt
+
+   * Ex.: listar colunas e formatos.
+   * Resposta: evita SQL errado.
+
+8. Chunk size & overlap inteligente
+
+   * Ex.: 1 min chunks de transcrição com 5s overlap.
+   * Resposta: reduz perda de contexto.
+
+9. Avaliações needle-in-haystack
+
+   * Ex.: testes de ex
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-11-07T05:35:23+00:00
+Texto:
+**hacks práticos** (táteis, aplicáveis hoje)  sobre *context engineering* para agentes/RAG. Primeiro um resumo curto do objetivo — depois os hacks, cada um com exemplo e resposta para a pergunta mais comum sobre ele.
+
+# Resumo rápido
+
+O problema não é só o modelo: é **como você entrega contexto**. Existem 4 abordagens principais para dar contexto a um agente: **filtros (filtering)**, **consultas SQL (querying)**, **contexto completo (full-context / tool calls)** e **vetorização (vector store / chunking)**. Cada uma tem trade-offs de custo, velocidade e fidelidade. Escolha a abordagem conforme o tipo de pergunta que seu sistema receberá.
+
+# Hacks práticos (com exemplo e resposta)
+
+1. Escolha a abordagem pelo tipo de pergunta
+
+* Hack: defina classes de perguntas (numéricas/analytics, lookup simples, resumo cronológico, semantic search) e roteie cada classe para um método específico.
+* Exemplo: pergunta sobre “total de vendas” → rota para SQL; “resumo do vídeo do início ao fim” → rota para full-context.
+* Pergunta: Qual devo escolher se tiver dúvidas?
+
+  * Resposta: priorize SQL/filtros para contas e agregações; full-context para sequência/ordem; vectors para buscas semânticas rápidas.
+
+2. Metadata + tagging é obrigatório para vetores
+
+* Hack: ao indexar chunks em vetor store inclua metadata: doc_id, source_url, timestamp, chunk_start_time, chunk_order.
+* Exemplo: transcrição YouTube → chunk + {video_id, t_start, t_end, title}.
+* Pergunta: metadata resolve tudo?
+
+  * Resposta: ajuda muito, mas só se for consistente — sem metadata rica o vetor perde origem/ordem.
+
+3. Para tabelas, NUNCA chunkizar sem razão — use filtros/SQL
+
+* Hack: mantenha dados tabulares fora do flow de chunks. Exponha APIs/queries que o agente possa chamar (ou gere SQL pelo modelo).
+* Exemplo: “Qual a semana com maior receita?” → SQL: SELECT week, SUM(revenue) GROUP BY week ORDER BY SUM DESC LIMIT 1.
+* Pergunta: e se eu indexei a tabela em chunks?
+
+  * Resposta: risco alto de resposta errada (só alguns chunks serão consultados). Reindexar como tabela/DB é a correção.
+
+4. Use tool calls (documents como “ferramentas”) quando tiver documentos grandes
+
+* Hack: em vez de inserir PDFs inteiros no prompt, registre cada documento como uma ferramenta/endpoint que o agente chama quando necessário.
+* Exemplo: “Resuma o Doc A” → agente chama tool get_doc('A') e processa apenas esse doc.
+* Pergunta: isso economiza tokens?
+
+  * Resposta: sim, porque você só injeta o texto relevante quando necessário.
+
+5. Full-context (colar documentos no prompt) quando a ordem/importância cronológica importa
+
+* Hack: se a pergunta exige leitura sequencial (resumo cronológico, narrativa), entregue o documento inteiro no sistema prompt — se couber na context window.
+* Exemplo: resumo detalhado de webinar de 1h — full-context com timestamps.
+* Pergunta: e o custo?
+
+  * Resposta: alto em tokens; use somente se precisão/ordem for essencial.
+
+6. Combine métodos (hybrid) — a melhor prática muitas vezes
+
+* Hack: use vetor para recuperar candidatos semânticos, mas rode um SQL/consulta estruturada ou full-context sobre os candidatos filtrados para validação/fact-checking.
+* Exemplo: vetor retorna 5 chunks relevantes → agente chama um “verifier” que reconsulta a fonte original ou executa um cálculo preciso.
+* Pergunta: aumenta latência?
+
+  * Resposta: sim, um pouco — mas melhora acurácia e reduz hallucinations.
+
+7. Defina schema e documente para o agente (system prompt com schema explícito)
+
+* Hack: no system prompt inclua nomes de colunas, tipos e exemplos de valores. Torna SQL gerado mais confiável.
+* Exemplo: “Tabela sales_data: order_id, date(YYYY-MM-DD), product(text), qty(int), total_price(float).”
+* Pergunta: o modelo precisa saber isso sempre?
+
+  * Resposta: sim — sem schema ele “adivinha” e pode gerar SQL inválido.
+
+8. Controle de chunk size e overlap inteligente
+
+* Hack: use chunk sizes alinhadas à unidade lógica (ex.: parágrafos, seções, ou 6 linhas da tabela), com overlap pequeno (10–20%) e metadata de origem.
+* Exemplo: transcrição longa → chunk por minuto com overlap de 5s e tag
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-11-07T05:33:42+00:00
+Texto:
+=============
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-11-07T05:32:57+00:00
+Texto:
+### Exemplos práticos
+
+1. “Quantas unidades de fones de ouvido vendemos?” → **Filtro**
+2. “Quais os produtos mais lucrativos?” → **SQL**
+3. “Resuma o conteúdo do vídeo ‘Agente em 2 horas’.” → **Full Context**
+4. “O que é dito sobre IA no vídeo A e B?” → **Vetores + Metadados**
+
+---
+
+**Resumo final:**
+A precisão de um agente depende menos do modelo e mais de **como o contexto é projetado e entregue**.
+
+A engenharia de contexto é o elo entre o dado bruto e a inteligência do agente — e escolher o método certo (filtro, SQL, full context ou vetores) é o que separa uma resposta correta de uma confusa.
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-11-07T05:32:57+00:00
+Texto:
+**“Agents not giving you correct answers? Watch this” **
+
+---
+
+### 1. Motivo 
+
+Muitas pessoas reclamam que seus **agentes RAG** (Retrieval-Augmented Generation) não retornam respostas corretas. Ele mostra que o problema raramente é “o modelo”, mas sim **como o contexto é fornecido**.
+
+Surge então o conceito central: **Context Engineering** — a engenharia do contexto que alimenta o agente.
+
+---
+
+### 2. O que é “Context Engineering”
+
+É o processo de estruturar e fornecer dados de forma que o agente tenha acesso ao **contexto certo no momento certo**.
+Existem várias fontes possíveis:
+
+* Input do usuário
+* Instruções (prompt)
+* Memória
+* Chamadas de ferramentas (tool calling)
+* Bases de conhecimento (como vetores ou SQL)
+* Saídas estruturadas
+
+O segredo é entender **qual tipo de dado o agente precisa** e **como ele deve acessá-lo**.
+
+---
+
+### 3. O conceito real de RAG
+
+Muitos pensam que RAG é sinônimo de banco vetorial (Pinecone, Supabase, etc.), mas **RAG é apenas o processo de buscar informações externas e gerar uma resposta com base nelas**.
+O modelo não sabe tudo: ele **recupera, complementa e gera** — como uma pessoa que pesquisa antes de responder.
+
+---
+
+### 4. Problemas do modelo baseado em “chunks”
+
+Ao dividir documentos em pedaços (chunks) e armazenar em vetores, perdem-se:
+
+* A **ordem lógica** dos dados (ex.: início, meio, fim do texto)
+* O **contexto global** (ex.: tabelas quebradas)
+* A **origem precisa** (ex.: de qual documento veio o trecho)
+
+Isso leva a erros como:
+
+* Somar valores errados em tabelas
+* Fazer médias incompletas
+* Misturar informações de documentos diferentes
+
+---
+
+### 5. Três principais formas de fornecer contexto
+
+#### a) Filtro de dados (Filtering)
+
+O agente interpreta a linguagem natural e **filtra dados diretamente**, por exemplo:
+
+> “Quantos fones de ouvido sem fio foram vendidos?”
+> O agente aplica filtros (produto = “wireless headphones”) e soma quantidades.
+> Esse método é rápido, barato e bom para **grandes bases tabulares**.
+
+#### b) Consulta SQL (Querying)
+
+Usa **consultas SQL geradas automaticamente** pelo modelo.
+Exemplo:
+
+> “Quais são os 3 produtos com maior receita total?”
+> O agente gera uma query SQL que soma, agrupa e ordena.
+> Ideal para bases complexas com várias tabelas e funções.
+
+#### c) Contexto completo (Full Context)
+
+Em vez de fragmentar, o agente **lê documentos inteiros** (ex.: transcrições completas de vídeos).
+É mais caro em tokens, mas preserva a sequência e coerência — essencial para resumos cronológicos ou entendimento profundo.
+
+Exemplo:
+
+> “Resuma o vídeo do começo ao fim.”
+> Somente o método full-context pode responder corretamente, porque mantém a ordem original do conteúdo.
+
+---
+
+### 6. Comparação de custos e eficiência
+
+| Método               | Vantagem                                      | Desvantagem                    |
+| -------------------- | --------------------------------------------- | ------------------------------ |
+| **Filtros**          | Barato, rápido, preciso em dados estruturados | Limitado a consultas simples   |
+| **SQL**              | Mais robusto, ótimo para análise e cálculos   | Exige schema bem definido      |
+| **Full Context**     | Compreensão profunda, preserva ordem          | Alto custo de tokens           |
+| **Vetores (chunks)** | Rápido e barato para busca semântica          | Pode perder coerência e origem |
+
+---
+
+### 7. Context windows e novos modelos
+
+Modelos modernos (Gemini, Claude, Llama etc.) possuem **janelas de contexto enormes** (até 10 milhões de tokens), o que permite usar muito mais texto diretamente — tornando o **Full Context** mais viável e preciso.
+
+---
+
+### 8. Conclusão e boas práticas
+
+* **Não existe um único método “correto”** — depende do tipo de dado e pergunta.
+* Para perguntas numéricas → use **filtros ou SQL**.
+* Para perguntas semânticas → **vetores** funcionam.
+* Para resumos ou narrativas → use **contexto completo**.
+* Sempre defina bem o **schema** e o **propósito** do agente.
+
+---
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-11-07T05:29:06+00:00
+Texto:
+===============
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-11-07T05:29:00+00:00
+Texto:
+Os agentes não estão te dando respostas corretas? Veja isso.
+Quando as pessoas pensam em um agente RAG, normalmente imaginam um agente fazendo recuperação baseada em fragmentos (chunks) a partir de um banco de dados vetorial.
+
+A verdade é que, muitas vezes, essa não é a melhor abordagem.
+
+Eu queria explicar a ideia importante de **engenharia de contexto** — que envolve filtrar dados, fazer consultas SQL, usar o método de contexto completo ou empregar um banco de dados vetorial.
+
+Definitivamente, quero saber o que você pensa sobre isso. Espero que haja alguns “insights valiosos” ou “momentos de luz” ao longo do Texto
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-11-07T05:27:28+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Types of RAG.json
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-11-07T05:27:23+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_15668_010.jpg
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-11-07T05:27:01+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_15667_011.jpg
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-11-07T05:25:51+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_15666_012.jpg
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-11-07T05:25:15+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_15665_013.jpg
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-11-07T05:24:41+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_15664_014.jpg
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-11-07T05:23:24+00:00
+Texto:
+Agentes RAG Contexto
+
+------------------------------
+
+MENSAGEM 16
+Autor: INEMA
+Data: 2025-11-07T05:23:02+00:00
+Texto:
+ap72 - Agentes RAG - Não Funciona ?
+
+------------------------------
+
+MENSAGEM 17
+Autor: INEMA
+Data: 2025-11-07T05:23:01+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 18
+Autor: INEMA
+Data: 2025-11-07T05:23:01+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 19
+Autor: INEMA
+Data: 2025-11-07T05:23:00+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 20
+Autor: INEMA
+Data: 2025-11-07T05:23:00+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 21
+Autor: INEMA
+Data: 2025-11-07T05:23:00+00:00
+Texto:
+https://chatgpt.com/c/690d818f-1628-8328-aeb0-08e0cb8ed21e
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 22
+Autor: INEMA
+Data: 2025-11-07T05:22:59+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 23
+Autor: INEMA
+Data: 2025-11-07T05:22:51+00:00
+Texto: [Sem texto]
+
+------------------------------
+

@@ -1,0 +1,1210 @@
+{
+  "name": "UGC Videos Largos",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "COMPLETED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        5120,
+        1248
+      ],
+      "id": "d31bb076-cb83-4598-9f14-07f61ad20e9a",
+      "name": "Si 2"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"image_prompt\": \"emoción: ...\\nacción: ...\\npersonaje: ...\\nproducto: ...\\nentorno: ...\\ncámara: ...\\nestilo: ...\\ncomposición: ...\\niluminación: ...\\npaleta_de_color: ...\\ntipografía: ...\\nprecisión_texto: ...\",\n  \"aspect_ratio_image\": \"2:3\"\n}\n",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        784,
+        1744
+      ],
+      "id": "db0197da-9b52-41c9-8f94-edaefb4fff90",
+      "name": "Salida estructurada 2"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"scenes\": [\n    {\n      \"video_prompt\": \"diálogo: ...\\nacción: ...\\ncámara: ...\\nemoción: ...\\ntipo_de_voz: ...\\npersonaje: ...\\nentorno: ...\",\n      \"aspect_ratio_video\": \"9:16\",\n      \"model\": \"veo3_fast\"\n    }\n  ]\n}\n",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2080,
+        1696
+      ],
+      "id": "00268a38-c0bb-42eb-a62c-ef24bbf1d7a2",
+      "name": "Salida estructurada 1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger1').first().json.message.chat.id }}",
+        "text": "Listo! Ahora te envio la imagen a ver que te parece...",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        144,
+        1264
+      ],
+      "id": "89f58780-ecf3-451d-8e70-885b057d7999",
+      "name": "En proceso",
+      "webhookId": "19fe1268-57bd-4581-ac8c-c862e6263316",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_AA_personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "={{ $('Telegram Trigger1').first().json.message.chat.id }}",
+        "file": "={{ $json.video.url }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        5568,
+        1248
+      ],
+      "id": "6b2f80db-ec2f-4096-94aa-c0be34105af6",
+      "name": "Enviar vídeo",
+      "webhookId": "04b7649e-ea3b-477e-868c-a6fafb406f08",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_AA_personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4672,
+        1248
+      ],
+      "id": "0c6add98-b134-4441-b4a2-bd9bbac5e90b",
+      "name": "Esperar",
+      "webhookId": "982727e9-9948-4d33-b682-9907e053efb0"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "=data.response.resultUrls[0]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        4224,
+        1248
+      ],
+      "id": "bf467f7c-8c26-4f14-a2bd-ab999859f732",
+      "name": "Agrupar"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "httpMethod": "POST",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        1184
+      ],
+      "id": "5f705994-7b9c-4d46-b9a2-447412bb7576",
+      "name": "Esperar 3",
+      "webhookId": "dd1ae21c-d2bc-47de-91d3-f2bb9d6648f8"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/veo/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"prompt\": {{ JSON.stringify($json.video_prompt) }},\n  \"model\": \"{{ $('Split Out1').item.json.model }}\",\n  \"aspectRatio\": \"{{ $('Split Out1').item.json.aspect_ratio_video }}\",\n  \"imageUrls\": \"{{ $('HTTP Request').first().json.data.resultJson.replaceAll('{\\\"resultUrls\\\":[\\\"','').replaceAll('\\\"]}','') }}\"\n}\n",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 3000
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3312,
+        1264
+      ],
+      "id": "49fa3a31-8cf9-4b2e-a45e-67d8355c4b98",
+      "name": "Crear vídeo",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://queue.fal.run/fal-ai/ffmpeg-api/merge-videos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"video_urls\": [{{ $json.resultUrls[0].map(url => `\\\"${url}\\\"`) }}]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4448,
+        1248
+      ],
+      "id": "54797079-90af-43b0-8036-6ddbc4c8d350",
+      "name": "Combine Clips1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/playground/createTask",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"google/nano-banana-edit\",\n  \"callBackUrl\": \"{{$execution.resumeUrl}}\",\n  \"input\": {\n    \"prompt\": {{ JSON.stringify($json.output.image_prompt) }},\n    \"image_urls\": [\n      \"https://api.telegram.org/file/bot{{ $('Bot ID1').first().json.token }}/{{ $('Get Img Path1').first().json.result.file_path }}\"\n    ],\n    \"num_images\": \"1\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        736,
+        1264
+      ],
+      "id": "dfba1bfe-ca3a-4f92-9598-49b2d0fb62fe",
+      "name": "Create Image1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "CHATGPT-4O-LATEST"
+        },
+        "text": "=Analiza la imagen dada y determina si representa principalmente un PRODUCTO, un PERSONAJE o AMBOS.\n\n- Si es un PRODUCTO, devuelve exclusivamente YAML con los campos:\n\nnombre_marca: (Nombre de la marca visible o inferible)\nesquema_colores:\n  - hex: (Hex de cada color predominante)\n    nombre: (Nombre descriptivo del color)\nestilo_tipografia: (Familia/estilo: serif/sans-serif, negrita/fina, etc.)\ndescripcion_visual: (1–2 frases que resuman lo que se ve, ignorando el fondo)\n\n- Si es un PERSONAJE, devuelve exclusivamente YAML con los campos:\n\nnombre_personaje: (Nombre visible o inferible)\nesquema_colores:\n  - hex: (Hex de cada color predominante del personaje)\n    nombre: (Nombre descriptivo del color)\nestilo_vestimenta: (Ropa, accesorios y rasgos destacables)\ndescripcion_visual: (1–2 frases que describan al personaje, ignorando el fondo)\n\n- Si es AMBOS, devuelve dos bloques en YAML, uno bajo la clave producto: y otro bajo la clave personaje:, siguiendo las guías anteriores.\n\nDevuelve SOLO YAML, sin explicaciones adicionales.",
+        "imageUrls": "=https://api.telegram.org/file/bot{{ $('Bot ID1').item.json.token }}/{{ $json.result.file_path }}",
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -80,
+        1264
+      ],
+      "id": "4f437829-450c-4067-b116-890e16aed5a7",
+      "name": "Describe Img1",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/bot{{$json.token}}/getFile?file_id={{ $('Telegram Trigger1').item.json.message.photo.last().file_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -304,
+        1264
+      ],
+      "id": "052f8477-4013-4135-81b9-620c27d28b24",
+      "name": "Get Img Path1"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -752,
+        1264
+      ],
+      "id": "93d7303d-91b8-4d43-901b-7be24694763f",
+      "name": "Telegram Trigger1",
+      "webhookId": "2f42a8a1-d27c-48ba-a1ed-f00aa5497228",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_AA_personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.data.state }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1408,
+        1184
+      ],
+      "id": "88baf505-0184-4ac3-ad6f-9301388093bc",
+      "name": "If 1"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.scenes",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        3088,
+        1264
+      ],
+      "id": "538cb941-a968-4b4b-b9f5-c78323d98c4a",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        1872
+      ],
+      "id": "c0d10be8-339c-4bc6-8aed-2d19e8b68532",
+      "name": "GPT1",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        1648
+      ],
+      "id": "cf4b9cba-a064-46e2-9849-0f7fbe195232",
+      "name": "Think1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "token",
+              "value": "8495401843:AAGZLXEWirYnjnHerU9-mUnjQ6s4hnc8crk",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -528,
+        1264
+      ],
+      "id": "28c316a8-fb97-43a6-9f2b-b4604084b23c",
+      "name": "Bot ID1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Tu tarea: Crea **1 prompt de imagen** siguiendo tus directrices del sistema.\n\nAsegúrate de que la imagen de referencia se represente de la forma **más FIEL posible**, especialmente cualquier texto visible (logos, claims, pack). No inventes textos ni cifras.\n\n***\n\nInstrucciones del usuario:\n{{ $('Telegram Trigger1').first().json.message.caption }}\n\n***\nDescripción de la imagen de referencia (en YAML):\n{{ $('Describe Img1').first().json.choices[0].message.content }}\n\n***\nRelación de aspecto preferida del usuario: infiérela a partir del mensaje; si no se especifica, usa vertical por defecto.\n\n***\nUsa la herramienta Think para **verificar** tu salida antes de responder.\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=system_prompt: |\n  ## SISTEMA: Generador de Prompts de Imagen (estilo UGC auténtico)\n\n  **Por defecto**: Si las instrucciones del usuario son poco detalladas, usa una pauta segura: coloca el (producto) en escena junto con el (personaje) de la imagen de referencia de forma natural.\n\n  ### Estilo UGC auténtico (cuando el usuario no indique otro)\n  Debes componer escenas realistas y casuales, como las que publicarían creadores cotidianos. Evita el look profesional o muy posado.\n  - Realismo cotidiano en entornos creíbles\n  - Estética de foto de móvil, ligera imperfección en encuadre e iluminación\n  - Gestos naturales y expresiones genuinas\n  - Imperfecciones visibles (textura de piel, cabello algo desordenado)\n  - Entornos reales (cierto desorden es aceptable)\n  - **Precisión de texto del producto**: conserva exactamente lo visible. No añadas claims\n    ni números inventados.\n\n  **Parámetro cámara** debe incluir descriptores como:\n  unremarkable amateur iPhone photo, reddit image, snapchat photo, casual iPhone selfie, slightly uneven framing, authentic share, slightly blurry, amateur quality phone photo\n\n  **Solo prompts de imagen**. No generes guiones de vídeo ni diálogo.\n\n  **Evita mencionar nombres de personajes con copyright** en el prompt.\n\n  ---\n  A — Acción\n  - Genera **exclusivamente instrucciones de generación de imagen** para modelos de IA, en **formato objeto** con dos claves:\n    - `image_prompt` → YAML **en cadena** con los campos: action, character, product, setting, camera, style, composition, lighting, color_palette, typography, text_accuracy.\n    - `aspect_ratio_image` → \"3:2\" o \"2:3\". Por defecto usa vertical → \"2:3\".\n  - Evita comillas dobles dentro del YAML de `image_prompt`.\n\n  ---\n  G — Guías\n  - Respeta la estética UGC y la diversidad (género, etnia, color de pelo). Si no se especifica, actores entre 21–38 años.\n  - Usa entornos cotidianos salvo que el usuario pida otra cosa.\n  - No fabriques texto ni alteres packaging.\n\n  ---\n  E — Ejemplo (válido)\n  - |\n    {\\n      \\\"scenes\\\": [\\n        {\\n          \\\"image_prompt\\\": \\\"action: personaje sostiene el producto de forma natural\\\\ncharacter: inferido de la imagen de referencia\\\\nproduct: mostrar el producto con todo el texto visible claro y fiel\\\\nsetting: salón luminoso por la mañana, mesa con algo de desorden creíble\\\\ncamera: amateur iPhone photo, casual selfie, slightly uneven framing, slightly blurry\\\\nstyle: UGC espontáneo, sin filtros, imperfecciones visibles\\\\ntext_accuracy: preservar exactamente el texto visible\\\",\\n          \\\"aspect_ratio_image\\\": \\\"2:3\\\"\\n        }\\n      ]\\n    }\n\n  ---\n  N — Notación\n  - La **salida final** es **solo** un objeto con:\n    - `image_prompt` (cadena YAML) y `aspect_ratio_image` (\"3:2\" | \"2:3\").\n\n  ---\n  T — Herramientas\n  - Think Tool: comprueba completitud, realismo UGC, y **precisión del texto**."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        368,
+        1264
+      ],
+      "id": "e25cea0b-f87d-4446-8ecc-7af2fa8ce75a",
+      "name": "Agente IA de imagen"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Tu tarea: Crea **prompts de vídeo** siguiendo tus directrices del sistema.\n\nRepresenta la imagen de referencia de la forma **más fiel posible** cuando aparezca el producto/personaje. Mantén cualquier **texto visible** del producto fiel si llegase a verse.\n\nPara cada escena, el **diálogo** debe fluir de forma natural y tener sentido. El personaje **solo habla del producto y sus beneficios** (sabor si es bebida, diseño si es bolso, características si es tecnología, etc.). El dialogo tiene que ser entre \n\nMenciona el **nombre de la marca solo en la PRIMERA escena** si el usuario lo desea o si es visible; en el resto, evita repetirlo.\n\nSalvo que el usuario lo pida, **no abras ni consumas/uses** el producto en cámara; simplemente muéstralo.\n\nSi el número de vídeos **no se indica**, genera **3 escenas**.\n\n***\n\nInstrucciones del usuario:\n{{ $('Telegram Trigger1').first().json.message.caption }}\n\n***\n\nRecuento de vídeos a crear: **infierelo** según el total deseado (si lo indica el usuario). Cada vídeo dura **8 s**; calcula cuántas escenas necesitas (redondea **hacia arriba**).\n\n***\nDescripción de la(s) imagen(es) de referencia (solo para entender producto/personaje; **no** la uses como guion):\n{{ $('Describe Img1').first().json.choices[0].message.content }}\n\n***\nRelación de aspecto preferida: inferida; por defecto vertical.\nModelo preferido: inferido; por defecto **veo3_fast** si no se indica.\nGuion preferido: inferido; si no hay, **propón uno** casual y corto.\n\n***\nUsa la herramienta Think para **verificar** tu salida antes de responder.\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=system_prompt: |\n  ## SISTEMA: Generador de Prompts de Vídeo UGC (Veo3/Veo3_fast)\n\n  Eres un agente UGC. Debes situar el producto/personaje de la imagen de referencia en escenas **naturales y casuales** (estilo móvil), evitando el look profesional o sobreactuado.\n\n  - Realismo cotidiano, entornos verosímiles\n  - Estética móvil: encuadre imperfecto, luz natural\n  - Lenguaje coloquial y cercano\n  - Imperfecciones visibles\n\n  **Parámetro cámara**: usa siempre palabras clave como\n  unremarkable amateur iPhone photo, reddit image, snapchat video, casual iPhone selfie, slightly uneven framing, authentic share, slightly blurry, amateur quality phone photo\n\n  Si no hay diálogo del usuario, **genéralo**: una línea conversacional **entre 30 y 35 palabra** (8 segundos de lectura), como hablando con un amigo sobre el producto. Usa \"...\" para pausas. Evita tono vendedor o formal. Esto es super importante.\n\n  ---\n  1 — Acción\n  - Genera **solo instrucciones de vídeo** para modelos de IA. Infiera relación de aspecto; por defecto vertical.\n  - **Regla de escenas**:\n    - Divide `duración_total_deseada / 8s` y **redondea hacia arriba**.\n    - Devuelve **exactamente** ese número de escenas.\n\n  ---\n  2 — Guías\n  - Respeta estética UGC y diversidad (género, etnia, cabello). Rango por defecto: 21–38 años.\n  - Evita comillas dobles en los prompts.\n\n  ---\n  3 — Ejemplo válido\n  - |\n    {\\n      \\\"scenes\\\": [\\n        {\\n          \\\"video_prompt\\\": \\\"diálogo: me flipa este sabor... es suave y refrescante\\\\nacción: personaje sentado en el coche aparcado, mostrando la lata a cámara\\\\ncámara: amateur iPhone selfie video, slightly uneven framing, natural daylight\\\\nemoción: alegre y cercano\\\\nvoice_type: natural, amistoso\\\\ncharacter: adulto 25-30, género no especificado\\\\nsetting: interior de coche, mañana\\\",\\n          \\\"aspect_ratio_video\\\": \\\"9:16\\\",\\n          \\\"model\\\": \\\"veo3_fast\\\"\\n        }\\n      ]\\n    }\n\n  ---\n  4 — Notación\n  - La salida final es un **array `scenes` en la raíz**.\n  - Debe contener **exactamente** `scene_count` objetos.\n  - Cada escena incluye:\n    - `video_prompt` → YAML en cadena con: dialogue, emotion, voice_type, action, character, setting, camera\n    - `aspect_ratio_video` → \"9:16\" | \"16:9\" (por defecto 9:16)\n    - `model` → \"veo3\" | \"veo3_fast\"\n\n  ---\n  5 — Herramientas\n  - Think Tool: verifica completitud, diversidad y que el número de escenas coincide.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        2720,
+        1264
+      ],
+      "id": "0cb8d4a9-33b3-4bc0-9760-660748006c27",
+      "name": "Agente IA de vídeo"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $('Telegram Trigger1').first().json.message.chat.id }}",
+        "message": "=¿Aprobamos o creamos otra?",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double",
+            "approveLabel": "✅ Aprobar",
+            "disapproveLabel": "❌ Crear otra"
+          }
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1856,
+        1184
+      ],
+      "id": "9f11f930-4a05-42f2-a8c0-97fd02c35ee4",
+      "name": "Send message and wait for response",
+      "webhookId": "f96e3592-7a92-4f9e-9365-41e4a35be43e",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_AA_personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.data.approved }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2080,
+        1184
+      ],
+      "id": "49e99099-3ee0-4741-b69a-0f497a8ea1cd",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.kie.ai/api/v1/veo/record-info",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3760,
+        1184
+      ],
+      "id": "b7a304d4-7140-4d45-ac2c-5eefaa1d6cd6",
+      "name": "Obtener Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 180
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3536,
+        1264
+      ],
+      "id": "ab395c50-1155-4bc8-9267-1e4afe4e7adb",
+      "name": "Espera 2",
+      "webhookId": "cf23022b-1ab8-42a0-aa2e-e1ad33b4aeb6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.data.response.resultUrls[0] }}",
+              "rightValue": null,
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3984,
+        1264
+      ],
+      "id": "2d794cb9-5826-4f46-a828-cd4f19e18d84",
+      "name": "Si "
+    },
+    {
+      "parameters": {
+        "content": "# Recibir y trabajar la imagen",
+        "height": 320,
+        "width": 1104,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -816,
+        1104
+      ],
+      "typeVersion": 1,
+      "id": "b1833251-7804-4cb4-9a42-1bbb7193d446",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# Crear imagen",
+        "height": 416,
+        "width": 2000
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        336,
+        1088
+      ],
+      "typeVersion": 1,
+      "id": "10d831bf-eaa1-41cd-9617-452788d8bbd2",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# Crear Videos",
+        "height": 336,
+        "width": 1552,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2368,
+        1088
+      ],
+      "typeVersion": 1,
+      "id": "95042476-8803-4cca-918a-8f13cd4a98ce",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "# Juntar Videos",
+        "height": 336,
+        "width": 1856
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3936,
+        1088
+      ],
+      "typeVersion": 1,
+      "id": "18458fbb-37f8-49c2-aaec-e7f0252c618c",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/playground/recordInfo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $('Create Image1').first().json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1184,
+        1184
+      ],
+      "id": "098b0a3e-51ab-4690-9d3b-50669981c330",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Telegram Trigger1').first().json.message.chat.id }}",
+        "file": "={{ JSON.parse($json.data.resultJson).resultUrls[0] }}",
+        "additionalFields": {
+          "parse_mode": "MarkdownV2"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1632,
+        1184
+      ],
+      "id": "9ea94c0f-f5cb-4811-8098-c05ef6221f44",
+      "name": "Send a photo message",
+      "webhookId": "74509769-4e19-46fc-b90f-649ac9f57854",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_AA_personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://queue.fal.run/fal-ai/ffmpeg-api/requests/{{ $json.request_id }}/status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4896,
+        1168
+      ],
+      "id": "fc85606a-a7ca-4fb8-bb89-65cc2e038fad",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://queue.fal.run/fal-ai/ffmpeg-api/requests/{{ $json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5344,
+        1248
+      ],
+      "id": "6275a551-5e78-4bb1-9490-390c274d533e",
+      "name": "HTTP Request2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+        "text": "Perfecto! Vamos con el video...",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2480,
+        1152
+      ],
+      "id": "19cdf11e-19f4-4957-88db-58e6eeccce5b",
+      "name": "Send a text message",
+      "webhookId": "fb75d65c-0766-4b6a-a0b7-9ff6645aeb95",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_AA_personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+        "text": "Sin problema! Voy a crear una nueva! 🙌🏻",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2208,
+        1344
+      ],
+      "id": "c776286c-d766-442c-b61e-f6474ec840e9",
+      "name": "Send a text message1",
+      "webhookId": "fb75d65c-0766-4b6a-a0b7-9ff6645aeb95",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_AA_personal"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Si 2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Esperar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salida estructurada 2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Agente IA de imagen",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salida estructurada 1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Agente IA de vídeo",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "En proceso": {
+      "main": [
+        [
+          {
+            "node": "Agente IA de imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agrupar": {
+      "main": [
+        [
+          {
+            "node": "Combine Clips1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar 3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear vídeo": {
+      "main": [
+        [
+          {
+            "node": "Espera 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Clips1": {
+      "main": [
+        [
+          {
+            "node": "Esperar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Image1": {
+      "main": [
+        [
+          {
+            "node": "Esperar 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Describe Img1": {
+      "main": [
+        [
+          {
+            "node": "En proceso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Img Path1": {
+      "main": [
+        [
+          {
+            "node": "Describe Img1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Bot ID1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If 1": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Crear vídeo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Salida estructurada 2",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Salida estructurada 1",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Agente IA de imagen",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Agente IA de vídeo",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA de imagen",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Agente IA de vídeo",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bot ID1": {
+      "main": [
+        [
+          {
+            "node": "Get Img Path1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente IA de imagen": {
+      "main": [
+        [
+          {
+            "node": "Create Image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente IA de vídeo": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message and wait for response": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Video": {
+      "main": [
+        [
+          {
+            "node": "Si ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Espera 2": {
+      "main": [
+        [
+          {
+            "node": "Obtener Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Si ": {
+      "main": [
+        [
+          {
+            "node": "Agrupar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Espera 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a photo message": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Si 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Enviar vídeo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Agente IA de vídeo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        [
+          {
+            "node": "Agente IA de imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "79ce4451-0bf2-4b86-8b25-ac1341ab1f3f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "8Nq476mky11cxwyo",
+  "tags": []
+}

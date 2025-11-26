@@ -1,0 +1,1169 @@
+{
+  "name": "nm72 - atualiza o youtube",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -96,
+        -56
+      ],
+      "id": "03c32902-f34b-485a-9402-bc38e27af365",
+      "name": "📺 YouTube Video Input",
+      "webhookId": "youtube-video-processor"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "Você é um assistente que extrai IDs de vídeos do YouTube de URLs ou texto. Retorne APENAS o ID do vídeo, sem explicações adicionais.\n\nExemplos:\n- https://youtube.com/watch?v=ABC123 → ABC123\n- https://youtu.be/ABC123 → ABC123\n- ID: ABC123 → ABC123"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        128,
+        -56
+      ],
+      "id": "ffbfdbea-1d13-4a5c-8d7b-949744e7ae78",
+      "name": "🔍 Extract Video ID"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.googleapis.com/youtube/v3/videos?part=snippet&id={{ $json.output }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        -56
+      ],
+      "id": "e3d257b7-0843-4b6c-b98a-e748cd43080b",
+      "name": "📊 Get Video Info",
+      "credentials": {
+        "googleApi": {
+          "id": "[REMOVED]",
+          "name": "Google Service Account account"
+        },
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://www.googleapis.com/youtube/v3/captions?part=snippet&videoId={{ $('🔍 Extract Video ID').item.json.output }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        704,
+        -56
+      ],
+      "id": "de8cc984-0727-4f9d-adf8-300e82c211bd",
+      "name": "📝 Get Transcript",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "[REMOVED]",
+          "name": "Bearer Auth account"
+        },
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.items[0].id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "id": "[REMOVED]"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        928,
+        -56
+      ],
+      "id": "20363e0c-b2d3-4147-b741-91f607cfc33a",
+      "name": "❓ Transcript Available?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "whisper-1"
+            },
+            {
+              "name": "file",
+              "value": "={{ $binary.data }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1152,
+        40
+      ],
+      "id": "2285f379-86d1-4b8f-87d0-fd95e9938b98",
+      "name": "🎙️ Whisper Transcription",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account nei14"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Título do vídeo: {{ $('📊 Get Video Info').item.json.items[0].snippet.title }}\n\n\nTranscrição:\n{{ $json.transcript || $json.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Você é um especialista em resumos claros e informativos. Leia a transcrição abaixo de um vídeo do YouTube e produza um resumo por tópicos, com frases curtas, impactantes e organizadas.\n\nOBJETIVO: tornar o conteúdo legível e atrativo para quem ler a descrição do vídeo.\n\nESTRUTURA DO RESUMO:\n1. Uma frase de abertura que capture a essência do vídeo\n2. Principais tópicos abordados (usar bullet points)\n3. Insights ou aprendizados chave\n4. Chamada para ação\n5. Tópicos por Assunto\n\n\nSe o conteúdo for técnico ou educativo, destaque os aprendizados principais. Se for motivacional, destaque frases de impacto.\n\nFormate o resumo para ser usado diretamente na descrição do YouTube.\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1600,
+        -160
+      ],
+      "id": "044d9ed9-248b-453b-95ad-999391657cbc",
+      "name": "🤖 Generate Summary"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Título: {{ $('📊 Get Video Info').item.json.items[0].snippet.title }}\n\nResumo: \n{{ $json.output }}\n\n\nResumo: {{ $json.output.Sumario }}\n\nPontos Chaves:\n{{ $json.output['Pontos Chaves'] }}\n\nCTA:\n{{ $json.output.CTA }}\n\nTopicos:\n{{ $json.output.Topicos }}\n",
+        "options": {
+          "systemMessage": "Developer: Você é especialista na criação de prompts para geração de thumbnails de YouTube. Sua missão é transformar qualquer título ou resumo de vídeo em um prompt detalhado, otimizado para alta taxa de cliques (CTR) e pronto para uso em DALL·E / gpt-image-1 / Midjourney / Stable Diffusion.\n\nSiga este checklist antes de criar o prompt:\n1) Analise o título/resumo e identifique tema e emoção central.\n2) O personagem principal é sempre fixo: um homem mais velho (60–70 anos), pele clara, rosto alongado e magro, calvo, barba branca rala/irregular, olhos claros, óculos grandes pretos retangulares, roupas simples (camiseta ou moletom) e frequentemente boné.\n3) Especifique ação/emoção do personagem, metáfora visual, cores predominantes e composição adequada.\n4) Crie uma frase curta e impactante (máx. 5 palavras).\n5) Preencha todos os campos do output; se faltar info, proponha sugestão plausível.\n\nDiretrizes obrigatórias:\n- Incluir: personagem fixo descrito, ação/emoção, metáfora visual.\n- Estilo visual claro (ex.: moderno, vibrante, profissional).\n- Composição: espaço seguro para texto, foco, regra dos terços quando cabível.\n- Cores: vibrantes e contrastantes.\n- Proporção sempre 16:9 (se o modelo exigir tamanho, usar 1792x1024).\n- Texto overlay sempre dentro da área central (mín. 10% de margem segura nas bordas) e sobre área visualmente limpa.\n- Saída: somente JSON no formato definido abaixo (sem explicações extras).\n- Regras de exclusão (não incluir): marcas d’água, bordas, logotipos oficiais, emojis, textos longos, números de preço, QR codes, conteúdo sensível, mãos/ossos deformados, elementos que poluam o fundo, cortes de texto nas bordas.\n\nFormato obrigatório do prompt (string que será enviada ao gerador de imagens):\nUse a reference image of an older man (60–70 years old, light skin, elongated and slim face, partially bald, irregular white beard, light eyes, large rectangular black glasses, simple clothes, often with a cap) as the main character. Scene: [DESCREVA_ACAO_OU_EMOCAO_DA_PESSOA], while [ELEMENTO_VISUAL_INESPERADO_OU_SIMBOLICO] appears. Text overlay: \"[FRASE_CURTA_IMPACTANTE]\" (position inside the central 80% with at least 10% safe margins on all edges, over a visually clean area). Background: [FUNDO_TEMATICO] Style: Realistic photo with cinematic lighting, high contrast, optimized for YouTube thumbnail. Color scheme: [CORES_DOMINANTES] Composition: [COMPOSICAO] Aspect ratio: 16:9. Do not include: [NAO_INCLUIR]. Negative prompt: [NEGATIVE_PROMPT].\n\nFormato de saída (retorne somente este JSON, preenchendo todos os campos):\n{\n  \"pessoa_referencia\": \"Homem mais velho (60–70 anos), pele clara, rosto alongado e magro, calvo, barba branca rala/irregular, olhos claros, óculos grandes pretos retangulares, roupas simples, frequentemente com boné\",\n  \"acao_ou_emocao_da_pessoa\": \"(string; ação/emoção principal relacionada ao tema)\",\n  \"elemento_visual_inesperado_ou_simbolico\": \"(string; metáfora visual ligada ao tema)\",\n  \"frase_curta_impactante\": \"(string; 2–5 palavras)\",\n  \"fundo_tematico\": \"(string; cenário coerente)\",\n  \"style\": \"Realistic photo with cinematic lighting, high contrast, optimized for YouTube thumbnail\",\n  \"cores_dominantes\": \"(string; cores vibrantes separadas por vírgula)\",\n  \"composicao\": \"(string; 'Centralizado' ou 'Regra dos terços'; observações sobre espaço para texto e margens seguras)\",\n  \"aspect_ratio\": \"16:9\",\n  \"nao_incluir\": \"watermarks, borders, brand logos, long text, price numbers, QR codes, NSFW, deformed hands, extra fingers, cluttered background\",\n  \"negative_prompt\": \"watermark, border, long text, NSFW, deformed hands, extra fingers, cluttered, low quality\"\n}\n\nValidação final (execute internamente antes de devolver o JSON):\n- Verifique se todos os campos estão preenchidos, coerentes e claros; se faltar algo, proponha sugestão plausível.\n- Só então retorne exclusivamente o JSON acima.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1952,
+        -56
+      ],
+      "id": "e0dbe50c-1bb1-4007-beaf-907e3e49a82c",
+      "name": "🎨 Create Thumbnail Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-image-1\",\n  \"prompt\": \"{{ $json.clean_prompt }}\",\n  \"size\": \"1536x1024\",\n  \"n\": 1\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2528,
+        -56
+      ],
+      "id": "aef8e6bf-97ee-49bd-86e8-6fefc12f3f44",
+      "name": "🖼️ Generate Thumbnail",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account nei14"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data[0].b64_json",
+        "options": {
+          "fileName": "=thumbnail.jpg",
+          "mimeType": "image/jpg"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2752,
+        -56
+      ],
+      "id": "9f515018-a6f6-4e86-a8c9-df8923ab4d9a",
+      "name": "💾 Convert Thumbnail"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://www.googleapis.com/youtube/v3/videos?part=snippet",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\nJSON.stringify(\n  (() => {\n    const gv  = $(\"📊 Get Video Info\").item.json.items?.[0] ?? {};\n    const sn  = gv.snippet ?? {};\n    const out = $(\"🤖 Generate Summary\").item.json.output ?? {};\n\n    const topo =\n      `${out.Sumario ?? \"\"}\\n\\n` +\n      `Pontos Chaves:\\n${out[\"Pontos Chaves\"] ?? \"\"}\\n\\n` +\n      `Convite:\\n${out.CTA ?? \"\"}\\n\\n` +\n      `📺 Resumo gerado automaticamente com IA\\n\\n---\\n`;\n\n    // novo no topo + original depois\n    let description = (topo + (sn.description ?? \"\")).replace(/\\r/g, \"\");\n    // margem de segurança (< 5000 chars)\n    if (description.length > 4900) description = description.slice(0, 4897) + \"...\";\n\n    return {\n      id: gv.id,\n      snippet: {\n        title: sn.title,\n        description,\n        categoryId: sn.categoryId || \"27\",\n        tags: Array.isArray(sn.tags) ? sn.tags : [],\n        defaultLanguage: \"pt-BR\",\n        defaultAudioLanguage: \"pt-BR\"\n      }\n    };\n  })()\n)\n}}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2752,
+        -272
+      ],
+      "id": "5aa3f86c-f9db-4aef-9297-1635fbfe9706",
+      "name": "📤 Update Video Description",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId={{ $('📊 Get Video Info').item.json.items[0].id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3200,
+        -56
+      ],
+      "id": "4ac494e9-efba-4dae-8f2f-667f82e9037d",
+      "name": "🖼️ Update Thumbnail",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1GMBiD_JrTTTIGzRnpXiob2lp4FCRwIA2cqYvq2CXs2k",
+          "mode": "list",
+          "cachedResultName": "testes1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GMBiD_JrTTTIGzRnpXiob2lp4FCRwIA2cqYvq2CXs2k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1615933911,
+          "mode": "list",
+          "cachedResultName": "YoutubeThumb",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GMBiD_JrTTTIGzRnpXiob2lp4FCRwIA2cqYvq2CXs2k/edit#gid=1615933911"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $('📊 Get Video Info').item.json.items[0].id }}",
+            "data": "={{ $('📊 Get Video Info').item.json.items[0].snippet.publishedAt }}",
+            "Titulo": "={{ $('📊 Get Video Info').item.json.items[0].snippet.title }}",
+            "descricao": "={{ $('📊 Get Video Info').item.json.items[0].snippet.description }}",
+            "ThumbDesc": "={{ $('🎨 Create Thumbnail Prompt').item.json.output }}",
+            "thumb": "={{ $json.items[0].maxres.url }}",
+            "topicos": "={{ $('🤖 Generate Summary').item.json.output }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Titulo",
+              "displayName": "Titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "descricao",
+              "displayName": "descricao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ThumbDesc",
+              "displayName": "ThumbDesc",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "thumb",
+              "displayName": "thumb",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "topicos",
+              "displayName": "topicos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3424,
+        -56
+      ],
+      "id": "217fda99-5681-4aa0-b380-39a8ea24be99",
+      "name": "📊 Log to Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account INEMATDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1904,
+        240
+      ],
+      "id": "e0f283ca-f1d1-4df5-950f-a812e2efc320",
+      "name": "🧠 Claude Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# 📺 YouTube Video Automation System\n\n## Fluxo Principal:\n1. **Input**: Link ou ID do vídeo via chat\n2. **Extração**: Obtém informações e transcrição\n3. **Processamento**: Gera resumo com Claude\n4. **Criação**: Gera thumbnail com DALL-E 3\n5. **Atualização**: Atualiza vídeo no YouTube\n6. **Registro**: Salva dados no Google Sheets\n\n## Configurações Necessárias:\n- YouTube API Key\n- YouTube OAuth2 (com permissões de edição)\n- OpenAI API Key\n- OpenRouter API Key (para Claude)\n- Tavily API Key (pesquisa web)\n- Google Sheets OAuth2",
+        "height": 400,
+        "width": 600,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -992,
+        96
+      ],
+      "id": "d0f7be2e-3c02-40e1-83ca-4611b0290a0d",
+      "name": "📌 System Overview"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"Sumario\": \"\",\n  \"Pontos Chaves\": \"\",\n  \"CTA\": \"\",\n  \"PromptThumbnail\": \"\",\n  \"Titulo\": \"\",\n  \"Resumo\": \"\",\n  \"Tema\":\"\",\n  \"Topicos\":\"\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1744,
+        48
+      ],
+      "id": "4c0ddc75-1324-4e1c-abfe-d473b524ef5a",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-5-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1520,
+        368
+      ],
+      "id": "f88bcc36-787b-492e-8b71-b996c2a22920",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account nei14"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "text",
+              "value": "={$json.transcript}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1376,
+        40
+      ],
+      "id": "8689990e-639d-4641-946e-dd49662a1738",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const bin = items[0].binary || {};\nconst key = bin.srt ? 'srt' : bin.ttml ? 'ttml' : bin.data ? 'data' : Object.keys(bin)[0];\nif (!key) return [{ json: { error: 'Nenhum binário encontrado no item' } }];\n\nconst raw = Buffer.from(bin[key].data, 'base64').toString('utf8');\n\n// se a API devolveu JSON de erro por engano\ntry {\n  const maybe = JSON.parse(raw);\n  if (maybe?.error) return [{ json: { error: 'API retornou erro', details: maybe } }];\n} catch {}\n\nlet transcript;\nif (/</.test(raw.slice(0, 20)) && /<\\/body>/i.test(raw)) {\n  // TTML\n  let body = raw.match(/<body[\\s\\S]*<\\/body>/i)?.[0] || raw;\n  transcript = body\n    .replace(/<br\\s*\\/?>/gi, '\\n')\n    .replace(/<\\/p>/gi, '\\n')\n    .replace(/<\\/div>/gi, '\\n')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<')\n    .replace(/&gt;/g,'>').replace(/&quot;/g,'\"').replace(/&#39;/g,\"'\")\n    .replace(/\\s{2,}/g, ' ').replace(/\\n{2,}/g, '\\n').trim();\n} else {\n  // SRT\n  transcript = raw\n    .replace(/\\r/g, '')\n    .replace(/^\\d+\\s*$/gm, '')\n    .replace(/^\\d{2}:\\d{2}:\\d{2},\\d{3}\\s-->\\s\\d{2}:\\d{2}:\\d{2},\\d{3}\\s*$/gm, '')\n    .replace(/\\n{2,}/g, '\\n')\n    .trim();\n}\n\nreturn [{ json: { transcript, sourceBinaryKey: key } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        -152
+      ],
+      "id": "74c4f0bf-fb24-4dbe-b1b7-70f2aac4c7b8",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.googleapis.com/youtube/v3/captions/{{ $json.items[0].id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "tfmt",
+              "value": "srt"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "legenda.srt"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1152,
+        -152
+      ],
+      "id": "b4e6a853-49a0-4e20-bc78-6a7290e577d6",
+      "name": "HTTP Request",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/jobs/createTask",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"google/nano-banana\",\n  \"callBackUrl\": \"{{$execution.resumeUrl}}\",\n  \"input\": {\n    \"prompt\": \"{{ $json.message.content }}\",\n    \"output_format\": \"png\",\n    \"image_size\": \"9:16\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1296,
+        848
+      ],
+      "id": "4954022b-97cb-486b-9a9c-6ea86c395572",
+      "name": "Create Image",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Header Auth FAL TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/jobs/recordInfo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $('Create Image').first().json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1744,
+        768
+      ],
+      "id": "7731acb8-f341-4f38-8b87-4c165831eceb",
+      "name": "Get Result"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "Response",
+              "value": "=La imagen fue creada y se nombró \"{{ $json.name }}\". \n\nAquí tienes el enlace a la imagen en Google Drive: {{ $json.webViewLink }}\n\nEl tipo_documento es \"foto\"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2640,
+        848
+      ],
+      "id": "57050298-b8c8-4bb5-937d-07c68089a663",
+      "name": "Result"
+    },
+    {
+      "parameters": {
+        "url": "={{ JSON.parse($json.data.resultJson).resultUrls[0] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2192,
+        848
+      ],
+      "id": "d7d4e3ff-70e1-460a-a38c-1cf1db18ee40",
+      "name": "Download Image"
+    },
+    {
+      "parameters": {
+        "name": "={{ $('When Executed by Another Workflow').first().json.imageTitle }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1sJqM61k7jvXd7Y3_tdXhExH2EJWQdKZw",
+          "mode": "list",
+          "cachedResultName": "Pruebas",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1sJqM61k7jvXd7Y3_tdXhExH2EJWQdKZw"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2416,
+        848
+      ],
+      "id": "91f644cd-6fa4-4b36-a12b-b4fe9a0f03d7",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Crear imagen con IA",
+        "height": 224,
+        "width": 736,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1312,
+        784
+      ],
+      "id": "50c6b159-0f94-4e88-942f-ff94a4f08e30",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Salida",
+        "height": 224,
+        "width": 464,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2240,
+        784
+      ],
+      "id": "1735b25c-1ddf-4c28-82b1-79ea494f9d07",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Requerimiento: {{ $('When Executed by Another Workflow').item.json.imagePrompt }}"
+            },
+            {
+              "content": "=Rol y objetivo\nEres un Ingeniero de Prompts senior para el modelo de imágenes nano-banana (Gemini 2.5 Flash Image) que se usa vía fal.ai. Convierte el título y la descripción del usuario en un solo prompt claro, específico y ejecutable por nano-banana, usando lenguaje descriptivo (no una lista de tags). Tu salida se usará directamente en el campo prompt de la API de fal.ai.  \n\nFormato de salida (obligatorio)\nDevuelve solo el prompt final, en una sola línea, sin comillas, sin saltos de línea, sin markdown.  \n\nEl prompt final debe estar siempre en inglés, aunque la indicación original esté en otro idioma.  \n\nSi hay texto a renderizar en la imagen, escribe: texto a renderizar: … (sin comillas).  \n\nMejores prácticas\n- Narra la escena, no listes keywords: subject → action/expression → environment/era → lighting (type/direction) → atmosphere (mood) → composition/framing → camera (shot/angle/lens) → style (aesthetic/materials) → palette (colors) → details/textures → purpose (e.g., cover, e-commerce, thumbnail).  \n- Controla cámara y composición con términos fotográficos/cinematográficos (shot type, angle, 24 mm/85 mm, macro, low-angle, bokeh, rule of thirds).  \n- Texto en imagen: especifica la frase exacta, tipografía/estilo, ubicación y jerarquía visual.  \n- Usa descripciones positivas para exclusiones (ej: “empty street, no cars or cables visible”).  \n- Evita vaguedad: reemplaza adjetivos genéricos con descriptores concretos y medibles (ej. “soft golden hour light”, “diffuse side lighting”).  \n- Relación de aspecto: si se indica, especifícala; si no, deja abierta.  \n\nPlantilla interna obligatoria (única, siempre T2I):  \nillustration/photograph of [subject] [action/expression], in [environment/era], lighting [type/direction], atmosphere [mood], composition [rules/framing], camera [shot/angle/lens], style [aesthetic/materials], palette [colors], detail [textures/key features], purpose [use], aspect ratio [desired AR if specified], avoid [unwanted elements described semantically]  \n\nNormalización antes de devolver\n- Quita repeticiones, tecnicismos innecesarios y cualquier comilla.  \n- Devuelve una sola línea (usa comas y punto y coma para separar ideas).  \n- El prompt final debe estar siempre en inglés.  \n\nSalida única que debes devolver:\n<PROMPT_ENGLISH_NANO_BANANA_SINGLE_LINE>\n",
+              "role": "system"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        944,
+        848
+      ],
+      "id": "8953f816-18f9-4090-bcf9-15978c58da75",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account nei14"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Creador especializado de prompt",
+        "height": 224,
+        "width": 448
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        832,
+        784
+      ],
+      "typeVersion": 1,
+      "id": "f4382b17-6e7b-4e18-985b-2f616791594c",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1520,
+        848
+      ],
+      "id": "59541354-4607-4743-b50c-d5b1eb0d1ff9",
+      "name": "5 Segundos",
+      "webhookId": "64cd3204-7c75-49bc-9364-a4f983b0fc6f"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.data.state }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1968,
+        848
+      ],
+      "id": "75dcaa8a-808c-4d52-915d-1db9630cf697",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "resize",
+        "width": "={{ $json.targetWidth || 1280 }} ",
+        "height": "={{ $json.targetHeight || 720 }}",
+        "resizeOption": "minimumArea",
+        "options": {
+          "format": "jpeg",
+          "quality": "=75"
+        }
+      },
+      "id": "5202118b-fe9e-4d54-8ed4-cc335acdbea0",
+      "name": "Redimensionar",
+      "type": "n8n-nodes-base.editImage",
+      "typeVersion": 1,
+      "position": [
+        2976,
+        -56
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.output ?? '';\nlet s = typeof raw === 'string' ? raw : JSON.stringify(raw);\n\n// limpar blocos ``` e escapes\ns = s.replace(/^```(?:json)?\\s*/i,'')\n     .replace(/\\s*```$/i,'')\n     .replace(/\\\\[nrt]/g,' ')\n     .replace(/\\s{2,}/g,' ')\n     .trim();\n\n// tentar parsear\nlet j=null; try{ j=JSON.parse(s); }catch{}\n\n// montar descrição final (ou usar s se não for JSON)\nconst desc = j ? [\n  'Miniatura estilo YouTube, layout comercial marcante.',\n  `Cena: ${j['pessoa_referencia']||'empreendedor tecnológico'} meio-corpo, ${j['acao_ou_emocao_da_pessoa']||'pose confiante'} .`,\n  `Ao fundo: ${j['fundo_tematico']||'escritório moderno high-tech'} , levemente desfocado (bokeh).`,\n  `Elemento simbólico: ${j['elemento_visual_inesperado_ou_simbolico']||'elementos futuristas coerentes com o tema'}.`,\n  `Texto sobreposto: '${(j['frase_curta_impactante']||'Domine a Automação Agora')}' — caixa alta, sans-serif em negrito, branco com contorno preto espesso e leve sombra; legível; sem outras palavras.`,\n  `Composição: ${(j['composicao']||'regra dos terços; área limpa para o texto; margens seguras de 10%')}.`,\n  `Estilo: ${(j['style']||'foto realista, iluminação cinematográfica, alto contraste')}.`,\n  `Paleta: ${(j['cores_dominantes']||'cores vibrantes e contrastantes')}.`,\n  `Não incluir: ${(j['nao_incluir']||'marcas d’água, bordas, texto longo, conteúdo sensível, mãos deformadas, dedos extras, fundo poluído')}.`,\n  'Tamanho 1792×1024 (16:9).'\n].join(' ').replace(/\\s{2,}/g,' ').trim() : s;\n\nreturn [{ json: { clean_prompt: desc } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2304,
+        -56
+      ],
+      "id": "abdee4ac-81a1-478d-8407-96f049e0c32b",
+      "name": "Code1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "📺 YouTube Video Input": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extract Video ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extract Video ID": {
+      "main": [
+        [
+          {
+            "node": "📊 Get Video Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Get Video Info": {
+      "main": [
+        [
+          {
+            "node": "📝 Get Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Get Transcript": {
+      "main": [
+        [
+          {
+            "node": "❓ Transcript Available?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "❓ Transcript Available?": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🎙️ Whisper Transcription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎙️ Whisper Transcription": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Generate Summary": {
+      "main": [
+        [
+          {
+            "node": "🎨 Create Thumbnail Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎨 Create Thumbnail Prompt": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🖼️ Generate Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "💾 Convert Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Convert Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Redimensionar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📤 Update Video Description": {
+      "main": [
+        []
+      ]
+    },
+    "🖼️ Update Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "📊 Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 Claude Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "🤖 Generate Summary",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "🔍 Extract Video ID",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "🤖 Generate Summary",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "🎨 Create Thumbnail Prompt",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "🤖 Generate Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "🤖 Generate Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Image": {
+      "main": [
+        [
+          {
+            "node": "5 Segundos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Result": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Create Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5 Segundos": {
+      "main": [
+        [
+          {
+            "node": "Get Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "5 Segundos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redimensionar": {
+      "main": [
+        [
+          {
+            "node": "🖼️ Update Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "🖼️ Generate Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "187d333d-9838-4f4c-bd79-1d084c9a0892",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "6ghTqxcPl7M3ekAX",
+  "tags": []
+}

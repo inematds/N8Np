@@ -1,0 +1,642 @@
+{
+  "name": "Agente Captação de Proprietários",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "captacao-proprietario",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-captacao",
+      "name": "Webhook Captação",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "captacao-proprietario-imobiliaria"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"processing\",\n  \"agent\": \"Captacao_Proprietario\"\n}"
+      },
+      "id": "resposta-webhook",
+      "name": "Resposta Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Analisar contexto e determinar etapa da captação\nconst contexto = JSON.parse($json.contexto);\nconst mensagem = contexto.mensagem_original.toLowerCase();\nconst cliente = contexto.dados_entrada.cliente;\nconst canal = contexto.canal;\n\n// Detectar se é proprietário existente\nlet proprietario_existente = false;\nlet dados_proprietario = {};\n\nif (cliente) {\n  // Verificar se já tem dados de proprietário\n  proprietario_existente = cliente.tipo_interesse === 'venda';\n  dados_proprietario = {\n    nome: cliente.nome,\n    telefone: cliente.telefone,\n    email: cliente.email,\n    cpf: cliente.cpf\n  };\n}\n\n// Determinar etapa da captação\nlet etapa_captacao = 'saudacao_proprietario';\n\n// Analisar dados já coletados para determinar próxima etapa\nif (proprietario_existente) {\n  if (!dados_proprietario.nome || dados_proprietario.nome.split(' ').length < 2) {\n    etapa_captacao = 'dados_pessoais';\n  } else {\n    etapa_captacao = 'dados_imovel';\n  }\n}\n\n// Detectar informações na mensagem\nconst informacoes_detectadas = {\n  tipo_imovel: null,\n  endereco: null,\n  valor_pretendido: null,\n  motivo_venda: null,\n  urgencia: 'normal'\n};\n\n// Detectar tipo de imóvel\nif (mensagem.includes('casa')) informacoes_detectadas.tipo_imovel = 'casa';\nelse if (mensagem.includes('apartamento') || mensagem.includes('apto')) informacoes_detectadas.tipo_imovel = 'apartamento';\nelse if (mensagem.includes('terreno')) informacoes_detectadas.tipo_imovel = 'terreno';\nelse if (mensagem.includes('comercial') || mensagem.includes('loja') || mensagem.includes('sala')) informacoes_detectadas.tipo_imovel = 'comercial';\n\n// Detectar urgência\nif (mensagem.includes('urgente') || mensagem.includes('rápido') || mensagem.includes('logo')) {\n  informacoes_detectadas.urgencia = 'alta';\n}\n\n// Detectar motivo da venda\nif (mensagem.includes('mudança') || mensagem.includes('mudar')) {\n  informacoes_detectadas.motivo_venda = 'mudança';\n} else if (mensagem.includes('financeiro') || mensagem.includes('dinheiro') || mensagem.includes('dívida')) {\n  informacoes_detectadas.motivo_venda = 'financeiro';\n} else if (mensagem.includes('upgrade') || mensagem.includes('maior') || mensagem.includes('melhor')) {\n  informacoes_detectadas.motivo_venda = 'upgrade';\n}\n\n// Detectar valores\nconst valores = mensagem.match(/\\d{1,3}(?:\\.\\d{3})*(?:,\\d{2})?/g);\nif (valores && valores.length > 0) {\n  const valoresNumericos = valores.map(v => parseFloat(v.replace(/\\./g, '').replace(',', '.')));\n  informacoes_detectadas.valor_pretendido = Math.max(...valoresNumericos);\n}\n\n// Detectar endereço/localização\nconst bairros_comuns = [\n  'centro', 'vila madalena', 'pinheiros', 'itaim', 'moema', 'vila olímpia',\n  'brooklin', 'morumbi', 'jardins', 'perdizes', 'higienópolis', 'liberdade'\n];\n\nfor (const bairro of bairros_comuns) {\n  if (mensagem.includes(bairro)) {\n    informacoes_detectadas.endereco = bairro;\n    break;\n  }\n}\n\nreturn {\n  json: {\n    contexto_original: contexto,\n    etapa_captacao: etapa_captacao,\n    proprietario_existente: proprietario_existente,\n    dados_proprietario: dados_proprietario,\n    informacoes_detectadas: informacoes_detectadas,\n    canal: canal\n  }\n};"
+      },
+      "id": "analisar-captacao",
+      "name": "Analisar Estado da Captação",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gerar resposta personalizada para captação\nconst dados = $json;\nconst etapa = dados.etapa_captacao;\nconst informacoes = dados.informacoes_detectadas;\nconst dadosProprietario = dados.dados_proprietario;\nconst canal = dados.canal;\n\n// Templates de resposta por etapa\nconst templates = {\n  saudacao_proprietario: {\n    whatsapp: `Olá! 👋 Que bom que você quer anunciar seu imóvel conosco!\n\nSomos especialistas em vendas e temos uma equipe dedicada para conseguir o melhor preço para você! 💰\n\nPara começar, me conta:\n🏠 Que tipo de imóvel você quer vender?\n\n• Casa\n• Apartamento\n• Terreno\n• Comercial (loja/sala)\n\nÉ só me falar qual é! 😊`,\n    email: `Olá!\n\nObrigado por escolher nossa imobiliária para vender seu imóvel.\n\nSomos especialistas em vendas e temos uma equipe dedicada para conseguir o melhor resultado para você.\n\nPara iniciar o processo, preciso saber que tipo de imóvel você deseja vender:\n\n- Casa\n- Apartamento\n- Terreno\n- Comercial\n\nPor favor, me informe qual é o tipo do seu imóvel.`\n  },\n  \n  dados_pessoais: {\n    whatsapp: `Perfeito! ${informacoes.tipo_imovel ? informacoes.tipo_imovel.toUpperCase() + ' é uma excelente opção!' : 'Vamos começar!'} 🎉\n\nPara fazer seu cadastro e iniciar a avaliação, preciso de alguns dados:\n\n📝 *Seus dados:*\n• Nome completo\n• CPF\n• Telefone (já tenho este! ✅)\n• E-mail\n\nPode me passar essas informações? É rapidinho! ⚡`,\n    email: `Excelente!\n\nPara prosseguir com o cadastro do seu imóvel, preciso dos seguintes dados pessoais:\n\n- Nome completo\n- CPF\n- Telefone\n- E-mail\n\nPor favor, me envie essas informações para darmos continuidade ao processo.`\n  },\n  \n  dados_imovel: {\n    whatsapp: `Ótimo, ${dadosProprietario.nome?.split(' ')[0]}! 👍\n\nAgora vamos aos dados do seu ${informacoes.tipo_imovel || 'imóvel'}:\n\n🏠 *Informações do imóvel:*\n• Endereço completo\n• Quantos quartos?\n• Quantos banheiros?\n• Área (m²)\n• Valor que você gostaria de receber\n• Tem garagem?\n\nPode ir me passando essas informações? 📋`,\n    email: `Perfeito!\n\nAgora preciso das informações do imóvel:\n\n- Endereço completo\n- Número de quartos\n- Número de banheiros\n- Área em metros quadrados\n- Valor pretendido\n- Vagas de garagem\n- Estado de conservação\n\nPor favor, me envie essas informações.`\n  },\n  \n  documentacao: {\n    whatsapp: `Excelente! Já tenho todas as informações básicas! ✅\n\n📋 *Resumo do seu imóvel:*\n• Tipo: ${informacoes.tipo_imovel || 'A definir'}\n• Endereço: ${informacoes.endereco || 'A definir'}\n• Valor pretendido: ${informacoes.valor_pretendido ? 'R$ ' + informacoes.valor_pretendido.toLocaleString('pt-BR') : 'A definir'}\n\nPara finalizar o cadastro, vou precisar de:\n\n📄 *Documentos:*\n• Escritura ou matrícula\n• IPTU atualizado\n• Condomínio (se for apto)\n• RG e CPF do proprietário\n\n📸 *Fotos do imóvel*\n\nVocê tem esses documentos em mãos? Posso agendar uma visita para buscar! 🚗`,\n    email: `Ótimo!\n\nPara finalizar o cadastro, preciso dos seguintes documentos:\n\n- Escritura ou matrícula do imóvel\n- IPTU atualizado\n- Taxa de condomínio (se aplicável)\n- RG e CPF do proprietário\n- Fotos do imóvel\n\nVocê pode enviar digitalizados ou podemos agendar uma visita para recolher os documentos.`\n  },\n  \n  agendamento_avaliacao: {\n    whatsapp: `Perfeito! 🎉\n\nSeu imóvel está quase cadastrado! Agora vou agendar uma visita para:\n\n✅ Fazer a avaliação profissional\n✅ Tirar fotos profissionais\n✅ Recolher os documentos\n✅ Assinar o contrato de exclusividade\n\nQual o melhor dia e horário para você?\n\n📅 *Horários disponíveis:*\n• Manhã (9h às 12h)\n• Tarde (14h às 17h)\n\nMe fala quando é melhor para você! 😊`,\n    email: `Excelente!\n\nVamos agendar uma visita técnica para:\n\n- Avaliação profissional do imóvel\n- Sessão de fotos profissionais\n- Recolhimento de documentos\n- Assinatura do contrato\n\nPor favor, me informe sua disponibilidade de horário para agendarmos a visita.`\n  }\n};\n\n// Selecionar template baseado na etapa e canal\nlet resposta = templates[etapa]?.[canal] || templates[etapa]?.whatsapp || 'Desculpe, houve um erro. Pode repetir sua mensagem?';\n\n// Personalizar resposta com informações detectadas\nif (informacoes.tipo_imovel && etapa === 'saudacao_proprietario') {\n  resposta = resposta.replace('Que tipo de imóvel', `Vi que você mencionou ${informacoes.tipo_imovel}! Que tipo de imóvel`);\n}\n\nif (informacoes.urgencia === 'alta') {\n  if (canal === 'whatsapp') {\n    resposta += `\\n\\n⚡ *URGENTE:* Vi que você tem pressa! Vou priorizar seu atendimento e podemos agilizar todo o processo!`;\n  } else {\n    resposta += `\\n\\nObservei que você tem urgência. Vou priorizar seu atendimento para agilizar o processo.`;\n  }\n}\n\nif (informacoes.valor_pretendido && etapa === 'dados_imovel') {\n  resposta += `\\n\\nVi que você mencionou R$ ${informacoes.valor_pretendido.toLocaleString('pt-BR')}. Vamos trabalhar para conseguir o melhor valor para você!`;\n}\n\n// Determinar próxima ação\nlet proxima_acao = 'aguardar_resposta';\nlet transferir_para = null;\n\nif (etapa === 'agendamento_avaliacao') {\n  proxima_acao = 'agendar_visita_tecnica';\n}\n\nreturn {\n  json: {\n    resposta: resposta,\n    etapa_atual: etapa,\n    proxima_acao: proxima_acao,\n    transferir_para: transferir_para,\n    dados_para_salvar: {\n      ...dadosProprietario,\n      ...informacoes\n    },\n    contexto_completo: dados\n  }\n};"
+      },
+      "id": "gerar-resposta-captacao",
+      "name": "Gerar Resposta de Captação",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.contexto_completo.proprietario_existente }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-proprietario",
+      "name": "Proprietário Existe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "proprietarios"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nome": "={{ $json.dados_para_salvar.nome || 'Proprietário Novo' }}",
+            "telefone": "={{ $json.contexto_completo.contexto_original.dados_entrada.telefone || $json.contexto_completo.contexto_original.dados_entrada.from }}",
+            "email": "={{ $json.dados_para_salvar.email }}",
+            "cpf": "={{ $json.dados_para_salvar.cpf }}",
+            "observacoes": "Proprietário criado via captação automática"
+          }
+        },
+        "options": {}
+      },
+      "id": "criar-proprietario",
+      "name": "Criar Novo Proprietário",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        200
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "clientes"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "id",
+              "condition": "equal",
+              "value": "={{ $json.contexto_completo.contexto_original.dados_entrada.cliente.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "tipo_interesse": "venda",
+            "observacoes": "Cliente convertido para proprietário - captação",
+            "ultima_interacao": "={{ $now }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "atualizar-cliente",
+      "name": "Atualizar Cliente para Proprietário",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        400
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.etapa_atual }}",
+              "rightValue": "agendamento_avaliacao",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-cadastro-imovel",
+      "name": "Cadastrar Imóvel?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "imoveis"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "tipo": "={{ $json.dados_para_salvar.tipo_imovel || 'casa' }}",
+            "endereco": "={{ $json.dados_para_salvar.endereco || 'A definir' }}",
+            "bairro": "={{ $json.dados_para_salvar.endereco || 'A definir' }}",
+            "cidade": "São Paulo",
+            "valor": "={{ $json.dados_para_salvar.valor_pretendido || 0 }}",
+            "status": "disponivel",
+            "proprietario_id": "={{ $('Criar Novo Proprietário').first()?.json?.id || null }}",
+            "descricao": "Imóvel cadastrado via captação automática",
+            "observacoes_internas": "={{ JSON.stringify($json.dados_para_salvar) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "cadastrar-imovel",
+      "name": "Cadastrar Imóvel Preliminar",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        200
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.contexto_completo.canal }}",
+              "rightValue": "whatsapp",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-canal",
+      "name": "Canal WhatsApp?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.WHATSAPP_API_URL }}/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.WHATSAPP_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $json.contexto_completo.contexto_original.dados_entrada.from }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.resposta }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "enviar-whatsapp",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "{{ $vars.SMTP_FROM_EMAIL }}",
+        "toEmail": "={{ $json.contexto_completo.contexto_original.dados_entrada.email }}",
+        "subject": "Cadastro do seu imóvel - Próximos passos",
+        "emailType": "text",
+        "message": "={{ $json.resposta }}",
+        "options": {}
+      },
+      "id": "enviar-email",
+      "name": "Enviar Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        500
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "[REMOVED]",
+          "name": "SMTP Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.proxima_acao }}",
+              "rightValue": "agendar_visita_tecnica",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-agendamento",
+      "name": "Agendar Visita Técnica?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.N8N_WEBHOOK_BASE_URL }}/webhook/telegram-notification",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tipo",
+              "value": "nova_captacao"
+            },
+            {
+              "name": "proprietario_id",
+              "value": "={{ $('Criar Novo Proprietário').first()?.json?.id }}"
+            },
+            {
+              "name": "imovel_id",
+              "value": "={{ $('Cadastrar Imóvel Preliminar').first()?.json?.id }}"
+            },
+            {
+              "name": "urgencia",
+              "value": "={{ $json.dados_para_salvar.urgencia }}"
+            },
+            {
+              "name": "dados",
+              "value": "={{ JSON.stringify($json.dados_para_salvar) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notificar-equipe",
+      "name": "Notificar Equipe - Nova Captação",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "interacoes"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cliente_id": "={{ $json.contexto_completo.contexto_original.dados_entrada.cliente?.id }}",
+            "canal": "={{ $json.contexto_completo.canal }}",
+            "tipo": "saida",
+            "mensagem": "={{ $json.resposta }}",
+            "agente_responsavel": "Captacao_Proprietario",
+            "contexto": "={{ JSON.stringify({ etapa: $json.etapa_atual, dados_coletados: $json.dados_para_salvar }) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "registrar-interacao",
+      "name": "Registrar Interação",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2440,
+        500
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Captação": {
+      "main": [
+        [
+          {
+            "node": "Resposta Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Analisar Estado da Captação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisar Estado da Captação": {
+      "main": [
+        [
+          {
+            "node": "Gerar Resposta de Captação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Resposta de Captação": {
+      "main": [
+        [
+          {
+            "node": "Proprietário Existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Proprietário Existe?": {
+      "main": [
+        [
+          {
+            "node": "Atualizar Cliente para Proprietário",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Criar Novo Proprietário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Novo Proprietário": {
+      "main": [
+        [
+          {
+            "node": "Cadastrar Imóvel?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar Cliente para Proprietário": {
+      "main": [
+        [
+          {
+            "node": "Cadastrar Imóvel?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cadastrar Imóvel?": {
+      "main": [
+        [
+          {
+            "node": "Cadastrar Imóvel Preliminar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Canal WhatsApp?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Canal WhatsApp?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cadastrar Imóvel Preliminar": {
+      "main": [
+        [
+          {
+            "node": "Notificar Equipe - Nova Captação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Canal WhatsApp?": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Agendar Visita Técnica?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Email": {
+      "main": [
+        [
+          {
+            "node": "Agendar Visita Técnica?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agendar Visita Técnica?": {
+      "main": [
+        [
+          {
+            "node": "Registrar Interação",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registrar Interação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "captacao",
+      "name": "Captação"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

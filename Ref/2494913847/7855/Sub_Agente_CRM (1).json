@@ -1,0 +1,866 @@
+{
+  "name": "Sub-Agente CRM",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "response",
+              "value": "=tarea realizada",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        180,
+        60
+      ],
+      "id": "a584c902-4a5c-4bab-a2c0-fa372d792e9e",
+      "name": "Response"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "query"
+            },
+            {
+              "name": "phone"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1080,
+        60
+      ],
+      "id": "2de80d02-2ea5-4f98-b57d-582398af58b5",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Acción: {{ $json.query }}\nTelefono: {{ $json.phone }}",
+        "options": {
+          "systemMessage": "=🧠 Agente de Decisión CRM con Asignación Inteligente de Estado y Gestión de ID\n\nEres un agente inteligente de CRM. Tienes acceso a los datos actuales del contacto y de la oportunidad de un cliente.\n\nTu tarea es comparar esa información con los nuevos datos que el usuario desea ingresar, y devolver un resumen claro de las acciones que realizaste: crear o actualizar un contacto y/o crear o actualizar una oportunidad.\n\n📌 Instrucción clave:\nAntes de crear o actualizar un contacto o una oportunidad, **siempre verifica si ya existe**. Si existe, **usa su ID existente** para actualizar el registro correspondiente. Nunca crees duplicados.\n\n📊 Además, cuando crees o actualices una oportunidad, debes asignar siempre un valor válido al campo \"estado\", seleccionando el más adecuado según el contexto del mensaje del usuario. Los valores válidos para el estado son:\n\n- Calificación  \n- Reunión agendada  \n- Envío de propuesta  \n- Negociación  \n- Evaluación  \n- Venta cerrada  \n- Oportunidad perdida  \n\n🎯 Tu decisión sobre el estado debe ser inteligente: analiza el mensaje y el contexto para deducir la etapa actual del cliente.\n\n📋 Reglas de actuación:\n1. Si el contacto **no existe**, créalo y dilo claramente.\n2. Si el contacto **existe**, compara los datos. Si alguno ha cambiado, **actualiza usando su ID** y dilo.\n3. Si la oportunidad **no existe**, créala y dilo claramente.\n4. Si la oportunidad **existe**, compara los datos. Si alguno ha cambiado, **actualiza usando su ID** y dilo.\n5. Si no hay cambios relevantes, **no lo menciones**.\n6. Siempre que se cree o actualice una oportunidad, incluye un **estado válido**.\n7. No uses lenguaje técnico (nada de “tool_input”, “payload”, etc.).\n8. La respuesta debe ser clara, estructurada y fácilmente comprensible.\n\n📌 Formato esperado de respuesta:\n✅ Se creó el contacto con los siguientes datos: ...\n\n✅ Se actualizó el contacto con los siguientes campos: ...\n\n✅ Se creó la oportunidad con los siguientes datos: ...\n\n✅ Se actualizó la oportunidad con los siguientes campos: ...\n\n📦 Ejemplo:\n\nMensaje del usuario:\nActualizar contacto Juan Gómez, 3101234567, correo: juan.gomez@test.com, interesado en cambio de aceite.\n\nDatos actuales en el sistema:\nContacto encontrado: Juan Gómez, 3101234567, correo: juan@correo.com  \nOportunidad no encontrada.\n\nRespuesta esperada:\n✅ Se actualizó el contacto con los siguientes campos:  \nEmail: de \"juan@correo.com\" a \"juan.gomez@test.com\"\n\n✅ Se creó la oportunidad con los siguientes datos:  \nInteracción: cambio de aceite  \nEstado: Calificación  \nPrioridad: Media\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        -528,
+        60
+      ],
+      "id": "4bf18481-c96c-4094-846d-42d77e3187cd",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -860,
+        280
+      ],
+      "id": "4c6948ea-5cc4-46ef-a42c-4a5865100ff7",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Llama a esta tool para buscar contactos en la base de datos",
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "contactos",
+          "mode": "list",
+          "cachedResultName": "contactos"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "whatsapp",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('values0_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        -760,
+        400
+      ],
+      "id": "fdab1194-bdfc-4223-b5a8-36fa5203093a",
+      "name": "Busca Contactos",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Llama a esta tool para buscar oportunidades en la base de datos",
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "oportunidades",
+          "mode": "list",
+          "cachedResultName": "oportunidades"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "whatsapp",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('values0_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        -600,
+        360
+      ],
+      "id": "87de9620-1709-4d4a-8982-09a72f74c9df",
+      "name": "Busca oportunidad",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Llama a esta tool para crear contactos en la base de datos",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "contactos",
+          "mode": "list",
+          "cachedResultName": "contactos"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "vip": false,
+            "nombre": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('nombre', ``, 'string') }}",
+            "email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('email', ``, 'string') }}",
+            "whatsapp": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('whatsapp', ``, 'string') }}",
+            "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('title', ``, 'string') }}",
+            "servicio": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('servicio', ``, 'string') }}",
+            "id_coche": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('id_coche', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "vip",
+              "displayName": "vip",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "servicio",
+              "displayName": "servicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "opportunities",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "opportunities_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "id_coche",
+              "displayName": "id_coche",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        -440,
+        280
+      ],
+      "id": "2fec885b-5669-4d32-afe0-d85a5e4aba12",
+      "name": "Crea Contactos",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Llama a esta tool para actualizar contactos en la base de datos",
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "contactos",
+          "mode": "list",
+          "cachedResultName": "contactos"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "vip": false,
+            "nombre": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('nombre', ``, 'string') }}",
+            "email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('email', ``, 'string') }}",
+            "whatsapp": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('whatsapp', ``, 'string') }}",
+            "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('title', ``, 'string') }}",
+            "servicio": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('servicio', ``, 'string') }}",
+            "id_coche": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('id_coche', ``, 'string') }}",
+            "id": "[REMOVED]"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "vip",
+              "displayName": "vip",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "servicio",
+              "displayName": "servicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "opportunities",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "opportunities_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "id_coche",
+              "displayName": "id_coche",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        -300,
+        380
+      ],
+      "id": "e3a6e8a7-a1b7-4b26-9181-4873442baf9c",
+      "name": "Actualizar contactos",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Llama a esta tool para crear oportunidades en la base de datos",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "oportunidades",
+          "mode": "list",
+          "cachedResultName": "oportunidades"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre_oportunidad": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('nombre_oportunidad', ``, 'string') }}",
+            "estado": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('estado', ``, 'string') }}",
+            "whatsapp": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('whatsapp', ``, 'string') }}",
+            "servicio": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('servicio', ``, 'string') }}",
+            "proposal": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('proposal', ``, 'string') }}",
+            "modelo_marca_ano": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('modelo_marca_ano', ``, 'string') }}",
+            "email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('email', ``, 'string') }}",
+            "fecha_cierre": "={{ $now.plus(7,'days') }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "nombre_oportunidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "servicio",
+              "displayName": "servicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "proposal",
+              "displayName": "proposal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "fecha_cierre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "modelo_marca_ano",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        -140,
+        280
+      ],
+      "id": "12be9a7b-ec27-4db1-89a9-b14d1f60b428",
+      "name": "Crear Oportunidades",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Llama a esta tool para actualizar oportunidades en la base de datos",
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "oportunidades",
+          "mode": "list",
+          "cachedResultName": "oportunidades"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre_oportunidad": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('nombre_oportunidad', ``, 'string') }}",
+            "estado": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('estado', ``, 'string') }}",
+            "whatsapp": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('whatsapp', ``, 'string') }}",
+            "servicio": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('servicio', ``, 'string') }}",
+            "proposal": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('proposal', ``, 'string') }}",
+            "modelo_marca_ano": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('modelo_marca_ano', ``, 'string') }}",
+            "email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('email', ``, 'string') }}",
+            "id": "[REMOVED]"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "nombre_oportunidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "servicio",
+              "displayName": "servicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "proposal",
+              "displayName": "proposal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "fecha_cierre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "modelo_marca_ano",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        -20,
+        320
+      ],
+      "id": "fef5177d-b67d-4776-b4dc-c6524bc012dc",
+      "name": "Actualizar oportunidades",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "query": "Registrar o actualizar contacto Raul Perez, correo angel.aparicio92@gmail.com, número 72264537, interesado en polarizado de vidrios",
+          "phone": "7843362999009618"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Contactos": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca oportunidad": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crea Contactos": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar contactos": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Oportunidades": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar oportunidades": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "783c60cc-21a7-4740-92a7-ddd92c81ff57",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "fTYqfpH3eoEWsKJq",
+  "tags": [
+    {
+      "createdAt": "2025-05-07T22:21:18.163Z",
+      "updatedAt": "2025-05-07T22:21:18.163Z",
+      "id": "58ZD1G6itxxV7Xuv",
+      "name": "Completed"
+    }
+  ]
+}

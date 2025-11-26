@@ -1,0 +1,318 @@
+{
+  "name": "Crear Imagen Seedream",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/jobs/createTask",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"bytedance/seedream-v4-edit\",\n  \"input\":{\n  \"prompt\": {{ JSON.stringify($json.image_prompt) }},\n  \"image_urls\": [\"{{ $json.image_reference }}\"\n  ],\n  \"image_size\": \"{{ $json.aspect_ratio === \"9:16\" ? \"portrait_16_9\" : ($json.aspect_ratio === \"16:9\" ? \"landscape_16_9\" : $json.aspect_ratio) }}\",\n  \"image_resolution\": \"4K\"\n}\n\n\n}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -48,
+        128
+      ],
+      "id": "5f508bee-6db3-42b4-81a1-2551ee2bdb1e",
+      "name": "Crear Imagen",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/jobs/recordInfo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $('Crear Imagen').item.json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        448,
+        128
+      ],
+      "id": "3c8be9d4-98dc-4010-96a5-0fcff27d129c",
+      "name": "Obtener Imagen",
+      "alwaysOutputData": true,
+      "retryOnFail": false,
+      "waitBetweenTries": 5000,
+      "executeOnce": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Kie"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        192,
+        128
+      ],
+      "id": "8259e910-8c48-4ca5-ba9f-f5836c7b7c02",
+      "name": "Esperar2",
+      "webhookId": "c10e3fd5-1247-4e35-9c13-9cce5e3f0796"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "image_prompt"
+            },
+            {
+              "name": "image_reference"
+            },
+            {
+              "name": "aspect_ratio"
+            }
+          ]
+        }
+      },
+      "id": "52aa37aa-d2a6-485f-8085-9b75848e950b",
+      "typeVersion": 1.1,
+      "name": "Inicio",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -320,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "success",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "[REMOVED]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "éxito"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "ing",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "en progreso"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "error"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        688,
+        112
+      ],
+      "id": "f08ff140-a330-491b-9355-3329ff04d2c1",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "image_result",
+              "value": "={{ $json.data.failMsg }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        928,
+        240
+      ],
+      "id": "ab197753-f505-4cc4-b8bf-346bb840577b",
+      "name": "Devolver error"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "image_result",
+              "value": "={{ JSON.parse($json.data.resultJson).resultUrls[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        928,
+        48
+      ],
+      "id": "a74c3280-37a9-485d-a171-c395044c60b3",
+      "name": "Devolver imagen"
+    }
+  ],
+  "pinData": {
+    "Inicio": [
+      {
+        "json": {
+          "image_prompt": "Toma el producto en la imagen y haz que el personaje lo enseñe hacia la cámara. Colócalo en el centro de la imagen con el producto y el personaje visibles.\nacción: la mujer sostiene el envase de güdd Collagen Peptides y lo muestra hacia la cámara con serenidad\npersonaje: mujer de 45 a 60 años, cabello canoso corto, expresión tranquila, porte cuidado y expresión de bienestar; viste blusa verde menta pálido y ropa cómoda de yoga\nproducto: envase blanco de suplemento de colágeno en polvo con etiqueta 'güdd Collagen Peptides', marca y tipografía fieles a la referencia, colores y textos tal como en la imagen original\nentorno: parque o jardín amplio al aire libre, en luz suave de amanecer o atardecer, la mujer está sentada sobre su mat de yoga justo después de su práctica\ncámara: foto amateur con móvil, encuadre ligeramente torcido, luz natural suave\niluminación: luz de día cálida y suave\nestilo: UGC, realista, sin edición ni filtros\ncomposición: encuadre centrado, personaje y producto bien visibles, fondo de vegetación difuminado\naspect_ratio: 9:16",
+          "image_reference": "https://aasupabaseaa.vps.rubikmarketing.com.co/storage/v1/object/public/Videos/Collagen%20gudd%20y%20modelo.png",
+          "aspect_ratio": "9:16"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Crear Imagen": {
+      "main": [
+        [
+          {
+            "node": "Esperar2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Imagen": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar2": {
+      "main": [
+        [
+          {
+            "node": "Obtener Imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inicio": {
+      "main": [
+        [
+          {
+            "node": "Crear Imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Devolver imagen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Esperar2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Devolver error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "28cd3f89-59e5-4b56-af4c-fb10d603aa4b",
+  "meta": {
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "qFVBAwSHM0P5boip",
+  "tags": []
+}

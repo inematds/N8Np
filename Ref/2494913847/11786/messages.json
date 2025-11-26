@@ -1,0 +1,201 @@
+[
+  {
+    "id": 11809,
+    "author": "INEMA",
+    "date": "2025-07-24T15:57:27+00:00",
+    "text": "https://www.youtube.com/watch?v=lnm0PMi-4mE",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11808,
+    "author": "INEMA",
+    "date": "2025-07-24T15:55:06+00:00",
+    "text": "## 🧠 HACKS PARA UM RAG EFICIENTE COM METADADOS\n\n### 1. **Use metadados desde o início**\n\n* Adicione campos como:\n\n  * `video_title`\n  * `url`\n  * `timestamp`\n  * `autor`, `tema`, `categoria`, `data`, etc.\n* Isso **não pesa no embedding**, mas **dá rastreabilidade e controle**.\n\n🔧 *Dica*: use sempre JSON para embutir todos os metadados juntos num único campo `metadata`.\n\n---\n\n### 2. **Divida os dados em chunks curtos com contexto**\n\n* Agrupar 20–30 linhas por chunk (ou até 300–500 caracteres) ajuda a manter:\n\n  * Sentido completo\n  * Timestamps rastreáveis\n\n🧪 *Teste prático*: quanto menor o chunk, mais preciso o contexto; quanto maior, melhor fluidez da resposta. Ajuste com base no tipo de conteúdo.\n\n---\n\n### 3. **Mantenha o `timestamp` no chunk**\n\n* Início = `start_time` do primeiro trecho\n* Fim = `start_time + duration` do último trecho\n\n🎯 Exemplo: `\"12:05 - 12:35\"`\nIsso permite:\n\n* Filtrar respostas\n* Gerar links diretos com tempo: `https://youtube.com/watch?v=ID&t=725s`\n\n---\n\n### 4. **Evite embutir texto bruto demais**\n\n* Não envie para embedding:\n\n  * Título do vídeo\n  * URLs\n  * Timestamps\n  * Informações repetidas\n\n💡 *Separar texto principal e metadados ajuda a reduzir tokens e aumentar qualidade da semelhança vetorial*.\n\n---\n\n### 5. **Use Rerankers se possível**\n\n* Um segundo modelo (ex: Cohere Rerank, OpenAI) pode:\n\n  * Ordenar melhor os resultados recuperados\n  * Reduzir respostas irrelevantes\n\n⚙️ *No n8n*, use rerank via API externa após o embedding e recuperação.\n\n---\n\n### 6. **Filtragem inteligente com metadados**\n\n* Permite buscas específicas, como:\n\n  * “Buscar apenas em vídeos da Anthropic”\n  * “Buscar apenas conteúdos de 2023”\n\n🔍 Use filtros do Supabase (ou outro DB vetorial) diretamente nos metadados.\n\n---\n\n### 7. **Crie um painel com Google Sheets**\n\n* Mostre:\n\n  * Vídeos indexados\n  * Número de chunks\n  * Status: ativo/remover\n  * Última atualização\n\n🧩 *Ajuda a manter controle sem precisar acessar o banco direto.*\n\n---\n\n### 8. **Automatize a exclusão de conteúdo**\n\n* Se um vídeo for obsoleto ou errado:\n\n  * Marque como `remover` em uma planilha ou banco\n  * Um fluxo n8n apaga os vetores com base no campo `video_url`\n\n🧹 Evita lixo vetorial e melhora performance.\n\n---\n\n### 9. **Pré-processe dados com IA**\n\n* Use o Claude, ChatGPT ou Gemini para gerar:\n\n  * Títulos otimizados\n  * Descrições curtas\n  * Palavras-chave como metadados\n\n🤖 Isso enriquece ainda mais os resultados.\n\n---\n\n### 10. **Crie links diretos com timestamps**\n\n* Exemplo:\n\n```https://youtube.com/watch?v=ID&t=725s```\n\n* Basta converter o `timestamp` \"12:05\" para segundos (12×60 + 5 = 725s)\n\n🧷 Facilita a navegação exata pelo usuário.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11807,
+    "author": "INEMA",
+    "date": "2025-07-24T15:53:37+00:00",
+    "text": "=============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11806,
+    "author": "INEMA",
+    "date": "2025-07-24T15:53:33+00:00",
+    "text": "## 🔧 Requisitos antes de começar\n\n* Conta no [n8n.io](https://n8n.io/) (pode ser auto-hospedado ou n8n.cloud)\n* Conta no [Supabase](https://supabase.com/)\n* Conta no [Apify](https://apify.com/)\n* Planilha no Google Sheets (opcional para controle)\n* API Key do Apify\n* Chave da OpenAI (ou outro modelo de IA)\n\n---\n\n## ✅ Passo a Passo\n\n### 1. **Formulário de Entrada**\n\n* Criar um **formulário n8n (Webhook trigger)** que recebe:\n\n  * Título do vídeo\n  * URL do vídeo\n\n---\n\n### 2. **Capturar transcrição do vídeo (Apify)**\n\n* Criar um nó `HTTP Request` que envia o link do vídeo para a **API do Apify** (YouTube Transcript Scraper).\n* Obter resposta em JSON com:\n\n  * Texto\n  * Início e duração de cada trecho (timestamp)\n\n---\n\n### 3. **Limpar e organizar os dados (Code Nodes)**\n\n#### a) Unificar todo o texto (opcional)\n\n* Juntar os textos em uma única string (útil para indexação geral).\n\n#### b) Dividir por chunks com timestamps\n\n* Agrupar **20 trechos por vez** (ou mais/menos) mantendo:\n\n  * Texto combinado\n  * Tempo inicial (primeiro trecho)\n  * Tempo final (último trecho + duração)\n* Criar estrutura:\n\n```{\n  \"texto\": \"conteúdo do chunk\",\n  \"metadata\": {\n    \"video_title\": \"Título do vídeo\",\n    \"url\": \"https://youtube.com/...\",\n    \"timestamp\": \"12:05 - 12:35\"\n  }\n}```\n\n---\n\n### 4. **Salvar no Supabase (banco vetorial)**\n\n* Enviar para uma **tabela no Supabase** com colunas:\n\n  * `embedding` (gerado a partir do texto)\n  * `metadata` (JSON com título, link e timestamp)\n  * `texto`\n\nUse um nó HTTP ou plugin Supabase para isso.\n\n---\n\n### 5. **Usar em um agente RAG**\n\n* Criar outro workflow n8n com um campo de **pergunta (query)**.\n* Gerar embedding da pergunta → buscar no Supabase os vetores mais próximos.\n* Retornar os chunks com maior similaridade.\n* Gerar resposta com IA (OpenAI, Claude etc), **inserindo os metadados no final da resposta**.\n\n---\n\n### 6. **Exibir e filtrar resultados com metadados**\n\n* Exibir:\n\n  * Título do vídeo\n  * Link clicável\n  * Intervalo de tempo\n\n* Filtrar:\n\n  * Por título\n  * Por canal\n  * Por data (se incluída nos metadados)\n\n---\n\n### 7. **Remoção automática de conteúdos**\n\n* Marcar vídeos como `status: remover` em uma planilha ou painel.\n* Criar um workflow que:\n\n  * Detecta essa marcação\n  * Filtra os vetores por metadado `video_url`\n  * Exclui do banco vetorial (Supabase)\n\n---\n\n### 8. **Gerenciar via Google Sheets (opcional)**\n\n* Armazene:\n\n  * Lista de vídeos processados\n  * Status: ativo/remover\n  * Última atualização\n  * Número de chunks por vídeo\n\n---\n\n## 🧠 Resultado Final\n\n* Um sistema que:\n\n  * **Busca informações em vídeos com precisão**\n  * **Responde com base na transcrição real**\n  * **Mostra exatamente de onde veio a informação**\n  * **É fácil de atualizar e controlar**",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11805,
+    "author": "INEMA",
+    "date": "2025-07-24T15:40:11+00:00",
+    "text": "============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11804,
+    "author": "INEMA",
+    "date": "2025-07-24T15:40:07+00:00",
+    "text": "## O que é RAG?\n\n**RAG (Geração Aumentada por Recuperação)** é uma técnica onde um modelo de IA (como o ChatGPT) consulta uma base externa de dados (por exemplo, um banco vetorial) antes de gerar uma resposta. Isso permite que ele **responda com informações atualizadas, específicas e rastreáveis**, mesmo que essas informações não estejam no modelo.\n\n---\n\n## Etapas de Funcionamento do RAG\n\n### 1. **Entrada da Pergunta**\n\nO usuário faz uma pergunta (ex: “Qual a diferença entre um banco relacional e um banco vetorial?”).\n\n### 2. **Busca Vetorial**\n\nA pergunta é **transformada em vetor (embedding)** e comparada com vetores armazenados num banco (ex: Supabase) que contêm dados relevantes, como transcrições de vídeos.\n\n### 3. **Reranking (opcional)**\n\nUm **modelo secundário** classifica os resultados mais relevantes (melhora a precisão da resposta).\n\n### 4. **Recuperação com Metadados**\n\nA IA **retorna os chunks de texto** mais relevantes **juntamente com os metadados**:\n\n* **Título do vídeo**\n* **URL**\n* **Timestamp (intervalo de tempo)**\n\n### 5. **Geração da Resposta**\n\nCom base nesses dados recuperados, o modelo gera a resposta final para o usuário, com a **referência exata da fonte**.\n\n---\n\n## Por que o uso de **metadados** torna o RAG mais inteligente?\n\nSem metadados, a IA apenas mostra a resposta, mas **não diz de onde veio**. Com metadados:\n\n* Você sabe **de qual vídeo veio o conteúdo**.\n* Pode clicar na **URL exata**.\n* Pode ver o **trecho exato no tempo (timestamp)** de onde foi extraída a informação.\n\nIsso aumenta a **confiabilidade**, **rastreabilidade** e melhora a **experiência do usuário**.\n\n---\n\n## Benefícios do uso de metadados no RAG\n\n1. **Mais contexto**\n   Ex: “Essa frase veio do vídeo X, entre 12:00 e 12:40”.\n\n2. **Organização e rastreabilidade**\n   Ex: saber se o conteúdo vem de um vídeo técnico ou de opinião.\n\n3. **Filtragem avançada**\n   Ex: \"Buscar apenas no vídeo da Anthropic\", filtrando por título no banco.\n\n4. **Manutenção fácil da base**\n   Possibilidade de excluir vetores específicos com base em metadados como status ou URL.\n\n---\n\n## Exemplo prático (caso real do vídeo)\n\n* **Transcrições de vídeos do YouTube** são capturadas com Apify.\n* Elas são limpas e divididas em **chunks pequenos com timestamps**.\n* Cada chunk é vetorizado e enriquecido com:\n\n  * Título do vídeo\n  * URL do vídeo\n  * Intervalo de tempo daquele trecho\n* Esses dados são armazenados no **Supabase (banco vetorial)**.\n* O agente RAG consulta essa base para responder perguntas e **mostra de onde tirou cada resposta**.\n\n---\n\n## Conclusão\n\nRAG é uma solução poderosa para construir **assistentes inteligentes**, mas o **uso de metadados é o diferencial** que:\n\n* Dá **credibilidade** à resposta,\n* Permite **filtragem precisa**,\n* Torna o sistema **modular e flexível**.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11803,
+    "author": "INEMA",
+    "date": "2025-07-24T15:39:38+00:00",
+    "text": "==================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11802,
+    "author": "INEMA",
+    "date": "2025-07-24T15:39:34+00:00",
+    "text": "**Resumo do vídeo “Smarter RAG Starts with Metadata (Beginner’s Guide)”**\n\nComo construir um fluxo RAG (Geração Aumentada por Recuperação) inteligente, utilizando **n8n** e **Supabase**, com foco no uso de **metadados** para aumentar a precisão, o contexto e o controle das respostas da IA. A seguir, os principais pontos do conteúdo:\n\n### 1. **Importância dos Metadados**\n\n* Metadados são “dados sobre os dados” (ex: título do vídeo, URL, timestamp).\n* Eles não influenciam a posição dos vetores, mas **enriquecem o conteúdo** retornado e permitem contextualização e **rastreamento da fonte**.\n* Sem metadados, não é possível saber de qual vídeo vem o conteúdo exibido pela IA.\n\n### 2. **Demonstração prática do agente RAG**\n\n* Usuário faz perguntas (ex: diferenças entre banco relacional e banco vetorial).\n* O agente busca no Supabase e retorna a resposta, **incluindo o vídeo exato**, o **link** e o **trecho exato** de onde a resposta foi extraída.\n* Isso só é possível porque os chunks de transcrição foram enriquecidos com metadados.\n\n### 3. **Pipeline com n8n**\n\n* Transcrição de vídeos do YouTube é extraída com **Apify**.\n* Texto é limpo e dividido em **chunks com timestamps**.\n* Cada chunk recebe metadados: **título do vídeo, URL e intervalo de tempo**.\n* Os chunks vetorizados são armazenados no Supabase com esses metadados.\n\n### 4. **Exemplo de enriquecimento com código**\n\n* Usa-se um nó de código para combinar ou dividir os textos com base em timestamps.\n* Com ajuda do Claude, cria-se código para juntar 20 objetos da transcrição e manter início/fim do tempo.\n\n### 5. **Filtro por metadados**\n\n* É possível configurar o agente para buscar informações **apenas de um vídeo específico** usando filtros por título de vídeo.\n* Isso melhora o controle sobre a origem das respostas.\n\n### 6. **Exclusão de dados do Supabase**\n\n* Existe um fluxo para marcar e remover vídeos do banco vetorial com base no status.\n* Após exclusão, o sistema atualiza a planilha do Google Sheets e remove os vetores no Supabase com base na URL do vídeo.\n\n\n\n### Tópicos listados com exemplos\n\n1. **O que são metadados**\n\n   * Exemplo: título do vídeo, timestamp, URL\n\n2. **Como aplicar em RAG**\n\n   * Enriquecer transcrições para rastrear a origem das respostas\n\n3. **Benefícios dos metadados**\n\n   * Maior contexto, organização e possibilidade de filtros por origem\n\n4. **Pipeline no n8n**\n\n   * Entrada via formulário → Apify → código → vetorização → Supabase + Google Sheets\n\n5. **Filtragem com metadados**\n\n   * Exemplo: buscar somente respostas do vídeo \"Dicas para criar agentes de IA\"\n\n6. **Exclusão de vetores**\n\n   * Marcação com status “remover” → atualização na planilha → remoção no banco\n\n7. **Integração com Claude**\n\n   * Uso para gerar código que trata JSON da transcrição\n\n8. **Templates e comunidade**\n\n   * Workflow e Google Sheets prontos para download\n   * Cursos com foco prático sobre agentes e automação com IA",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11801,
+    "author": "INEMA",
+    "date": "2025-07-24T15:38:12+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11801_009.jpg"
+  },
+  {
+    "id": 11800,
+    "author": "INEMA",
+    "date": "2025-07-24T15:37:42+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11800_010.jpg"
+  },
+  {
+    "id": 11799,
+    "author": "INEMA",
+    "date": "2025-07-24T15:37:18+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11799_011.jpg"
+  },
+  {
+    "id": 11798,
+    "author": "INEMA",
+    "date": "2025-07-24T15:36:43+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11798_012.jpg"
+  },
+  {
+    "id": 11797,
+    "author": "INEMA",
+    "date": "2025-07-24T15:34:13+00:00",
+    "text": "**RAG mais inteligente começa com metadados (Guia para iniciantes)**\n\n\nUm fluxo de trabalho RAG (Geração Aumentada por Recuperação) sem código que construí usando o n8n.\n\nVou te mostrar como pego transcrições de vídeos do YouTube, armazeno em um banco de dados vetorial no Supabase, e enriqueço com metadados como títulos dos vídeos, URLs e marcações de tempo.\n\nIsso permite que o agente RAG me diga exatamente de onde veio a resposta recuperada — incluindo de qual vídeo, o link para esse vídeo e até o momento exato do vídeo de onde os dados foram extraídos.\n\nTambém explico o que são metadados, por que eles são importantes e como melhoram drasticamente a precisão da recuperação e o contexto.\nSe você está construindo qualquer tipo de assistente ou agente de IA, esse é um conceito fundamental a ser compreendido — e eu o explico da forma mais simples e prática possível.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11796,
+    "author": "INEMA",
+    "date": "2025-07-24T15:32:55+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "YouTube Videos (file -_ make a copy).xlsx"
+  },
+  {
+    "id": 11795,
+    "author": "INEMA",
+    "date": "2025-07-24T15:32:08+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "YouTube Chat Metadata.json"
+  },
+  {
+    "id": 11794,
+    "author": "INEMA",
+    "date": "2025-07-24T15:32:03+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11794_016.jpg"
+  },
+  {
+    "id": 11793,
+    "author": "INEMA",
+    "date": "2025-07-24T15:31:37+00:00",
+    "text": "ap48 - Youtube Transcrição RAG",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11792,
+    "author": "INEMA",
+    "date": "2025-07-24T15:31:35+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11791,
+    "author": "INEMA",
+    "date": "2025-07-24T15:31:35+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11790,
+    "author": "INEMA",
+    "date": "2025-07-24T15:31:35+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11789,
+    "author": "INEMA",
+    "date": "2025-07-24T15:31:34+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11788,
+    "author": "INEMA",
+    "date": "2025-07-24T15:31:34+00:00",
+    "text": "https://chatgpt.com/c/6882523d-d4a4-8009-b2fa-0192e18bc5c6",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11787,
+    "author": "INEMA",
+    "date": "2025-07-24T15:31:34+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11786,
+    "author": "INEMA",
+    "date": "2025-07-24T15:31:29+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

@@ -1,0 +1,550 @@
+{
+  "name": "1. Archivos RAG Semantico (Supabase + n8n)",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.texto }}",
+        "options": {
+          "systemMessage": "=Eres un asistente útil, directo y bien estructurado. Sigue estas indicaciones en todo momento:\n\n📎 CARGA DE ARCHIVOS\n- Si el usuario menciona que quiere subir un archivo:\n  → Respóndele que puede hacerlo, **pero solo se aceptan archivos en formato PDF**.\n  → No expliques nada más a menos que el usuario lo pida.\n\nELIMINACION DE ARCHIVOS\n-Si el usuario quiere eliminar un archivo, deberas de pasar el id_file. Lo encontraras siempre en los metadatos de las respuestas o en la memoria.\n\n📌 IDENTIFICACIÓN DEL ARCHIVO\n- Si tienes acceso al archivo, debes usar SIEMPRE estos dos datos:\n  → Nombre del archivo: {{ $json.fileName }}\n  → ID del archivo: {{ $json.id_archivo }}\n- Si tienes ambos, sigue las instrucciones del usuario sin pedir confirmación.\n\n🚫 NO ALUCINES\n- No inventes información.\n- Busca SIEMPRE la respuesta en la base de conocimiento.\n- Si no encuentras lo que pide el usuario, dilo de forma clara y educada.\n\n💬 FORMATO DE RESPUESTA PARA TELEGRAM\n- Devuelve siempre las respuestas de forma estructurada y visualmente agradable.\n- Usa frases cortas, listas y símbolos si es útil, pero **evita caracteres que puedan romper el mensaje**, como:\n  - `*`, `_`, `[`, `]`, `(`, `)`, `~`, `>`, `|`, `{}`, `#`\n- Si necesitas usar alguno de estos, **escápalos** con una barra invertida (`\\`) para que Telegram no los interprete como Markdown.\n\n📌 Ejemplo de respuesta segura:\n❌ *Error*: No se pudo cargar el archivo  \n✅ Error: No se pudo cargar el archivo\n\n---\n\nRecuerda: útil, directo, sin alucinar, y siempre bien presentado 🦎\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        900,
+        -60
+      ],
+      "id": "8b15868c-b829-4506-9e42-c71776f53d6f",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        160
+      ],
+      "id": "c1c942e5-a6ab-493d-976c-f28a303a6094",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "https://aawebhookaa.vps.rubikmarketing.com.co/mcp/academia/sse",
+        "include": "selected",
+        "includeTools": [
+          "eliminar_rag",
+          "carga_datos_rag"
+        ]
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        160
+      ],
+      "id": "e13c4522-3948-481a-a1b7-32169426f414",
+      "name": "MCP Client"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.document.mime_type }}",
+                    "rightValue": "application/pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "[REMOVED]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Archivo"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Texto"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -240,
+        40
+      ],
+      "id": "7f186d44-4e3a-4c3d-a7f9-bc7639fbd3d8",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "texto",
+              "value": "=Se debe cargar este archivo en el RAG. El archivo ya se cargó en la carpeta. Procede a cargarlo en el RAG Semantico.",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "id_archivo",
+              "value": "={{ $('Google Drive1').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "fileName",
+              "value": "={{ $('Telegram Trigger').item.json.message.document.file_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        -160
+      ],
+      "id": "2ca4f780-e9bb-4c17-9daf-0e46c65943ab",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "texto",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "id_archivo",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "fileName",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        40
+      ],
+      "id": "d8f44154-9ad4-4853-899b-39022b3549f4",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "=data",
+        "name": "={{ $('Telegram Trigger').item.json.message.document.file_name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1_bPUq_IIlsQYwSFUd_cZOpqSK6NDSYzp",
+          "mode": "list",
+          "cachedResultName": "RAG test",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1_bPUq_IIlsQYwSFUd_cZOpqSK6NDSYzp"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        200,
+        -160
+      ],
+      "id": "c598d79c-a357-4244-b962-377bd91500b4",
+      "name": "Google Drive1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        960,
+        180
+      ],
+      "id": "709c4913-63f9-4ca6-ac31-e9207270e6e9",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -460,
+        40
+      ],
+      "id": "a1ef8e96-b3ee-409b-90a0-b8f0fb43679c",
+      "name": "Telegram Trigger",
+      "webhookId": "e70813be-ce19-4b07-bd42-b6cbe522108b",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "IAMASTERSAUTOMATIONS_bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger').item.json.message.document.file_id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -20,
+        -160
+      ],
+      "id": "7a04dd52-d45e-4586-a781-74ddcba9f10b",
+      "name": "Telegram",
+      "webhookId": "613e5c6e-0e97-4398-8239-25eefe519e9c",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Test Cocreacion bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output.replaceAll(/[_*[\\]()~`>#+=|{}.!]/g,\"\")}}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1300,
+        -60
+      ],
+      "id": "e5bc4995-fb38-449d-a796-c67642d4eda8",
+      "name": "Telegram1",
+      "webhookId": "316ba714-eb5f-4758-b929-3e7f8a5cdb7e",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "IAMASTERSAUTOMATIONS_bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=Estamos procesando tu archivo y añadiendolo en la base de conocimiento",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        -160
+      ],
+      "id": "a7fab9d7-bd4b-4a03-8b28-43f794088b34",
+      "name": "Telegram2",
+      "webhookId": "316ba714-eb5f-4758-b929-3e7f8a5cdb7e",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "IAMASTERSAUTOMATIONS_bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=Hola! Solo puedo trabajar con documentos pdf y texto.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        220
+      ],
+      "id": "0f1d68de-c0f0-438b-a251-fc5f6145029d",
+      "name": "Telegram3",
+      "webhookId": "316ba714-eb5f-4758-b929-3e7f8a5cdb7e",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "IAMASTERSAUTOMATIONS_bot"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Telegram Trigger": [
+      {
+        "json": {
+          "update_id": 582393823,
+          "message": {
+            "message_id": 847,
+            "from": {
+              "id": 631826419,
+              "is_bot": false,
+              "first_name": "Angel",
+              "last_name": "Aparicio",
+              "language_code": "es"
+            },
+            "chat": {
+              "id": -1002350171062,
+              "title": "Asistente personal",
+              "type": "supergroup"
+            },
+            "date": 1745612044,
+            "document": {
+              "file_name": "informe-economico-y-comercial-colombia-2024_removed.pdf",
+              "mime_type": "application/pdf",
+              "file_id": "BQACAgQAAyEFAASMFMO2AAIDT2gL7QzjAAHiWNTw_C_MBNyaukWxDgACjxkAAjutYFDO9Yew6cSEpzYE",
+              "file_unique_id": "AgADjxkAAjutYFA",
+              "file_size": 770007
+            }
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP Client": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive1": {
+      "main": [
+        [
+          {
+            "node": "Telegram2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram": {
+      "main": [
+        [
+          {
+            "node": "Google Drive1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e7b620b2-b426-4d71-ba84-5e3bac71ce18",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "jb6dBWTLED8a36Yr",
+  "tags": []
+}

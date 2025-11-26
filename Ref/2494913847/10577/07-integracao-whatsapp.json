@@ -1,0 +1,547 @@
+{
+  "name": "Integração WhatsApp Business API",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-whatsapp",
+      "name": "Webhook WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "whatsapp-business-api"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"received\"\n}"
+      },
+      "id": "resposta-webhook",
+      "name": "Resposta Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar webhook do WhatsApp Business API\nconst body = $json.body || $json;\n\n// Verificar se é uma mensagem válida\nif (!body.entry || !body.entry[0] || !body.entry[0].changes) {\n  return {\n    json: {\n      error: 'Invalid webhook payload',\n      original: body\n    }\n  };\n}\n\nconst changes = body.entry[0].changes[0];\nconst value = changes.value;\n\n// Verificar se há mensagens\nif (!value.messages || value.messages.length === 0) {\n  // Pode ser status de entrega, leitura, etc.\n  return {\n    json: {\n      type: 'status_update',\n      data: value\n    }\n  };\n}\n\nconst message = value.messages[0];\nconst contact = value.contacts ? value.contacts[0] : null;\n\n// Extrair informações da mensagem\nconst messageData = {\n  id: message.id,\n  from: message.from,\n  timestamp: message.timestamp,\n  type: message.type,\n  text: null,\n  media: null,\n  location: null,\n  contact_info: null\n};\n\n// Processar diferentes tipos de mensagem\nswitch (message.type) {\n  case 'text':\n    messageData.text = message.text.body;\n    break;\n  case 'image':\n  case 'video':\n  case 'audio':\n  case 'document':\n    messageData.media = {\n      id: message[message.type].id,\n      mime_type: message[message.type].mime_type,\n      caption: message[message.type].caption || null\n    };\n    break;\n  case 'location':\n    messageData.location = {\n      latitude: message.location.latitude,\n      longitude: message.location.longitude,\n      name: message.location.name,\n      address: message.location.address\n    };\n    break;\n  case 'contacts':\n    messageData.contact_info = message.contacts[0];\n    break;\n}\n\n// Informações do contato\nconst contactData = {\n  wa_id: contact?.wa_id || message.from,\n  profile_name: contact?.profile?.name || 'Usuário WhatsApp'\n};\n\n// Verificar se é mensagem de sistema ou bot\nconst isSystemMessage = message.from === value.metadata?.phone_number_id;\n\nif (isSystemMessage) {\n  return {\n    json: {\n      type: 'system_message',\n      message: 'Mensagem do próprio sistema ignorada'\n    }\n  };\n}\n\n// Preparar dados para o orquestrador\nconst orchestratorPayload = {\n  canal: 'whatsapp',\n  from: message.from,\n  telefone: message.from,\n  mensagem: messageData.text || `[${message.type.toUpperCase()}]`,\n  tipo_mensagem: message.type,\n  timestamp: new Date(parseInt(message.timestamp) * 1000).toISOString(),\n  dados_completos: {\n    message: messageData,\n    contact: contactData,\n    metadata: value.metadata\n  }\n};\n\nreturn {\n  json: {\n    type: 'new_message',\n    processed_data: orchestratorPayload,\n    raw_data: body\n  }\n};"
+      },
+      "id": "processar-webhook",
+      "name": "Processar Webhook WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.type }}",
+              "rightValue": "new_message",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-tipo",
+      "name": "É Nova Mensagem?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.N8N_WEBHOOK_BASE_URL }}/webhook/webhook-entrada-mensagens",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "canal",
+              "value": "={{ $json.processed_data.canal }}"
+            },
+            {
+              "name": "from",
+              "value": "={{ $json.processed_data.from }}"
+            },
+            {
+              "name": "telefone",
+              "value": "={{ $json.processed_data.telefone }}"
+            },
+            {
+              "name": "mensagem",
+              "value": "={{ $json.processed_data.mensagem }}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{ $json.processed_data.timestamp }}"
+            },
+            {
+              "name": "dados_completos",
+              "value": "={{ JSON.stringify($json.processed_data.dados_completos) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "enviar-orquestrador",
+      "name": "Enviar para Orquestrador",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "logs_sistema"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nivel": "info",
+            "modulo": "whatsapp_webhook",
+            "mensagem": "Mensagem WhatsApp processada",
+            "detalhes": "={{ JSON.stringify($json.processed_data) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-mensagem",
+      "name": "Log Mensagem Processada",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        400
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-send",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-envio",
+      "name": "Webhook Envio WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        600
+      ],
+      "webhookId": "whatsapp-send-message"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"processing\"\n}"
+      },
+      "id": "resposta-envio",
+      "name": "Resposta Envio",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        460,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar mensagem para envio via WhatsApp Business API\nconst dados = $json;\n\n// Validar dados obrigatórios\nif (!dados.to || !dados.message) {\n  throw new Error('Campos obrigatórios: to, message');\n}\n\n// Limpar número de telefone (remover caracteres especiais)\nconst numeroLimpo = dados.to.replace(/\\D/g, '');\n\n// Adicionar código do país se não tiver\nlet numeroCompleto = numeroLimpo;\nif (!numeroCompleto.startsWith('55') && numeroCompleto.length === 11) {\n  numeroCompleto = '55' + numeroCompleto;\n}\n\n// Preparar payload para WhatsApp Business API\nconst payload = {\n  messaging_product: 'whatsapp',\n  to: numeroCompleto,\n  type: 'text',\n  text: {\n    body: dados.message\n  }\n};\n\n// Se tiver template, usar template em vez de texto livre\nif (dados.template) {\n  payload.type = 'template';\n  payload.template = {\n    name: dados.template.name,\n    language: {\n      code: dados.template.language || 'pt_BR'\n    }\n  };\n  \n  if (dados.template.parameters) {\n    payload.template.components = [\n      {\n        type: 'body',\n        parameters: dados.template.parameters.map(param => ({\n          type: 'text',\n          text: param\n        }))\n      }\n    ];\n  }\n  \n  delete payload.text;\n}\n\n// Se tiver mídia\nif (dados.media) {\n  payload.type = dados.media.type; // image, video, audio, document\n  payload[dados.media.type] = {\n    link: dados.media.url\n  };\n  \n  if (dados.media.caption) {\n    payload[dados.media.type].caption = dados.media.caption;\n  }\n  \n  delete payload.text;\n}\n\nreturn {\n  json: {\n    payload: payload,\n    numero_original: dados.to,\n    numero_processado: numeroCompleto,\n    tipo_envio: payload.type\n  }\n};"
+      },
+      "id": "preparar-envio",
+      "name": "Preparar Envio WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://graph.facebook.com/v18.0/{{ $vars.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.WHATSAPP_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "messaging_product",
+              "value": "={{ $json.payload.messaging_product }}"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.payload.to }}"
+            },
+            {
+              "name": "type",
+              "value": "={{ $json.payload.type }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ JSON.stringify($json.payload.text) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "enviar-whatsapp",
+      "name": "Enviar via WhatsApp API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        900,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sucesso",
+              "leftValue": "={{ $json.messages }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-envio",
+      "name": "Envio Bem-sucedido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "logs_sistema"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nivel": "info",
+            "modulo": "whatsapp_send",
+            "mensagem": "Mensagem WhatsApp enviada com sucesso",
+            "detalhes": "={{ JSON.stringify({ message_id: $json.messages[0].id, to: $('Preparar Envio WhatsApp').first().json.numero_processado }) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-sucesso",
+      "name": "Log Envio Sucesso",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        500
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "logs_sistema"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nivel": "error",
+            "modulo": "whatsapp_send",
+            "mensagem": "Erro ao enviar mensagem WhatsApp",
+            "detalhes": "={{ JSON.stringify({ error: $json, numero: $('Preparar Envio WhatsApp').first().json.numero_processado }) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-erro",
+      "name": "Log Erro Envio",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        700
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "whatsapp-verify",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-verificacao",
+      "name": "Webhook Verificação",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        900
+      ],
+      "webhookId": "whatsapp-verify-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verificação do webhook do WhatsApp\nconst query = $json.query;\n\n// Verificar se é uma solicitação de verificação\nif (query['hub.mode'] === 'subscribe' && \n    query['hub.verify_token'] === $vars.WHATSAPP_VERIFY_TOKEN) {\n  \n  return {\n    json: {\n      challenge: query['hub.challenge'],\n      verified: true\n    }\n  };\n}\n\nreturn {\n  json: {\n    error: 'Verification failed',\n    received: query\n  }\n};"
+      },
+      "id": "processar-verificacao",
+      "name": "Processar Verificação",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.challenge || 'Verification failed' }}"
+      },
+      "id": "resposta-verificacao",
+      "name": "Resposta Verificação",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        680,
+        900
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Resposta Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Processar Webhook WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Webhook WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "É Nova Mensagem?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É Nova Mensagem?": {
+      "main": [
+        [
+          {
+            "node": "Enviar para Orquestrador",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Mensagem Processada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Envio WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Resposta Envio",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Preparar Envio WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Envio WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Enviar via WhatsApp API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar via WhatsApp API": {
+      "main": [
+        [
+          {
+            "node": "Envio Bem-sucedido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envio Bem-sucedido?": {
+      "main": [
+        [
+          {
+            "node": "Log Envio Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Erro Envio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Verificação": {
+      "main": [
+        [
+          {
+            "node": "Processar Verificação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Verificação": {
+      "main": [
+        [
+          {
+            "node": "Resposta Verificação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "whatsapp",
+      "name": "WhatsApp"
+    }
+  ],
+  "triggerCount": 3,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

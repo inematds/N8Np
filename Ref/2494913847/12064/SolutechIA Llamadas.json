@@ -1,0 +1,2392 @@
+{
+  "name": "SolutechIA Llamadas",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "llamadas-solutechia",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -2864,
+        1440
+      ],
+      "id": "bb6845c4-9850-4aa8-99db-af3cf1c5231f",
+      "name": "Webhook",
+      "webhookId": "fec0a4f9-3fd6-42ed-8345-a757f7956c05"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cloudconvert.com/v2/jobs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"tasks\": {\n    \"import-1\": {\n      \"operation\": \"import/url\",\n      \"url\": \"{{ $('Webhook').item.json.body.mensaje }}\"\n    },\n    \"task-1\": {\n      \"operation\": \"convert\",\n      \"input\": [\n        \"import-1\"\n      ],\n      \"output_format\": \"mp3\"\n    },\n    \"export-1\": {\n      \"operation\": \"export/url\",\n      \"input\": [\n        \"task-1\"\n      ],\n      \"inline\": false,\n      \"archive_multiple_files\": false\n    }\n  },\n  \"tag\": \"jobbuilder\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2416,
+        1344
+      ],
+      "id": "4c42bcda-a350-4eaa-abc1-3f2aba927a67",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "CloudConvert"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.cloudconvert.com/v2/tasks/{{ $json.data.tasks[2].id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1744,
+        1344
+      ],
+      "id": "117987e7-dfe5-4f54-a28c-e8c2a1c2a255",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "CloudConvert"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 20
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2192,
+        1344
+      ],
+      "id": "3e1e4713-a5a1-4209-9405-ad1fde0619c9",
+      "name": "Wait",
+      "webhookId": "5c7f280f-b71e-4c26-ab05-04b10889faa4"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1968,
+        1344
+      ],
+      "id": "8d389c9f-76a8-4c18-96e1-20ae9b37811c",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "finished",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1520,
+        1280
+      ],
+      "id": "1c74ad25-8c18-4df8-b58f-db733d31c4fc",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1296,
+        1440
+      ],
+      "id": "e29aee93-033f-4ca8-adb1-f3fbd2ba477c",
+      "name": "Wait1",
+      "webhookId": "1d1993ec-c704-4397-ba7c-ce8e40544e2b"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data.result.files[0].url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1296,
+        1232
+      ],
+      "id": "f11a2136-5366-4ebb-99e3-9827c762a7a8",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -1072,
+        1232
+      ],
+      "id": "0b01281f-d584-440e-8049-4440e85caee1",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Transcripción de la llamada: {{ $('Transcribe a recording').item.json.text }}",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Actúa como un analista experto en ventas B2B de servicios de automatización e inteligencia artificial. Procesa esta transcripción completa de una llamada (texto corrido, sin etiquetas) y devuelve solo un objeto JSON con:\n\n1. Resumen de la reunión  \n   - `resumen`: breve descripción de los temas tratados y acuerdos principales.\n\n2. Datos clave del cliente y oportunidad  \n   - `sector`: industria o nicho del cliente.  \n   - `dolores`: lista de los problemas principales mencionados.  \n   - `objetivos`: lista de los resultados que el cliente desea.  \n   - `presupuesto`: rango o comentario sobre presupuesto.  \n   - `plazo`: tiempo estimado para implementar la solución.  \n   - `probabilidad_cierre`: porcentaje estimado de éxito.  \n   - `alertas`: lista de señales de riesgo o “red flags” detectadas.\n\n3. Feedback al vendedor  \n   - `fortalezas`: ejemplos de aciertos del vendedor.  \n   - `mejoras`: aspectos a corregir.  \n   - `recomendaciones`: dos acciones prácticas para avanzar.\n\n4. Próximos pasos  \n   - `siguientes_pasos`: descripción breve de lo acordado para continuar."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        144,
+        -480
+      ],
+      "id": "c29d4484-69fe-44c9-a7b2-e8c8fdc6552c",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"resumen\": \"Durante la llamada, se realizó una demostración detallada de la solución de automatización de CRM, destacando cómo optimiza el seguimiento de leads y reduce el tiempo de respuesta. El prospecto compartió sus principales retos, como la pérdida de oportunidades en WhatsApp y la carga de procesos manuales. Se exploraron posibles escenarios de implementación y se acordó elaborar una propuesta personalizada que incluya plazos y casos de éxito relevantes.\",\n  \"cliente_y_oportunidad\": {\n    \"sector\": \"logística\",\n    \"dolores\": [\n      \"pérdida de leads que llegan por WhatsApp\",\n      \"procesos manuales que consumen mucho tiempo\"\n    ],\n    \"objetivos\": [\n      \"automatizar el seguimiento de clientes\",\n      \"reducir el tiempo de respuesta a menos de 1 hora\"\n    ],\n    \"presupuesto\": \"10‑15 k € anuales\",\n    \"plazo\": \"en próximos 2 meses\",\n    \"probabilidad_cierre\": \"70%\",\n    \"alertas\": [\n      \"indecisión en la aprobación interna\",\n      \"resistencia al cambio de herramientas\"\n    ]\n  },\n  \"feedback_vendedor\": {\n    \"fortalezas\": [\n      \"explicó el ROI con ejemplos claros\",\n      \"mostró amplio conocimiento técnico\"\n    ],\n    \"mejoras\": [\n      \"no confirmó la disponibilidad de los decisores\",\n      \"faltó concreción en los plazos de implementación\"\n    ],\n    \"recomendaciones\": [\n      \"enviar casos de éxito similares antes del viernes\",\n      \"coordinar reunión con el equipo de TI para validar requisitos\"\n    ]\n  },\n  \"siguientes_pasos\": \"Enviar propuesta detallada el viernes y agendar reunión con TI para validar requisitos.\"\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        368,
+        -256
+      ],
+      "id": "b7454b86-974f-460f-9876-7fd8c20dfb81",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $('Webhook').first().json.body.id }}/notes",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "userId",
+              "value": "={{ $('Webhook').first().json.body.id }}"
+            },
+            {
+              "name": "body",
+              "value": "=📞 Llamada de {{ $('Switch').first().json.output.tipo_llamada }} del {{ $now.format('DD - HH:mm') }}\n\nResumen de la llámada:\n{{ $json.output.resumen }}\n\nSector: {{ $json.output.cliente_y_oportunidad.sector }}\n\n🔴 Dolores y necesidades:\n{{ $json.output.cliente_y_oportunidad.dolores.map(d => '- ' + d).join('\\n') }}\n\n🟢 Objetivos:\n{{ $json.output.cliente_y_oportunidad.objetivos.map(d => '- ' + d).join('\\n') }}\n\n💰 Presupuesto: {{ $json.output.cliente_y_oportunidad.presupuesto }}\n\n⌛️ Plazo: {{ $json.output.cliente_y_oportunidad.plazo }}\n\n🤝 Probabilidad de cierre: {{ $json.output.cliente_y_oportunidad.probabilidad_cierre }}\n\n❌ Alertas (Red Flags):\n{{ $json.output.cliente_y_oportunidad.alertas.map(d => '- ' + d).join('\\n') }}\n\n--------------------------------------------------\n\n💰 FEEDBACK PARA EL VENDEDOR\n\n💪🏻 Fortalezas:\n{{ $json.output.feedback_vendedor.fortalezas.map(d => '- ' + d).join('\\n') }}\n\n🙌🏻 Mejoras:\n{{ $json.output.feedback_vendedor.mejoras.map(d => '- ' + d).join('\\n') }}\n\n🔥 Recomendaciones:\n{{ $json.output.feedback_vendedor.recomendaciones.map(d => '- ' + d).join('\\n') }}\n\n---------------------------------------------------\n\n🤝 SIGUIENTES PASOS:\n{{ $json.output.siguientes_pasos }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        768,
+        -272
+      ],
+      "id": "626b0f3c-8ef6-4c51-8c62-d9e908ad1e43",
+      "name": "HTTP Request3",
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "SolutechIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Transcripción de la llamada: {{ $json.text }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "type": "=SystemMessagePromptTemplate",
+              "message": "=Actúa como un analista experto en ventas B2B de servicios de automatización e inteligencia artificial. Tu única tarea es clasificar el tipo de llamada basándote en su propósito.  \n\nPosibles tipos de llamada:  \n- prospección\n- venta\n- seguimiento  \n- onboarding\n- soporte_técnico  \n- upselling\n- renovación_contrato\n\nRecibe a continuación la transcripción completa de la llamada (texto corrido, sin etiquetas). Identifica el tipo de llamada y devuelve **solo** un objeto JSON con la siguiente estructura:\n\n\n{\n  \"tipo_llamada\": \"<tipo>\"\n}\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -848,
+        1232
+      ],
+      "id": "ba6a11d6-9fb7-41c2-b7b3-ad5a096a70a5",
+      "name": "Basic LLM Chain2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        1488
+      ],
+      "id": "a55300de-11bc-4d3d-9e88-5d219e55c3e8",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"tipo_llamada\": \"venta\"\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -768,
+        1456
+      ],
+      "id": "bfbb09cc-415f-4898-bce1-f2944a2e7cf0",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.tipo_llamada }}",
+                    "rightValue": "venta",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "[REMOVED]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Venta"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.output.tipo_llamada }}",
+                    "rightValue": "prospección",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Prospección"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.output.tipo_llamada }}",
+                    "rightValue": "soporte_técnico",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Soporte"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.output.tipo_llamada }}",
+                    "rightValue": "onboarding",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Onboarding"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.output.tipo_llamada }}",
+                    "rightValue": "upselling",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Upselling"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.output.tipo_llamada }}",
+                    "rightValue": "renovación_contrato",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Renovación"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.output.tipo_llamada }}",
+                    "rightValue": "setter",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -304,
+        1168
+      ],
+      "id": "e4f67735-dad7-4dfc-9989-a74cc3d98e86",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        96,
+        -192
+      ],
+      "id": "57150d0b-74ba-4fbc-a26c-ade965371893",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Transcripción de la llamada: {{ $('Transcribe a recording').item.json.text }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Actúa como un analista experto en ventas B2B de servicios de automatización e inteligencia artificial. Analiza esta transcripción completa de una llamada de prospección comercial (texto corrido, sin etiquetas) y devuelve un objeto JSON que resuma la oportunidad detectada.\n\nSi se proporciona información de llamadas anteriores, úsala como contexto. Si no, analiza solo esta llamada.\n\nFormato de salida:\n{\n  \"resumen\": \"\",\n  \"cliente_y_oportunidad\": {\n    \"sector\": \"\",\n    \"dolores\": [],\n    \"objetivos\": [],\n    \"presupuesto\": \"\",\n    \"plazo\": \"\",\n    \"probabilidad_cierre\": \"\",\n    \"alertas\": []\n  },\n  \"feedback_vendedor\": {\n    \"fortalezas\": [],\n    \"mejoras\": [],\n    \"recomendaciones\": []\n  },\n  \"siguientes_pasos\": \"\"\n}\n\n\nResumen llamadas previas (si aplica):\n{{ \n  $json.notes\n    .sort((a, b) => new Date(a.dateAdded) - new Date(b.dateAdded))\n    .map(n => `${new Date(n.dateAdded).toLocaleString()}: ${n.body}`)\n    .join('\\n')\n}}\n\n\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        208,
+        128
+      ],
+      "id": "5a50f9ff-6736-423c-9f5a-69a03fab651c",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"resumen\": \"Presentación inicial del servicio de automatización de leads. El prospecto mostró interés en reducir el tiempo de respuesta a clientes.\",\n  \"cliente_y_oportunidad\": {\n    \"sector\": \"ecommerce\",\n    \"dolores\": [\n      \"Pérdida de leads por retraso en respuestas\",\n      \"Falta de visibilidad del funnel de ventas\"\n    ],\n    \"objetivos\": [\n      \"Automatizar respuestas en WhatsApp\",\n      \"Reducir tiempo de contacto a menos de 5 minutos\"\n    ],\n    \"presupuesto\": \"10‑15 k € anuales\",\n    \"plazo\": \"en próximos 2 meses\",\n    \"probabilidad_cierre\": \"40%\",\n    \"alertas\": [\n      \"Decisor fuera de oficina hasta dentro de un mes\"\n    ]\n  },\n  \"feedback_vendedor\": {\n    \"fortalezas\": [\n      \"Explicó beneficios con ejemplos prácticos\",\n      \"Mantuvo un discurso claro y estructurado\"\n    ],\n    \"mejoras\": [\n      \"No ahondó en el proceso de aprobación interno\",\n      \"Olvidó preguntar por la herramienta actual\"\n    ],\n    \"recomendaciones\": [\n      \"Enviar caso de éxito similar mañana\",\n      \"Agendar reunión con el CFO para aclarar presupuesto\"\n    ]\n  },\n  \"siguientes_pasos\": \"Enviar propuesta detallada antes del viernes\"\n}\n",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        352
+      ],
+      "id": "a1d337c0-ab71-49f9-a796-4fbbba1bd73a",
+      "name": "Structured Output Parser2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $('Webhook').first().json.body.id }}/notes",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "userId",
+              "value": "={{ $('Webhook').first().json.body.id }}"
+            },
+            {
+              "name": "body",
+              "value": "=📞 Llamada de {{ $('Switch').item.json.output.tipo_llamada }} del {{ $now.format('DD - HH:mm') }}\n\nResumen de la llámada:\n{{ $json.output.resumen }}\n\nSector: {{ $json.output.cliente_y_oportunidad.sector }}\n\n🔴 Dolores y necesidades:\n{{ $json.output.cliente_y_oportunidad.dolores.map(d => '- ' + d).join('\\n') }}\n\n🟢 Objetivos:\n{{ $json.output.cliente_y_oportunidad.objetivos.map(d => '- ' + d).join('\\n') }}\n\n💰 Presupuesto: {{ $json.output.cliente_y_oportunidad.presupuesto }}\n\n⌛️ Plazo: {{ $json.output.cliente_y_oportunidad.plazo }}\n\n🤝 Probabilidad de cierre: {{ $json.output.cliente_y_oportunidad.probabilidad_cierre }}\n\n❌ Alertas (Red Flags):\n{{ $json.output.cliente_y_oportunidad.alertas.map(d => '- ' + d).join('\\n') }}\n\n--------------------------------------------------\n\n💰 FEEDBACK PARA EL VENDEDOR\n\n💪🏻 Fortalezas:\n{{ $json.output.feedback_vendedor.fortalezas.map(d => '- ' + d).join('\\n') }}\n\n🙌🏻 Mejoras:\n{{ $json.output.feedback_vendedor.mejoras.map(d => '- ' + d).join('\\n') }}\n\n🔥 Recomendaciones:\n{{ $json.output.feedback_vendedor.recomendaciones.map(d => '- ' + d).join('\\n') }}\n\n---------------------------------------------------\n\n🤝 SIGUIENTES PASOS:\n{{ $json.output.siguientes_pasos }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        768,
+        336
+      ],
+      "id": "f8353d1b-f3b1-446e-9aef-c05599068b65",
+      "name": "HTTP Request4",
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "SolutechIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $('Webhook').first().json.body.id }}/notes",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -80,
+        -272
+      ],
+      "id": "6020c00a-729c-4802-b513-2e8d95a078c1",
+      "name": "HTTP Request5",
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "SolutechIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        304,
+        560
+      ],
+      "id": "d36ffb28-dc06-428a-b0eb-d6d9310bf488",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $('Webhook').first().json.body.id }}/notes",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -80,
+        336
+      ],
+      "id": "2f99428c-ca70-47a2-a709-76f982dece8a",
+      "name": "HTTP Request6",
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "SolutechIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Transcripción de la llamada: {{ $('Transcribe a recording').item.json.text }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Actúa como un analista especializado en atención técnica para soluciones de automatización e IA. Analiza esta transcripción de una llamada de soporte técnico (texto corrido, sin etiquetas) y resume el caso presentado, el nivel de satisfacción del cliente y las acciones tomadas.\n\nSi se proporciona contexto de llamadas anteriores, utilízalo para entender la evolución del problema.\n\nFormato de salida:\n{\n  \"resumen\": \"\",\n  \"incidencia_reportada\": \"\",\n  \"acciones_realizadas\": [],\n  \"pendientes_o_siguientes_pasos\": \"\",\n  \"nivel_satisfaccion_cliente\": \"alta | media | baja\",\n  \"alertas\": []\n}\n\n\nResumen llamadas previas (si aplica):\n{{ \n  $json.notes\n    .sort((a, b) => new Date(a.dateAdded) - new Date(b.dateAdded))\n    .map(n => `${new Date(n.dateAdded).toLocaleString()}: ${n.body}`)\n    .join('\\n')\n}}\n\n\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        208,
+        736
+      ],
+      "id": "b5f4fbc8-44b5-40fb-9b55-6d1ce964b50d",
+      "name": "Basic LLM Chain3"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"resumen\": \"El cliente reportó error en la integración de la API de WhatsApp; se validó configuración y se aplicó parche.\",\n  \"incidencia_reportada\": \"Fallo en envío automático de mensajes tras webhook\",\n  \"acciones_realizadas\": [\n    \"Revisión de credenciales de API\",\n    \"Aplicación de parche en flujo de mensajes\",\n    \"Reinicio del servicio\"\n  ],\n  \"pendientes_o_siguientes_pasos\": \"Monitorizar logs durante 24 h y programar llamada de seguimiento\",\n  \"nivel_satisfaccion_cliente\": \"media\",\n  \"alertas\": [\n    \"Cliente mencionó demora en soporte la semana pasada\"\n  ]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        960
+      ],
+      "id": "068bede9-bab4-4893-9324-072d2dfcdb85",
+      "name": "Structured Output Parser3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $('Webhook').first().json.body.id }}/notes",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "userId",
+              "value": "={{ $('Webhook').first().json.body.id }}"
+            },
+            {
+              "name": "body",
+              "value": "=📞 Llamada de {{ $('Switch').item.json.output.tipo_llamada }} del {{ $now.format('DD - HH:mm') }}\n\nResumen de la llámada:\n{{ $json.output.resumen }}\n\nSector: {{ $json.output.cliente_y_oportunidad.sector }}\n\n🔴 Dolores y necesidades:\n{{ $json.output.cliente_y_oportunidad.dolores.map(d => '- ' + d).join('\\n') }}\n\n🟢 Objetivos:\n{{ $json.output.cliente_y_oportunidad.objetivos.map(d => '- ' + d).join('\\n') }}\n\n💰 Presupuesto: {{ $json.output.cliente_y_oportunidad.presupuesto }}\n\n⌛️ Plazo: {{ $json.output.cliente_y_oportunidad.plazo }}\n\n🤝 Probabilidad de cierre: {{ $json.output.cliente_y_oportunidad.probabilidad_cierre }}\n\n❌ Alertas (Red Flags):\n{{ $json.output.cliente_y_oportunidad.alertas.map(d => '- ' + d).join('\\n') }}\n\n--------------------------------------------------\n\n💰 FEEDBACK PARA EL VENDEDOR\n\n💪🏻 Fortalezas:\n{{ $json.output.feedback_vendedor.fortalezas.map(d => '- ' + d).join('\\n') }}\n\n🙌🏻 Mejoras:\n{{ $json.output.feedback_vendedor.mejoras.map(d => '- ' + d).join('\\n') }}\n\n🔥 Recomendaciones:\n{{ $json.output.feedback_vendedor.recomendaciones.map(d => '- ' + d).join('\\n') }}\n\n---------------------------------------------------\n\n🤝 SIGUIENTES PASOS:\n{{ $json.output.siguientes_pasos }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        768,
+        944
+      ],
+      "id": "8bd00a03-7da6-4d86-ad6a-d70098d1c2d3",
+      "name": "HTTP Request7",
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "SolutechIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        304,
+        1168
+      ],
+      "id": "d5d6e5f1-c88b-4730-ab91-10b5faad48dd",
+      "name": "Google Gemini Chat Model3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $('Webhook').first().json.body.id }}/notes",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -80,
+        944
+      ],
+      "id": "9b9dadee-8ea5-401a-af75-e8470b62a385",
+      "name": "HTTP Request8",
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "SolutechIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Transcripción de la llamada: {{ $('Transcribe a recording').item.json.text }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Actúa como un analista de implementación y experiencia de cliente. Tu tarea es analizar esta llamada de onboarding (texto corrido, sin etiquetas) para detectar si el cliente ha comprendido el proceso, qué puntos han sido configurados y qué queda pendiente.\n\nUtiliza la información de llamadas previas si la hay para contextualizar el avance.\n\nFormato de salida:\n{\n  \"resumen\": \"\",\n  \"componentes_configurados\": [],\n  \"dudas_o_puntos_de_confusion\": [],\n  \"nivel_confianza_cliente\": \"alto | medio | bajo\",\n  \"alertas\": [],\n  \"siguientes_pasos\": \"\"\n}\n\n\nResumen llamadas previas (si aplica):\n{{ \n  $json.notes\n    .sort((a, b) => new Date(a.dateAdded) - new Date(b.dateAdded))\n    .map(n => `${new Date(n.dateAdded).toLocaleString()}: ${n.body}`)\n    .join('\\n')\n}}\n\n\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        208,
+        1344
+      ],
+      "id": "e91ef73e-1c7a-4719-adae-e59f8ae4ff3c",
+      "name": "Basic LLM Chain4"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"resumen\": \"Sesión de configuración de la plataforma de automatización completada; se revisaron principales flujos y accesos.\",\n  \"componentes_configurados\": [\n    \"Webhook de formulario de contacto\",\n    \"Plantillas de correo automático\",\n    \"Integración con Google Sheets\"\n  ],\n  \"dudas_o_puntos_de_confusion\": [\n    \"Manejo de errores en formularios\",\n    \"Permisos de usuarios en panel\"\n  ],\n  \"nivel_confianza_cliente\": \"medio\",\n  \"alertas\": [\n    \"Cliente no finalizó el tutorial de creación de flujos\"\n  ],\n  \"siguientes_pasos\": \"Enviar guía paso a paso y agendar formaciones individuales\"\n}\n",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        1568
+      ],
+      "id": "3d813ea6-4041-456e-872e-9dc34132c8ae",
+      "name": "Structured Output Parser4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $('Webhook').first().json.body.id }}/notes",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "userId",
+              "value": "={{ $('Webhook').first().json.body.id }}"
+            },
+            {
+              "name": "body",
+              "value": "=📞 Llamada de {{ $('Switch').item.json.output.tipo_llamada }} del {{ $now.format('DD - HH:mm') }}\n\nResumen de la llámada:\n{{ $json.output.resumen }}\n\nSector: {{ $json.output.cliente_y_oportunidad.sector }}\n\n🔴 Dolores y necesidades:\n{{ $json.output.cliente_y_oportunidad.dolores.map(d => '- ' + d).join('\\n') }}\n\n🟢 Objetivos:\n{{ $json.output.cliente_y_oportunidad.objetivos.map(d => '- ' + d).join('\\n') }}\n\n💰 Presupuesto: {{ $json.output.cliente_y_oportunidad.presupuesto }}\n\n⌛️ Plazo: {{ $json.output.cliente_y_oportunidad.plazo }}\n\n🤝 Probabilidad de cierre: {{ $json.output.cliente_y_oportunidad.probabilidad_cierre }}\n\n❌ Alertas (Red Flags):\n{{ $json.output.cliente_y_oportunidad.alertas.map(d => '- ' + d).join('\\n') }}\n\n--------------------------------------------------\n\n💰 FEEDBACK PARA EL VENDEDOR\n\n💪🏻 Fortalezas:\n{{ $json.output.feedback_vendedor.fortalezas.map(d => '- ' + d).join('\\n') }}\n\n🙌🏻 Mejoras:\n{{ $json.output.feedback_vendedor.mejoras.map(d => '- ' + d).join('\\n') }}\n\n🔥 Recomendaciones:\n{{ $json.output.feedback_vendedor.recomendaciones.map(d => '- ' + d).join('\\n') }}\n\n---------------------------------------------------\n\n🤝 SIGUIENTES PASOS:\n{{ $json.output.siguientes_pasos }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        768,
+        1552
+      ],
+      "id": "1f408380-909b-418d-9d1e-8c12f07967d9",
+      "name": "HTTP Request9",
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "SolutechIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        304,
+        1776
+      ],
+      "id": "d0e81dbc-108c-4f31-ba15-f98b420de426",
+      "name": "Google Gemini Chat Model4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $('Webhook').first().json.body.id }}/notes",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -80,
+        1552
+      ],
+      "id": "5850c84f-17e6-4064-a5e8-a9608c206f80",
+      "name": "HTTP Request10",
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "SolutechIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Transcripción de la llamada: {{ $('Transcribe a recording').item.json.text }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Actúa como un analista de ventas B2B especializado en identificar oportunidades de upselling o cross‑selling. Procesa esta llamada (texto corrido, sin etiquetas) con el objetivo de detectar nuevas necesidades, puntos de entrada para ampliar el servicio y señales de interés.\n\nIncluye información previa si está disponible para entender la evolución del cliente.\n\nFormato de salida:\n{\n  \"resumen\": \"\",\n  \"nuevas_necesidades\": [],\n  \"interes_mostrado\": \"alto | medio | bajo\",\n  \"productos_o_servicios_recomendados\": [],\n  \"reacciones_cliente\": [],\n  \"alertas\": [],\n  \"siguientes_pasos\": \"\"\n}\n\nResumen llamadas previas (si aplica):\n{{ \n  $json.notes\n    .sort((a, b) => new Date(a.dateAdded) - new Date(b.dateAdded))\n    .map(n => `${new Date(n.dateAdded).toLocaleString()}: ${n.body}`)\n    .join('\\n')\n}}\n\n\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        208,
+        1952
+      ],
+      "id": "f3ba47e7-5e41-4401-9755-ba715536bd04",
+      "name": "Basic LLM Chain5"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"resumen\": \"Detectadas necesidades adicionales de analítica avanzada; el cliente mostró buena disposición a ampliar el servicio.\",\n  \"nuevas_necesidades\": [\n    \"Dashboard de KPIs en tiempo real\",\n    \"Segmentación automática de clientes según comportamiento\"\n  ],\n  \"interes_mostrado\": \"alto\",\n  \"productos_o_servicios_recomendados\": [\n    \"Módulo de BI integrado\",\n    \"Servicio de clustering de usuarios con IA\"\n  ],\n  \"reacciones_cliente\": [\n    \"Preguntó por casos de uso de BI\",\n    \"Solicitó demo de clustering\"\n  ],\n  \"alertas\": [\n    \"Presupuesto disponible limitado a trimestre en curso\"\n  ],\n  \"siguientes_pasos\": \"Organizar demo de BI el próximo miércoles\"\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        2176
+      ],
+      "id": "fc1b8494-e845-4e05-86bd-7a321452e872",
+      "name": "Structured Output Parser5"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $('Webhook').first().json.body.id }}/notes",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "userId",
+              "value": "={{ $('Webhook').first().json.body.id }}"
+            },
+            {
+              "name": "body",
+              "value": "=📞 Llamada de {{ $('Switch').item.json.output.tipo_llamada }} del {{ $now.format('DD - HH:mm') }}\n\nResumen de la llámada:\n{{ $json.output.resumen }}\n\nSector: {{ $json.output.cliente_y_oportunidad.sector }}\n\n🔴 Dolores y necesidades:\n{{ $json.output.cliente_y_oportunidad.dolores.map(d => '- ' + d).join('\\n') }}\n\n🟢 Objetivos:\n{{ $json.output.cliente_y_oportunidad.objetivos.map(d => '- ' + d).join('\\n') }}\n\n💰 Presupuesto: {{ $json.output.cliente_y_oportunidad.presupuesto }}\n\n⌛️ Plazo: {{ $json.output.cliente_y_oportunidad.plazo }}\n\n🤝 Probabilidad de cierre: {{ $json.output.cliente_y_oportunidad.probabilidad_cierre }}\n\n❌ Alertas (Red Flags):\n{{ $json.output.cliente_y_oportunidad.alertas.map(d => '- ' + d).join('\\n') }}\n\n--------------------------------------------------\n\n💰 FEEDBACK PARA EL VENDEDOR\n\n💪🏻 Fortalezas:\n{{ $json.output.feedback_vendedor.fortalezas.map(d => '- ' + d).join('\\n') }}\n\n🙌🏻 Mejoras:\n{{ $json.output.feedback_vendedor.mejoras.map(d => '- ' + d).join('\\n') }}\n\n🔥 Recomendaciones:\n{{ $json.output.feedback_vendedor.recomendaciones.map(d => '- ' + d).join('\\n') }}\n\n---------------------------------------------------\n\n🤝 SIGUIENTES PASOS:\n{{ $json.output.siguientes_pasos }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        768,
+        2160
+      ],
+      "id": "0bbc2dd8-726b-4f28-853b-66e08cc3346e",
+      "name": "HTTP Request11",
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "SolutechIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        304,
+        2384
+      ],
+      "id": "addfc72d-37a2-47f4-9d86-2b65c4f05064",
+      "name": "Google Gemini Chat Model5",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $('Webhook').first().json.body.id }}/notes",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -80,
+        2160
+      ],
+      "id": "36292aef-1a00-4867-8c7e-383152516e05",
+      "name": "HTTP Request12",
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "SolutechIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Transcripción de la llamada: {{ $('Transcribe a recording').item.json.text }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Actúa como un analista comercial para renovaciones de servicios de automatización. Analiza esta llamada (texto corrido, sin etiquetas) para detectar señales de intención de renovar, objeciones, satisfacción general y próximos pasos.\n\nSi hay llamadas anteriores, utilízalas para detectar evolución y posibles riesgos.\n\nFormato de salida:\n{\n  \"resumen\": \"\",\n  \"nivel_satisfaccion\": \"alto | medio | bajo\",\n  \"intencion_de_renovar\": \"sí | no | dudoso\",\n  \"objeciones\": [],\n  \"elementos_valorados\": [],\n  \"alertas\": [],\n  \"siguientes_pasos\": \"\"\n}\n\nResumen llamadas previas (si aplica):\n{{ \n  $json.notes\n    .sort((a, b) => new Date(a.dateAdded) - new Date(b.dateAdded))\n    .map(n => `${new Date(n.dateAdded).toLocaleString()}: ${n.body}`)\n    .join('\\n')\n}}\n\n\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        208,
+        2768
+      ],
+      "id": "97bdfe12-8bfd-459c-b0f5-9d4909f0f0bb",
+      "name": "Basic LLM Chain6"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"resumen\": \"Revisión anual del servicio; el cliente evalúa renovación y posibles ajustes en el plan.\",\n  \"nivel_satisfaccion\": \"alto\",\n  \"intencion_de_renovar\": \"sí\",\n  \"objeciones\": [\n    \"Coste por usuario elevado\",\n    \"Necesidad de más soporte en fin de semana\"\n  ],\n  \"elementos_valorados\": [\n    \"Estabilidad del sistema\",\n    \"Rapidez en la resolución de incidencias\"\n  ],\n  \"alertas\": [\n    \"Mencionó explorar otras opciones si no hay descuento\"\n  ],\n  \"siguientes_pasos\": \"Enviar propuesta de renovación con 10% de descuento antes de fin de mes\"\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        2992
+      ],
+      "id": "6cf92184-2cee-4744-83cd-8d92e0c5cd3b",
+      "name": "Structured Output Parser6"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $('Webhook').first().json.body.id }}/notes",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "userId",
+              "value": "={{ $('Webhook').first().json.body.id }}"
+            },
+            {
+              "name": "body",
+              "value": "=📞 Llamada de {{ $('Switch').item.json.output.tipo_llamada }} del {{ $now.format('DD - HH:mm') }}\n\nResumen de la llámada:\n{{ $json.output.resumen }}\n\nSector: {{ $json.output.cliente_y_oportunidad.sector }}\n\n🔴 Dolores y necesidades:\n{{ $json.output.cliente_y_oportunidad.dolores.map(d => '- ' + d).join('\\n') }}\n\n🟢 Objetivos:\n{{ $json.output.cliente_y_oportunidad.objetivos.map(d => '- ' + d).join('\\n') }}\n\n💰 Presupuesto: {{ $json.output.cliente_y_oportunidad.presupuesto }}\n\n⌛️ Plazo: {{ $json.output.cliente_y_oportunidad.plazo }}\n\n🤝 Probabilidad de cierre: {{ $json.output.cliente_y_oportunidad.probabilidad_cierre }}\n\n❌ Alertas (Red Flags):\n{{ $json.output.cliente_y_oportunidad.alertas.map(d => '- ' + d).join('\\n') }}\n\n--------------------------------------------------\n\n💰 FEEDBACK PARA EL VENDEDOR\n\n💪🏻 Fortalezas:\n{{ $json.output.feedback_vendedor.fortalezas.map(d => '- ' + d).join('\\n') }}\n\n🙌🏻 Mejoras:\n{{ $json.output.feedback_vendedor.mejoras.map(d => '- ' + d).join('\\n') }}\n\n🔥 Recomendaciones:\n{{ $json.output.feedback_vendedor.recomendaciones.map(d => '- ' + d).join('\\n') }}\n\n---------------------------------------------------\n\n🤝 SIGUIENTES PASOS:\n{{ $json.output.siguientes_pasos }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        768,
+        2768
+      ],
+      "id": "bd92f580-4d9c-4981-afff-cc8f138329a0",
+      "name": "HTTP Request13",
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "SolutechIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        304,
+        3200
+      ],
+      "id": "192513d6-c621-4ca3-8bbc-7d37ea003e60",
+      "name": "Google Gemini Chat Model6",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $('Webhook').first().json.body.id }}/notes",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -80,
+        2768
+      ],
+      "id": "e56ba3af-4046-492e-9e46-3ebb41fe2190",
+      "name": "HTTP Request14",
+      "credentials": {
+        "highLevelOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "SolutechIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        992,
+        -272
+      ],
+      "id": "ebbfa2c8-5f74-4c6d-b6a8-c91d58ee6ecc",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        992,
+        336
+      ],
+      "id": "4badc89c-42cc-4dfe-aa6f-4821951b15fb",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        992,
+        944
+      ],
+      "id": "c64a659f-e2d4-4f5c-b312-e52ac101eaed",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        992,
+        1552
+      ],
+      "id": "daeef40d-2078-4bb9-9871-aaba1198113a",
+      "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        992,
+        2160
+      ],
+      "id": "d96ab354-37a6-415b-831e-f91a8aa7c0d0",
+      "name": "Respond to Webhook4"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        992,
+        2768
+      ],
+      "id": "7b612697-efdd-432c-af57-93afd21b8187",
+      "name": "Respond to Webhook5"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        -256
+      ],
+      "id": "1cc85449-6f42-49e2-8e6b-ac145057faa5",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.body.tiempo_llamada.toNumber() }}",
+              "rightValue": 20,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2640,
+        1440
+      ],
+      "id": "6bb27d52-8d0a-44ae-bed7-7eabf945dceb",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -2416,
+        1536
+      ],
+      "id": "0db31ba3-33dd-48f9-ac78-26651cefecff",
+      "name": "Respond to Webhook7"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "aawebhookaa.vps.rubikmarketing.com.co",
+            "user-agent": "axios/0.21.4",
+            "content-length": "367",
+            "accept": "application/json, text/plain, */*",
+            "content-type": "application/json",
+            "x-forwarded-for": "34.10.70.101",
+            "x-forwarded-host": "aawebhookaa.vps.rubikmarketing.com.co",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "f75c220e25da",
+            "x-real-ip": "34.10.70.101",
+            "accept-encoding": "gzip"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "id": "COxxLWdiYDH7apm7Hmm7",
+            "name": "Vodafone Test Eliminar",
+            "email": "",
+            "phone": "607 12 30 00",
+            "mensaje": "https://api.twilio.com/2010-04-01/Accounts/AC5a11c80d0706dbbcbb34f6ad7cb4bc28/Recordings/RE41d221a42cebe16075e0060b6ac7f9fc",
+            "body": "undefined",
+            "asunto": "",
+            "de": "+18446232434",
+            "ID_llamada": "wnJ2jLEnu1lUb2w0WwLO",
+            "miembro": "Ángel Aparicio",
+            "tiempo_llamada": "21"
+          },
+          "webhookUrl": "https://aawebhookaa.vps.rubikmarketing.com.co/webhook/llamadas-solutechia",
+          "executionMode": "production"
+        }
+      }
+    ],
+    "Transcribe a recording": [
+      {
+        "json": {
+          "text": "Buenos días, ¿cómo estás? Te llamo desde SoluTechIA para hablar sobre posibles soluciones de automatización que puedan ayudar a tu empresa a optimizar procesos internos. Claro, dime, estoy disponible. Perfecto, antes de nada, ¿me podrías contar un poco sobre vuestro modelo de negocio y los principales retos que estáis enfrentando en este momento? Sí, somos una firma de consultoría financiera que ofrece servicios de análisis de datos y asesoría a grandes corporaciones. Últimamente hemos notado que nuestros procesos de recopilación de información y generación de informes consumen demasiado tiempo y recursos, y eso está afectando nuestra capacidad de entrega. Entiendo, ¿hablamos de tareas repetitivas como extracción de datos de distintos sistemas y combinación de esos datos en informes? Exacto, por ejemplo, tenemos que sacar cada semana reportes de rendimiento de cartera, consolidar cifras de varios ERPs y luego validar manualmente que no haya errores. Eso nos quita al menos dos días de trabajo de un analista cada semana. Dos días semanales es mucho; ¿habéis calculado el coste aproximado de esas horas hombre? Sí, estimamos que son unos 5000 € al mes en horas de personal dedicadas sólo a esa tarea. Además, en ocasiones hay demoras y fallos que obligan a rehacer pasos. Eso suena a un gran candidato para automatización con RPA o flujos mediante APIs. ¿Habéis probado alguna herramienta o solución hasta ahora? Hemos hecho pruebas con macros de Excel y un par de scripts en Python desarrollados internamente, pero el mantenimiento es complicado y cuando cambian formatos los scripts dejan de funcionar. Además, no tenemos un equipo técnico dedicado a eso, así que nos faltan recursos. Comprendo, la falta de mantenimiento es una señal frecuente. Nosotros ofrecemos tanto la consultoría para diseñar el flujo de trabajo como el desarrollo y la integración con sistemas existentes, e incluso soporte proactivo para asegurar que no se rompa nada cuando actualicéis el ERP. Perfecto, ¿y cómo funciona vuestro equipo de soporte? Tenemos un SLA de atención 24/5, con monitorización continua y alertas en caso de errores. Además, sugerimos un entorno de pruebas para validar cambios antes de llevarlo a producción. Suena bien. Otro punto crítico para nosotros es la seguridad y el cumplimiento de normativas, ya que manejamos datos sensibles. Por supuesto, trabajamos con estándares ISO 27001 y GDPR, y ofrecemos encriptación en tránsito y reposo, así como auditorías periódicas. ¿Podríais proporcionarnos un ejemplo de un proyecto similar? Claro, recientemente implementamos un sistema de extracción de datos y generación de informes automáticos para una multinacional de seguros; reducimos el tiempo de generación de informes de 48 horas a menos de 30 minutos, con un ahorro anual estimado de 150 000 €. Excelente, eso es justo lo que necesitamos. En cuanto al presupuesto, ¿qué inversión inicial requeriríais y cómo estructuráis los pagos? Hacemos una fase de análisis y diseño con un coste aproximado de 15 000 €, y luego la implementación se factura en dos hitos: el primer 50 % al inicio del desarrollo y el siguiente 50 % a la entrega en producción. También ofrecemos suscripción mensual para mantenimiento y mejoras continuas de unos 2000 € al mes. Entiendo. ¿Cuál sería el plazo estimado para tener todo listo en producción? Desde el kick-off, alrededor de seis a ocho semanas, dependiendo de la complejidad de las integraciones. Perfecto. ¿Veis algún riesgo o aspecto crítico que debamos considerar antes de avanzar? Habría que validar los accesos y permisos en vuestros sistemas ERP, y también confirmar que tenéis una API o forma estandarizada de extraer los datos; si no, podríamos necesitar desarrollar conectores específicos, lo cual añadiría unas dos semanas al proyecto. Está bien, podemos coordinar con nuestro equipo de TI para facilitaros acceso. Por mi parte, me gustaría agendar una reunión técnica con nuestros responsables de sistemas la próxima semana. ¿Te parece bien el miércoles a las 10 h? Sí, perfecto. Entonces coordinaremos con ellos y te enviaré una invitación. Mientras tanto, ¿te parece si preparamos un borrador de propuesta con alcance detallado? Sí, mándanoslo y lo revisamos internamente. Perfecto, prepararé un documento con la descripción del proyecto, alcance, hitos, calendario y costes, y te lo enviaré antes del viernes. Muchas gracias. Gracias a ti, hablamos pronto. Hasta luego.",
+          "usage": {
+            "type": "duration",
+            "seconds": 7
+          }
+        }
+      }
+    ],
+    "HTTP Request1": [
+      {
+        "json": {
+          "data": {
+            "id": "6747bf25-1158-476d-8747-9f2071f76e8a",
+            "tag": "jobbuilder",
+            "status": "waiting",
+            "created_at": "2025-07-28T22:04:15+00:00",
+            "started_at": null,
+            "ended_at": null,
+            "tasks": [
+              {
+                "id": "34495722-a959-4ad0-9454-a420c45a13da",
+                "name": "import-1",
+                "job_id": "6747bf25-1158-476d-8747-9f2071f76e8a",
+                "status": "waiting",
+                "credits": null,
+                "code": null,
+                "message": null,
+                "percent": 100,
+                "operation": "import/url",
+                "result": null,
+                "created_at": "2025-07-28T22:04:15+00:00",
+                "started_at": null,
+                "ended_at": null,
+                "retry_of_task_id": null,
+                "copy_of_task_id": null,
+                "user_id": 67902807,
+                "priority": 10,
+                "host_name": null,
+                "storage": null,
+                "region": "eu-central",
+                "depends_on_task_ids": [],
+                "links": {
+                  "self": "https://api.cloudconvert.com/v2/tasks/34495722-a959-4ad0-9454-a420c45a13da"
+                }
+              },
+              {
+                "id": "baf04770-80c0-4ce6-a16f-1e36586db848",
+                "name": "task-1",
+                "job_id": "6747bf25-1158-476d-8747-9f2071f76e8a",
+                "status": "waiting",
+                "credits": null,
+                "code": null,
+                "message": null,
+                "percent": 100,
+                "operation": "convert",
+                "engine": null,
+                "engine_version": null,
+                "result": null,
+                "created_at": "2025-07-28T22:04:15+00:00",
+                "started_at": null,
+                "ended_at": null,
+                "retry_of_task_id": null,
+                "copy_of_task_id": null,
+                "user_id": 67902807,
+                "priority": 10,
+                "host_name": null,
+                "storage": null,
+                "region": "eu-central",
+                "depends_on_task_ids": [
+                  "34495722-a959-4ad0-9454-a420c45a13da"
+                ],
+                "links": {
+                  "self": "https://api.cloudconvert.com/v2/tasks/baf04770-80c0-4ce6-a16f-1e36586db848"
+                }
+              },
+              {
+                "id": "ed286d44-5da5-4868-9bb4-910e452d8116",
+                "name": "export-1",
+                "job_id": "6747bf25-1158-476d-8747-9f2071f76e8a",
+                "status": "waiting",
+                "credits": null,
+                "code": null,
+                "message": null,
+                "percent": 100,
+                "operation": "export/url",
+                "result": null,
+                "created_at": "2025-07-28T22:04:15+00:00",
+                "started_at": null,
+                "ended_at": null,
+                "retry_of_task_id": null,
+                "copy_of_task_id": null,
+                "user_id": 67902807,
+                "priority": 10,
+                "host_name": null,
+                "storage": null,
+                "region": "eu-central",
+                "depends_on_task_ids": [
+                  "baf04770-80c0-4ce6-a16f-1e36586db848"
+                ],
+                "links": {
+                  "self": "https://api.cloudconvert.com/v2/tasks/ed286d44-5da5-4868-9bb4-910e452d8116"
+                }
+              }
+            ],
+            "links": {
+              "self": "https://api.cloudconvert.com/v2/jobs/6747bf25-1158-476d-8747-9f2071f76e8a"
+            }
+          }
+        }
+      }
+    ],
+    "Wait": [
+      {
+        "json": {
+          "data": {
+            "id": "6747bf25-1158-476d-8747-9f2071f76e8a",
+            "tag": "jobbuilder",
+            "status": "waiting",
+            "created_at": "2025-07-28T22:04:15+00:00",
+            "started_at": null,
+            "ended_at": null,
+            "tasks": [
+              {
+                "id": "34495722-a959-4ad0-9454-a420c45a13da",
+                "name": "import-1",
+                "job_id": "6747bf25-1158-476d-8747-9f2071f76e8a",
+                "status": "waiting",
+                "credits": null,
+                "code": null,
+                "message": null,
+                "percent": 100,
+                "operation": "import/url",
+                "result": null,
+                "created_at": "2025-07-28T22:04:15+00:00",
+                "started_at": null,
+                "ended_at": null,
+                "retry_of_task_id": null,
+                "copy_of_task_id": null,
+                "user_id": 67902807,
+                "priority": 10,
+                "host_name": null,
+                "storage": null,
+                "region": "eu-central",
+                "depends_on_task_ids": [],
+                "links": {
+                  "self": "https://api.cloudconvert.com/v2/tasks/34495722-a959-4ad0-9454-a420c45a13da"
+                }
+              },
+              {
+                "id": "baf04770-80c0-4ce6-a16f-1e36586db848",
+                "name": "task-1",
+                "job_id": "6747bf25-1158-476d-8747-9f2071f76e8a",
+                "status": "waiting",
+                "credits": null,
+                "code": null,
+                "message": null,
+                "percent": 100,
+                "operation": "convert",
+                "engine": null,
+                "engine_version": null,
+                "result": null,
+                "created_at": "2025-07-28T22:04:15+00:00",
+                "started_at": null,
+                "ended_at": null,
+                "retry_of_task_id": null,
+                "copy_of_task_id": null,
+                "user_id": 67902807,
+                "priority": 10,
+                "host_name": null,
+                "storage": null,
+                "region": "eu-central",
+                "depends_on_task_ids": [
+                  "34495722-a959-4ad0-9454-a420c45a13da"
+                ],
+                "links": {
+                  "self": "https://api.cloudconvert.com/v2/tasks/baf04770-80c0-4ce6-a16f-1e36586db848"
+                }
+              },
+              {
+                "id": "ed286d44-5da5-4868-9bb4-910e452d8116",
+                "name": "export-1",
+                "job_id": "6747bf25-1158-476d-8747-9f2071f76e8a",
+                "status": "waiting",
+                "credits": null,
+                "code": null,
+                "message": null,
+                "percent": 100,
+                "operation": "export/url",
+                "result": null,
+                "created_at": "2025-07-28T22:04:15+00:00",
+                "started_at": null,
+                "ended_at": null,
+                "retry_of_task_id": null,
+                "copy_of_task_id": null,
+                "user_id": 67902807,
+                "priority": 10,
+                "host_name": null,
+                "storage": null,
+                "region": "eu-central",
+                "depends_on_task_ids": [
+                  "baf04770-80c0-4ce6-a16f-1e36586db848"
+                ],
+                "links": {
+                  "self": "https://api.cloudconvert.com/v2/tasks/ed286d44-5da5-4868-9bb4-910e452d8116"
+                }
+              }
+            ],
+            "links": {
+              "self": "https://api.cloudconvert.com/v2/jobs/6747bf25-1158-476d-8747-9f2071f76e8a"
+            }
+          }
+        }
+      }
+    ],
+    "HTTP Request": [
+      {
+        "json": {
+          "data": {
+            "id": "ed286d44-5da5-4868-9bb4-910e452d8116",
+            "name": "export-1",
+            "job_id": "6747bf25-1158-476d-8747-9f2071f76e8a",
+            "status": "finished",
+            "credits": 0,
+            "code": null,
+            "message": null,
+            "percent": 100,
+            "operation": "export/url",
+            "result": {
+              "files": [
+                {
+                  "filename": "RE41d221a42cebe16075e0060b6ac7f9fc.mp3",
+                  "size": 25749,
+                  "url": "https://eu-central.storage.cloudconvert.com/tasks/ed286d44-5da5-4868-9bb4-910e452d8116/RE41d221a42cebe16075e0060b6ac7f9fc.mp3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cloudconvert-production%2F20250728%2Ffra%2Fs3%2Faws4_request&X-Amz-Date=20250728T220417Z&X-Amz-Expires=86400&X-Amz-Signature=c927a567ba3b6ce268586f854cf066b506d1f577d167ab5992f6b25f764dd67d&X-Amz-SignedHeaders=host&response-content-disposition=attachment%3B%20filename%3D%22RE41d221a42cebe16075e0060b6ac7f9fc.mp3%22&response-content-type=audio%2Fmpeg&x-id=GetObject"
+                }
+              ]
+            },
+            "created_at": "2025-07-28T22:04:15+00:00",
+            "started_at": "2025-07-28T22:04:17+00:00",
+            "ended_at": "2025-07-28T22:04:17+00:00",
+            "retry_of_task_id": null,
+            "copy_of_task_id": null,
+            "user_id": 67902807,
+            "priority": 10,
+            "host_name": "emelia",
+            "storage": "ceph-fra",
+            "region": "eu-central",
+            "depends_on_task_ids": [
+              "baf04770-80c0-4ce6-a16f-1e36586db848"
+            ],
+            "links": {
+              "self": "https://api.cloudconvert.com/v2/tasks/ed286d44-5da5-4868-9bb4-910e452d8116"
+            }
+          }
+        }
+      }
+    ],
+    "HTTP Request2": [
+      {
+        "json": {
+          "data": {
+            "id": "ed286d44-5da5-4868-9bb4-910e452d8116",
+            "name": "export-1",
+            "job_id": "6747bf25-1158-476d-8747-9f2071f76e8a",
+            "status": "finished",
+            "credits": 0,
+            "code": null,
+            "message": null,
+            "percent": 100,
+            "operation": "export/url",
+            "result": {
+              "files": [
+                {
+                  "filename": "RE41d221a42cebe16075e0060b6ac7f9fc.mp3",
+                  "size": 25749,
+                  "url": "https://eu-central.storage.cloudconvert.com/tasks/ed286d44-5da5-4868-9bb4-910e452d8116/RE41d221a42cebe16075e0060b6ac7f9fc.mp3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cloudconvert-production%2F20250728%2Ffra%2Fs3%2Faws4_request&X-Amz-Date=20250728T220417Z&X-Amz-Expires=86400&X-Amz-Signature=c927a567ba3b6ce268586f854cf066b506d1f577d167ab5992f6b25f764dd67d&X-Amz-SignedHeaders=host&response-content-disposition=attachment%3B%20filename%3D%22RE41d221a42cebe16075e0060b6ac7f9fc.mp3%22&response-content-type=audio%2Fmpeg&x-id=GetObject"
+                }
+              ]
+            },
+            "created_at": "2025-07-28T22:04:15+00:00",
+            "started_at": "2025-07-28T22:04:17+00:00",
+            "ended_at": "2025-07-28T22:04:17+00:00",
+            "retry_of_task_id": null,
+            "copy_of_task_id": null,
+            "user_id": 67902807,
+            "priority": 10,
+            "host_name": "emelia",
+            "storage": "ceph-fra",
+            "region": "eu-central",
+            "depends_on_task_ids": [
+              "baf04770-80c0-4ce6-a16f-1e36586db848"
+            ],
+            "links": {
+              "self": "https://api.cloudconvert.com/v2/tasks/ed286d44-5da5-4868-9bb4-910e452d8116"
+            }
+          }
+        }
+      }
+    ],
+    "Basic LLM Chain2": [
+      {
+        "json": {
+          "output": {
+            "tipo_llamada": "soporte_técnico"
+          }
+        }
+      }
+    ],
+    "HTTP Request5": [
+      {
+        "json": {
+          "notes": [],
+          "traceId": "2d93b861-2be3-4298-b73c-8b1344ae9ccd"
+        }
+      }
+    ],
+    "Basic LLM Chain": [
+      {
+        "json": {
+          "output": {
+            "resumen": "La reunión fue una primera toma de contacto exitosa entre SoluTechIA y una firma de consultoría financiera. Se identificó una necesidad clara y cuantificada de automatización en los procesos de recopilación de datos y generación de informes, que actualmente causan demoras y un coste significativo en horas de personal. Se discutieron las capacidades de SoluTechIA en automatización, soporte, seguridad y se presentó un caso de éxito relevante. Se acordó una reunión técnica y la preparación de una propuesta detallada para avanzar.",
+            "cliente_y_oportunidad": {
+              "sector": "Consultoría Financiera (servicios de análisis de datos y asesoría a grandes corporaciones)",
+              "dolores": [
+                "Procesos de recopilación de información y generación de informes consumen demasiado tiempo y recursos.",
+                "Afecta la capacidad de entrega de la firma.",
+                "Tareas repetitivas como extracción de datos de distintos sistemas y consolidación en informes (ej. reportes de rendimiento de cartera, cifras de ERPs).",
+                "Pérdida de al menos dos días de trabajo de un analista por semana en estas tareas.",
+                "Coste estimado de 5000 €/mes en horas de personal dedicadas a esta tarea.",
+                "Demoras y fallos ocasionales que obligan a rehacer pasos.",
+                "Soluciones internas (macros, scripts Python) son difíciles de mantener y fallan con cambios de formato.",
+                "Falta de equipo técnico dedicado para mantenimiento interno de automatizaciones."
+              ],
+              "objetivos": [
+                "Optimizar procesos internos, específicamente la recopilación de información y generación de informes.",
+                "Reducir el tiempo y los recursos dedicados a estas tareas repetitivas.",
+                "Mejorar la capacidad de entrega de la firma.",
+                "Eliminar errores y demoras en la generación de informes.",
+                "Asegurar una solución de automatización con mantenimiento sencillo y proactivo.",
+                "Garantizar la seguridad y el cumplimiento de normativas (ISO 27001, GDPR) al manejar datos sensibles.",
+                "Lograr ahorros significativos en costes de personal (ej. los 5000€/mes actuales)."
+              ],
+              "presupuesto": "Fase de análisis y diseño: 15.000 €. Implementación: 50% al inicio del desarrollo, 50% a la entrega en producción. Mantenimiento y mejoras continuas: 2000 €/mes. El cliente valida el ROI al comparar con 5000€/mes de coste actual y el ejemplo de 150.000€/año de ahorro.",
+              "plazo": "6 a 8 semanas desde el kick-off para la implementación. Puede extenderse 2 semanas adicionales si se requieren conectores específicos.",
+              "probabilidad_cierre": "80%",
+              "alertas": [
+                "Necesidad de validar accesos y permisos en los sistemas ERP del cliente.",
+                "Confirmar la existencia de una API o forma estandarizada para extraer datos de los ERPs, de lo contrario, requerirá desarrollo de conectores específicos que añadirán tiempo y posible coste.",
+                "La falta de un equipo técnico dedicado del cliente para mantenimiento podría implicar una dependencia total del soporte de SoluTechIA, lo cual fue cubierto pero debe ser gestionado.",
+                "La seguridad y el cumplimiento normativo son puntos críticos para el cliente y deben ser abordados con rigor en la propuesta y ejecución."
+              ]
+            },
+            "feedback_vendedor": {
+              "fortalezas": [
+                "Excelente cualificación de la necesidad: Preguntó por modelo de negocio, retos, detalló tareas repetitivas y cuantificó el dolor (5000€/mes).",
+                "Anticipó y manejó objeciones eficazmente (mantenimiento, seguridad, SLA del soporte).",
+                "Presentó un caso de éxito muy relevante y con métricas de ahorro claras (de 48h a 30min, 150k€/año de ahorro), lo cual resonó fuertemente con el cliente.",
+                "Fue transparente y claro en la estructura de presupuesto y plazos, facilitando la toma de decisiones.",
+                "Identificó proactivamente los posibles riesgos técnicos (accesos, APIs) para una fase posterior.",
+                "Dirigió los próximos pasos de manera concreta y efectiva, obteniendo compromiso para una reunión técnica y la solicitud de una propuesta."
+              ],
+              "mejoras": [
+                "Aunque se cubrió bien, podría haber indagado un poco más en la causa raíz de los 'fallos' actuales para enfatizar cómo la solución los mitigaría de forma más robusta.",
+                "Podría haber explorado si existían otros procesos adicionales susceptibles de automatización una vez resuelto el principal, para identificar oportunidades de cross-selling a futuro."
+              ],
+              "recomendaciones": [
+                "Preparar un borrador de propuesta que no solo detalle el alcance y los costes, sino que también enfatice el ROI claro (ahorro mensual de 5000€ vs. inversión) y el valor del caso de éxito presentado.",
+                "Coordinar activamente con el cliente la agenda y los requisitos previos para la reunión técnica, asegurándose de que su equipo de TI esté preparado para discutir los accesos y las APIs de los ERPs."
+              ]
+            },
+            "siguientes_pasos": "Se agendó una reunión técnica con los responsables de sistemas del cliente para la próxima semana (miércoles a las 10h) para validar accesos y la forma de extracción de datos. SoluTechIA enviará la invitación y preparará un borrador de propuesta detallado (alcance, hitos, calendario, costes) para ser enviado al cliente antes del viernes."
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain2": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request8",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request10",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request12",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request14",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request5": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request6": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser3": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser3",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request8": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain4": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser4": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain4",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain4",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser4",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request10": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain5": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request11",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser5": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain5",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain5",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser5",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request12": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain6": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request13",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser6": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain6",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain6",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser6",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request14": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request4": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request7": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request9": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request11": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request13": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f2b01e54-98f4-4ec3-8689-6ec5c804d8ab",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "Odp3sYucLagY6ZYZ",
+  "tags": []
+}

@@ -1,0 +1,168 @@
+{
+  "name": "Envio Whatsapp",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "no_telefono"
+            },
+            {
+              "name": "motivo"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0f500f4a-9423-4dde-a56d-59aa3c3349fc",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Telefono: {{ $json.no_telefono }}\nMotivo: {{ $json.motivo }}"
+            },
+            {
+              "content": "=Crea un mensaje para whatsapp para el motivo que se te esta pasando.\n\nDebes ser muy humano y cercano\n\nNormaliza el numero de telefono para que SIEMPRE salga con este formato:\n\nXXXXXXXXXXXX@s.whatsapp.net\n\nEjemplo: \"573005660816@s.whatsapp.net\"",
+              "role": "system"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        220,
+        0
+      ],
+      "id": "1f05f656-885b-4317-b6f3-d6073e589405",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Angel",
+        "remoteJid": "={{ $('When Executed by Another Workflow').item.json.no_telefono }}",
+        "messageText": "={{ $json.message.content.message }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        580,
+        0
+      ],
+      "id": "c63683d0-91c0-4fc9-847a-81c7b50f8024",
+      "name": "Evolution API",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "respuesta",
+              "value": "Mensaje enviado",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        0
+      ],
+      "id": "1676a9d8-5632-4743-a97b-4d12d450b120",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "no_telefono": "+573005660816",
+          "motivo": "Invitación a cenar pizza mañana a las 7pm en Morantinos Pizza y Pasta Artesanal, Chía. ¡No faltes, Alejandro! Señor, si desea un mensaje más formal, hágamelo saber."
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Evolution API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evolution API": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "2db9b202-0328-400d-a552-b074344bd427",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "V2Ct56IJpGa8Mmqe",
+  "tags": []
+}

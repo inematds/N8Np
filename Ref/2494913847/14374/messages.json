@@ -1,0 +1,132 @@
+[
+  {
+    "id": 14393,
+    "author": "INEMA",
+    "date": "2025-09-19T17:54:09+00:00",
+    "text": "= true no body da requisição; ajuste o system prompt para instruir o agente a devolver: nome do documento, página e quote. Teste copiando o quote e fazendo Ctrl+F no PDF para validar.\n\n3. Como reduzir custo de tokens?\n\n* Use modelos menores no lado do assistant quando aceitável; prefira Pinecone Assistant em protótipos porque costuma consumir menos tokens que enviar muitos chunks para um LLM; limite contextos retornados; faça post-processamento local para resumir antes de chamar o modelo.\n\n4. E se o assistant retornar uma resposta errada ou sem fonte?\n\n* Verifique o payload de retorno do Pinecone (campos de metadata/pages/highlights). Se não houver highlights, habilite include\\_highlights. Se a resposta estiver incorreta, refine o system prompt e forçe verificação (ex: \"Se não achar citação exata, responda 'não encontrado'\").\n\n5. Posso automatizar upload de PDFs?\n\n* Sim. Use o endpoint de upload do Pinecone Assistant (API) para enviar arquivos programaticamente e depois chame o endpoint de chat; também crie um webhook em n8n para confirmar quando o documento é indexado.\n\n6. Quais cuidados de segurança?\n\n* Não exponha a chave em código. Use credenciais protegidas no n8n. Limite quem acessa o assistant (roles/permissions). Se documentos contém dados sensíveis, avalie criptografia em repouso e políticas de retenção.\n\n7. Quanto custa um assistant ativo?\n\n* No vídeo dizem US\\$0,05 por hora por assistant ativo; confirme no painel Pinecone pois preços podem mudar. (Dica: ative/desative assistentes em testes para não acumular custo.)\n\n# Checklist rápido para deploy em minutos\n\n* [ ] Criar Pinecone Assistant e fazer upload dos PDFs\n* [ ] Criar API key e guardar em n8n Credentials\n* [ ] Em n8n: criar nó HTTP Request → Import curl do Pinecone\n* [ ] Substituir query estática por expressão dinâmica (search\\_query)\n* [ ] Adicionar system prompt que exige citações e páginas\n* [ ] Ativar include\\_highlights no body do request\n* [ ] Testar com perguntas simples e validar via Ctrl+F nos PDFs\n* [ ] Monitorar tokens/custos e ajustar modelo se necessário",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14392,
+    "author": "INEMA",
+    "date": "2025-09-19T17:54:09+00:00",
+    "text": "# Hacks práticos (rápido e aplicável)\n\n1. Use Pinecone Assistant em vez do fluxo de vetores bruto quando quiser prototipar rápido\n\n   * Por que: ingestion, chunking e indexação são feitos automaticamente.\n   * Exemplo: arraste PDFs direto no painel do Pinecone Assistant e teste perguntas no playground.\n\n2. Conecte no n8n via um nó HTTP importando o curl do playground do Pinecone\n\n   * Por que: o curl já monta cabeçalho, body e endpoint; evita erro de formatação.\n   * Exemplo: em n8n → HTTP Request → Import curl → cole o curl gerado pelo Pinecone.\n\n3. Gere e mantenha chaves de API temporárias com cuidado (backup seguro)\n\n   * Por que: Pinecone mostra a chave uma vez. Se perder, crie nova.\n   * Dica: armazene em n8n Credentials ou em .env protegido.\n\n4. Faça a query dinâmica: deixe o corpo da requisição buscar a variável de query do agente\n\n   * Por que: o agente decide quantas buscas e o texto da busca.\n   * Exemplo de expressão (pseudocódigo n8n): {\"query\": {{\\$json\\[\"search\\_query\"]}}}\n\n5. Ative include\\_highlights (ou equivalente) para obter citação textual exata\n\n   * Por que: o campo padrão costuma retornar resumo, não citação literal.\n   * Exemplo de payload: \"include\\_highlights\": true\n\n6. Use um system prompt para forçar citações com fonte, página e trecho exato\n\n   * Por que: o agente pode chamar o Pinecone, mas precisa ser instruído a apresentar fontes.\n   * Exemplo de instrução: seja analítico, cite: nome do documento, número da página e quote exato.\n\n7. Teste com queries comparativas (duas buscas) quando precisar comparar períodos/anos\n\n   * Por que: o agente pode disparar múltiplas buscas e agregar resultados automaticamente.\n   * Dica: peça explicitamente comparações no prompt.\n\n8. Monitore tokens e custo: compare respostas de Assistant vs Vector Store\n\n   * Por que: Assistant pode ser muito mais barato (menos tokens) para respostas encadeadas.\n   * Como medir: logue token\\_count de cada requisição e custos por modelo.\n\n9. Caso a citação não bata, use include\\_highlights + extração direta do campo content\n\n   * Por que: alguns endpoints retornam resumo no campo principal e a citação exata em outro campo.\n\n10. Ajuste o modelo do Assistant via payload (model param) para balancear custo/qualidade\n\n    * Por que: modelos menores são mais baratos; modelos maiores podem gerar melhores instruções de extração.\n\n11. Automatize ingestão de documentos no Pinecone Assistant via API para evitar trabalho manual\n\n    * Por que: para escalabilidade, envie PDFs por upload de arquivo via API e faça webhooks para confirmar ingestão.\n\n12. Crie um template n8n exportável / shareable para replicar a solução rapidamente em clientes\n\n    * Por que: facilita demos e entrega de proof-of-concept; inclua passos: credenciais, nó HTTP, system prompt, testes.\n\n# Exemplos concretos (trechos e payloads úteis)\n\n1. Import curl → HTTP Request (n8n)\n\n* Cole o curl do Pinecone Assistant no import do HTTP Request do n8n; ele gera headers e body automaticamente.\n\n2. Exemplo de JSON para chat com highlights (simplificado)\n\n```{\n  \"model\": \"assistant-chat-1\",\n  \"input\": \"How many vehicles did Tesla deliver in Q2 2025?\",\n  \"include_highlights\": true\n}```\n\n3. Exemplo de system prompt (texto que coloca no agente)\n   Você é um agente especializado em relatórios financeiros. Use a ferramenta Pinecone para buscar informações em PDFs e, ao responder, sempre inclua:\n\n* nome do documento\n* número da página\n* trecho textual exato (entre aspas)\n* pequena linha indicando confiança (ex: \"Citação encontrada em página X\").\n\n4. Expressão dinâmica no corpo (n8n expression)\n   `{{ $json[\"ai_function\"][\"search_query\"] }}`\n   (use conforme estrutura do seu nó que gera a query)\n\n# Perguntas prováveis — respostas diretas\n\n1. Como conectar Pinecone Assistant ao n8n?\n\n* Crie um assistant no painel Pinecone → vá em \"connect\" / \"API\" e copie o curl do endpoint de chat → em n8n adicione HTTP Request → Import curl → cole → substitua a API key por referência segura (credential ou variável).\n\n2. Como garantir citações exatas (não só resumo)?\n\n* Ative include\\_highlights",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14391,
+    "author": "INEMA",
+    "date": "2025-09-19T17:53:41+00:00",
+    "text": "================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14390,
+    "author": "INEMA",
+    "date": "2025-09-19T17:53:08+00:00",
+    "text": "Aqui está o resumo do vídeo:\n\n### Resumo\n\nO vídeo mostra como criar agentes RAG em poucos minutos usando o **Pinecone Assistant** integrado ao **n8n**, sem necessidade de pipelines de pré-processamento, chunking manual ou fluxos de embedding personalizados.\n\nO criador demonstra:\n\n* Como carregar documentos (ex.: relatórios de Tesla, Nvidia e Nike) diretamente no Pinecone Assistant.\n* Como o agente retorna respostas corretas, com citações no nível da página e trechos exatos do PDF, aumentando a confiabilidade.\n* A configuração passo a passo no n8n, usando requisições HTTP para se conectar ao Pinecone Assistant via API.\n* Ajustes no system prompt para garantir que o agente cite corretamente documentos, páginas e trechos originais.\n* Como habilitar a opção *include highlights* na API para trazer citações textuais exatas em vez de resumos.\n* Comparação com Pinecone Vector Store e Supabase Vector Store: o Pinecone Assistant gera respostas mais rápidas, corretas e baratas em tokens, enquanto as abordagens tradicionais exigem mais trabalho e custam mais processamento.\n\n### Principais pontos\n\n1. **Velocidade e simplicidade**: basta arrastar documentos, sem pré-processamento.\n2. **Citações confiáveis**: páginas e trechos exatos dos documentos originais.\n3. **Integração n8n**: feita por HTTP request, usando a API do Pinecone Assistant.\n4. **Customização**: uso de system prompt e parâmetros da API (como highlights e modelo).\n5. **Comparação de custos**: Pinecone Assistant se mostra mais barato e eficiente do que vetores tradicionais.\n6. **Custo fixo**: US\\$ 0,05 por hora por assistente ativo no Pinecone.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14389,
+    "author": "INEMA",
+    "date": "2025-09-19T17:48:18+00:00",
+    "text": "https://www.youtube.com/watch?v=QojPKL96Dx4",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 14388,
+    "author": "INEMA",
+    "date": "2025-09-19T17:47:05+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Pinecone Assistant.json"
+  },
+  {
+    "id": 14387,
+    "author": "INEMA",
+    "date": "2025-09-19T17:47:01+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_14387_007.jpg"
+  },
+  {
+    "id": 14382,
+    "author": "INEMA",
+    "date": "2025-09-19T17:43:35+00:00",
+    "text": "ap63 - RAG Agente - Pinecone Assistente",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14381,
+    "author": "INEMA",
+    "date": "2025-09-19T17:43:34+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14380,
+    "author": "INEMA",
+    "date": "2025-09-19T17:43:34+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14379,
+    "author": "INEMA",
+    "date": "2025-09-19T17:43:34+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14378,
+    "author": "INEMA",
+    "date": "2025-09-19T17:43:33+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14377,
+    "author": "INEMA",
+    "date": "2025-09-19T17:43:33+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14376,
+    "author": "INEMA",
+    "date": "2025-09-19T17:43:33+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14375,
+    "author": "INEMA",
+    "date": "2025-09-19T17:43:32+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 14374,
+    "author": "INEMA",
+    "date": "2025-09-19T17:43:28+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

@@ -1,0 +1,116 @@
+[
+  {
+    "id": 5110,
+    "author": "INEMA",
+    "date": "2025-04-09T05:50:11+00:00",
+    "text": "Aqui está o **passo a passo completo para criar o fluxo no n8n** baseado no vídeo, para comparar geradores de vídeo por IA sem rosto (Minimax, Hunyuan, Kling e Google Veo 2), traduzir o prompt com Google Translate, enviar para as APIs, monitorar o status e baixar os vídeos automaticamente.\n\n---\n\n### 🧠 Visão geral do fluxo:\n1. Entrada do Prompt em texto  \n2. Tradução (opcional) com Google Translate  \n3. Envio do prompt para as 4 APIs (Minimax, Hunyuan, Kling, Google Veo 2)  \n4. Acompanhamento do status de cada geração  \n5. Download dos vídeos gerados  \n6. Saída com links para os 4 vídeos\n\n---\n\n### ✅ Pré-requisitos:\n- Conta no [n8n](https://n8n.io/)\n- Chaves de API das 4 plataformas de vídeo (ou acesso via FA.AI se aplicável)\n- API do Google Translate ativada\n\n---\n\n### 🔁 Passo a passo no n8n:\n\n---\n\n#### 1. **Entrada do Prompt**\n- **Node:** *Set*\n- Campos:\n  - `prompt`: \"Tracking shots with the subject centered in the frame\" (ou qualquer outro)\n\n---\n\n#### 2. **Tradução com Google Translate (opcional)**\n- **Node:** *HTTP Request*\n- Método: `POST`\n- URL: `https://translation.googleapis.com/language/translate/v2`\n- Headers:\n  - `Content-Type: application/json`\n- Corpo JSON:\n```{\n  \"q\": \"={{$json[\"prompt\"]}}\",\n  \"source\": \"en\",\n  \"target\": \"zh\",\n  \"format\": \"text\",\n  \"key\": \"SUA_API_KEY_GOOGLE_TRANSLATE\"\n}```\n- **Saída:** `translatedPrompt` (opcional, dependendo do modelo)\n\n---\n\n#### 3. **Enviar Prompt para cada IA (1 por vez)**\n\n##### a. **Minimax (via API direta)**\n- **Node:** *HTTP Request*\n- Método: `POST`\n- URL: `https://api.minimax.chat/v1/video/t2v`\n- Headers:\n  - `Authorization`: `Bearer SUA_API_KEY_MINIMAX`\n  - `Content-Type`: `application/json`\n- Corpo JSON:\n```{\n  \"prompt\": \"={{$json[\"translatedPrompt\"] || $json[\"prompt\"]}}\"\n}```\n\n##### b. **Hunyuan, Kling e Google Veo 2 (via FA AI ou outra camada intermediária)**\n- **Node (cada um):** *HTTP Request*\n- Método: `POST`\n- URL: `https://api.fa.ai/video/generate` *(exemplo genérico)*\n- Headers:\n  - `Authorization`: `Bearer SUA_API_KEY`\n- Corpo JSON:\n```{\n  \"model\": \"H\" // ou \"CL\" ou \"F2\"\n  \"prompt\": \"={{$json[\"translatedPrompt\"] || $json[\"prompt\"]}}\"\n}```\n\n> Sugestão: criar um subfluxo com chamada para o modelo, status e download para evitar repetição de nodes.\n\n---\n\n#### 4. **Acompanhar o Status**\nPara cada modelo, adicione:\n\n- **Node:** *HTTP Request*\n- Método: `GET`\n- URL: `https://api.minimax.chat/v1/video/status?task_id={{TASK_ID}}` *(exemplo)*\n- Use `Wait` (Delay de 30 segundos)\n- **Node IF:**\n  - Se `status == completed`, continuar.\n  - Se não, voltar para o Delay e checar de novo.\n\n---\n\n#### 5. **Download do Vídeo**\n- **Node:** *HTTP Request*\n- Método: `GET`\n- URL: `={{$json[\"download_url\"]}}`\n- Salvar como arquivo ou enviar para Google Drive, servidor etc.\n\n---\n\n#### 6. **Saída final com links**\n- **Node:** *Set*\n- Adicionar campos:\n  - `MinimaxVideoURL`\n  - `HunyuanVideoURL`\n  - `KlingVideoURL`\n  - `GoogleVeo2VideoURL`\n\n---",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 5109,
+    "author": "INEMA",
+    "date": "2025-04-09T05:48:11+00:00",
+    "text": "### Resumo do vídeo:  \n**Faceless Video Generator Comparison (Minimax vs Hunyuan vs Kling vs Google Veo 2)**  \n[Link: https://www.youtube.com/watch?v=NtOMpOrHyow](https://www.youtube.com/watch?v=NtOMpOrHyow)\n\nO criador do vídeo mostra um sistema automatizado usando **n8n** para comparar quatro modelos de geração de vídeo por IA (sem rosto): **Minimax**, **Tencent Hunyuan**, **Kling** e **Google Veo 2**. O fluxo automatizado traduz prompts de texto com o **Google Translate**, envia esses prompts para cada modelo, acompanha o status da geração e baixa os vídeos finais — tudo sem intervenção manual.\n\n---\n\n### Tópicos abordados no vídeo:\n\n1. **Demonstração dos 4 vídeos simultaneamente:**\n   - O autor apresenta os vídeos gerados pelas quatro plataformas com o mesmo prompt para que os espectadores comparem visualmente.\n   - Todos os modelos receberam o mesmo prompt em inglês.\n\n2. **Automação com n8n (No-Code):**\n   - Mostra como configurar requisições HTTP no n8n para cada modelo.\n   - Explica como inserir as chaves de API, URLs e parâmetros.\n   - Demonstra como monitorar o status da geração e baixar o vídeo ao final.\n\n3. **Uso do Google Translate:**\n   - Tradução automática de prompts para chinês (especialmente útil para Minimax e Hunyuan).\n   - O prompt em chinês gerou resultados visualmente melhores nos modelos chineses.\n\n4. **Detalhes Técnicos:**\n   - Mostra os tempos de geração dos vídeos e os custos aproximados:\n     - **Kling**: cerca de **US$ 0,10** por vídeo de 5 segundos.\n     - **Google Veo 2 (F2)**: mais caro.\n     - Diferença de custo entre API direta (Minimax) e via FA AI é pequena.\n\n\n\n\n### Exemplos práticos:\n\n- Prompt usado: `\"Tracking shots with the subject centered in the frame\"` (em inglês e traduzido para chinês).\n- Cada modelo respondeu de forma distinta ao mesmo comando.\n- Testes realizados com tempos de espera de 30 segundos entre verificações de status.\n- Fluxo usa blocos **HTTP Request**, **IF**, **Delay** e **Download** no n8n.\n\n---\n\n### Conclusão:\nO vídeo é um **guia prático e técnico** para quem deseja testar e comparar plataformas de geração de vídeos por IA sem rosto. Ele mostra como montar uma automação no **n8n**, reduzindo o trabalho manual e permitindo escalabilidade. Ideal para desenvolvedores, criadores de conteúdo e entusiastas de IA.",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 5108,
+    "author": "INEMA",
+    "date": "2025-04-09T05:48:06+00:00",
+    "text": "===============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5107,
+    "author": "INEMA",
+    "date": "2025-04-09T05:46:11+00:00",
+    "text": "Comparação de Geradores de Vídeo sem Rosto \n\n(Minimax vs Hunyuan vs Kling vs Google Veo 2)\n\n\nSistema de geração de vídeos com inteligência artificial que cria automaticamente vídeos impressionantes a partir de prompts de texto — tudo com automação no-code usando o n8n!\n\nEsse sistema compara o desempenho das plataformas Minimax, Tencent Hunyuan, Kling e Google Veo 2 \n\n— gerando vídeos sem rosto em cada uma, traduzindo automaticamente os prompts com o Google Tradutor, acompanhando o status da geração e baixando os vídeos finais — tudo de forma totalmente automatizada!",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5106,
+    "author": "INEMA",
+    "date": "2025-04-09T05:44:55+00:00",
+    "text": "al5",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "14_4_Faceless_Video_Generator_Comparison_Minimax_vs_Hunyuan_vs_Kling.json"
+  },
+  {
+    "id": 5105,
+    "author": "INEMA",
+    "date": "2025-04-09T05:44:45+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_5105_006.jpg"
+  },
+  {
+    "id": 5104,
+    "author": "INEMA",
+    "date": "2025-04-09T05:41:43+00:00",
+    "text": "al5 - **Faceless Video Generator Comparison**",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5103,
+    "author": "INEMA",
+    "date": "2025-04-09T05:41:41+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5102,
+    "author": "INEMA",
+    "date": "2025-04-09T05:41:41+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5101,
+    "author": "INEMA",
+    "date": "2025-04-09T05:41:40+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5100,
+    "author": "INEMA",
+    "date": "2025-04-09T05:41:40+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5099,
+    "author": "INEMA",
+    "date": "2025-04-09T05:41:40+00:00",
+    "text": "https://chatgpt.com/c/67f608aa-ad5c-8009-99b7-70c8805fb107",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 5098,
+    "author": "INEMA",
+    "date": "2025-04-09T05:41:39+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5097,
+    "author": "INEMA",
+    "date": "2025-04-09T05:41:33+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

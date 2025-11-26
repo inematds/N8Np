@@ -1,0 +1,389 @@
+{
+  "name": "Telegram Inventory Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -40,
+        0
+      ],
+      "id": "b3d0c9da-9ce5-4a65-af3b-0a2dc9e5a369",
+      "name": "Telegram Trigger",
+      "webhookId": "a909f1df-0d0d-4182-b9f3-1d6d2ec7ea26",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "inventory_bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "You are an intelligent product search assistant for a home office supply company. Help customers find products, check availability, and provide accurate pricing through natural conversation.\n\n##Tools\n\n###Pinecone Tool\n\n* Broad queries: \"wireless headphones\", \"budget laptops\"\n* Feature searches: \"noise canceling\", \"waterproof speakers\"\n* Category browsing: \"Apple tablets\", \"gaming accessories\"\n\n###Airtable Tool\n* After Pinecone search \n* check stock levels and exact pricing\n* Specific product queries: \"Moleskine notebook stock\"\n* Direct product name or category searches\n\n##Workflow\n\n* Discovery: Use Pinecone Tool for semantic search with customer's query\n* Verification: Use Airtable Tool with a specific search term or category to check stock and pricing for discovered products\n* Response: Present available options with real-time data\n\n##Examples\n\n* Query: \"wireless headphones under $200\"\n* Process:\n\n1. Pinecone Tool search: \"wireless headphones under 200\"\n2. Airtable Tool lookup: Filter results by price <= $200 and stock > 0\n3. Present available options with current pricing\n\n* Follow-up: \"something cheaper\"\n* Process: Search same category with lower price range from conversation context\n\n##Important Rules\n\n* ALWAYS verify stock with the Airtable Tool before confirming availability\n* Use EXACT prices from database, never estimate\n* For out-of-stock items, suggest available alternatives\n* Keep responses conversational and limit to 3-5 product options\n* Remember conversation context for follow-up queries\n* Do not include stock quantity in your response to the user"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        220,
+        0
+      ],
+      "id": "dc324c65-fd45-4b59-848b-929b66d800a7",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        80,
+        180
+      ],
+      "id": "a3c91cd1-45e9-45fa-b80e-c1305d007569",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        200
+      ],
+      "id": "104c7416-44aa-4467-8375-ddb1f7a070cb",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        0
+      ],
+      "id": "6181ef6e-37a5-4cbd-b8fd-1493f32f1f5e",
+      "name": "Telegram",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "inventory_bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "pinecone_tool",
+        "toolDescription": "Search for home office supply inventory by description, category, or brand. Use this when customers ask about products they want to find.",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "n8n-inventory-db",
+          "mode": "list",
+          "cachedResultName": "n8n-inventory-db"
+        },
+        "topK": 5,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1,
+      "position": [
+        500,
+        160
+      ],
+      "id": "3521aa8a-5f3f-4b2c-a076-4babdd2934a1",
+      "name": "Pinecone Tool",
+      "credentials": {
+        "pineconeApi": {
+          "id": "[REMOVED]",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        540,
+        300
+      ],
+      "id": "9e1e012a-40f8-4216-9053-f2b4634ee3a7",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "Airtable_Tool",
+        "description": "Search inventory for specific products and get current stock levels and pricing.",
+        "workflowId": {
+          "__rl": true,
+          "value": "jSaWPEP2pVmE6kJB",
+          "mode": "list",
+          "cachedResultName": "Airtable Tool"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "searchTerm": "={{ $fromAI('searchTerm') }}",
+            "Category": "={{ $fromAI('category') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "searchTerm",
+              "displayName": "searchTerm",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        380,
+        160
+      ],
+      "id": "23a74a0b-03fa-4bc7-9e7a-9078077d5bee",
+      "name": "Airtable Tool"
+    },
+    {
+      "parameters": {
+        "content": "## Main Agent Workflow\n",
+        "height": 540,
+        "width": 1020
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -100,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "98509ee7-ca9a-4fc2-be36-37453850b46d",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "searchTerm"
+            },
+            {
+              "name": "Category"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        600
+      ],
+      "id": "4f40211f-e6a9-42f2-8102-701770a05810",
+      "name": "Workflow Input Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appXIO8FKkRn2wvPR",
+          "mode": "list",
+          "cachedResultName": "K Office Shop Inventory",
+          "cachedResultUrl": "https://airtable.com/appXIO8FKkRn2wvPR"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblyxQ0zmCo0q7s9R",
+          "mode": "list",
+          "cachedResultName": "Dynamic Inventory",
+          "cachedResultUrl": "https://airtable.com/appXIO8FKkRn2wvPR/tblyxQ0zmCo0q7s9R"
+        },
+        "filterByFormula": "={{ 'OR(SEARCH(\"' + ($json.searchTerm || '') + '\", {Product Name}), {Category} = \"' + ($json.Category || '') + '\", SEARCH(\"' + ($json.searchTerm || '') + '\", {Description}))' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        620,
+        600
+      ],
+      "id": "3ac03bb1-1031-4864-95a0-feda22e99721",
+      "name": "Airtable",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "[REMOVED]",
+          "name": "inventory_tool"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Airtable Tool\n1. Cut and paste this section into a new workflow\n2. Connect it using the Airtable Tool (call a workflow node)",
+        "height": 320,
+        "width": 680,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        200,
+        480
+      ],
+      "typeVersion": 1,
+      "id": "bfdd89a1-436c-447c-aa1a-0da26e90d9a9",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Tool",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "41c6abab-28cf-4ef3-8ee7-64720df4af60",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7d5befabc97c82852f8ec02e5e4cb6c8243540adfc58ce68986cc10493d1df6b"
+  },
+  "id": "GW7zwZBTO6htz80Q",
+  "tags": []
+}

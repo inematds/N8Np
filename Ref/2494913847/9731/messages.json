@@ -1,0 +1,141 @@
+[
+  {
+    "id": 9748,
+    "author": "INEMA",
+    "date": "2025-06-15T04:03:27+00:00",
+    "text": "https://www.youtube.com/watch?v=NA64nySdA3A",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9747,
+    "author": "INEMA",
+    "date": "2025-06-15T04:03:09+00:00",
+    "text": "Aqui está o **passo a passo completo** para automatizar um sistema de **dropshipping com prova virtual e coleta de imagens usando IA**, baseado na combinação de **n8n + Apify + Fal AI + Google Sheets**:\n\n---\n\n### ETAPA 1 – Coletar Imagens de Produtos do AliExpress\n\n**1.1 Criar o fluxo no n8n**\n\n* Trigger: Use um **gatilho manual** ou **agendado** (ex: a cada 24h).\n\n**1.2 Adicionar nó HTTP Request (Apify)**\n\n* Método: `POST`\n* URL: `https://api.apify.com/v2/actor-tasks/YOUR_TASK_ID/run-sync?token=YOUR_API_TOKEN`\n* Body (JSON):\n\n```{\n  \"search\": \"long sleeve t-shirt\",\n  \"maxItems\": 10,\n  \"proxy\": {\n    \"useApifyProxy\": true,\n    \"apifyProxyGroups\": [\"RESIDENTIAL\"],\n    \"apifyProxyCountry\": \"US\"\n  }\n}```\n\n**1.3 Adicionar tempo de espera**\n\n* Nó \"Wait\": aguarde 3 a 30 segundos (evita travamento por excesso de requisições).\n\n**1.4 Verificar status**\n\n* Adicione novo HTTP Request para checar status do \"run\" da task (GET).\n* Use o `runId` anterior no URL.\n\n**1.5 Obter os resultados**\n\n* Novo HTTP Request: método `GET`\n* URL: `https://api.apify.com/v2/datasets/YOUR_DATASET_ID/items?token=YOUR_API_TOKEN`\n* Retorno: URLs das imagens, títulos, preço, loja, etc.\n\n**1.6 Enviar para Google Sheets**\n\n* Conecte com o Google Sheets\n* Operação: `Append Row`\n* Mapeie colunas: `imagem`, `título`, `preço`, `loja`, `URL`, `product_code` etc.\n* Use fórmula no Google Sheets:\n  `=IMAGE(A2)` para visualizar a imagem.\n\n---\n\n### ETAPA 2 – Aplicar Prova Virtual com IA (Fal AI)\n\n**2.1 Limitar quantidade de imagens (opcional)**\n\n* Use nó de controle para limitar número de linhas, ex: 5 produtos.\n\n**2.2 HTTP Request para Fal AI**\n\n* Método: `POST`\n* URL: `https://q.fal.ai/run/YOUR_MODEL_ID`\n* Headers:\n\n  * `Authorization: Bearer YOUR_API_KEY`\n* Body (JSON):\n\n```{\n  \"human_image_url\": \"URL do modelo\",\n  \"garment_image_url\": \"URL da roupa (produto AliExpress)\"\n}```\n\n**2.3 Aguardar processamento**\n\n* Wait (5–10 segundos)\n\n**2.4 Checar status da imagem**\n\n* Novo HTTP Request (GET) com `status_url` da resposta anterior\n* Verifique se `status = completed`\n\n**2.5 Obter imagem gerada**\n\n* Novo HTTP Request (GET) com `result_url`\n* Retorno: URL da imagem com modelo IA vestindo a roupa\n\n**2.6 Atualizar planilha**\n\n* Operação: `Update Row`\n* Coluna de correspondência: `product_code`\n* Nova coluna: `try_on_image_url`\n* Use `=IMAGE(URL)` para mostrar a imagem final\n\n---\n\n### RESULTADO FINAL\n\nVocê terá uma planilha automatizada com:\n\n* Informações de produto\n* Imagem original\n* Imagem gerada com prova virtual\n* Pronta para ser usada em loja virtual, anúncios, marketplaces, etc.\n\n---\n\n### Ferramentas e APIs Necessárias\n\n* [n8n](https://n8n.io/) – automação\n* [Apify](https://apify.com/) – scraper de produtos AliExpress\n* [Fal AI](https://fal.ai/) – prova virtual com IA\n* [Google Sheets API](https://console.cloud.google.com/) – planilha integrada",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9746,
+    "author": "INEMA",
+    "date": "2025-06-15T04:02:42+00:00",
+    "text": "===",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9745,
+    "author": "INEMA",
+    "date": "2025-06-15T03:59:59+00:00",
+    "text": "**Resumo do conteúdo sobre como usar IA no dropshipping com prova virtual e coleta de imagens:**\n\nEsse processo automatizado combina n8n, Apify e Fal AI para otimizar a operação de dropshipping com produtos de vestuário, dividindo-se em dois fluxos principais:\n\n**1. Coleta de Imagens de Produtos:**\n\n* Utiliza Apify para buscar imagens de roupas no AliExpress.\n* As imagens e informações dos produtos (título, código, preço, loja, etc.) são extraídas via API.\n* Os dados são organizados automaticamente em uma planilha do Google Sheets.\n* Um tempo de espera é adicionado entre as etapas para evitar falhas.\n* As imagens aparecem na planilha com fórmulas do tipo `=image(URL)`.\n\n**2. Prova Virtual com IA (Virtual Try-On):**\n\n* Usa o serviço Fal AI para aplicar as roupas das imagens em modelos humanos virtuais.\n* O sistema cruza duas imagens: a do modelo e a da roupa extraída.\n* A API retorna uma imagem do modelo vestindo a peça.\n* A imagem gerada é atualizada na mesma planilha na coluna correspondente.\n* Também há controle de status do processamento da imagem para garantir a execução correta.\n\n**Resultados e Vantagens:**\n\n* Elimina a necessidade de contratar modelos humanos.\n* Reduz custo e tempo para testar produtos.\n* Gera imagens prontas para e-commerce com prova social virtual.\n* Permite integração direta com planilhas e escalabilidade com automações.\n\n**Exemplo de uso prático:**\nUma loja pode testar 50 camisetas diferentes com modelos IA em minutos, automatizando coleta e montagem visual para anúncios ou marketplace.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9743,
+    "author": "INEMA",
+    "date": "2025-06-15T03:58:16+00:00",
+    "text": "Como Usar IA para Dropshipping: Prova Virtual de Roupas e Coleta de Imagens!\n\nUm tutorial mostrando como automatizar o teste de produtos de vestuário com um sistema de Prova Virtual baseado em IA \n\nUsando n8n, Apify e Fal AI, esse fluxo coleta imagens de produtos do AliExpress, aplica provas virtuais e organiza os dados de forma eficiente, economizando tempo e dinheiro com contratação de modelos.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9742,
+    "author": "INEMA",
+    "date": "2025-06-15T03:56:47+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Tutorial_11_2_How_to_Use_AI_for_Dropshipping_Virtual_Try_On_&_Image.xlsx"
+  },
+  {
+    "id": 9741,
+    "author": "INEMA",
+    "date": "2025-06-15T03:56:38+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Tutorial_11_2_How_to_Use_AI_for_Dropshipping_Virtual_Try_On_Image.json"
+  },
+  {
+    "id": 9740,
+    "author": "INEMA",
+    "date": "2025-06-15T03:56:31+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_9740_008.jpg"
+  },
+  {
+    "id": 9739,
+    "author": "INEMA",
+    "date": "2025-06-15T03:56:28+00:00",
+    "text": "al34 - dropshiping  Raspagem Virtual Try-On - Produtos",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9738,
+    "author": "INEMA",
+    "date": "2025-06-15T03:56:08+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9737,
+    "author": "INEMA",
+    "date": "2025-06-15T03:56:07+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9736,
+    "author": "INEMA",
+    "date": "2025-06-15T03:56:07+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9735,
+    "author": "INEMA",
+    "date": "2025-06-15T03:56:07+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9734,
+    "author": "INEMA",
+    "date": "2025-06-15T03:56:06+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9733,
+    "author": "INEMA",
+    "date": "2025-06-15T03:56:06+00:00",
+    "text": "https://chatgpt.com/c/684e44a2-655c-8009-a5aa-749bbf39b042",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9732,
+    "author": "INEMA",
+    "date": "2025-06-15T03:56:05+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9731,
+    "author": "INEMA",
+    "date": "2025-06-15T03:55:59+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

@@ -1,0 +1,403 @@
+{
+  "name": "nm56-3",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "atendimento-inicial",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ea6a2e90-44b4-49b3-9c99-47d1d1d57497",
+      "name": "Webhook Atendimento",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1300,
+        -100
+      ],
+      "webhookId": "atendimento-inicial-imobiliaria"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"processing\",\n  \"agent\": \"Atendimento_Inicial\"\n}",
+        "options": {}
+      },
+      "id": "6d533a32-a7f4-4286-821b-953ac677fe82",
+      "name": "Resposta Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -1080,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Analisar contexto da mensagem para atendimento inicial\nconst contexto = JSON.parse($json.contexto);\nconst mensagem = contexto.mensagem_original.toLowerCase();\nconst dadosEntrada = contexto.dados_entrada;\nconst canal = contexto.canal;\n\n// Detectar tipo de interesse principal\nlet tipoInteresse = 'indefinido';\nlet urgencia = 'normal';\nlet qualificacao = 0;\n\n// Palavras-chave para detecção de intenção\nconst intencoes = {\n  compra: ['comprar', 'adquirir', 'financiar', 'parcelar', 'próprio', 'casa própria', 'apartamento próprio'],\n  venda: ['vender', 'comercializar', 'anunciar', 'proprietário', 'tenho um', 'meu imóvel'],\n  aluguel: ['alugar', 'locar', 'inquilino', 'locação', 'arrendar', 'para morar'],\n  investimento: ['investir', 'investimento', 'renda', 'rentabilidade', 'aplicar dinheiro'],\n  informacao: ['informação', 'dúvida', 'pergunta', 'como funciona', 'gostaria de saber']\n};\n\n// Detectar intenção principal\nfor (const [tipo, palavras] of Object.entries(intencoes)) {\n  if (palavras.some(palavra => mensagem.includes(palavra))) {\n    tipoInteresse = tipo;\n    break;\n  }\n}\n\n// Detectar urgência\nconst palavrasUrgencia = ['urgente', 'rápido', 'hoje', 'agora', 'preciso logo', 'emergência'];\nif (palavrasUrgencia.some(palavra => mensagem.includes(palavra))) {\n  urgencia = 'alta';\n}\n\n// Calcular score inicial de qualificação\nqualificacao += tipoInteresse !== 'indefinido' ? 20 : 0;\nqualificacao += dadosEntrada.telefone ? 15 : 0;\nqualificacao += dadosEntrada.email ? 10 : 0;\nqualificacao += mensagem.length > 50 ? 10 : 5; // Mensagem detalhada\nqualificacao += canal === 'whatsapp' ? 10 : 5; // WhatsApp indica mais engajamento\n\n// Detectar informações específicas na mensagem\nconst infoEspecificas = {\n  valor: /r\\$\\s*([\\d.,]+)|([\\d.,]+)\\s*mil|([\\d.,]+)\\s*reais/i.test(mensagem),\n  localizacao: /(bairro|região|zona|próximo|perto)/i.test(mensagem),\n  quartos: /(quarto|dormitório|suíte)/i.test(mensagem),\n  tipo_imovel: /(casa|apartamento|sobrado|cobertura|terreno|comercial)/i.test(mensagem)\n};\n\n// Bonus por informações específicas\nObject.values(infoEspecificas).forEach(tem => {\n  if (tem) qualificacao += 5;\n});\n\n// Extrair valores mencionados\nconst valorMatch = mensagem.match(/r\\$\\s*([\\d.,]+)|([\\d.,]+)\\s*mil/i);\nlet valorEstimado = null;\nif (valorMatch) {\n  const valor = valorMatch[1] || valorMatch[2];\n  valorEstimado = parseFloat(valor.replace(/[.,]/g, '')) * (valorMatch[0].includes('mil') ? 1000 : 1);\n}\n\n// Extrair localização mencionada\nconst localizacaoMatch = mensagem.match(/(\\w+\\s*(?:zona|bairro|região)|\\w+(?:\\s+\\w+){0,2}(?=\\s*(?:sp|são paulo|rj|rio)))/i);\nconst localizacaoMencionada = localizacaoMatch ? localizacaoMatch[0] : null;\n\nreturn {\n  json: {\n    contexto_original: contexto,\n    analise: {\n      tipo_interesse: tipoInteresse,\n      urgencia: urgencia,\n      score_qualificacao: Math.min(100, qualificacao),\n      valor_estimado: valorEstimado,\n      localizacao_mencionada: localizacaoMencionada,\n      info_especificas: infoEspecificas,\n      canal: canal\n    },\n    dados_entrada: dadosEntrada\n  }\n};"
+      },
+      "id": "94fb55f6-8444-4a55-9e15-1e4ad55919e1",
+      "name": "Analisar Contexto e Intenção",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -860,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery"
+      },
+      "id": "e20f761d-9157-4c0b-b4ca-89a044e9310b",
+      "name": "Buscar Cliente Existente",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6532841d-1daa-421d-820e-c7ffa0965b0a",
+      "name": "Cliente Existe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -420,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update"
+      },
+      "id": "d35a4be1-1b05-44dc-ba3d-466e9037985f",
+      "name": "Atualizar Cliente Existente",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert"
+      },
+      "id": "60cc0f05-ddf0-473a-b399-e91625195de9",
+      "name": "Criar Novo Cliente",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gerar resposta personalizada de atendimento inicial\nconst analise = $('Analisar Contexto e Intenção').first().json.analise;\nconst dadosEntrada = $('Analisar Contexto e Intenção').first().json.dados_entrada;\nconst clienteExistente = $('Buscar Cliente Existente').first().json;\nconst canal = analise.canal;\n\n// Determinar se é cliente novo ou existente\nconst isNovoCliente = !clienteExistente.id;\nconst nomeCliente = clienteExistente.nome || dadosEntrada.nome || 'Cliente';\nconst primeiroNome = nomeCliente.split(' ')[0];\n\n// Templates de resposta por tipo de interesse e canal\nconst templates = {\n  whatsapp: {\n    compra: {\n      novo: `Olá! 😊\\n\\nQue bom ter você aqui! Vi que você tem interesse em comprar um imóvel.\\n\\nPara te ajudar melhor, me conta:\\n\\n🏠 Que tipo de imóvel você procura?\\n📍 Em qual região?\\n💰 Qual sua faixa de investimento?\\n\\nVou buscar as melhores opções para você! 🎯`,\n      existente: `Oi ${primeiroNome}! 👋\\n\\nBom te ver por aqui novamente!\\n\\nVi que você está interessado em comprar. Que tal darmos uma olhada nas novidades que chegaram?\\n\\nTenho algumas opções incríveis que podem te interessar! 🏠✨`\n    },\n    venda: {\n      novo: `Olá! 😊\\n\\nPerfeito! Você quer vender seu imóvel, certo?\\n\\nVou te ajudar a conseguir o melhor negócio!\\n\\n📋 Me conta mais sobre seu imóvel:\\n🏠 Tipo (casa, apartamento, etc.)\\n📍 Localização\\n📐 Tamanho aproximado\\n\\nVamos fazer uma avaliação gratuita! 💰`,\n      existente: `Oi ${primeiroNome}! 😊\\n\\nQue bom saber que você quer vender!\\n\\nCom base no seu perfil, posso fazer uma avaliação bem precisa do seu imóvel.\\n\\nQuer agendar uma visita para avaliarmos? 📅`\n    },\n    aluguel: {\n      novo: `Olá! 😊\\n\\nEntendi que você procura um imóvel para alugar!\\n\\nVou te ajudar a encontrar o lugar perfeito! 🏠\\n\\n📝 Me fala:\\n📍 Qual região você prefere?\\n💰 Qual seu orçamento mensal?\\n👥 Quantas pessoas vão morar?\\n\\nTenho várias opções disponíveis! 🔑`,\n      existente: `Oi ${primeiroNome}! 👋\\n\\nVoltou para procurar aluguel? Ótimo!\\n\\nTenho novidades que podem te interessar na região que você gosta!\\n\\nQuer ver as opções disponíveis? 🏠`\n    },\n    investimento: {\n      novo: `Olá! 😊\\n\\nExcelente escolha investir em imóveis! 📈\\n\\nVou te mostrar as melhores oportunidades do mercado!\\n\\n💼 Me conta:\\n💰 Qual valor você quer investir?\\n🎯 Prefere renda ou valorização?\\n📍 Alguma região específica?\\n\\nVamos encontrar o investimento perfeito! 💎`,\n      existente: `Oi ${primeiroNome}! 💼\\n\\nSempre bom ver um investidor esperto!\\n\\nTenho algumas oportunidades exclusivas que podem te interessar muito!\\n\\nQuer dar uma olhada? 📊`\n    },\n    indefinido: {\n      novo: `Olá! 😊\\n\\nSeja bem-vindo(a)! Como posso te ajudar hoje?\\n\\n🏠 Está procurando imóvel para:\\n• Comprar\\n• Vender\\n• Alugar\\n• Investir\\n\\nMe conta qual sua necessidade que vou te ajudar da melhor forma! 💪`,\n      existente: `Oi ${primeiroNome}! 👋\\n\\nBom te ver novamente!\\n\\nEm que posso te ajudar hoje? Tenho várias novidades desde nossa última conversa! 😊`\n    }\n  },\n  \n  email: {\n    compra: {\n      novo: `Olá!\\n\\nObrigado por entrar em contato. Vi que você tem interesse em comprar um imóvel.\\n\\nPara oferecer as melhores opções, gostaria de saber:\\n\\n• Tipo de imóvel desejado\\n• Região de preferência\\n• Faixa de investimento\\n\\nFicarei feliz em ajudar você a encontrar o imóvel ideal!`,\n      existente: `Olá ${primeiroNome}!\\n\\nQue bom receber seu contato novamente!\\n\\nVi que você está interessado em comprar. Tenho algumas novidades que podem te interessar muito.\\n\\nGostaria de agendar uma conversa para apresentar as opções?`\n    },\n    venda: {\n      novo: `Olá!\\n\\nPerfeito! Você quer vender seu imóvel.\\n\\nPara fazer uma avaliação precisa, preciso de algumas informações:\\n\\n• Tipo do imóvel\\n• Localização\\n• Características principais\\n\\nPodemos agendar uma visita para avaliação gratuita?`,\n      existente: `Olá ${primeiroNome}!\\n\\nQue bom saber que você quer vender seu imóvel!\\n\\nCom base no seu histórico, posso fazer uma avaliação bem direcionada.\\n\\nQue tal agendarmos uma visita?`\n    },\n    aluguel: {\n      novo: `Olá!\\n\\nEntendi que você procura um imóvel para alugar.\\n\\nPara encontrar a melhor opção, me informe:\\n\\n• Região de preferência\\n• Orçamento mensal\\n• Número de pessoas\\n\\nTenho várias opções disponíveis que podem te interessar!`,\n      existente: `Olá ${primeiroNome}!\\n\\nBom saber que você está procurando aluguel novamente!\\n\\nTenho algumas opções novas na região que você costuma procurar.\\n\\nGostaria de ver as disponibilidades?`\n    },\n    indefinido: {\n      novo: `Olá!\\n\\nObrigado por entrar em contato.\\n\\nComo posso ajudá-lo hoje? Trabalho com:\\n\\n• Compra de imóveis\\n• Venda de imóveis\\n• Locação\\n• Investimentos\\n\\nFique à vontade para me contar sua necessidade.`,\n      existente: `Olá ${primeiroNome}!\\n\\nBom receber seu contato novamente!\\n\\nEm que posso ajudá-lo hoje? Tenho várias novidades desde nossa última conversa.`\n    }\n  }\n};\n\n// Selecionar template apropriado\nconst tipoCliente = isNovoCliente ? 'novo' : 'existente';\nconst tipoInteresse = analise.tipo_interesse;\n\nlet resposta = '';\nif (templates[canal] && templates[canal][tipoInteresse] && templates[canal][tipoInteresse][tipoCliente]) {\n  resposta = templates[canal][tipoInteresse][tipoCliente];\n} else if (templates[canal] && templates[canal]['indefinido']) {\n  resposta = templates[canal]['indefinido'][tipoCliente];\n} else {\n  // Fallback\n  resposta = isNovoCliente ? \n    'Olá! Obrigado por entrar em contato. Como posso ajudá-lo hoje?' :\n    `Olá ${primeiroNome}! Bom falar com você novamente. Em que posso ajudar?`;\n}\n\n// Determinar próximas ações\nlet proximasAcoes = [];\nlet requerHitl = false;\n\n// Verificar se precisa de intervenção humana\nif (analise.urgencia === 'alta') {\n  requerHitl = true;\n  proximasAcoes.push('escalar_urgencia');\n}\n\nif (analise.score_qualificacao >= 70) {\n  proximasAcoes.push('agendar_visita');\n} else if (analise.score_qualificacao >= 40) {\n  proximasAcoes.push('qualificar_mais');\n} else {\n  proximasAcoes.push('nurturing');\n}\n\nif (analise.tipo_interesse === 'venda') {\n  proximasAcoes.push('agendar_avaliacao');\n}\n\nreturn {\n  json: {\n    resposta: resposta,\n    tipo_interesse: analise.tipo_interesse,\n    score_qualificacao: analise.score_qualificacao,\n    urgencia: analise.urgencia,\n    is_novo_cliente: isNovoCliente,\n    proximas_acoes: proximasAcoes,\n    requer_hitl: requerHitl,\n    dados_contexto: {\n      analise: analise,\n      cliente: clienteExistente,\n      dados_entrada: dadosEntrada\n    }\n  }\n};"
+      },
+      "id": "31766251-fff4-4d59-984c-fa581181aa49",
+      "name": "Gerar Resposta Personalizada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        20,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.dados_contexto.analise.canal }}",
+              "rightValue": "whatsapp",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "81fc330a-cafe-4a0f-b9a9-93184ac2feca",
+      "name": "Canal WhatsApp?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        240,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.N8N_WEBHOOK_BASE_URL }}/webhook/whatsapp-send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $json.dados_contexto.dados_entrada.telefone }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.resposta }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "97d2961a-c1ae-4e2a-86ff-1a42f5a8f29c",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        460,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.N8N_WEBHOOK_BASE_URL }}/webhook/email-send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $json.dados_contexto.dados_entrada.email }}"
+            },
+            {
+              "name": "subject",
+              "value": "Resposta - Sua consulta imobiliária"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.resposta }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "27e74117-1449-4cc0-9418-d659298bcef1",
+      "name": "Enviar E-mail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        460,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert"
+      },
+      "id": "fe24acff-2ca8-46cb-92bc-42cdcd8697ee",
+      "name": "Registrar Interação",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        680,
+        -100
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Atendimento": {
+      "main": [
+        [
+          {
+            "node": "Resposta Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Analisar Contexto e Intenção",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisar Contexto e Intenção": {
+      "main": [
+        [
+          {
+            "node": "Buscar Cliente Existente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Cliente Existente": {
+      "main": [
+        [
+          {
+            "node": "Cliente Existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cliente Existe?": {
+      "main": [
+        [
+          {
+            "node": "Atualizar Cliente Existente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Criar Novo Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar Cliente Existente": {
+      "main": [
+        [
+          {
+            "node": "Gerar Resposta Personalizada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Novo Cliente": {
+      "main": [
+        [
+          {
+            "node": "Gerar Resposta Personalizada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Resposta Personalizada": {
+      "main": [
+        [
+          {
+            "node": "Canal WhatsApp?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Canal WhatsApp?": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar E-mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Registrar Interação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar E-mail": {
+      "main": [
+        [
+          {
+            "node": "Registrar Interação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0865d7b1-2aa1-4094-bf76-0b7df2869b13",
+  "meta": {
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "3sAEsDyXXCNAVfzU",
+  "tags": []
+}

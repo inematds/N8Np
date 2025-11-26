@@ -1,0 +1,155 @@
+[
+  {
+    "id": 10207,
+    "author": "INEMA",
+    "date": "2025-06-21T04:01:53+00:00",
+    "text": "https://www.youtube.com/watch?v=cZQPDLgPtNg",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 10206,
+    "author": "INEMA",
+    "date": "2025-06-21T04:01:32+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_10206_002.jpg"
+  },
+  {
+    "id": 10205,
+    "author": "INEMA",
+    "date": "2025-06-21T04:00:25+00:00",
+    "text": "===============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 10204,
+    "author": "INEMA",
+    "date": "2025-06-21T04:00:22+00:00",
+    "text": "Alguns **\"hacks\" ou dicas práticas** para facilitar e acelerar o processo de expor o n8n local via túnel do Cloudflare. Veja abaixo um resumo dos principais:\n\n---\n\n### **Hacks e Dicas do Tutorial**\n\n1. **Usar domínio próprio para estabilidade**\n\n   * Ao invés de ferramentas como **ngrok** (que geram URLs temporárias e instáveis), usar o Cloudflare com **domínio próprio** dá um endereço fixo e confiável.\n   * *Exemplo: `n8n.seudominio.com` em vez de `1234.ngrok.io`*\n\n2. **Evitar firewalls com túnel**\n\n   * O uso do Cloudflare Tunnel **fura o bloqueio de firewall** sem precisar abrir portas no roteador.\n   * Funciona mesmo se você estiver em uma rede restrita ou sem IP fixo.\n\n3. **Visual didático com desenho**\n\n   * mostra de forma gráfica como o túnel funciona, explicando que o Cloudflare recebe os dados externos (como do Google ou Telegram) e os repassa localmente para o n8n por dentro do túnel, **sem depender de IP público**.\n\n4. **Modificar `docker-compose` para webhooks funcionarem**\n\n   * Inclui duas variáveis simples:\n\n     ```     WEBHOOK_URL_BASE=https://n8n.seudominio.com/\n     N8N_PROTOCOL=https\n     ```\n   * Isso “engana” o n8n e faz ele gerar URLs públicas corretas, mesmo rodando localmente.\n\n5. **Evita erro comum no Docker**\n\n   * Se não conseguir derrubar o container com `docker compose down` (por travamento), o autor tenta diretamente `docker compose up -d`, que costuma contornar o erro de recurso travado.\n\n6. **Usar LLM para comandos do terminal**\n\n   * Se não domina comandos Linux ou terminal, então **usa ChatGPT para gerar comandos com base nos diretórios**.\n   * *Hack*: Você não precisa saber Docker ou terminal — só dar o contexto certo ao GPT.\n\n7. **Acesso remoto instantâneo**\n\n   * Após configurar, pode acessar o n8n de qualquer dispositivo: celular, tablet ou outro computador. Ideal para quem está desenvolvendo e testando automações de fora.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 10203,
+    "author": "INEMA",
+    "date": "2025-06-21T03:58:01+00:00",
+    "text": "==============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 10202,
+    "author": "INEMA",
+    "date": "2025-06-21T03:57:46+00:00",
+    "text": "Segue um **passo a passo completo** para deixar sua instância local do **n8n acessível publicamente com Cloudflare Tunnel**, incluindo suporte a **webhooks funcionais (Google, Telegram, etc.)**.\n\n---\n\n### **1. Criar conta e domínio no Cloudflare**\n\n* Acesse: [https://www.cloudflare.com/](https://www.cloudflare.com/)\n* Crie uma conta (ou entre).\n* Compre ou adicione um domínio próprio.\n\n  * Exemplo: `meusite.com`\n  * Alternativa: transferir um domínio existente para o Cloudflare.\n\n---\n\n### **2. Ativar o Zero Trust**\n\n* Acesse o painel do Cloudflare.\n* Vá até **Zero Trust** (menu lateral).\n* Vá em **Networks > Tunnels**.\n* Clique em **“Create a Tunnel”**.\n\n---\n\n### **3. Instalar o conector local do Cloudflare**\n\n* Escolha o sistema operacional (Windows, Mac, Linux).\n* Baixe e instale o **Cloudflared** (cliente do Cloudflare Tunnel).\n\n**No Windows, por exemplo:**\n\n```cloudflared tunnel login\ncloudflared tunnel create n8n-tunnel```\n\n---\n\n### **4. Criar o mapeamento do túnel**\n\n* No painel do Cloudflare, vá no seu túnel criado e clique em **“Configure”**.\n* Adicione um **Public Hostname**:\n\n  * **Subdomínio**: `n8n`\n  * **Domínio**: `meusite.com`\n  * **Destino local**: `http://localhost:5678` (porta padrão do n8n)\n\nAgora seu n8n estará acessível em:\n\n```https://n8n.meusite.com```\n\n---\n\n### 5**. Corrigir Webhooks para serviços externos\n**\n#### 5.1 Acesse o arquivo d`ocker-compose.yml `do n8n\n\nNo seu PC:\n\nC```:\\Users\\SeuNome\\self-hosted-ai-starter-kit\\docker-compose.yml\n```\n#### 5.2 Adicione as variáveis de ambiente:\n\ne```nvironment:\n  - WEBHOOK_URL_BASE=https://n8n.meusite.com/\n  - N8N_PROTOCOL=https\n```\n#### 5.3 Salve o arquivo.\n\n---\n\n### 6**. Reiniciar o container Docker\n**\nNo terminal, dentro da pasta do projeto:\n\nc```d C:\\Users\\SeuNome\\self-hosted-ai-starter-kit\ndocker compose down\ndocker compose up -d\n```\n---\n\n### 7**. Validar se o domínio está funcionando\n**\n* Acesse: h`ttps://n8n.meusite.com\n`* Faça login normalmente no n8n.\n* Crie um w**orkflow com Webhook **e verifique se o endpoint agora aparece como:\n\n   ``` https://n8n.meusite.com/webhook/teste\n  \n```* Isso garante que o Telegram, Google, etc. possam acessar seu n8n.\n\n---\n\n### Re**sumo dos comandos principais (modo terminal):\n\n**cl```oudflared tunnel login\ncloudflared tunnel create n8n-tunnel\ncloudflared tunnel route dns n8n.meusite.com n8n-tunnel\ncloudflared tunnel run n8n-tunnel\n\n# Docker\ncd ~/self-hosted-ai-starter-kit\ndocker compose down\ndocker compose up -d```",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 10201,
+    "author": "INEMA",
+    "date": "2025-06-21T03:57:31+00:00",
+    "text": "================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 10200,
+    "author": "INEMA",
+    "date": "2025-06-21T03:57:01+00:00",
+    "text": "**Resumo do conteúdo:**\n\nEste tutorial ensina como tornar uma instância local do n8n acessível publicamente usando um túnel do Cloudflare. A seguir, os passos abordados:\n\n1. **Criar conta no Cloudflare**\n\n   * Adquirir ou conectar um domínio próprio.\n   * A recomendação é usar domínio próprio em vez de soluções temporárias como o ngrok.\n\n2. **Configurar o Tunnel no Cloudflare**\n\n   * Acessar a seção Zero Trust > Networks > Tunnels.\n   * Criar um novo túnel com um nome e instalar o conector local (escolhendo o sistema operacional).\n   * Verificar que o túnel está ativo (\"healthy\").\n\n3. **Vincular o domínio ao túnel**\n\n   * Criar um nome público (ex: `n8n.seudominio.com`) apontando para `localhost:5678` (porta padrão do n8n).\n   * Isso torna possível acessar o n8n de fora da rede local, como por celular ou outro computador.\n\n4. **Corrigir Webhook para serviços externos (como Telegram e Google)**\n\n   * A URL do webhook ainda aponta para `localhost`, o que impede serviços externos de se comunicarem.\n   * Para resolver, é necessário:\n\n     * Editar o arquivo `docker-compose.yml`.\n     * Adicionar duas variáveis de ambiente:\n\n       * `WEBHOOK_URL_BASE=https://seudominio.com/`\n       * `N8N_PROTOCOL=https`\n     * Reiniciar o container Docker (`docker compose down` e `docker compose up -d`).\n\n5. **Validação final**\n\n   * A nova URL pública passa a ser usada nos webhooks.\n   * Agora, é possível autenticar com Google, usar Telegram, etc.\n\n---\n\n**Tópicos abordados com exemplos:**\n\n* Registro e uso de domínio personalizado no Cloudflare\n  *Exemplo: `retcp.org` usado para criar `n8n.retcp.org`*\n\n* Configuração do conector Cloudflare no Windows\n  *Exemplo: instalação via terminal e execução como serviço local*\n\n* Integração com Docker e edição do `docker-compose`\n  *Exemplo: adição das variáveis `WEBHOOK_URL_BASE` e `N8N_PROTOCOL`*\n\n* Problemas comuns e soluções\n  *Exemplo: container ocupado → reinício forçado com `docker compose up -d`*\n\n* Aplicação prática:\n  *Agora o n8n pode ser integrado com Google Drive, Telegram e outros via webhooks reais.*",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 10199,
+    "author": "INEMA",
+    "date": "2025-06-21T03:56:47+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 10198,
+    "author": "INEMA",
+    "date": "2025-06-21T03:56:46+00:00",
+    "text": "VPS-Local2 - Criando VPS com Cloudfare",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 10197,
+    "author": "INEMA",
+    "date": "2025-06-21T03:56:45+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 10196,
+    "author": "INEMA",
+    "date": "2025-06-21T03:56:35+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 10195,
+    "author": "INEMA",
+    "date": "2025-06-21T03:56:34+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 10194,
+    "author": "INEMA",
+    "date": "2025-06-21T03:56:34+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 10193,
+    "author": "INEMA",
+    "date": "2025-06-21T03:56:34+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 10192,
+    "author": "INEMA",
+    "date": "2025-06-21T03:56:34+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 10191,
+    "author": "INEMA",
+    "date": "2025-06-21T03:56:33+00:00",
+    "text": "https://chatgpt.com/c/68562ccf-48c8-8009-be18-de90784cdd22",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 10190,
+    "author": "INEMA",
+    "date": "2025-06-21T03:56:33+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 10189,
+    "author": "INEMA",
+    "date": "2025-06-21T03:56:20+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

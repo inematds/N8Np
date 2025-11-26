@@ -1,0 +1,552 @@
+TOPICO 14439
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-09-21 13:12:15+00:00
+
+Total de mensagens: 29
+Midias baixadas: 8
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: Jhonatan
+Data: 2025-09-22T14:24:34+00:00
+Texto:
+Faz um de recrutamento
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-09-22T01:06:59+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14479_002.jpg
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-09-21T13:39:13+00:00
+Texto:
+### Hacks de arquitetura
+
+* **Construa sobre algo que já funciona**: não automatize uma ideia fraca. Pegue um processo já validado (ex.: geração de leads que dá algum resultado manualmente) e apenas sistematize.
+* **Agente gerente + subagentes**: em vez de um agente “faz tudo”, crie um roteador que decide qual subagente especializado (lead magnet, social post, RAG, etc.) deve agir. Isso reduz respostas ruins.
+* **Workflow único, limpo**: use `router` + `filters` no n8n/Make em vez de criar 10 fluxos separados. Fica mais rápido de manter e escalar.
+
+### Hacks de banco de dados (Supabase)
+
+* **Contexto salvo uma vez**: Foundations (avatar, dores, desejos, provas, jornada) ficam salvos no Supabase → não precisa reenviar a cada prompt. Reduz custo de tokens e deixa respostas mais consistentes.
+* **Session UID**: sempre passe um identificador único no payload → garante que o histórico de cada usuário seja separado corretamente.
+
+### Hacks de prompts
+
+* **Específicos por subagente**: defina prompts fixos para cada tipo de post (lead magnet, personal story, social). Isso aumenta consistência e evita respostas genéricas.
+* **Templates roubados**: copie estruturas de posts virais no LinkedIn e adapte para os prompts → a IA replica padrões que já performam.
+* **Mini-CTA embutido**: sempre finalize o prompt pedindo CTA de comentário (ex.: “Comente SISTEMA para receber o guia”).
+
+### Hacks de design (D do S.T.A.N.D)
+
+* **Loading divertido**: mostre frases como “a IA foi pegar um café…” → dá experiência premium e prende o usuário enquanto espera.
+* **Botão copiar pronto**: 1 clique para copiar o post final. Isso aumenta usabilidade e reduz frustração.
+* **Avatares personalizados**: foto do usuário e ícone da IA no chat → aumenta percepção de valor.
+
+### Hacks de automação
+
+* **Teste sempre em modo “publish”**: no Bolt/Lovable, se não publicar as mudanças, nada chega ao webhook (erro comum).
+* **Evite payloads pesados**: nunca mande imagens cruas via webhook, só URL. Fotos travam o fluxo.
+* **Filtros inteligentes**: antes de mandar para IA, filtre se a mensagem é válida (ex.: >10 caracteres) para evitar chamadas inúteis e custos.
+
+### Hacks de monetização
+
+* **Venda resultado, não feature**: em vez de dizer “faço dashboard”, venda “10 novos leads qualificados por semana sem esforço”.
+* **Cobrança híbrida**: taxa de setup (R\$ 2k–10k) + mensalidade de manutenção (R\$ 500–3k).
+* **Upsell com RAG**: primeiro entrega posts; depois oferece upgrade para RAG/FAQ automático.
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-09-21T13:38:56+00:00
+Texto:
+===============
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-09-21T13:38:54+00:00
+Texto:
+gancho inicial)
+3) Opcional: general\_knowledge\_agent ligado a um RAG (se você já tiver base).
+4) Modelo: OpenAI Chat Completions ou equivalente conectado por credencial.
+
+8. Prompt base dos subagentes (exemplo)
+   System (fixo para todos):
+   Você criará um post de LinkedIn para o usuário usando exatamente o contexto abaixo (avatar, dores, desejos, provas, jornada). O post deve ser claro, escaneável, com parágrafos curtos. Inclua 1 CTA ao final.
+   Contexto do usuário:
+   Avatar: {{avatar}}
+   Dores: {{pains}}
+   Desejos: {{desires}}
+   Provas: {{proof}}
+   Jornada: {{journey}}
+
+Específico por agente
+lead\_magnet\_agent: Gere um post que introduz um problema real do nicho e oferece um lead magnet. Termine com CTA: Comente “SISTEMA” que envio o guia.
+personal\_story\_agent: Conte 1 história curta do usuário com conflito e aprendizado, conectando ao que ele oferece. CTA: Comente “QUERO” para receber o passo a passo.
+social\_post\_agent: Faça um post curto e provocativo com dados/insights. CTA: Comente “INSIGHT”.
+
+9. Memória no Postgres do Supabase
+
+1) Adicione um nó de memória tipo Postgres Chat Memory (ou um nó DB genérico) após o webhook:
+   Salve: session\_uid, role, content, timestamp.
+2) Para configurar credenciais:
+   Host, Database, User postgres, Port 5432, Password (a mesma que você resetou).
+3) No fluxo, passe session\_uid do payload para manter o histórico por sessão.
+4) Guarde também o output final do subagente para reuso futuro.
+
+10. Responder ao app
+
+1) Nó final: resposta ao Webhook convertendo JSON em texto plano com parágrafos.
+2) Payload de resposta sugerido:
+   {
+   "status": "ok",
+   "text": "\<post\_final\_formatado>",
+   "copy\_hint": "Use o botão copiar"
+   }
+
+11. Melhorias de design (D do S.T.A.N.D)
+
+1) No app, adicione:
+   Estados de carregamento com mensagens divertidas (ex.: “buscando ideias…”)
+   Avatares do usuário e do “IA”
+   Botão “Copiar post”
+   Separação visual por blocos (título, corpo, CTA)
+2) Mantenha a regra “não me faça pensar”: um clique para gerar, um para copiar.
+
+12. Teste ponta a ponta
+
+1) Preencha Foundations e Perfil com dados fictícios.
+2) Na aba LinkedIn, selecione Lead Magnet e envie um pedido simples.
+3) Veja no n8n/Make o webhook recebendo dados, o roteamento, o subagente executando e a resposta chegando ao app.
+4) Ajuste prompts até o tom e a estrutura ficarem no ponto.
+
+13. Publicar e cobrar
+
+1) Publique o app; crie um plano de oferta:
+   Setup: R\$ 2.000 – 10.000 (config inicial + 1 a 3 subagentes)
+   Mensalidade: R\$ 500 – 3.000 (suporte, ajustes, melhorias)
+   Adicionais: RAG, novos canais, relatórios
+2) Vender “resultado”, não “features”: ex. “5 posts prontos por dia com CTA que geram 50+ comentários/semana”.
+
+Perguntas rápidas com exemplos
+
+Como escolho o que construir primeiro?
+Use a Teoria das Restrições. Se falta lead, comece pelo subagente lead\_magnet e um fluxo simples de posts + CTA para comentário/DM.
+
+Posso usar só Make ou só n8n?
+Sim. Make é mais amigável para começar; n8n dá mais liberdade e escala. A arquitetura é idêntica: webhook → roteamento → subagentes → resposta.
+
+Como salvo tudo certo por usuário?
+Passe user\_id/session\_uid no payload; nas consultas ao Supabase use esse id como filtro nas tabelas foundations e profiles.
+
+RAG é obrigatório?
+Não. Comece com subagentes de conteúdo. Ative RAG (PDFs, FAQs) quando tiver base de conhecimento útil.
+
+Exemplo de pedido ao agente lead\_magnet
+Crie um post mostrando por que 90% das clínicas não captam pacientes pelo Instagram e oferecendo um guia de 7 passos. CTA: comente “GUIA”.
+
+Checklist final de 46 minutos
+Min 0–10: Supabase projeto, tabelas, auth sem confirmação, senha do DB
+Min 10–20: App no Bolt/Lovable com Foundations, Perfil e LinkedIn; integrar Supabase; salvar formulários
+Min 20–30: Webhook no n8n/Make; Set; Router; Agente Gerente + subagente Lead Magnet; credencial do modelo
+Min 30–40: Postgres Chat Memory com session\_uid; resposta ao webhook em texto plano; publicar app
+Min 40–46: Polir UI (loading, copiar), teste ponta a ponta, primeiro post gerado
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-09-21T13:38:54+00:00
+Texto:
+Aqui vai um passo a passo direto para recriar o sistema do vídeo, do zero ao funcionando. Sem código complexo, só o necessário.
+
+Resumo em 10 segundos
+Você vai montar um app no Bolt/Lovable com login e telas, salvar tudo no Supabase, enviar cada pedido de conteúdo por webhook para o n8n/Make, onde um agente “gerente” escolhe subagentes (ex.: Lead Magnet) e devolve o texto pronto ao app. A memória de conversa fica no Postgres do Supabase.
+
+Passo a passo prático
+
+1. Preparar contas e chaves
+
+1) Crie contas em Supabase, n8n (self-host ou cloud) ou Make, e tenha uma chave de modelo (OpenAI ou similar).
+2) Separe um e-mail de testes e um navegador limpo para não confundir sessões.
+
+2. Supabase: projeto, tabelas e auth
+
+1) Novo projeto no Supabase.
+2) Em Table Editor, crie duas tabelas:
+   foundations
+   id uuid primary key default gen\_random\_uuid()
+   user\_id uuid not null
+   avatar text
+   pains text
+   desires text
+   proof text
+   journey text
+   created\_at timestamp default now()
+
+   profiles
+   id uuid primary key default gen\_random\_uuid()
+   user\_id uuid not null
+   display\_name text
+   photo\_url text
+   created\_at timestamp default now()
+3) Em Authentication → Providers, durante testes, desative “Confirm email required”.
+4) Guarde os dados de conexão do Postgres em Project Settings → Connect → PSQL (host, db, user postgres, port 5432). Em Database → Settings, gere/reset a senha.
+
+3. Frontend com Bolt/Lovable (estrutura S do S.T.A.N.D)
+
+1) Gere um app com as seções:
+   Home (mensagem de boas-vindas e link para tutorial curto)
+   Foundations (abas: Avatar, Dores, Desejos, Provas, Transformação/Jornada; cada uma com textarea + botão Salvar)
+   Perfil (Display name e upload de foto)
+   LinkedIn (chat lateral para pedir posts: pessoal, lead magnet ou social)
+2) Integração: em Integrations conecte ao Supabase e selecione o projeto.
+3) Publique o app para gerar uma URL de teste.
+4) Salve cada formulário diretamente nas tabelas foundations e profiles usando a integração Supabase do próprio construtor.
+
+4. Autenticação básica (A do S.T.A.N.D)
+
+1) Ative módulo de Sign up/Sign in com Supabase Auth no app.
+2) Após login, use o user\_id da sessão para ler/escrever nas tabelas foundations e profiles (escopo por usuário).
+3) Teste: crie uma conta de teste e verifique em Auth → Users do Supabase.
+
+5. UI do chat e gatilhos
+
+1) Na aba LinkedIn, insira um chat simples com:
+   Campo de texto
+   Botão enviar
+   Opções rápidas: Personal Story, Lead Magnet, Social
+   Placeholder explicando “digite seu pedido; ex.: crie um post…”
+2) Crie um handler que, ao enviar a mensagem, faça um POST para um webhook (n8n/Make) com este JSON:
+   {
+   "session\_uid": "\<id\_da\_sessao\_ou\_user\_id>",
+   "channel": "linkedin",
+   "type": "lead\_magnet" | "personal\_story" | "social" | "auto",
+   "message": "\<pedido\_do\_usuario>",
+   "foundations": {
+   "avatar": "...",
+   "pains": "...",
+   "desires": "...",
+   "proof": "...",
+   "journey": "..."
+   },
+   "profile": {
+   "display\_name": "...",
+   "photo\_url": "..."
+   }
+   }
+3) Evite enviar imagem da foto pelo webhook; mande apenas photo\_url.
+
+6. n8n/Make: webhook de entrada (N do S.T.A.N.D)
+
+1) Crie um cenário/fluxo:
+   Nó 1: Webhook HTTP (POST) recebendo o JSON acima.
+   Nó 2: Set/Transformer mapeando os campos úteis.
+   Nó 3: Router/Filter para decidir rota por type (lead\_magnet, personal\_story, social). Se type = auto, passe por um nó “Agente Gerente” que classifica.
+2) Em Make: Webhooks → Custom webhook; Em n8n: Webhook node (POST) com Response Mode “Last node” para responder no final.
+
+7. Agente Gerente e Subagentes
+
+1) Nó Agente Gerente (LLM Chat/Tools):
+   System prompt curto:
+   Você é um roteador. Dado o pedido e o contexto do usuário, classifique em: personal\_story, lead\_magnet ou social. Se a pergunta for geral, use general\_knowledge. Responda apenas com a chave.
+2) Três subagentes de criação:
+   lead\_magnet\_agent (gera post com CTA para comentar/DM)
+   personal\_story\_agent (história pessoal com aprendizado + CTA)
+   social\_post\_agent (post curto, compartilhável, com
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-09-21T13:37:40+00:00
+Texto:
+===============
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-09-21T13:37:37+00:00
+Texto:
+[https://www.youtube.com/watch?v=2m7Os3LD_j0](https://www.youtube.com/watch?v=2m7Os3LD_j0)
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-09-21T13:37:25+00:00
+Texto:
+===========
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-09-21T13:37:21+00:00
+Texto:
+ou “+Y reuniões marcadas”. Cobrança inicial para setup e mensalidade por operação/manutenção. Mostre o painel funcionando com dados do próprio cliente.
+
+Exemplos de sistemas que dão dinheiro
+• Crescimento social com lead magnets: gera posts otimizados, salva histórico e coleta comentários/DMs para follow-up.
+• Assistente comercial: qualifica leads, agenda, registra conversas no Supabase e devolve ao CRM via n8n.
+• Central de conteúdo RAG: base de PDFs + re-rank + agentes, respondendo dúvidas de produto e treinando time.
+
+Entrega mínima viável em 46 minutos
+
+1. Bolt/Lovable: gerar esqueleto do app e telas Foundations/Perfil/LinkedIn.
+2. Supabase: projeto, tabelas Foundations/Profile e Auth ligada; desativar confirm email para teste.
+3. Webhook no n8n/Make e mapeamento do payload; Set dos campos principais.
+4. Agente “manager” + subagente Lead Magnet; teste de ida e volta.
+5. Ajuste da resposta para texto simples + botão copiar.
+6. Publicar e polir UI (loading, avatares, mensagens de status).
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-09-21T13:37:09+00:00
+Texto:
+Resumo 
+
+Ideia central
+Pare de fazer automações soltas e construa “sistemas operacionais de IA” que resolvem um gargalo real de negócio (leads, vendas, entrega ou lucro) e podem levar de 0 a 100k. Use ferramentas simples: Bolt/Lovable (frontend), Supabase (banco e auth), n8n/Make (orquestração) e um modelo de IA.
+
+Framework S.T.A.N.D
+S – Structure: desenhe o app no Bolt/Lovable com telas, abas e campos.
+T – Table: conecte a um banco (Supabase) e crie tabelas para salvar tudo.
+A – Authentication: implemente login/registro pelo Supabase Auth.
+N – No-code automation: mande eventos via webhook para n8n/Make.
+D – Design: eleve a UI/UX para parecer “mágico” e fácil de usar.
+
+Arquitetura base (Power Four)
+Cérebro de IA + Plataforma de automação (n8n/Make) + Banco (Supabase/Postgres) + Frontend (Bolt/Lovable/Softr). O front envia contexto e pedidos; o n8n/Make roteia para subagentes especializados; tudo fica salvo no Supabase (incluindo memória de chat com Postgres Chat Memory).
+
+Teoria das Restrições aplicada
+Em vez de “mil portas”, foque na maior restrição agora: Leads, Vendas, Entrega, Lucro. Escolha uma, mapeie a jornada do clique ao fechamento e construa o sistema para suportar cada ponto dessa jornada.
+
+Exemplo prático do vídeo
+
+1. Frontend no Bolt com abas Foundations/Perfil/LinkedIn etc.; usuário preenche avatar, provas, dores, desejos, jornada.
+2. Integração com Supabase: tabelas Foundations/Profile + Auth; desativar confirmação de e-mail durante testes.
+3. Webhook: cada mensagem da aba LinkedIn é enviada ao n8n/Make.
+4. n8n/Make: nó webhook recebe payload, nó Set organiza campos, agente “gerente” classifica o pedido e direciona a subagentes especializados:
+   • Personal Story • Lead Magnet • Social Post • General Knowledge (com RAG).
+5. Memória: configurar credenciais Postgres do Supabase no n8n e ativar Postgres Chat Memory para histórico por session\_id.
+6. Resposta volta ao Bolt; ajustar para exibir texto plano, copiar com 1 clique e loading states; depois polir UI.
+
+Boas práticas e hacks
+• Construa sobre algo que já funciona; não automatize o que “não deveria existir”.
+• Um workflow limpo com router/filters é melhor do que vários cenários dispersos.
+• Subagentes específicos por tarefa geram consistência e desempenho.
+• Publique mudanças no Bolt antes de testar; evite enviar imagens grandes no payload do webhook.
+• Design importa: layout claro, parágrafos legíveis, feedback visual e perfis com foto aumentam percepção de valor.
+
+Monetização sugerida
+• Vender o “sistema” que ataca a restrição do cliente (ex.: geração diária de posts com lead magnet; dashboard de métricas; assistente de atendimento com memória).
+• Cobrança de setup + mensalidade por uso/suporte/ajustes.
+
+Perguntas e respostas com exemplos
+
+O que é um sistema operacional de IA?
+É um app com login, dados persistidos e automações por trás que resolve um gargalo central do negócio. Ex.: Dashboard social que, a partir do perfil salvo, gera posts LinkedIn/Instagram e envia para um pipeline n8n com subagentes.
+
+Como escolher o que construir primeiro?
+Aplique a Teoria das Restrições: identifique se o maior bloqueio é leads, vendas, entrega ou lucro. Ex.: se faltam leads, construa um sistema de conteúdo + captura (posts + CTA + planilha de interessados).
+
+n8n ou Make?
+Make é mais amigável ao iniciante; n8n oferece mais liberdade e escala técnica. Os dois funcionam: ambos recebem o webhook do Bolt e roteam para subagentes.
+
+Preciso saber programar?
+Não. O fluxo mostrado usa no-code: Bolt/Lovable, Supabase, n8n/Make. Você só precisa seguir o passo a passo e preencher credenciais (ex.: chave da OpenAI).
+
+Como armazenar dados e memória?
+Supabase para tabelas de perfil/foundations e Supabase Auth para login. Para memória de chat no n8n, use Postgres Chat Memory apontando para o Postgres do Supabase com session\_id.
+
+Como integrar tudo?
+Bolt → Integrações → Supabase; criar projeto/tabelas. No Bolt, adicione webhook POST na aba de chat. No n8n/Make, crie nó de webhook, Set/Router, agentes e “Respond to Webhook”.
+
+Como vender isso?
+Venda o resultado: “+X leads/semana”
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-09-21T13:17:26+00:00
+Texto:
+==============
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-09-21T13:17:22+00:00
+Texto:
+j105-Como Construir um Sistema de IA de 100 mil dólares em 46 minutos
+
+Construa sistemas operacionais de IA simples (não apenas automações pontuais) que resolvem gargalos reais e levam você de \$0 a \$100K. Passo a passo com Bolt, n8n/Make, Supabase, dashboards, autenticação e fluxos de trabalho.
+
+🧰 Ferramentas
+🩵 Make: make.com/en/register?pc=jackroberts (*)
+🪙 n8n: [https://n8n.partnerlinks.io/rkk4h07a86pv](https://n8n.partnerlinks.io/rkk4h07a86pv) (*)
+👾 Supabase: [https://supabase.com/](https://supabase.com/)
+🧑‍💻 Design: [https://codepen.io/trending?cursor=ZD0wJm89MCZwPTI=](https://codepen.io/trending?cursor=ZD0wJm89MCZwPTI=)
+
+Recursos
+⚡️ Bolt Prompt
+🔥 Faça upload de mim no n8n
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-09-21T13:16:57+00:00
+Texto:
+================
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-09-21T13:16:54+00:00
+Texto:
+Como construir um sistema de IA de 100 mil dólares em 46 minutos (sem código)
+
+Este é um guia extremamente simples, mas incrivelmente detalhado, de A a Z sobre como construir sistemas de IA de 100 mil dólares.
+
+🧠 O que é um BOM Sistema Operacional de IA
+💪 Como saber EXATAMENTE o que construir
+🏆 Como ganhar \$\$\$ com isso
+📊 O Framework S.T.A.N.D para construir qualquer sistema de IA
+🧑‍💻 Logins de contas de usuário e armazenamento de dados
+📊 Armazenamento de dados com Supabase e memória de chat do Potgress
+
+------------------------------
+
+MENSAGEM 16
+Autor: INEMA
+Data: 2025-09-21T13:16:19+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> 🩵 Bolt AI System Prompt..pdf
+
+------------------------------
+
+MENSAGEM 17
+Autor: INEMA
+Data: 2025-09-21T13:16:19+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> 0 to 100k dashboard.json
+
+------------------------------
+
+MENSAGEM 18
+Autor: INEMA
+Data: 2025-09-21T13:16:09+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14451_018.jpg
+
+------------------------------
+
+MENSAGEM 19
+Autor: INEMA
+Data: 2025-09-21T13:16:04+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14450_019.jpg
+
+------------------------------
+
+MENSAGEM 20
+Autor: INEMA
+Data: 2025-09-21T13:12:29+00:00
+Texto:
+Como Construir um Sistema de IA de 100 mil dólares em 46 minutos
+
+------------------------------
+
+MENSAGEM 21
+Autor: INEMA
+Data: 2025-09-21T13:12:23+00:00
+Texto:
+j105 - Construa Sistema de IA de 100k em 46min
+
+------------------------------
+
+MENSAGEM 22
+Autor: INEMA
+Data: 2025-09-21T13:12:22+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 23
+Autor: INEMA
+Data: 2025-09-21T13:12:22+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 24
+Autor: INEMA
+Data: 2025-09-21T13:12:22+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 25
+Autor: INEMA
+Data: 2025-09-21T13:12:22+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 26
+Autor: INEMA
+Data: 2025-09-21T13:12:21+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 27
+Autor: INEMA
+Data: 2025-09-21T13:12:21+00:00
+Texto:
+https://chatgpt.com/c/68cff882-2dc0-832d-aeb6-e3408d7fa093
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 28
+Autor: INEMA
+Data: 2025-09-21T13:12:21+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 29
+Autor: INEMA
+Data: 2025-09-21T13:12:15+00:00
+Texto: [Sem texto]
+
+------------------------------
+

@@ -1,0 +1,115 @@
+Ótimo! Agora vamos estruturar a **instrução completa** para geração do JSON do fluxo `ong-castracao-central`, conforme o padrão n8n **v1.104.2** e com base no modelo `enxame-de-agentes.json`.
+
+---
+
+### ✅ Requisitos Confirmados
+
+**Versão do n8n:** 1.104.2
+**Respostas da Descoberta:**
+
+1. **Objetivo:** Atender pessoas que buscam castração, adoção, doação ou relatar animais perdidos, com inteligência automatizada.
+2. **Canais de entrada e saída:** WhatsApp (EvolutionAPI) e E-mail (IMAP).
+3. **Tipo de entrada:** Texto
+4. **Tipo de saída:** Texto
+5. **Memória desejada:** Redis (curto prazo) e Supabase (histórico)
+6. **Usar subagentes especializados:** Sim
+7. **Usar RAG:** Sim
+8. **Onde armazenar os dados:** Supabase
+9. **Ferramentas auxiliares:** Google Calendar (castração), Redis
+10. **Plataforma de execução:** n8n local/cloud gratuito
+
+---
+
+### 🛠 Instrução para Gerar o JSON
+
+> Abaixo está a instrução que outro modelo deve seguir para gerar o JSON do fluxo no n8n. **Não gere o JSON ainda. Apenas siga esta instrução fielmente.**
+
+---
+
+## INSTRUÇÃO PARA GERAÇÃO DO JSON – `ong-castracao-central` (n8n 1.104.2)
+
+**Objetivo:** Criar um fluxo n8n modular com um agente orquestrador principal que recebe entrada via WhatsApp ou e-mail, identifica a intenção do usuário e encaminha para um dos 4 subagentes especializados.
+**Modelo de referência:** `enxame-de-agentes.json`
+
+---
+
+### 1. Estrutura Geral
+
+**Agente Orquestrador: `OrquestradorONG`**
+
+* Tipo: Entrada e Processamento
+* Ativado por: WhatsApp (Webhook EvolutionAPI) ou E-mail (IMAP)
+* Função: Interpretar a intenção do usuário (classificação)
+* Rota: Switch para Subagentes
+* Execução: Sequencial
+
+**Subagentes:**
+
+1. `AgenteCastracao`
+
+   * Função: Agenda castrações com Supabase + Google Calendar
+   * Armazena: `castracoes`
+   * Memória: Redis e Supabase
+2. `AgenteAdocaoDoacao`
+
+   * Função: Gerencia pedidos de adoção e doação
+   * Armazena: `adocoes_doacoes`
+3. `AgenteAnimaisPerdidos`
+
+   * Função: Coleta e orienta sobre animais perdidos
+   * Armazena: `animais_perdidos`
+4. `AgenteDicas`
+
+   * Função: Responde dúvidas frequentes via RAG
+   * Integra: Base vetorial
+
+---
+
+### 2. Regras para Construção
+
+* Use **somente nodes presentes no modelo `enxame-de-agentes.json`** e nos exemplos técnicos fornecidos.
+* Use `set`, `switch`, `httpRequest`, `function`, `subworkflow`, `respondToWebhook`, conforme necessário.
+* Inicie sempre com um `set` após entrada externa.
+* Cada subagente deve ser um subworkflow separado (modularização).
+* Nomear todos os nodes claramente, seguindo boas práticas.
+
+---
+
+### 3. Foco nos Subagentes
+
+**AgenteCastracao:**
+
+* Recebe dados do usuário (nome, animal, data preferida)
+* Usa Supabase para salvar os dados
+* Cria evento no Google Calendar
+* Retorna confirmação via mesmo canal
+
+**AgenteDicas (RAG):**
+
+* Recebe a dúvida
+* Consulta base vetorial via Supabase
+* Retorna a resposta
+
+**AgenteAdocaoDoacao:**
+
+* Recebe pedido de doação ou intenção de adotar
+* Armazena e organiza no Supabase
+
+**AgenteAnimaisPerdidos:**
+
+* Recebe informações do animal perdido
+* Armazena com geolocalização (se possível)
+* Gera resposta orientadora
+
+---
+
+### 4. Finalização
+
+* Adicionar fallback de erro simples com logging em Supabase
+* Incluir um nó de logging em cada subworkflow
+* Validar conexões entre os nós com `validate_workflow_connections`
+* Validar estrutura do fluxo com `validate_workflow`
+
+---
+
+Deseja que eu gere o JSON agora com base nessa instrução, incluindo os blocos do Google Calendar e Supabase no subagente `AgenteCastracao`?

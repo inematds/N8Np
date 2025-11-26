@@ -1,0 +1,251 @@
+{
+  "name": "Article Content Scraping",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c911ff9a-4829-478a-8e94-47d5cbccd166",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        620,
+        1180
+      ]
+    },
+    {
+      "parameters": {
+        "content": "# Scraping News Page for Article Links\n",
+        "height": 450.8610178940752,
+        "width": 634.4724534529091,
+        "color": 5
+      },
+      "id": "c09f448b-1229-4ad3-85ab-b2068ee95237",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        540,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "content": "# Scraping Article Links for Content\n",
+        "height": 444.6193651495671,
+        "width": 816.7287135925454
+      },
+      "id": "581e721d-a3ed-4677-9205-b52b2f000e02",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1220,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://vertikal.net/en/news",
+        "options": {}
+      },
+      "id": "4e4713cb-d18c-40fd-bdec-fee68d132636",
+      "name": "Get Article URLs1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        840,
+        1180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input raw HTML\nconst htmlContent = $json[\"data\"]; // Adjust this if your HTML is stored in another field\n\n// Updated regex to match URLs like \"/en/news/story/anything/anything\"\n// and stop at the end of the URL before any additional attributes or tags\nconst regex = /\\/en\\/news\\/story\\/[^/]+\\/[^/\"<]+/g; // Updated to exclude \" or < to prevent extra content\nconst matches = htmlContent.match(regex) || []; // Extract all matches\n\n// Prepend 'https://vertikal.net/' to each URL and return the results\nreturn matches.map(url => ({ json: { url: `https://vertikal.net${url}` } }));\n"
+      },
+      "id": "a07bc0a7-2648-4bc5-9cb4-0d6adda1038f",
+      "name": "Parse HTML1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        1180
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "id": "4626ed4c-149f-4e71-ba11-a2695cde1e28",
+      "name": "Get Article Content1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        1140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input: HTML string\nconst html = $input.item.json.data; // Assuming the HTML is passed in the \"data\" field of the JSON input\n\n// Extract the articleTitle using regex or string search\nlet articleTitle = null;\nconst titleMatch = html.match(/<meta property=\"og:title\" content=\"([^\"]+)\"\\/>/);\nif (titleMatch) {\n    articleTitle = titleMatch[1];\n} else {\n    const titleTagMatch = html.match(/<title>([^<]+)<\\/title>/);\n    if (titleTagMatch) {\n        articleTitle = titleTagMatch[1];\n    }\n}\n\n// Extract the articleDate from JSON-LD script\nlet articleDate = null;\nconst jsonLdMatch = html.match(/<script type=\"application\\/ld\\+json\">([\\s\\S]*?)<\\/script>/);\nif (jsonLdMatch) {\n    try {\n        const jsonLdData = JSON.parse(jsonLdMatch[1]);\n        if (jsonLdData['@graph'] && jsonLdData['@graph'][0]) {\n            articleDate = jsonLdData['@graph'][0].datePublished || null;\n        }\n    } catch (error) {\n        console.error('Error parsing JSON-LD:', error);\n    }\n}\n\n// Extract the articleBody from JSON-LD script\nlet articleBody = null;\nif (jsonLdMatch) {\n    try {\n        const jsonLdData = JSON.parse(jsonLdMatch[1]);\n        if (jsonLdData['@graph'] && jsonLdData['@graph'][0]) {\n            articleBody = jsonLdData['@graph'][0].articleBody || null;\n        }\n    } catch (error) {\n        console.error('Error parsing JSON-LD:', error);\n    }\n}\n\n// Return the extracted data\nreturn {\n    json: {\n        articleTitle,\n        articleDate,\n        articleBody\n    }\n};\n"
+      },
+      "id": "631ad38a-d729-44f6-9582-2a0dd96e609c",
+      "name": "Parse Article Content1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        1220
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "scrapeResult",
+              "value": "=url: {{ $('Parse HTML1').item.json.url }}\n\narticleTitle: {{ $json.articleTitle }}\n\narticleDate: {{ $json.articleDate }}\n\narticleBody: {{ $json.articleBody }}\n",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "url",
+              "value": "={{ $('Parse HTML1').item.json.url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7b49e004-3a32-4f14-bd08-1b6360d02e78",
+      "name": "Scrape Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2180,
+        1160
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "7bad431e-9b26-48d5-91c4-f533a7e8271d",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1540,
+        1140
+      ]
+    },
+    {
+      "parameters": {
+        "content": "# Output\n",
+        "height": 437,
+        "width": 338,
+        "color": 4
+      },
+      "id": "7526d248-cf29-48a1-9117-5a183921af41",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2080,
+        1000
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get Article URLs1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Article URLs1": {
+      "main": [
+        [
+          {
+            "node": "Parse HTML1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse HTML1": {
+      "main": [
+        [
+          {
+            "node": "Get Article Content1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Article Content1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Article Content1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Result": {
+      "main": [
+        []
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Scrape Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parse Article Content1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6efdc3c7-df19-424c-bd85-04b30d3c8051",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "95e5a8c2e51c83e33b232ea792bbe3f063c094c33d9806a5565cb31759e1ad39"
+  },
+  "id": "zHiHhLhK6J7G30iQ",
+  "tags": []
+}

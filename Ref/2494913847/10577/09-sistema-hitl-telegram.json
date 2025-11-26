@@ -1,0 +1,751 @@
+{
+  "name": "Sistema HITL - Telegram Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "id": "telegram-trigger",
+      "name": "Telegram Bot Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram Bot Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar comando ou mensagem do Telegram\nconst update = $json;\nlet messageData = {};\nlet isCommand = false;\nlet commandName = '';\nlet commandArgs = [];\n\n// Verificar se é callback query (botão inline)\nif (update.callback_query) {\n  messageData = {\n    chat_id: update.callback_query.message.chat.id,\n    user_id: update.callback_query.from.id,\n    username: update.callback_query.from.username,\n    first_name: update.callback_query.from.first_name,\n    message_id: update.callback_query.message.message_id,\n    text: update.callback_query.data,\n    is_callback: true,\n    callback_query_id: update.callback_query.id\n  };\n  \n  // Processar callback data\n  const callbackData = update.callback_query.data;\n  if (callbackData.startsWith('/')) {\n    isCommand = true;\n    const parts = callbackData.split(' ');\n    commandName = parts[0].substring(1); // Remove /\n    commandArgs = parts.slice(1);\n  }\n} else if (update.message) {\n  messageData = {\n    chat_id: update.message.chat.id,\n    user_id: update.message.from.id,\n    username: update.message.from.username,\n    first_name: update.message.from.first_name,\n    message_id: update.message.message_id,\n    text: update.message.text || '',\n    is_callback: false\n  };\n  \n  // Verificar se é comando\n  if (messageData.text.startsWith('/')) {\n    isCommand = true;\n    const parts = messageData.text.split(' ');\n    commandName = parts[0].substring(1); // Remove /\n    commandArgs = parts.slice(1);\n  }\n}\n\n// Verificar se usuário tem permissão\nconst userId = messageData.user_id;\nconst allowedUsers = (process.env.TELEGRAM_ALLOWED_USERS || '').split(',').map(id => parseInt(id.trim()));\nconst isAuthorized = allowedUsers.includes(userId) || allowedUsers.length === 0;\n\nreturn {\n  json: {\n    message_data: messageData,\n    is_command: isCommand,\n    command_name: commandName,\n    command_args: commandArgs,\n    is_authorized: isAuthorized,\n    raw_update: update\n  }\n};"
+      },
+      "id": "processar-telegram",
+      "name": "Processar Mensagem Telegram",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "autorizado",
+              "leftValue": "={{ $json.is_authorized }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-autorizacao",
+      "name": "Usuário Autorizado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.command_name }}",
+              "rightValue": "start",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.command_name }}",
+              "rightValue": "menu",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.command_name }}",
+              "rightValue": "status",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.command_name }}",
+              "rightValue": "clientes",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.command_name }}",
+              "rightValue": "visitas",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.command_name }}",
+              "rightValue": "hitl",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.command_name }}",
+              "rightValue": "aprovar",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.command_name }}",
+              "rightValue": "responder",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "rotear-comando",
+      "name": "Rotear Comando",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        900,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gerar menu principal ou resposta de comando\nconst dados = $json;\nconst comando = dados.command_name;\nconst args = dados.command_args;\nconst messageData = dados.message_data;\n\nlet resposta = '';\nlet keyboard = null;\nlet parseMode = 'HTML';\n\nswitch (comando) {\n  case 'start':\n  case 'menu':\n    resposta = `🏠 <b>Sistema de Automação Imobiliária</b>\\n\\nOlá, ${messageData.first_name}! Bem-vindo ao painel de controle.\\n\\nEscolha uma opção abaixo:`;\n    keyboard = {\n      inline_keyboard: [\n        [\n          { text: '📊 Status do Sistema', callback_data: '/status' },\n          { text: '👥 Clientes Ativos', callback_data: '/clientes' }\n        ],\n        [\n          { text: '📅 Visitas Hoje', callback_data: '/visitas' },\n          { text: '🚨 HITL Pendentes', callback_data: '/hitl' }\n        ],\n        [\n          { text: '📈 Relatórios', callback_data: '/relatorios' },\n          { text: '⚙️ Configurações', callback_data: '/config' }\n        ]\n      ]\n    };\n    break;\n    \n  case 'status':\n    // Será preenchido com dados reais do Supabase\n    resposta = `📊 <b>Status do Sistema</b>\\n\\n` +\n               `🟢 Sistema: Online\\n` +\n               `👥 Clientes ativos: Carregando...\\n` +\n               `📨 Mensagens hoje: Carregando...\\n` +\n               `🚨 HITL pendentes: Carregando...\\n` +\n               `📅 Visitas agendadas: Carregando...\\n\\n` +\n               `<i>Atualizando dados...</i>`;\n    keyboard = {\n      inline_keyboard: [\n        [{ text: '🔄 Atualizar', callback_data: '/status' }],\n        [{ text: '⬅️ Voltar ao Menu', callback_data: '/menu' }]\n      ]\n    };\n    break;\n    \n  case 'clientes':\n    resposta = `👥 <b>Clientes Ativos</b>\\n\\nCarregando lista de clientes...`;\n    keyboard = {\n      inline_keyboard: [\n        [{ text: '🔄 Atualizar', callback_data: '/clientes' }],\n        [{ text: '⬅️ Voltar ao Menu', callback_data: '/menu' }]\n      ]\n    };\n    break;\n    \n  case 'visitas':\n    resposta = `📅 <b>Visitas de Hoje</b>\\n\\nCarregando agenda...`;\n    keyboard = {\n      inline_keyboard: [\n        [{ text: '🔄 Atualizar', callback_data: '/visitas' }],\n        [{ text: '⬅️ Voltar ao Menu', callback_data: '/menu' }]\n      ]\n    };\n    break;\n    \n  case 'hitl':\n    resposta = `🚨 <b>Solicitações HITL Pendentes</b>\\n\\nCarregando solicitações...`;\n    keyboard = {\n      inline_keyboard: [\n        [{ text: '🔄 Atualizar', callback_data: '/hitl' }],\n        [{ text: '⬅️ Voltar ao Menu', callback_data: '/menu' }]\n      ]\n    };\n    break;\n    \n  case 'aprovar':\n    if (args.length === 0) {\n      resposta = `❌ <b>Erro</b>\\n\\nUso: /aprovar [id_interacao]\\n\\nExemplo: /aprovar 123`;\n    } else {\n      const interacaoId = args[0];\n      resposta = `✅ <b>Aprovação Processada</b>\\n\\nInteração ID: ${interacaoId}\\nStatus: Aprovado\\n\\nA ação será executada automaticamente.`;\n    }\n    keyboard = {\n      inline_keyboard: [\n        [{ text: '⬅️ Voltar ao Menu', callback_data: '/menu' }]\n      ]\n    };\n    break;\n    \n  case 'responder':\n    if (args.length < 2) {\n      resposta = `❌ <b>Erro</b>\\n\\nUso: /responder [id_interacao] [mensagem]\\n\\nExemplo: /responder 123 Obrigado pelo contato!`;\n    } else {\n      const interacaoId = args[0];\n      const mensagem = args.slice(1).join(' ');\n      resposta = `💬 <b>Resposta Enviada</b>\\n\\nInteração ID: ${interacaoId}\\nMensagem: \"${mensagem}\"\\n\\nResposta enviada ao cliente.`;\n    }\n    keyboard = {\n      inline_keyboard: [\n        [{ text: '⬅️ Voltar ao Menu', callback_data: '/menu' }]\n      ]\n    };\n    break;\n    \n  default:\n    resposta = `❓ <b>Comando não reconhecido</b>\\n\\nComandos disponíveis:\\n/menu - Menu principal\\n/status - Status do sistema\\n/clientes - Lista de clientes\\n/visitas - Visitas do dia\\n/hitl - Solicitações pendentes\\n/aprovar [id] - Aprovar ação\\n/responder [id] [msg] - Responder cliente`;\n    keyboard = {\n      inline_keyboard: [\n        [{ text: '📋 Menu Principal', callback_data: '/menu' }]\n      ]\n    };\n}\n\nreturn {\n  json: {\n    chat_id: messageData.chat_id,\n    message_id: messageData.message_id,\n    resposta: resposta,\n    keyboard: keyboard,\n    parse_mode: parseMode,\n    comando_processado: comando,\n    callback_query_id: messageData.callback_query_id,\n    precisa_dados: ['status', 'clientes', 'visitas', 'hitl'].includes(comando)\n  }\n};"
+      },
+      "id": "gerar-resposta-comando",
+      "name": "Gerar Resposta do Comando",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.precisa_dados }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-dados",
+      "name": "Precisa Buscar Dados?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar dados para dashboard do Telegram\nWITH dados_sistema AS (\n  SELECT \n    (SELECT COUNT(*) FROM clientes WHERE status = 'ativo') as clientes_ativos,\n    (SELECT COUNT(*) FROM interacoes WHERE created_at >= CURRENT_DATE) as mensagens_hoje,\n    (SELECT COUNT(*) FROM interacoes WHERE requer_hitl = true AND status_hitl = 'pendente') as hitl_pendentes,\n    (SELECT COUNT(*) FROM visitas WHERE DATE(data_hora) = CURRENT_DATE AND status IN ('agendada', 'confirmada')) as visitas_hoje,\n    (SELECT COUNT(*) FROM imoveis WHERE status = 'disponivel') as imoveis_disponiveis\n)\nSELECT * FROM dados_sistema;",
+        "options": {}
+      },
+      "id": "buscar-dados-sistema",
+      "name": "Buscar Dados do Sistema",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar clientes ativos recentes\nSELECT \n  c.id,\n  c.nome,\n  c.telefone,\n  c.tipo_interesse,\n  c.score_qualificacao,\n  c.ultima_interacao,\n  EXTRACT(DAYS FROM NOW() - c.ultima_interacao) as dias_sem_contato\nFROM clientes c\nWHERE c.status = 'ativo'\nORDER BY c.ultima_interacao DESC\nLIMIT 10;",
+        "options": {}
+      },
+      "id": "buscar-clientes-ativos",
+      "name": "Buscar Clientes Ativos",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        100
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar visitas do dia\nSELECT \n  v.id,\n  v.data_hora,\n  v.status,\n  c.nome as cliente_nome,\n  c.telefone as cliente_telefone,\n  i.codigo_interno as imovel_codigo,\n  i.endereco as imovel_endereco,\n  u.nome as corretor_nome\nFROM visitas v\nJOIN clientes c ON v.cliente_id = c.id\nJOIN imoveis i ON v.imovel_id = i.id\nLEFT JOIN usuarios_sistema u ON v.corretor_id = u.id\nWHERE DATE(v.data_hora) = CURRENT_DATE\nORDER BY v.data_hora ASC;",
+        "options": {}
+      },
+      "id": "buscar-visitas-hoje",
+      "name": "Buscar Visitas de Hoje",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        200
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar solicitações HITL pendentes\nSELECT \n  i.id,\n  i.created_at,\n  i.canal,\n  i.mensagem,\n  i.prioridade,\n  c.nome as cliente_nome,\n  c.telefone as cliente_telefone\nFROM interacoes i\nJOIN clientes c ON i.cliente_id = c.id\nWHERE i.requer_hitl = true \n  AND i.status_hitl = 'pendente'\nORDER BY i.prioridade DESC, i.created_at ASC\nLIMIT 10;",
+        "options": {}
+      },
+      "id": "buscar-hitl-pendentes",
+      "name": "Buscar HITL Pendentes",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Atualizar resposta com dados reais\nconst respostaOriginal = $input.first().json;\nconst comando = respostaOriginal.comando_processado;\n\n// Buscar dados dos inputs subsequentes\nlet dadosSistema = null;\nlet clientesAtivos = [];\nlet visitasHoje = [];\nlet hitlPendentes = [];\n\n// Processar inputs de dados\nconst inputs = $input.all().slice(1); // Pular o primeiro que é a resposta original\n\nfor (const input of inputs) {\n  if (input.json.clientes_ativos !== undefined) {\n    dadosSistema = input.json;\n  } else if (input.json.nome && input.json.telefone) {\n    clientesAtivos.push(input.json);\n  } else if (input.json.data_hora) {\n    visitasHoje.push(input.json);\n  } else if (input.json.requer_hitl !== undefined) {\n    hitlPendentes.push(input.json);\n  }\n}\n\nlet novaResposta = respostaOriginal.resposta;\nlet novoKeyboard = respostaOriginal.keyboard;\n\nswitch (comando) {\n  case 'status':\n    if (dadosSistema) {\n      novaResposta = `📊 <b>Status do Sistema</b>\\n\\n` +\n                     `🟢 Sistema: Online\\n` +\n                     `👥 Clientes ativos: ${dadosSistema.clientes_ativos}\\n` +\n                     `📨 Mensagens hoje: ${dadosSistema.mensagens_hoje}\\n` +\n                     `🚨 HITL pendentes: ${dadosSistema.hitl_pendentes}\\n` +\n                     `📅 Visitas hoje: ${dadosSistema.visitas_hoje}\\n` +\n                     `🏠 Imóveis disponíveis: ${dadosSistema.imoveis_disponiveis}\\n\\n` +\n                     `<i>Última atualização: ${new Date().toLocaleString('pt-BR')}</i>`;\n    }\n    break;\n    \n  case 'clientes':\n    if (clientesAtivos.length > 0) {\n      const listaClientes = clientesAtivos.map((cliente, index) => {\n        const diasSemContato = cliente.dias_sem_contato || 0;\n        const emoji = diasSemContato > 7 ? '🔴' : diasSemContato > 3 ? '🟡' : '🟢';\n        return `${emoji} <b>${cliente.nome}</b>\\n` +\n               `   📞 ${cliente.telefone}\\n` +\n               `   🎯 ${cliente.tipo_interesse || 'N/A'}\\n` +\n               `   ⭐ Score: ${cliente.score_qualificacao || 0}\\n` +\n               `   📅 ${diasSemContato}d sem contato`;\n      }).join('\\n\\n');\n      \n      novaResposta = `👥 <b>Clientes Ativos (${clientesAtivos.length})</b>\\n\\n${listaClientes}`;\n      \n      // Adicionar botões de ação\n      novoKeyboard = {\n        inline_keyboard: [\n          [{ text: '📞 Ligar para Cliente', callback_data: '/ligar' }],\n          [{ text: '💬 Enviar Mensagem', callback_data: '/mensagem' }],\n          [{ text: '🔄 Atualizar', callback_data: '/clientes' }],\n          [{ text: '⬅️ Voltar ao Menu', callback_data: '/menu' }]\n        ]\n      };\n    } else {\n      novaResposta = `👥 <b>Clientes Ativos</b>\\n\\n📭 Nenhum cliente ativo encontrado.`;\n    }\n    break;\n    \n  case 'visitas':\n    if (visitasHoje.length > 0) {\n      const listaVisitas = visitasHoje.map((visita, index) => {\n        const hora = new Date(visita.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });\n        const statusEmoji = visita.status === 'confirmada' ? '✅' : visita.status === 'agendada' ? '📅' : '❓';\n        return `${statusEmoji} <b>${hora}</b> - ${visita.cliente_nome}\\n` +\n               `   🏠 ${visita.imovel_codigo}\\n` +\n               `   📍 ${visita.imovel_endereco}\\n` +\n               `   👤 ${visita.corretor_nome || 'Sem corretor'}\\n` +\n               `   📞 ${visita.cliente_telefone}`;\n      }).join('\\n\\n');\n      \n      novaResposta = `📅 <b>Visitas de Hoje (${visitasHoje.length})</b>\\n\\n${listaVisitas}`;\n    } else {\n      novaResposta = `📅 <b>Visitas de Hoje</b>\\n\\n📭 Nenhuma visita agendada para hoje.`;\n    }\n    break;\n    \n  case 'hitl':\n    if (hitlPendentes.length > 0) {\n      const listaHitl = hitlPendentes.map((hitl, index) => {\n        const prioridadeEmoji = hitl.prioridade >= 4 ? '🔴' : hitl.prioridade >= 3 ? '🟡' : '🟢';\n        const tempo = new Date(hitl.created_at).toLocaleString('pt-BR');\n        const mensagemCurta = hitl.mensagem.length > 50 ? hitl.mensagem.substring(0, 50) + '...' : hitl.mensagem;\n        return `${prioridadeEmoji} <b>ID ${hitl.id}</b> - ${hitl.cliente_nome}\\n` +\n               `   📱 ${hitl.canal.toUpperCase()}\\n` +\n               `   💬 \"${mensagemCurta}\"\\n` +\n               `   📞 ${hitl.cliente_telefone}\\n` +\n               `   🕐 ${tempo}`;\n      }).join('\\n\\n');\n      \n      novaResposta = `🚨 <b>HITL Pendentes (${hitlPendentes.length})</b>\\n\\n${listaHitl}\\n\\n<i>Use /aprovar [ID] ou /responder [ID] [mensagem]</i>`;\n      \n      // Adicionar botões de ação rápida\n      const botoesRapidos = hitlPendentes.slice(0, 3).map(hitl => [\n        { text: `✅ Aprovar ${hitl.id}`, callback_data: `/aprovar ${hitl.id}` },\n        { text: `💬 Responder ${hitl.id}`, callback_data: `/responder ${hitl.id}` }\n      ]);\n      \n      novoKeyboard = {\n        inline_keyboard: [\n          ...botoesRapidos,\n          [{ text: '🔄 Atualizar', callback_data: '/hitl' }],\n          [{ text: '⬅️ Voltar ao Menu', callback_data: '/menu' }]\n        ]\n      };\n    } else {\n      novaResposta = `🚨 <b>HITL Pendentes</b>\\n\\n✅ Nenhuma solicitação pendente!\\n\\nTudo funcionando perfeitamente.`;\n    }\n    break;\n}\n\nreturn {\n  json: {\n    ...respostaOriginal,\n    resposta: novaResposta,\n    keyboard: novoKeyboard,\n    dados_atualizados: true\n  }\n};"
+      },
+      "id": "atualizar-resposta-dados",
+      "name": "Atualizar Resposta com Dados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.callback_query_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-callback",
+      "name": "É Callback Query?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "callback",
+        "operation": "answerQuery",
+        "queryId": "={{ $json.callback_query_id }}",
+        "additionalFields": {}
+      },
+      "id": "responder-callback",
+      "name": "Responder Callback Query",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        2220,
+        0
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram Bot Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "editMessageText",
+        "chatId": "={{ $json.chat_id }}",
+        "messageId": "={{ $json.message_id }}",
+        "text": "={{ $json.resposta }}",
+        "additionalFields": {
+          "parseMode": "HTML",
+          "replyMarkup": "={{ JSON.stringify($json.keyboard) }}"
+        }
+      },
+      "id": "editar-mensagem",
+      "name": "Editar Mensagem",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        2220,
+        100
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram Bot Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.resposta }}",
+        "additionalFields": {
+          "parseMode": "HTML",
+          "replyMarkup": "={{ JSON.stringify($json.keyboard) }}"
+        }
+      },
+      "id": "enviar-mensagem",
+      "name": "Enviar Nova Mensagem",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        2220,
+        200
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram Bot Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.message_data.chat_id }}",
+        "text": "🚫 <b>Acesso Negado</b>\\n\\nVocê não tem permissão para usar este bot.\\n\\nSe você deveria ter acesso, entre em contato com o administrador.",
+        "additionalFields": {
+          "parseMode": "HTML"
+        }
+      },
+      "id": "enviar-acesso-negado",
+      "name": "Enviar Acesso Negado",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        900,
+        400
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram Bot Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "telegram-notification",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-notificacao",
+      "name": "Webhook Notificações",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        600
+      ],
+      "webhookId": "telegram-notification"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"notification_sent\"\n}"
+      },
+      "id": "resposta-notificacao",
+      "name": "Resposta Notificação",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        460,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar notificação para Telegram\nconst dados = $json;\nconst tipo = dados.tipo;\n\nlet mensagem = '';\nlet chatIds = process.env.TELEGRAM_ADMIN_CHAT_IDS?.split(',') || [];\nlet prioridade = 'normal';\n\nswitch (tipo) {\n  case 'nova_solicitacao_hitl':\n    const contexto = JSON.parse(dados.contexto || '{}');\n    prioridade = dados.prioridade >= 4 ? 'alta' : 'normal';\n    \n    mensagem = `🚨 <b>Nova Solicitação HITL</b>\\n\\n` +\n               `📋 ID: ${dados.interacao_id}\\n` +\n               `⚡ Prioridade: ${dados.prioridade}/5\\n` +\n               `📱 Canal: ${contexto.canal?.toUpperCase() || 'N/A'}\\n` +\n               `👤 Cliente: ${contexto.dados_entrada?.cliente?.nome || 'Novo cliente'}\\n` +\n               `💬 Mensagem: \"${contexto.mensagem_original?.substring(0, 100) || 'N/A'}...\"\\n\\n` +\n               `<i>Use /hitl para ver todas as solicitações pendentes</i>`;\n    break;\n    \n  case 'nova_captacao':\n    const dadosCaptacao = JSON.parse(dados.dados || '{}');\n    prioridade = dados.urgencia === 'alta' ? 'alta' : 'normal';\n    \n    mensagem = `🏠 <b>Nova Captação de Imóvel</b>\\n\\n` +\n               `📋 Proprietário ID: ${dados.proprietario_id}\\n` +\n               `🏠 Imóvel ID: ${dados.imovel_id}\\n` +\n               `⚡ Urgência: ${dados.urgencia}\\n` +\n               `🏠 Tipo: ${dadosCaptacao.tipo_imovel || 'N/A'}\\n` +\n               `💰 Valor: ${dadosCaptacao.valor_pretendido ? 'R$ ' + dadosCaptacao.valor_pretendido.toLocaleString('pt-BR') : 'A definir'}\\n\\n` +\n               `<i>Novo imóvel cadastrado para avaliação</i>`;\n    break;\n    \n  case 'alerta_sistema':\n    const alertas = JSON.parse(dados.alertas || '[]');\n    const dashboard = JSON.parse(dados.dashboard || '{}');\n    \n    if (alertas.length > 0) {\n      prioridade = alertas.some(a => a.tipo === 'warning') ? 'alta' : 'normal';\n      \n      const listaAlertas = alertas.map(alerta => {\n        const emoji = alerta.tipo === 'warning' ? '⚠️' : 'ℹ️';\n        return `${emoji} ${alerta.mensagem}`;\n      }).join('\\n');\n      \n      mensagem = `📊 <b>Alertas do Sistema</b>\\n\\n${listaAlertas}\\n\\n` +\n                 `📈 <b>Status Atual:</b>\\n` +\n                 `• HITL Pendentes: ${dashboard.hitl_pendentes || 0}\\n` +\n                 `• Interações (15min): ${dashboard.interacoes_periodo || 0}\\n` +\n                 `• Tempo Resposta: ${Math.round(dashboard.tempo_resposta_medio || 0)}s`;\n    }\n    break;\n    \n  case 'relatorio_horario':\n    const relatorio = JSON.parse(dados.relatorio || '{}');\n    \n    mensagem = `📊 <b>Relatório Horário</b>\\n\\n` +\n               `📨 Interações: ${relatorio.resumo?.total_interacoes || 0}\\n` +\n               `👥 Clientes únicos: ${relatorio.resumo?.clientes_unicos || 0}\\n` +\n               `⏱️ Tempo médio: ${relatorio.resumo?.tempo_resposta_medio || 0}s\\n` +\n               `🚨 Taxa HITL: ${relatorio.resumo?.taxa_hitl || 0}%\\n\\n` +\n               `📱 WhatsApp: ${relatorio.canais?.whatsapp || 0}\\n` +\n               `📧 E-mail: ${relatorio.canais?.email || 0}\\n\\n` +\n               `📅 Visitas agendadas: ${relatorio.visitas?.agendadas || 0}\\n` +\n               `✅ Visitas realizadas: ${relatorio.visitas?.realizadas || 0}`;\n    break;\n    \n  default:\n    mensagem = `📢 <b>Notificação do Sistema</b>\\n\\nTipo: ${tipo}\\nDados: ${JSON.stringify(dados).substring(0, 200)}...`;\n}\n\nreturn {\n  json: {\n    mensagem: mensagem,\n    chat_ids: chatIds,\n    prioridade: prioridade,\n    tipo_original: tipo,\n    dados_originais: dados\n  }\n};"
+      },
+      "id": "processar-notificacao",
+      "name": "Processar Notificação",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-chat-ids",
+      "name": "Split Chat IDs",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        900,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json }}",
+        "text": "={{ $('Processar Notificação').first().json.mensagem }}",
+        "additionalFields": {
+          "parseMode": "HTML",
+          "disableNotification": "={{ $('Processar Notificação').first().json.prioridade === 'normal' }}"
+        }
+      },
+      "id": "enviar-notificacao",
+      "name": "Enviar Notificação",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        600
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "[REMOVED]",
+          "name": "Telegram Bot Imobiliária"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Bot Trigger": {
+      "main": [
+        [
+          {
+            "node": "Processar Mensagem Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Mensagem Telegram": {
+      "main": [
+        [
+          {
+            "node": "Usuário Autorizado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Usuário Autorizado?": {
+      "main": [
+        [
+          {
+            "node": "Rotear Comando",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar Acesso Negado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rotear Comando": {
+      "main": [
+        [
+          {
+            "node": "Gerar Resposta do Comando",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Resposta do Comando": {
+      "main": [
+        [
+          {
+            "node": "Precisa Buscar Dados?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Precisa Buscar Dados?": {
+      "main": [
+        [
+          {
+            "node": "Buscar Dados do Sistema",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Buscar Clientes Ativos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Buscar Visitas de Hoje",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Buscar HITL Pendentes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "É Callback Query?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Dados do Sistema": {
+      "main": [
+        [
+          {
+            "node": "Atualizar Resposta com Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Clientes Ativos": {
+      "main": [
+        [
+          {
+            "node": "Atualizar Resposta com Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Visitas de Hoje": {
+      "main": [
+        [
+          {
+            "node": "Atualizar Resposta com Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar HITL Pendentes": {
+      "main": [
+        [
+          {
+            "node": "Atualizar Resposta com Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar Resposta com Dados": {
+      "main": [
+        [
+          {
+            "node": "É Callback Query?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É Callback Query?": {
+      "main": [
+        [
+          {
+            "node": "Responder Callback Query",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Editar Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar Nova Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Notificações": {
+      "main": [
+        [
+          {
+            "node": "Resposta Notificação",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Processar Notificação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Notificação": {
+      "main": [
+        [
+          {
+            "node": "Split Chat IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Chat IDs": {
+      "main": [
+        [
+          {
+            "node": "Enviar Notificação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "telegram-hitl",
+      "name": "Telegram HITL"
+    }
+  ],
+  "triggerCount": 2,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

@@ -1,0 +1,387 @@
+{
+  "name": "GerarMusicaInstagramReelsV01",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -900,
+        880
+      ],
+      "id": "3d875ec1-6443-45b3-af79-bd527201bb24",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": " https://api.piapi.ai/api/v1/task",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n    \"model\": \"Qubico/diffrhythm\",\n    \"task_type\": \"txt2audio-base\",\n    \"input\": {\n        \"lyrics\": \"\",\n        \"style_prompt\": \"Peaceful, ethereal instrumental evoking a celestial and heavenly atmosphere. Use soft ambient pads, flowing harp melodies, gentle piano, and subtle orchestral textures. The music should feel light, dreamy, and spiritual — like floating through clouds in a serene sky. Rhythm should be slow and flowing. No vocals — only delicate instrumental layers.\",\n        \"style_audio\": \"\"\n    },\n    \"config\": {\n        \"webhook_config\": {\n            \"endpoint\": \"\",\n            \"secret\": \"\"\n        }\n    }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -580,
+        340
+      ],
+      "id": "74549de6-b748-4d2f-af60-932e63f5c615",
+      "name": "Gerar Musica Gospel Instrumental",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "PiAPI All in One"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.piapi.ai/api/v1/task/{{ $json.data.task_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -340,
+        340
+      ],
+      "id": "ed6586be-235f-4d53-b073-fb3189fcc940",
+      "name": "Buusca Musica Gospel Gerada",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "PiAPI All in One"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data.output.audio_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        140,
+        340
+      ],
+      "id": "dddcd46b-27da-4f21-b106-6420b7c8fa7c",
+      "name": "Download Musica",
+      "retryOnFail": false,
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "ID_DA_PASTA_DO_DRIVE_AQUI",
+          "mode": "list",
+          "cachedResultName": "AudiosParaConverter",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/ID_DA_PASTA_DO_DRIVE_AQUI"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        360,
+        340
+      ],
+      "id": "31a0b1b9-3f36-4b60-9b06-c8b5aac94bab",
+      "name": "Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.piapi.ai/api/v1/task/979b62bd-bf92-437d-bf10-a068f8606fd6",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -620,
+        880
+      ],
+      "id": "593ac4ce-7142-4984-9fe1-a8e461573170",
+      "name": "Buusca Musica Gospel Gerada1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "PiAPI All in One"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "processing",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "pending",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -120,
+        340
+      ],
+      "id": "15a9de04-5c09-499b-98da-cdb4ecacb027",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "amount": 20
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -240,
+        580
+      ],
+      "id": "8319e668-e9a5-4898-bea1-552374e928bd",
+      "name": "Wait",
+      "webhookId": "a410384a-69ab-4e45-91d6-fb169727d63f"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data.output.audio_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -420,
+        880
+      ],
+      "id": "28aa6b43-aba4-4fe6-a96b-7dedca9a1314",
+      "name": "Download Musica1",
+      "retryOnFail": false,
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1umK51BP3OlXT5ENXr1xsoWeDoZ5gCADT",
+          "mode": "list",
+          "cachedResultName": "AudiosParaConverter",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1umK51BP3OlXT5ENXr1xsoWeDoZ5gCADT"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -220,
+        880
+      ],
+      "id": "2957cd8e-07d8-4669-8f88-e542cf9cbd65",
+      "name": "Google Drive1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -780,
+        340
+      ],
+      "id": "87621fb6-aad7-4d70-8139-9f90fee925ac",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        []
+      ]
+    },
+    "Buusca Musica Gospel Gerada": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Musica": {
+      "main": [
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Musica Gospel Instrumental": {
+      "main": [
+        [
+          {
+            "node": "Buusca Musica Gospel Gerada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download Musica",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Buusca Musica Gospel Gerada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Musica1": {
+      "main": [
+        [
+          {
+            "node": "Google Drive1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buusca Musica Gospel Gerada1": {
+      "main": [
+        [
+          {
+            "node": "Download Musica1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Gerar Musica Gospel Instrumental",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a0ef259a-c6ec-459b-a4af-a0f14ae4fd1b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dabbbbdf3dc4f8e95e9232870e7c679e04c8a1da67927a86cbff4825bf6795c3"
+  },
+  "id": "YJzae8F1URSIr6B1",
+  "tags": []
+}

@@ -1,0 +1,335 @@
+TOPICO 5480
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-04-11 23:29:18+00:00
+
+Total de mensagens: 14
+Midias baixadas: 2
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-04-11T23:29:53+00:00
+Texto:
+Transcript'].split(' ');
+const lines = [];
+let currentLine = '';
+let currentCharCount = 0;
+
+words.forEach(word => {
+  const wordLength = word.length;
+  const potentialLength = currentCharCount + (currentLine ? 1 : 0) + wordLength;
+
+  if (potentialLength <= maxCharsPerLine) {
+    currentLine += `${currentLine ? ' ' : ''}${word}`;
+    currentCharCount = potentialLength;
+  } else {
+    lines.push(currentLine);
+    currentLine = word;
+    currentCharCount = wordLength;
+  }
+});
+
+if (currentLine) lines.push(currentLine);
+
+const totalHeight = lines.length * fontSize * lineHeightMultiplier;
+const lineHeight = fontSize * lineHeightMultiplier;
+
+const drawText = lines.map((line, index) => {
+  const y = `(h/2)-${Math.ceil(totalHeight/2)}+${index * lineHeight}`;
+  return `drawtext=text='${line}':fontsize=${fontSize}:fontcolor=${fontColor}:x=(w-tw)/2:y=${y}:fontfile=${fontFile}`;
+}).join(',');
+
+return { json: { drawText } };
+```
+---
+
+### Como adicionar uma fonte personalizada (.ttf) no host local?
+- Docker > Containers > Files > Home > Node
+
+---
+
+### Gerar vídeo com FFmpeg:
+```bash
+ffmpeg -i "{{ $('Pick Video & Music In Random').item.json.video_path }}" \
+       -i "{{ $('Pick Video & Music In Random').item.json.music_path }}" \
+       -filter_complex "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[vid];
+                       color=black@0.3:size=1080x1920:d=10[bg];
+                       [vid][bg]overlay[bgvid];
+                       [bgvid]{{ $json.drawText }}[outv];
+                       [1:a]volume=0.8[aout]" \
+       -map "[outv]" -map "[aout]" -t 10 -aspect 9:16 \
+       -c:v libx264 -c:a aac -shortest \
+       "./{{ $('Generate File Name2').item.json['File Name'] }}.mp4" -y```
+
+---
+
+### Criar link para upload no YouTube
+
+U**RL:
+**h```ttps://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status&uploadType=resumable
+```
+Co**rpo:
+{**
+```  "snippet": {
+    "title": "{{ $('Limit2').item.json['Video Title'] }}",
+    "description": "{{ $('Limit2').item.json['Video Transcript'] }}",
+    "defaultLanguage": "en",
+    "defaultAudioLanguage": "en"
+  },
+  "status": {
+    "privacyStatus": "public",
+    "license": "youtube",
+    "embeddable": true,
+    "publicStatsViewable": true,
+    "madeForKids": false
+  }
+}
+
+```---
+
+### Remover Arquivo:
+rm``` ./{{ $('Generate File Name2').item.json['File Name'] }}.mp4
+
+```---
+
+### Bônus
+
+In**icializar lista de geração de vídeos:
+c**o```nst executionList = new Array($input.first().json['Number of Video Generation']).fill("")
+return { executionList };
+
+```Ge**rar texto do vídeo (prompt):
+
+**Prompt:
+Ge```re uma transcrição e título de vídeo motivacional.
+
+Título: motivacional, com menos de 20 palavras  
+Transcrição: motivacional, concisa, menos de 20 palavras  
+***Não adicione pontuação ou emojis em nenhum dos dois
+
+```Exe**mplo de saída estruturada:
+{
+** ``` "motivational_text": "rise above challenges believe in yourself keep pushing forward success comes to those who persist",
+  "video_title": "Rise Above Challenges - Believe Persist Succeed"
+}```
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-04-11T23:29:53+00:00
+Texto:
+**07 - O truque de IA de $0 para produzir em massa mais de 1000 vídeos**
+
+### Como instalar Docker e n8n localmente
+1. Baixe o Docker em: https://www.docker.com/  
+2. Instale e abra o aplicativo Docker no desktop  
+3. Acesse o Docker Hub e pesquise por `n8n`  
+4. Escolha `n8nio/n8n` > clique em **Pull**  
+5. Vá em **Images** > clique em **Run** > expanda as configurações opcionais  
+6. Defina a porta no campo “host port”, por exemplo: `5678` > clique em **Run**
+
+---
+
+### Como instalar FFmpeg no seu Docker (para renderizar vídeos sem a API do andynocode)
+1. Vá para **Docker > Container**  
+2. Copie o ID do container (localizado abaixo do nome) e substitua `{{container id}}` no comando abaixo:  
+   
+   Exemplo de ID: `e2b38713d607627c6aa25a4ef61ddfee1630256e0a6c58ca75e2f23d7e2998aa`  
+   
+   Comando:
+   ```   docker exec -it -u root {{container id}} apk add --update python3 py3-pip gcc python3-dev musl-dev curl ffmpeg
+   ```
+   Exemplo:
+    ```  docker exec -it -u root e2b38713d607627c6aa25a4ef61ddfee1630256e0a6c58ca75e2f23d7e2998aa apk add --update python3 py3-pip gcc python3-dev musl-dev curl ffmpeg
+   
+```
+No** Mac: **pressione Command+Espaço > procure por “Terminal” > cole e execute o comando com o ID correto
+
+---
+
+### Como instalar yt-dlp no seu Docker (para baixar vídeos do YouTube)
+Mesma lógica: copie o ID do container e substitua:
+
+Comando:
+do```cker exec -it -u root {{container id}} apk add yt-dlp
+E```xemplo:
+doc```ker exec -it -u root e2b38713d607627c6aa25a4ef61ddfee1630256e0a6c58ca75e2f23d7e2998aa apk add yt-dlp
+
+-```--
+
+### Importar o Template n8n para sua instância local
+- Template n8n:  
+  https://drive.google.com/file/d/1oKkyD-r-tZ4v-Gp-Ot1iYVhJfjiKDqfY/view?usp=sharing
+
+- Template do Google Sheets (NÃO usar formato .xlsx ou outros):  
+  https://docs.google.com/spreadsheets/d/1PXkCdruolQS_gw6ZH1DKL6vGpmZZFXr1/edit?gid=1543141306#gid=1543141306
+
+---
+
+### Console do Google Cloud: API do Google Sheets
+Acesse: https://console.cloud.google.com/  
+Selecione seu projeto.
+
+---
+
+### DeepSeek Prompts
+
+Prom**pt:  
+G**ere 100 frases motivacionais curtas e também o título do vídeo. Forneça duas colunas:  
+1ª coluna = título do vídeo  
+2ª coluna = frase  
+*Não coloque números no início*
+
+---
+
+### Gerar string aleatória com 10 caracteres em uma linha de código (JavaScript)
+Arra```y.from({ length: 10 }, () => Math.random().toString(36)[2]).join('')
+
+--```-
+
+### Criar 20 títulos e transcrições motivacionais totalmente diferentes, sem emojis ou pontuação.  
+Formato: tabela do Excel.
+
+---
+
+### Nós do n8n
+
+Gera**r Nome do Arquivo:
+{{ **A```rray.from({ length: 10 }, () => Math.random().toString(36)[2]).join('') }}
+
+Ba```ix**ar Vídeo:
+yt-**d```lp -o "./{{ $('Generate File Name').item.json['Folder Name'] }}/{{ $('Generate File Name').item.json['File Name'] }}.mp4" "{{ $('Get Youtube Video').item.json['Video Path'] }}" -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
+
+At```ua**lizar detalhes do vídeo:
+./{**{``` $('Generate File Name').item.json['Folder Name'] }}/{{ $('Generate File Name').item.json['File Name'] }}.mp4
+
+Ba```ix**ar Música:
+yt-**d```lp -x --audio-format mp3 -o "./{{ $('Generate File Name1').item.json['Folder Name'] }}/{{ $('Generate File Name1').item.json['File Name'] }}.mp3" "{{ $('Get Youtube Music').item.json['Music Path'] }}"
+
+Es```co**lher vídeo e música aleatoriamente:
+
+Mú**sica:
+{{ $```('Aggregate Music').item.json['Internal Path'][Math.floor(Math.random() * $('Aggregate Music').item.json['Internal Path'].length)] }}
+
+Ví```deo:
+{{ $```('Aggregate Video').item.json['Internal Path'][Math.floor(Math.random() * $('Aggregate Video').item.json['Internal Path'].length)] }}
+
+--```-
+
+### Gerar texto sobreposto no vídeo (overlay):
+
+```js
+const fontColor = "white";
+const fontFile = "NotoSerif_Condensed-BlackItalic.ttf";
+const fontSize = 80;
+const lineHeightMultiplier = 1.1;
+const videoWidth = 1080;
+
+const avgCharWidth = fontSize * 0.6;
+const maxCharsPerLine = Math.floor(videoWidth / avgCharWidth);
+    
+const words = $('Get Video Quotes').item.json['Video
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-04-11T23:29:27+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-04-11T23:29:26+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-04-11T23:29:25+00:00
+Texto:
+...
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-04-11T23:29:25+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-04-11T23:29:25+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-04-11T23:29:25+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-04-11T23:29:25+00:00
+Texto:
+...
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-04-11T23:29:25+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-04-11T23:29:24+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-04-11T23:29:24+00:00
+Texto:
+https://chatgpt.com/c/67f99f37-be4c-8009-8131-2817635ae753
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-04-11T23:29:23+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-04-11T23:29:18+00:00
+Texto: [Sem texto]
+
+------------------------------
+

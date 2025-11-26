@@ -1,0 +1,312 @@
+{
+  "name": "Combinar Clips",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        144
+      ],
+      "id": "4d715fd5-6259-4296-b4de-9cebe1a22095",
+      "name": "Esperar",
+      "webhookId": "52443f23-9601-42db-a1f3-f677d9a01299"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://queue.fal.run/fal-ai/ffmpeg-api/merge-videos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "body": "={{ JSON.stringify({ video_urls: $input.first().json.video_urls }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        48,
+        144
+      ],
+      "id": "b09f0735-5ca2-4c3e-be43-c887bb307f79",
+      "name": "Combinar Clips",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Combinar Clips').first().json.response_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        496,
+        80
+      ],
+      "id": "a9f36cae-bdf0-4de7-8a23-d0aac0517a7c",
+      "name": "Obtener Video Final",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Fal.AI"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "video_urls",
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "id": "00ac7417-ea4f-4eb4-9146-494283ead93b",
+      "typeVersion": 1.1,
+      "name": "Inicio",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -176,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "combined_video_result",
+              "value": "={{ $json.video.url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        944,
+        48
+      ],
+      "id": "a0f5b84d-dc17-48d9-b8f5-89e008439f6b",
+      "name": "Devolver"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.video.url }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "[REMOVED]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "éxito"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.error.message }}",
+                    "rightValue": "still in progress",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "en progreso"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "error"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        720,
+        128
+      ],
+      "id": "6d196667-be5d-4de1-b3ca-1fb1a60df362",
+      "name": "Switch 2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "combined_video_result",
+              "value": "={{ $json.error.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        944,
+        240
+      ],
+      "id": "149b4e6a-0776-454e-ac47-f0d99dd8a3d7",
+      "name": "Devolver error"
+    },
+    {
+      "parameters": {
+        "content": "## Combinar Clips\n",
+        "height": 96,
+        "width": 864,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -32
+      ],
+      "id": "9cd3397f-1063-4378-a984-f763be122425",
+      "name": "Nota Adhesiva1"
+    }
+  ],
+  "pinData": {
+    "Inicio": [
+      {
+        "json": {
+          "video_urls": [
+            "",
+            "https://tempfile.aiquickdraw.com/p/fe0ea455d404f55a973adec0015da7d9_1759023369.mp4",
+            "https://tempfile.aiquickdraw.com/p/fff860da4aebb0b0e941aff5867af346_1759023459.mp4",
+            "https://tempfile.aiquickdraw.com/p/433314a6cebd37b0b5d60569f5b0efbd_1759023543.mp4"
+          ]
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Esperar": {
+      "main": [
+        [
+          {
+            "node": "Obtener Video Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combinar Clips": {
+      "main": [
+        [
+          {
+            "node": "Esperar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inicio": {
+      "main": [
+        [
+          {
+            "node": "Combinar Clips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch 2": {
+      "main": [
+        [
+          {
+            "node": "Devolver",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Esperar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Devolver error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Video Final": {
+      "main": [
+        [
+          {
+            "node": "Switch 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3fee4721-423a-4a7d-acec-370a468e0f5b",
+  "meta": {
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "U6u0yBucm086uiMj",
+  "tags": []
+}

@@ -1,0 +1,194 @@
+Perfeito, Nei. Abaixo está o **prompt técnico detalhado** para criar um **sistema completo de automação imobiliária** com foco em **WhatsApp, E-mail e Telegram**, construído em **Manus.im** com backend no **Supabase**, usando arquitetura **modular com agente orquestrador**, integração com **Human-in-the-Loop (HITL)** via **Telegram**, e comandos otimizados por **prompts humanizados e contextuais**.
+
+---
+
+### 🧠 PROMPT DE INSTRUÇÃO TÉCNICA — MANUS.IM + SUPABASE + TELEGRAM + WHATSAPP + E-MAIL
+
+**Objetivo:** Construir um sistema imobiliário modular para automação de atendimento, captação, marketing, gestão e relacionamento, com agentes integrados via WhatsApp e E-mail, e supervisão via HITL no Telegram.
+
+---
+
+## 1. ARQUITETURA GERAL
+
+**Agente Orquestrador (Main Agent)**
+Nome: `Agente Central Imobi`
+Função: Controlar e coordenar os subagentes com base em gatilhos de entrada e eventos de banco de dados.
+Responsabilidades:
+
+* Receber mensagens de entrada (WhatsApp, E-mail)
+* Direcionar para subagentes conforme contexto
+* Comunicar-se com Telegram para HITL (via webhook ou API)
+* Armazenar todos os eventos em Supabase
+
+---
+
+## 2. MÓDULOS (Subagentes)
+
+### 2.1 Atendimento Inicial ao Cliente
+
+**Nome:** `Atendimento_Cliente_Entrada`
+**Função:** Captar dados iniciais, identificar tipo de interesse (compra/aluguel), bairro, tipo de imóvel, e encaminhar.
+**Prompt Base:**
+
+```
+Você é um atendente educado de uma imobiliária que precisa saber como ajudar. Pergunte:
+1. Você está buscando compra ou aluguel?
+2. Qual tipo de imóvel (casa, apartamento, terreno)?
+3. Qual a localização de interesse?
+4. Algum valor máximo?
+5. Nome completo e telefone para contato.
+
+Responda com gentileza e não peça tudo de uma vez. Guie a conversa com naturalidade.
+```
+
+---
+
+### 2.2 Agente de Agendamento de Visitas
+
+**Nome:** `Agendamento_Visitas`
+**Função:** Confirmar interesse, listar opções disponíveis, agendar visita.
+**Integração:** Google Calendar ou Supabase como agenda.
+**Prompt Base:**
+
+```
+Você é o assistente de visitas da imobiliária. Seu papel é sugerir imóveis com base nas preferências do cliente e agendar uma visita.  
+Use datas e horários disponíveis na agenda. Confirme dia, horário, e envie lembrete 2h antes.
+```
+
+---
+
+### 2.3 Agente de Captação de Imóveis
+
+**Nome:** `Captacao_Proprietario`
+**Função:** Atender proprietários que querem cadastrar imóveis.
+**Campos solicitados:** nome, CPF, telefone, tipo, localização, valor, fotos (link via upload externo).
+**Prompt Base:**
+
+```
+Olá! Obrigado por querer anunciar seu imóvel com a gente. Vou precisar de algumas informações para o cadastro. Vamos começar com:
+1. Seu nome completo:
+2. Telefone e e-mail:
+3. Tipo de imóvel:
+4. Endereço completo:
+5. Valor pretendido:
+6. Deseja exclusividade?
+
+Você pode enviar fotos por aqui ou por link.
+```
+
+---
+
+### 2.4 Agente de Relacionamento (Follow-up e Pós-venda)
+
+**Nome:** `Relacao_Clientes_Ativos`
+**Função:** Manter o relacionamento, avisar sobre novidades, aniversários de contrato, reajustes.
+**Ações automáticas:**
+
+* E-mails mensais com imóveis em destaque
+* Mensagem de parabéns em aniversário do cliente
+* Avisos de reajuste via WhatsApp + e-mail
+
+---
+
+## 3. BANCO DE DADOS (Supabase)
+
+**Tabelas principais:**
+
+* `clientes` (id, nome, telefone, email, tipo\_interesse, localização, valor\_maximo, data\_criacao)
+* `imoveis` (id, tipo, bairro, cidade, valor, status, captador\_id, fotos\_url)
+* `visitas` (id, cliente\_id, imovel\_id, data\_hora, status)
+* `interacoes` (id, cliente\_id, canal, mensagem, data\_hora, agente\_responsavel)
+* `usuarios` (id, nome, cargo, telegram\_id)
+* `agenda_disponivel` (id, dia, horario, disponivel)
+
+---
+
+## 4. CANAIS
+
+### WhatsApp
+
+* Entrada: API de integração com webhook
+* Resposta: Subagente responde com base no contexto e dados do Supabase
+
+### E-mail
+
+* Entrada: Webhook de leitura (ex: Make, N8N, Imbox para Manus)
+* Saída: SMTP via Manus.im para envio de follow-up, confirmações e lembretes
+
+### Telegram (HITL)
+
+* Canal privado para HITL com os representantes
+* Notificações sempre que um agente classificar a necessidade como "atendimento humano"
+* Comando personalizado no bot:
+
+  ```
+  /aprovar [id_interacao]
+  /responder [id_interacao] [mensagem]
+  ```
+
+---
+
+## 5. ORQUESTRAÇÃO (Agente Principal)
+
+**Nome:** `Central_Orquestrador_Imobiliaria`
+**Gatilhos:**
+
+* Nova mensagem recebida por API (WhatsApp ou E-mail)
+* Mudança de status em `interacoes` (via trigger Supabase)
+* Eventos externos (ex: webhook de captação de portais)
+
+**Fluxo:**
+
+1. Identifica origem e tipo de mensagem
+2. Consulta contexto do cliente via Supabase
+3. Decide qual subagente ativar
+4. Encaminha para HITL se necessário
+5. Registra logs em `interacoes`
+
+---
+
+## 6. INSTRUÇÃO DE USO
+
+**Para usuários internos:**
+
+* Acesso via painel do Telegram (`/menu`) para consultar:
+
+  * Clientes em atendimento
+  * Visitas agendadas
+  * Imóveis cadastrados recentemente
+  * Alertas de HITL pendentes
+
+**Para representantes:**
+
+* Cada representante tem `telegram_id` no Supabase
+* Pode receber notificações de clientes em sua área
+
+**Para o admin:**
+
+* Painel no Supabase Studio com dashboards de:
+
+  * Volume de atendimentos
+  * Conversões (visitas agendadas / propostas)
+  * Imóveis mais procurados
+
+---
+
+## 7. EXTRAS OPCIONAIS
+
+* Integração com Notion para gerenciar leads visuais
+* Exportação automática mensal para planilhas Google
+* Avaliação de atendimento via link no WhatsApp
+
+---
+
+## 8. MONITORAMENTO E SEGURANÇA
+
+* Logs detalhados em `interacoes`
+* Validação de mensagens sensíveis antes de envio automático
+* HITL obrigatório em mensagens com CPF, valores acima de limite, ou “cancelamento”
+
+---
+
+Se quiser, posso gerar o **JSON base para iniciar o projeto no Manus.im** com os agentes pré-configurados e templates de banco no Supabase.
+
+Deseja isso agora?

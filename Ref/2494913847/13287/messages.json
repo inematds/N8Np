@@ -1,0 +1,191 @@
+[
+  {
+    "id": 13310,
+    "author": "INEMA",
+    "date": "2025-08-25T07:56:50+00:00",
+    "text": "**hacks mais práticos** para turbinar esse fluxo de RAG + Supabase + n8n e evitar dores de cabeça.\n\n---\n\n# Hacks para RAG + Supabase + n8n\n\n### 1. Vectorização inteligente\n\n* Sempre use **chunk overlap (200 tokens)** para garantir continuidade entre trechos.\n* Para documentos grandes, ajuste o **chunk size**:\n  – Textos técnicos → 600–800 tokens\n  – Livros ou PDFs extensos → 1000–1200 tokens\n* Grave **metadados úteis**: `file`, `page`, `section`, `url`. Isso facilita citar fonte na resposta.\n\n---\n\n### 2. Embeddings com custo baixo e alta eficiência\n\n* Use **text-embedding-3-small** (1536 dims) para protótipos → barato e rápido.\n* Quando a base crescer muito, migre para **text-embedding-3-large** (3072 dims) → mais precisão.\n* Se mudar de modelo, **não esqueça** de ajustar o campo `vector(dimensões)` na tabela do Supabase.\n\n---\n\n### 3. Supabase otimizado\n\n* Crie **índice vetorial** com `ivfflat` para buscas rápidas:\n\n  ```  create index documents_embedding_idx\n  on documents using ivfflat (embedding vector_cosine_ops)\n  with (lists = 100);\n  ```\n* Ajuste `lists` para 100–1000 dependendo do tamanho do corpus.\n* Use **Postgres Chat Memory** → memória persistente e compartilhada entre apps (escala melhor que memória simples).\n\n---\n\n### 4. n8n organizado\n\n* Nomeie cada nó com clareza: “GDrive Watch”, “Supabase Insert”, “Cohere Re-Rank”, etc.\n* Use **Execute Workflow** para dividir ingestão (fluxo 1) e perguntas/respostas (fluxo 2). Isso reduz falhas.\n* Ative **logging detalhado** em n8n → ajuda a rastrear problemas em embeddings ou consultas.\n\n---\n\n### 5. Re-Ranker (Cohere)\n\n* Configure `limit = 20` e **re-rank Top-K = 4–8** → garante precisão sem gastar tokens extras.\n* Se não usar Cohere, pelo menos retorne mais chunks (15–20) e faça a seleção via prompt do LLM.\n\n---\n\n### 6. Webhooks e integração com front-end\n\n* Conecte o fluxo de resposta a um **Webhook** → fácil de usar em **Bolt** ou **Lovable**.\n* Ao publicar, a URL do webhook muda → sempre **atualize no front-end**.\n* Use `Respond to Webhook` ao final para retorno imediato no chat.\n\n---\n\n### 7. Prompt engineering dentro do agente\n\nExemplo de system prompt para o AI Agent:\n\n```Você é um assistente especializado.  \nResponda somente com base no contexto retornado pelo Supabase.  \nSempre cite o arquivo e a página do trecho encontrado nos metadados.  \nSe não houver informação suficiente, peça ao usuário para enviar documentos adicionais.```\n\n→ Isso evita “alucinações” e aumenta confiança.\n\n---\n\n### 8. Testes e validação\n\n* Teste sempre com p**erguntas específicas **(“Quais os modelos de \\$100M do livro?”).\n* Verifique se a resposta traz m**etadados corretos.**\n* Valide se a memória do Supabase registra o histórico no c`hat_history.`\n\n---\n\n### 9. Escalabilidade e custo\n\n* Para bases pequenas → embeddings small + re-ranker.\n* Para bases grandes → embeddings large + índice otimizado.\n* Para reduzir custo de tokens: use m**odelos mini (gpt-4.1-mini) **para tool calls e só chame modelos maiores na resposta final.\n\n---\n\n### 10. Segurança e boas práticas\n\n* Nunca exponha a S**ervice Role Key **em front-end → use backend ou n8n como proxy.\n* Use .`env `ou credenciais seguras no n8n.\n* Faça backup das tabelas (Supabase → Storage + Database dump).",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13309,
+    "author": "INEMA",
+    "date": "2025-08-25T07:56:41+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "100M MONEY MODELS, HOW TO MAKE MONEY by Alex Hormozi (1).pdf"
+  },
+  {
+    "id": 13308,
+    "author": "INEMA",
+    "date": "2025-08-25T07:56:41+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "pdfcoffee_com_alex_hormozi_100m_offers_how_to_make_offers_so_good.pdf"
+  },
+  {
+    "id": 13307,
+    "author": "INEMA",
+    "date": "2025-08-25T07:56:41+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "100M_Leads_How_to_Get_Strangers_To_Want_To_Buy_Your_Stuff_Alex_Hormozi.pdf"
+  },
+  {
+    "id": 13305,
+    "author": "INEMA",
+    "date": "2025-08-25T07:51:42+00:00",
+    "text": "===============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13304,
+    "author": "INEMA",
+    "date": "2025-08-25T07:51:38+00:00",
+    "text": "Insert documents e se a tabela/documentos não estão vazios.\n   • Webhook em produção: a URL muda ao publicar; atualize no front-end.\n\n9. Exemplos prontos\n\nExemplo de pergunta ao agente\n• Pergunta: Quais são os modelos de 100 milhões descritos no material?\n• Esperado: listar os modelos, mencionar trechos-chave e devolver metadados, ex.: fonte: 100m-models.pdf, página 42.\n\nExemplo de metadados úteis por chunk\n\n```{\n  \"source\": \"gdrive\",\n  \"file\": \"100m-models.pdf\",\n  \"page\": 42,\n  \"section\": \"Stage 2\",\n  \"url\": \"https://drive.google.com/file/d/...\"\n}```\n\nExemplo de resposta formatada pelo agente\n• Resumo objetivo do tópico solicitado\n• 2–4 bullets com insights práticos\n• Referências entre parênteses usando metadados, ex.: (100m-models.pdf, p.42)\n\n10. Perguntas e respostas rápidas\n\nQ: Posso usar outra pasta de origem além do Google Drive?\nA: Sim. Troque o gatilho por e-mail, Dropbox, HTTP Upload etc. O importante é entregar o binário ao nó Insert documents.\n\nQ: Preciso do Re-Ranker da Cohere?\nA: Não é obrigatório, mas melhora bastante precisão em bases médias/grandes. Em bases pequenas, pode deixar desabilitado.\n\nQ: Como atualizo documentos já ingeridos?\nA: Reingira o arquivo e use uma chave de deduplicação nos metadados (ex.: hash do conteúdo) ou crie um fluxo de “update” por ID.\n\nQ: Dá para compartilhar a memória entre apps?\nA: Sim. Postgres Chat Memory vive no Supabase; qualquer app que aponte para as mesmas tabelas pode ler o histórico.\n\nQ: Como reduzir custo de tokens no chat?\nA: Restringir Top-K final, resumir trechos antes de enviar ao LLM e usar modelos mini para tool-calls e modelos maiores só na resposta final.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13303,
+    "author": "INEMA",
+    "date": "2025-08-25T07:51:38+00:00",
+    "text": "Aqui vai um passo a passo direto, em formato checklist, para você reproduzir o fluxo RAG + Supabase + n8n.\n\n# Passo a passo RAG + Supabase + n8n\n\n1. Preparar contas e chaves\n   • Supabase: criar projeto e anotar Project URL, Service Role secret, credenciais Postgres.\n   • OpenAI: chave para embeddings e modelo de chat.\n   • Cohere: chave para Re-Ranker.\n   • n8n: instância rodando e com acesso às credenciais acima.\n   • Google Drive: pasta “Entrada-RAG” para novos PDFs.\n\n2. Criar a tabela vetorial no Supabase\n   No SQL Editor do projeto, rode:\n\n```create extension if not exists vector;\n\ncreate table if not exists documents (\n  id bigserial primary key,\n  content text,\n  metadata jsonb,\n  embedding vector(1536) -- text-embedding-3-small\n);\n\ncreate index if not exists documents_embedding_idx\non documents using ivfflat (embedding vector_cosine_ops)\nwith (lists = 100);```\n\nDica: mantenha metadados como {\"source\":\"gdrive\",\"file\":\"nome.pdf\",\"page\":12}.\n\n3. Fluxo 1 no n8n: ingestão e vetorização\n   Ordem dos nós:\n   a) Google Drive → Watch for new files\n   • Folder: sua pasta “Entrada-RAG”\n   • Event: File created\n   b) Google Drive → Download file\n   • File: ID do nó anterior\n   c) Supabase Vector Store → Insert documents\n   • Credential: Service Role do seu projeto\n   • Host/Project URL: https\\://<seu-id>.supabase.co\n   • Table: documents\n   • Data loader: Default\n   • Data type: Binary (arquivo do Drive)\n   • Text splitter: Recursive\n   – Chunk size: 1000 tokens\n   – Chunk overlap: 200\n   • Embedding: OpenAI → text-embedding-3-small\n\nTeste: solte um PDF na pasta e verifique no Supabase > Table editor > documents se surgem linhas.\n\n4. Fluxo 2 no n8n: chat com memória + busca vetorial\n   Ordem dos nós:\n   a) Chat Trigger\n   b) AI Agent\n   • Model: gpt-4.1-mini (exige tool calling)\n   • System prompt (exemplo):\n\n   ```   Você é um assistente especializado. Responda com base no contexto retornado pela ferramenta Supabase.\n   Cite trechos relevantes e inclua fonte e página quando existirem nos metadados.\n   Se não houver contexto suficiente, peça para o usuário enviar documentos.\n   ```\n\n• Memory: Postgres Chat Memory\n– Host/Port/DB/User/Password: pegue em Project Settings > Connect > psql\n– Table prefix: n8n\\_chat (padrão OK)\n– Context window: 45\nc) Tool → Supabase Vector Store (busca)\n• Credential: a mesma do Supabase\n• Table: documents\n• Limit: 20\n• Re-rank results: habilitado\n– Re-ranker: Cohere\n– Top-K final: 4 a 8 (ajuste fino)\n• Embedding para query: OpenAI text-embedding-3-small\nd) Webhook Respond (opcional)\n• Para enviar a resposta do agente a um front-end (Bolt/Lovable) via webhook.\n\n5. Conectar um front-end (opcional, Bolt/Lovable)\n   • Adicione um Webhook (POST) no início do Fluxo 2.\n   • No app front-end, envie {message: \"...\"} para a URL do webhook.\n   • Use Respond to Webhook ao final para devolver a resposta do agente.\n\n6. Validação rápida\n   • Supabase: confira que documents tem novas linhas a cada PDF ingerido.\n   • n8n: nos Executions/Logs do AI Agent, veja a sequência: Chat → Tool call Supabase → Re-rank → Resposta.\n   • Faça uma pergunta específica e confira se os metadados retornam fonte/página esperadas.\n\n7. Boas práticas e ajustes\n   • Metadados: sempre grave filename, page, section, url.\n   • PDFs com OCR ruim: passe por OCR antes (ex.: Tesseract) para melhorar a extração.\n   • Tuning do splitter: para textos curtos, reduza chunk size (600–800) e mantenha overlap 15–25%.\n   • Embeddings: troque para text-embedding-3-large se precisar de alta precisão (mude vector(3072) e reindexe).\n   • Index ivfflat: ajuste lists conforme tamanho do corpus (100–1000).\n   • Custo/latência: aumente o limit inicial para 20–30 e mantenha Top-K final 4–8 com re-rank da Cohere.\n\n8. Erros comuns e correções\n   • Falha ao conectar Postgres Memory: confirme host/port/db/user e o password do Database (não confundir com Service Role).\n   • Dimensão do vetor errada: o campo embedding precisa bater com o modelo escolhido (1536 para text-embedding-3-small).\n   • Nada retorna na busca: verifique se embeddings foram criados no",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13302,
+    "author": "INEMA",
+    "date": "2025-08-25T07:50:04+00:00",
+    "text": "=================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13301,
+    "author": "INEMA",
+    "date": "2025-08-25T07:50:01+00:00",
+    "text": "Resumo completo do conteúdo da masterclass sobre RAG & Supabase:\n\n### Visão Geral\n\nComo usar **Supabase** e **RAG (Retrieval-Augmented Generation)** para criar fluxos de trabalho de automação mais poderosos, escaláveis e monetizáveis. Ele ensina como **vectorizar documentos (PDFs, livros, etc.) em Supabase**, consultar esses dados de forma eficiente e conectar tudo ao **n8n**, **Bolt** e **Lovable**.\n\n### Pontos Principais\n\n1. **Objetivo da Masterclass**\n\n   * Ensinar a vectorizar qualquer arquivo no Supabase.\n   * Mostrar como recuperar dados via RAG.\n   * Conectar Supabase a n8n e a outros apps.\n   * Criar fluxos que podem ser usados em negócios e automações de IA.\n\n2. **RAG (Retrieval-Augmented Generation)**\n\n   * Resolve a limitação de contexto dos LLMs (que não lembram tudo após certo limite de tokens).\n   * Estratégia: dividir documentos em pequenos trechos (chunks), buscar apenas os relevantes e re-ranquear (filtrar os mais úteis).\n   * Garante respostas mais rápidas, relevantes e consistentes.\n\n3. **Supabase como Banco de Dados Vetorial**\n\n   * Funciona como um Excel turbinado (armazenamento de conteúdo, metadados e embeddings).\n   * Estrutura básica: tabela de documentos com ID, conteúdo, metadados e vetores.\n   * Permite consultas rápidas e escaláveis.\n\n4. **Integração com n8n**\n\n   * Exemplo: monitorar uma pasta no Google Drive.\n   * Sempre que um PDF é adicionado, ele é baixado, processado, vectorizado e armazenado no Supabase.\n   * Usa “Recursive Text Splitter” para criar chunks de \\~1000 tokens com sobreposição de contexto.\n   * Conexão feita por credenciais de API e SQL gerado automaticamente (pode usar ChatGPT para escrever SQL).\n\n5. **Ferramentas Extras**\n\n   * **Re-Ranker (Cohere):** seleciona os melhores trechos entre os retornados pela busca.\n   * **OpenAI Embeddings:** gera os vetores dos documentos e consultas.\n   * **Postgres Chat Memory (Supabase):** memória compartilhada e escalável entre múltiplos apps, mais robusta que a memória simples.\n\n6. **Exemplo Prático**\n\n   * Vetorização de livros do Alex Hormozi no Supabase.\n   * Criação de um agente capaz de responder perguntas sobre os livros, consultando o banco vetorial.\n   * Conexão do agente ao Supabase + Cohere Re-Ranker para aumentar precisão.\n   * Integração com Bolt/Lovable para interface de chatbot.\n\n7. **Conexão com Webhooks**\n\n   * Mensagens e respostas do agente podem ser enviadas via webhook.\n   * Permite conectar a outros apps e escalar as automações.\n\n### Conclusão\n\nA masterclass mostra:\n\n* Como **vectorizar documentos no Supabase**.\n* Como usar **RAG para consultas inteligentes**.\n* Como integrar tudo ao **n8n, Bolt e Lovable**.\n* Como adicionar **memória escalável** e **re-rankers** para respostas mais confiáveis.\n\nÉ um guia **prático e passo a passo** de como transformar dados brutos (PDFs, textos, livros) em **agentes inteligentes de IA com memória** que podem ser aplicados em qualquer negócio.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13300,
+    "author": "INEMA",
+    "date": "2025-08-25T07:49:07+00:00",
+    "text": "Recursos\n🧽 RAG & Supabase Masterclass\n💸 Modelos de 100 milhões\n💸 Ofertas de 100 milhões\n💸 Lead Magnets de 100 milhões",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13299,
+    "author": "INEMA",
+    "date": "2025-08-25T07:47:21+00:00",
+    "text": "**🔥 n8n: **[**https://n8n.i**](https://n8n.partnerlinks.io/rkk4h07a86pv)**o**\n**🦸‍♀️ Supabase: **[**https://supabase.com/**](https://supabase.com/)\n**📊 Cohere: **[**https://dashboard.cohere.com/**](https://dashboard.cohere.com/)\n🔮 Loveable: [https://lovable.dev/](https://lovable.dev/?via=jack)\n**⚡️Bolt: **[**https://bolt.new/**](https://bolt.new/?rid=lua9is)",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 13298,
+    "author": "INEMA",
+    "date": "2025-08-25T07:43:41+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "🧽 RAG & Supabase Masterclass.json"
+  },
+  {
+    "id": 13297,
+    "author": "INEMA",
+    "date": "2025-08-25T07:43:31+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13297_013.jpg"
+  },
+  {
+    "id": 13296,
+    "author": "INEMA",
+    "date": "2025-08-25T07:43:28+00:00",
+    "text": "Masterclass RAG & Supabase",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13295,
+    "author": "INEMA",
+    "date": "2025-08-25T07:43:28+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13294,
+    "author": "INEMA",
+    "date": "2025-08-25T07:43:28+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13293,
+    "author": "INEMA",
+    "date": "2025-08-25T07:43:24+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13292,
+    "author": "INEMA",
+    "date": "2025-08-25T07:43:23+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13291,
+    "author": "INEMA",
+    "date": "2025-08-25T07:43:22+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13290,
+    "author": "INEMA",
+    "date": "2025-08-25T07:43:22+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13289,
+    "author": "INEMA",
+    "date": "2025-08-25T07:43:22+00:00",
+    "text": "https://chatgpt.com/c/68ac1358-18fc-8325-bc0e-31e25b20d7d5",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 13288,
+    "author": "INEMA",
+    "date": "2025-08-25T07:43:21+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13287,
+    "author": "INEMA",
+    "date": "2025-08-25T07:43:15+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

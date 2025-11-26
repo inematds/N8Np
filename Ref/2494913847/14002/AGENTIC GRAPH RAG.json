@@ -1,0 +1,588 @@
+{
+  "name": "AGENTIC GRAPH RAG",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "ebc4ccdc-dd5d-488a-b67d-c8c6b0f557e9",
+        "options": {}
+      },
+      "id": "28236901-632d-41ed-b325-c556911a3e5a",
+      "name": "Query Input Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -8,
+        208
+      ],
+      "webhookId": "ebc4ccdc-dd5d-488a-b67d-c8c6b0f557e9"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 2
+            }
+          ]
+        }
+      },
+      "id": "3103fd65-0c70-484a-b906-d736e446884c",
+      "name": "Document Ingestion Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -8,
+        712
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.example.com/documents",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_API_TOKEN"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6562b2db-472d-41d5-b84b-aa65c516ce37",
+      "name": "Fetch Documents",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        712
+      ]
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "id": "f16cb553-0f73-4480-ba5c-d177aee51129",
+      "name": "Recursive Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1376,
+        1144
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": []
+          }
+        }
+      },
+      "id": "5685f54f-3191-414b-a7a4-7cc13565d00b",
+      "name": "Document Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1296,
+        936
+      ]
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {}
+      },
+      "id": "de220593-94bc-45ec-b26c-510d24c39144",
+      "name": "OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        368,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "id": "7ad75619-07d1-49bf-ad48-63c050cb60b1",
+      "name": "Knowledge Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        1304,
+        712
+      ]
+    },
+    {
+      "parameters": {
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "id": "ec2b7a8d-a71a-4cd4-aece-d126ca02c9f4",
+      "name": "Query Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        -80,
+        904
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "id": "421c74b8-f6eb-4a38-b7f7-0db3b97fe02d",
+      "name": "Vector Search Tool",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        224
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "407343a0-e320-4826-83fc-b3aabbcb7e6f",
+      "name": "Enhanced Retriever",
+      "type": "@n8n/n8n-nodes-langchain.retrieverVectorStore",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        1144
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "={{ $fromAI('auth_method', 'Authentication method for the GraphQL endpoint', 'string', 'none') }}",
+        "endpoint": "={{ $fromAI('graphql_endpoint', 'GraphQL endpoint URL for the graph database', 'string') }}",
+        "query": "={{ $fromAI('graphql_query', 'GraphQL query to execute', 'string') }}",
+        "variables": "={{ $fromAI('graphql_variables', 'GraphQL query variables as JSON object', 'json', {}) }}"
+      },
+      "id": "76a4757f-6b6a-4691-9636-ee79291637c2",
+      "name": "Graph Query Tool",
+      "type": "n8n-nodes-base.graphqlTool",
+      "typeVersion": 1.1,
+      "position": [
+        576,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "description": "Analyze graph patterns and identify key relationships",
+        "jsCode": "// Graph analysis tool for identifying patterns and relationships\n// Input: query should contain graph data or analysis request\n\n// Parse the input query to extract graph data or analysis type\nconst analysisRequest = query.toLowerCase();\n\n// Mock graph analysis - in real implementation, this would connect to actual graph database\nif (analysisRequest.includes('centrality')) {\n  return 'Centrality analysis: Identified key nodes with highest betweenness centrality scores. Top influential nodes: Node_A (0.85), Node_B (0.72), Node_C (0.68)';\n} else if (analysisRequest.includes('community')) {\n  return 'Community detection: Found 3 distinct communities with modularity score 0.82. Largest community contains 45% of nodes with strong internal connections.';\n} else if (analysisRequest.includes('path')) {\n  return 'Path analysis: Shortest path algorithms executed. Average path length: 3.2 hops. Critical bridge nodes identified that connect major components.';\n} else if (analysisRequest.includes('cluster')) {\n  return 'Clustering analysis: Hierarchical clustering revealed 5 major clusters. Silhouette score: 0.76 indicating well-separated clusters.';\n} else {\n  return 'General graph analysis: Network contains ' + Math.floor(Math.random() * 1000 + 100) + ' nodes and ' + Math.floor(Math.random() * 5000 + 500) + ' edges. Density: 0.15, Average degree: 4.2';\n}"
+      },
+      "id": "e9a61aff-2f2e-4d43-9af0-64db5faf8b02",
+      "name": "Graph Analysis Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        704,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "description": "Extract entities and relationships from text",
+        "jsCode": "// Extract entities and relationships from text\n// Input: query (string) - the text to analyze\n\nconst text = query;\nconst entities = [];\nconst relationships = [];\n\n// Simple entity extraction patterns\nconst patterns = {\n  person: /\\b[A-Z][a-z]+ [A-Z][a-z]+\\b/g,\n  organization: /\\b[A-Z][a-z]+ (?:Inc|Corp|LLC|Ltd|Company|Organization)\\b/g,\n  location: /\\b(?:in|at|from) ([A-Z][a-z]+(?:, [A-Z][a-z]+)?)\\b/g,\n  date: /\\b(?:January|February|March|April|May|June|July|August|September|October|November|December) \\d{1,2}, \\d{4}\\b/g,\n  email: /\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b/g,\n  phone: /\\b\\d{3}-\\d{3}-\\d{4}\\b/g\n};\n\n// Extract entities\nfor (const [type, pattern] of Object.entries(patterns)) {\n  const matches = text.match(pattern) || [];\n  matches.forEach(match => {\n    entities.push({\n      type: type,\n      value: match.trim(),\n      position: text.indexOf(match)\n    });\n  });\n}\n\n// Extract simple relationships\nconst relationshipPatterns = [\n  { pattern: /(\\w+) works at (\\w+)/gi, relation: 'works_at' },\n  { pattern: /(\\w+) is located in (\\w+)/gi, relation: 'located_in' },\n  { pattern: /(\\w+) owns (\\w+)/gi, relation: 'owns' },\n  { pattern: /(\\w+) manages (\\w+)/gi, relation: 'manages' }\n];\n\nrelationshipPatterns.forEach(({ pattern, relation }) => {\n  let match;\n  while ((match = pattern.exec(text)) !== null) {\n    relationships.push({\n      subject: match[1],\n      predicate: relation,\n      object: match[2]\n    });\n  }\n});\n\n// Return structured result\nconst result = {\n  entities: entities,\n  relationships: relationships,\n  entity_count: entities.length,\n  relationship_count: relationships.length\n};\n\nreturn JSON.stringify(result, null, 2);"
+      },
+      "id": "f5afda97-2593-4287-81f0-d7e3b9c53784",
+      "name": "Entity Extraction Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        832,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "ebeea2d5-307c-4a6b-a91d-f9c2a9b3b27f",
+      "name": "Primary LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "e2e0b586-eae6-4967-95ce-1d1d59dc9acd",
+      "name": "Reasoning LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1376,
+        328
+      ]
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "id": "b2eb423e-812c-4f14-bc89-c5bc7e39b55a",
+      "name": "Conversation Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1088,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a sophisticated Graph RAG agent that combines vector search, graph analysis, and entity extraction to provide comprehensive answers. Use your tools to gather information from multiple sources and synthesize insights."
+        }
+      },
+      "id": "40fd0b36-daca-4344-aece-449d0b1fac68",
+      "name": "Graph RAG Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        696,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a reasoning agent that analyzes the findings from the Graph RAG agent and provides final, well-reasoned answers. Synthesize information, identify patterns, and provide clear, actionable insights.",
+          "maxIterations": 15,
+          "returnIntermediateSteps": true
+        }
+      },
+      "id": "19b47670-b0ef-43f5-b4d6-de0061469d0f",
+      "name": "Reasoning Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1304,
+        104
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "response",
+              "value": "={{ $('Reasoning Agent').item.json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "confidence",
+              "value": "={{ $('Reasoning Agent').item.json.confidence || 0.8 }}",
+              "type": "number"
+            },
+            {
+              "id": "id-3",
+              "name": "sources",
+              "value": "={{ JSON.stringify($('Reasoning Agent').item.json.sources || []) }}",
+              "type": "array"
+            },
+            {
+              "id": "id-4",
+              "name": "timestamp",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "226a707e-1bc2-4d7a-932b-11d06a5009c7",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1664,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"response\": \"{{ $('Format Response').item.json }}\"\n}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, PUT, DELETE, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "a91b7760-7f9b-4d74-9682-ebed226491f3",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1888,
+        208
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Document Ingestion Schedule": {
+      "main": [
+        [
+          {
+            "node": "Fetch Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Documents": {
+      "main": [
+        [
+          {
+            "node": "Knowledge Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Document Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Knowledge Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Knowledge Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Query Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Vector Search Tool",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Search Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Graph RAG Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Graph Query Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Graph RAG Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Graph Analysis Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Graph RAG Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entity Extraction Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Graph RAG Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Primary LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Graph RAG Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reasoning LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Reasoning Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Graph RAG Agent",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Reasoning Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Input Webhook": {
+      "main": [
+        [
+          {
+            "node": "Graph RAG Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Graph RAG Agent": {
+      "main": [
+        [
+          {
+            "node": "Reasoning Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reasoning Agent": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6342f29e-299b-4bcc-ad95-6a3d6293ae5d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aaadb797535f05587ee95b776c942a7c3f7a46fd7aa0c9b6a9d64e1e595f8af1"
+  },
+  "id": "LHeSy1mPWqqfn5mc",
+  "tags": []
+}

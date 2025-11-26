@@ -1,0 +1,294 @@
+TOPICO 4485
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-03-31 22:44:39+00:00
+
+Total de mensagens: 17
+Midias baixadas: 2
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-03-31T22:49:40+00:00
+Texto:
+Aqui está um passo a passo completo com os motivos (porquês) de cada etapa para melhorar a memória do seu agente de IA no n8n usando PostgreSQL e Supabase:
+
+
+Passo 1: Remover a memória padrão do n8n
+O que fazer:
+No seu fluxo n8n, delete o nó de memória padrão que vinha com o agente.
+
+Por quê:
+A memória padrão do n8n é temporária e se perde após certo tempo ou reinício. Isso limita a continuidade da conversa com seu agente.
+
+
+Passo 2: Adicionar memória com Memory PO ChatM
+O que fazer:
+Adicione um novo nó de memória com o tipo Memory PO ChatM e configure o parâmetro k=50.
+
+Por quê:
+Isso define que o agente lembrará das últimas 50 mensagens, melhorando a consistência das respostas e evitando repetições.
+
+
+Passo 3: Criar um projeto no Supabase
+O que fazer:
+Acesse o Supabase, clique em New Project, escolha uma organização, dê um nome e defina uma senha para o banco.
+
+Por quê:
+O Supabase fornece um banco PostgreSQL gerenciado na nuvem, que será usado para guardar o histórico de conversas do seu agente.
+
+
+Passo 4: Copiar as credenciais de conexão
+O que fazer:
+No projeto criado, vá em Project Settings > Database > Connection Info e copie:
+
+
+
+host
+
+
+port (5432)
+
+
+database name
+
+
+user
+
+
+senha
+
+
+Por quê:
+Você precisa dessas informações para conectar o n8n ao banco e armazenar os dados de forma segura e estruturada.
+
+
+Passo 5: Criar uma credencial no n8n
+O que fazer:
+No n8n, vá até as credenciais, crie uma nova do tipo PostgreSQL, e cole as informações obtidas do Supabase.
+
+Por quê:
+Sem essa conexão, o n8n não conseguirá enviar nem ler os dados no banco de dados.
+
+
+Passo 6: Rodar o script SQL para criar a tabela de memória
+O que fazer:
+Vá no Supabase em SQL Editor, cole este script da documentação (abaixo) e execute:
+
+```create table if not exists n8n_chat_histories (
+  session_id text,
+  message_id uuid default uuid_generate_v4 (),
+  role text,
+  content text,
+  timestamp timestamp with time zone default timezone('utc'::text, now())
+);
+
+```
+Por quê:
+Isso cria a tabela n8n_chat_histories que será usada para guardar cada mensagem, com data, papel (usuário ou IA), conteúdo e ID da sessão.
+
+
+Passo 7: Testar a integração com Telegram (ou outro canal)
+O que fazer:
+Envie uma mensagem para o agente (ex: “Oi”) e veja se aparece no banco.
+
+Por quê:
+Você precisa garantir que o fluxo está funcionando e que o ID de sessão está sendo atribuído corretamente.
+
+
+Passo 8: Ajustar o Session ID com o ID do usuário
+O que fazer:
+No nó de memória ou mapeamento do fluxo, pegue o ID do usuário do Telegram e use como session_id.
+
+Por quê:
+Cada pessoa precisa ter sua própria memória separada. O session_id serve para identificar de quem é cada conversa.
+
+
+Passo 9: Verificar os dados no Supabase
+O que fazer:
+Vá até o Table Editor > n8n_chat_histories e veja se as mensagens estão sendo salvas corretamente.
+
+Por quê:
+Assim você garante que o histórico está sendo registrado e poderá ser recuperado em qualquer momento futuro.
+
+
+Passo 10: Pronto! Memória persistente ativada
+Resultado final:
+Seu agente de IA agora tem memória persistente, capaz de lembrar de conversas anteriores, mesmo que a automação reinicie, o n8n caia ou a conversa continue outro dia.
+
+
+Se quiser, posso criar um fluxograma visual, uma versão para impressão (PDF) ou até um template do fluxo no n8n. Deseja algum desses?
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-03-31T22:49:31+00:00
+Texto:
+==========
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-03-31T22:48:48+00:00
+Texto:
+Resumo completo do vídeo **"Melhore a Memória do Seu Agente de IA no n8n Usando PostgreSQL e Supabase"**:
+
+O vídeo mostra como **melhorar a memória de um agente de IA (via MCP)** usando **Supabase como banco de dados PostgreSQL** integrado ao **n8n**, em vez da memória padrão da ferramenta, que é mais limitada. A melhoria permite que o agente **recupere e mantenha o histórico das conversas**, mesmo após reiniciar ou mudar de sessão.
+
+### Etapas explicadas no vídeo com exemplos:
+
+1. **Remover a memória atual do agente**
+   - Exclui a memória anterior do agente no n8n.
+
+2. **Inserir nova memória usando **`Memory PO ChatM`
+   - Altera o parâmetro para recuperar as últimas 50 mensagens (melhora a continuidade da conversa).
+
+3. **Criar projeto no Supabase**
+   - Acessa o Supabase, cria um novo projeto e define uma senha para o banco.
+
+4. **Obter dados de conexão do banco**
+   - Vai em “Connect > Session Pooler” no Supabase e copia os dados: `host`, `database`, `user`, `password`, e `port (5432)`.
+
+5. **Criar credencial no n8n**
+   - Usa os dados copiados do Supabase para configurar o nó `Postgres`.
+
+6. **Criar a estrutura de memória no banco**
+   - Abre o `SQL Editor` no Supabase e cola um script SQL copiado da documentação do `Supabase Vector Store`.
+
+7. **Executar o script SQL**
+   - Cria automaticamente a tabela `n8n_chat_histories` no Supabase para armazenar o histórico das conversas.
+
+8. **Testar a integração com o Telegram**
+   - Envia mensagens para o bot do Telegram, verifica erros no n8n e ajusta o `session_id` usando o ID do usuário do Telegram.
+
+9. **Salvar e verificar resultados**
+   - Após corrigir o erro de chave da sessão, envia nova mensagem e valida que a conversa está sendo armazenada no banco.
+
+10. **Conferir no Supabase**
+    - Acessa o `Table Editor` e vê que as mensagens “Oi” e “Boa noite” foram armazenadas com seus respectivos `session_id`.
+
+### Benefícios demonstrados:
+
+- **Persistência de memória**: histórico de conversa é salvo mesmo após o fluxo ser reiniciado.
+- **Flexibilidade**: é possível mudar o nome da tabela e criar várias por agente.
+- **Eficiência**: respostas mais rápidas pois a consulta ao histórico é feita diretamente no banco.
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-03-31T22:46:44+00:00
+Texto:
+https://www.youtube.com/watch?v=l0_lCTVBo4w
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-03-31T22:45:00+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-03-31T22:44:59+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-03-31T22:44:59+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-03-31T22:44:52+00:00
+Texto:
+c1  -  Memoria PostgreSQL e Supabase
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-03-31T22:44:50+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-03-31T22:44:49+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-03-31T22:44:49+00:00
+Texto:
+....
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-03-31T22:44:49+00:00
+Texto:
+...
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-03-31T22:44:49+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-03-31T22:44:48+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-03-31T22:44:48+00:00
+Texto:
+https://chatgpt.com/c/67eb1b6e-6400-8009-9ed2-b926ef5984f8
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 16
+Autor: INEMA
+Data: 2025-03-31T22:44:48+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 17
+Autor: INEMA
+Data: 2025-03-31T22:44:39+00:00
+Texto: [Sem texto]
+
+------------------------------
+

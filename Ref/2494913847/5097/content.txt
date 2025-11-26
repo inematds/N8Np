@@ -1,0 +1,286 @@
+TOPICO 5097
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-04-09 05:41:33+00:00
+
+Total de mensagens: 14
+Midias baixadas: 5
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-04-09T05:50:11+00:00
+Texto:
+Aqui está o **passo a passo completo para criar o fluxo no n8n** baseado no vídeo, para comparar geradores de vídeo por IA sem rosto (Minimax, Hunyuan, Kling e Google Veo 2), traduzir o prompt com Google Translate, enviar para as APIs, monitorar o status e baixar os vídeos automaticamente.
+
+---
+
+### 🧠 Visão geral do fluxo:
+1. Entrada do Prompt em texto  
+2. Tradução (opcional) com Google Translate  
+3. Envio do prompt para as 4 APIs (Minimax, Hunyuan, Kling, Google Veo 2)  
+4. Acompanhamento do status de cada geração  
+5. Download dos vídeos gerados  
+6. Saída com links para os 4 vídeos
+
+---
+
+### ✅ Pré-requisitos:
+- Conta no [n8n](https://n8n.io/)
+- Chaves de API das 4 plataformas de vídeo (ou acesso via FA.AI se aplicável)
+- API do Google Translate ativada
+
+---
+
+### 🔁 Passo a passo no n8n:
+
+---
+
+#### 1. **Entrada do Prompt**
+- **Node:** *Set*
+- Campos:
+  - `prompt`: "Tracking shots with the subject centered in the frame" (ou qualquer outro)
+
+---
+
+#### 2. **Tradução com Google Translate (opcional)**
+- **Node:** *HTTP Request*
+- Método: `POST`
+- URL: `https://translation.googleapis.com/language/translate/v2`
+- Headers:
+  - `Content-Type: application/json`
+- Corpo JSON:
+```{
+  "q": "={{$json["prompt"]}}",
+  "source": "en",
+  "target": "zh",
+  "format": "text",
+  "key": "SUA_API_KEY_GOOGLE_TRANSLATE"
+}```
+- **Saída:** `translatedPrompt` (opcional, dependendo do modelo)
+
+---
+
+#### 3. **Enviar Prompt para cada IA (1 por vez)**
+
+##### a. **Minimax (via API direta)**
+- **Node:** *HTTP Request*
+- Método: `POST`
+- URL: `https://api.minimax.chat/v1/video/t2v`
+- Headers:
+  - `Authorization`: `Bearer SUA_API_KEY_MINIMAX`
+  - `Content-Type`: `application/json`
+- Corpo JSON:
+```{
+  "prompt": "={{$json["translatedPrompt"] || $json["prompt"]}}"
+}```
+
+##### b. **Hunyuan, Kling e Google Veo 2 (via FA AI ou outra camada intermediária)**
+- **Node (cada um):** *HTTP Request*
+- Método: `POST`
+- URL: `https://api.fa.ai/video/generate` *(exemplo genérico)*
+- Headers:
+  - `Authorization`: `Bearer SUA_API_KEY`
+- Corpo JSON:
+```{
+  "model": "H" // ou "CL" ou "F2"
+  "prompt": "={{$json["translatedPrompt"] || $json["prompt"]}}"
+}```
+
+> Sugestão: criar um subfluxo com chamada para o modelo, status e download para evitar repetição de nodes.
+
+---
+
+#### 4. **Acompanhar o Status**
+Para cada modelo, adicione:
+
+- **Node:** *HTTP Request*
+- Método: `GET`
+- URL: `https://api.minimax.chat/v1/video/status?task_id={{TASK_ID}}` *(exemplo)*
+- Use `Wait` (Delay de 30 segundos)
+- **Node IF:**
+  - Se `status == completed`, continuar.
+  - Se não, voltar para o Delay e checar de novo.
+
+---
+
+#### 5. **Download do Vídeo**
+- **Node:** *HTTP Request*
+- Método: `GET`
+- URL: `={{$json["download_url"]}}`
+- Salvar como arquivo ou enviar para Google Drive, servidor etc.
+
+---
+
+#### 6. **Saída final com links**
+- **Node:** *Set*
+- Adicionar campos:
+  - `MinimaxVideoURL`
+  - `HunyuanVideoURL`
+  - `KlingVideoURL`
+  - `GoogleVeo2VideoURL`
+
+---
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-04-09T05:48:11+00:00
+Texto:
+### Resumo do vídeo:  
+**Faceless Video Generator Comparison (Minimax vs Hunyuan vs Kling vs Google Veo 2)**  
+[Link: https://www.youtube.com/watch?v=NtOMpOrHyow](https://www.youtube.com/watch?v=NtOMpOrHyow)
+
+O criador do vídeo mostra um sistema automatizado usando **n8n** para comparar quatro modelos de geração de vídeo por IA (sem rosto): **Minimax**, **Tencent Hunyuan**, **Kling** e **Google Veo 2**. O fluxo automatizado traduz prompts de texto com o **Google Translate**, envia esses prompts para cada modelo, acompanha o status da geração e baixa os vídeos finais — tudo sem intervenção manual.
+
+---
+
+### Tópicos abordados no vídeo:
+
+1. **Demonstração dos 4 vídeos simultaneamente:**
+   - O autor apresenta os vídeos gerados pelas quatro plataformas com o mesmo prompt para que os espectadores comparem visualmente.
+   - Todos os modelos receberam o mesmo prompt em inglês.
+
+2. **Automação com n8n (No-Code):**
+   - Mostra como configurar requisições HTTP no n8n para cada modelo.
+   - Explica como inserir as chaves de API, URLs e parâmetros.
+   - Demonstra como monitorar o status da geração e baixar o vídeo ao final.
+
+3. **Uso do Google Translate:**
+   - Tradução automática de prompts para chinês (especialmente útil para Minimax e Hunyuan).
+   - O prompt em chinês gerou resultados visualmente melhores nos modelos chineses.
+
+4. **Detalhes Técnicos:**
+   - Mostra os tempos de geração dos vídeos e os custos aproximados:
+     - **Kling**: cerca de **US$ 0,10** por vídeo de 5 segundos.
+     - **Google Veo 2 (F2)**: mais caro.
+     - Diferença de custo entre API direta (Minimax) e via FA AI é pequena.
+
+
+
+
+### Exemplos práticos:
+
+- Prompt usado: `"Tracking shots with the subject centered in the frame"` (em inglês e traduzido para chinês).
+- Cada modelo respondeu de forma distinta ao mesmo comando.
+- Testes realizados com tempos de espera de 30 segundos entre verificações de status.
+- Fluxo usa blocos **HTTP Request**, **IF**, **Delay** e **Download** no n8n.
+
+---
+
+### Conclusão:
+O vídeo é um **guia prático e técnico** para quem deseja testar e comparar plataformas de geração de vídeos por IA sem rosto. Ele mostra como montar uma automação no **n8n**, reduzindo o trabalho manual e permitindo escalabilidade. Ideal para desenvolvedores, criadores de conteúdo e entusiastas de IA.
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-04-09T05:48:06+00:00
+Texto:
+===============
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-04-09T05:46:11+00:00
+Texto:
+Comparação de Geradores de Vídeo sem Rosto 
+
+(Minimax vs Hunyuan vs Kling vs Google Veo 2)
+
+
+Sistema de geração de vídeos com inteligência artificial que cria automaticamente vídeos impressionantes a partir de prompts de texto — tudo com automação no-code usando o n8n!
+
+Esse sistema compara o desempenho das plataformas Minimax, Tencent Hunyuan, Kling e Google Veo 2 
+
+— gerando vídeos sem rosto em cada uma, traduzindo automaticamente os prompts com o Google Tradutor, acompanhando o status da geração e baixando os vídeos finais — tudo de forma totalmente automatizada!
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-04-09T05:44:55+00:00
+Texto:
+al5
+Midia: MessageMediaDocument -> 14_4_Faceless_Video_Generator_Comparison_Minimax_vs_Hunyuan_vs_Kling.json
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-04-09T05:44:45+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_5105_006.jpg
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-04-09T05:41:43+00:00
+Texto:
+al5 - **Faceless Video Generator Comparison**
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-04-09T05:41:41+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-04-09T05:41:41+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-04-09T05:41:40+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-04-09T05:41:40+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-04-09T05:41:40+00:00
+Texto:
+https://chatgpt.com/c/67f608aa-ad5c-8009-99b7-70c8805fb107
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-04-09T05:41:39+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-04-09T05:41:33+00:00
+Texto: [Sem texto]
+
+------------------------------
+

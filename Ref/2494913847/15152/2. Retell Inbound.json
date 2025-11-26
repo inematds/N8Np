@@ -1,0 +1,909 @@
+{
+  "name": "2. Retell Inbound",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Llamada entrante",
+        "height": 464,
+        "width": 928
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -48,
+        -176
+      ],
+      "typeVersion": 1,
+      "id": "b8eb3046-5f88-4de2-a1b6-764d269d9076",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.retellai.com/v2/create-phone-call",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from_number\": \"+18559653439\",\n  \"to_number\": \"{{ $json.Telefono }}\",\n  \"metadata\": {\n    \"Nombre\": \"{{ $json.Nombre }}\",\n    \"Email\": \"{{ $json.Email }}\"\n  },\n  \"retell_llm_dynamic_variables\": {\n    \"first_name\": \"{{ $json.Nombre }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1888,
+        -80
+      ],
+      "id": "d337bcb9-0037-41f3-bdac-eff616e8a500",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[REMOVED]",
+          "name": "Retell.AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "recibir-info-retell",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "479a72a7-aa0a-405d-9778-51a5e71bbfaf",
+      "name": "Webhook1",
+      "webhookId": "124f102e-075f-4a25-860d-e7424ba9df5d"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.call.call_analysis.custom_analysis_data.info_completa === true && $json.body.event === 'call_analyzed' }}",
+                    "rightValue": "true",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "[REMOVED]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Llamada exitosa"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.info_completa === false && $json.event === 'call_analyzed' }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Falta información"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "[REMOVED]",
+                    "leftValue": "={{ $json.body.event === 'call_ended' && ['voicemail_reached', 'dial_busy', 'user_declined', 'dial_no_answer'].includes($json.body.call.disconnection_reason) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Contacto fallido"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        208,
+        -16
+      ],
+      "id": "e6bd0018-9f14-401f-95f8-28a45c390461",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Prueba",
+        "remoteJid": "={{ $json.body.call.to_number.replace(\"+\",\"\") }}@s.whatsapp.net",
+        "messageText": "=Hola {{ $json.body.call.metadata.Nombre }} , que tal estas?  \n\nSoy *SilvIA de SolutechIA.* He intentado contactar contigo por teléfono pero no ha sido posible.   Quería hacerte una preguntas para ver como te podemos ayudar 😊. \n\nSi quieres hablar conmigo y contarme un poco mas (Si... soy una inteligencia artificial...😜) simplemente contesta *Quiero que me llames.* y te devolveré la llamada enseguida.\n\nDe esta manera paso la info al equipo para que te puedan ayudar con tu caso.",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        496,
+        144
+      ],
+      "id": "2c0072fd-cf3f-41e2-bc7d-fa788f0ba555",
+      "name": "Enviar texto",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Prueba",
+        "remoteJid": "={{ $json.body.call.to_number.replace(\"+\",\"\") }}@s.whatsapp.net",
+        "messageText": "=Hola {{ $json.body.call.metadata.Nombre }} , que tal estas?  \n\nSoy *SilvIA de SolutechIA.* Acabamos de hablar 😊. Quería hacerte unas preguntas para ver como te podemos ayudar ya que me falta recabar un poco mas de info 😊. \n\nSi quieres hablar conmigo y contarme un poco mas (Si... soy una inteligencia artificial...😜) simplemente contesta *Quiero que me llames.* y te devolveré la llamada enseguida.\n\nDe esta manera paso la info al equipo para que te puedan ayudar con tu caso.",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        496,
+        -16
+      ],
+      "id": "37bf155f-a4a6-4baf-86b9-93ecb455a316",
+      "name": "Enviar texto1",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appT4iQPZEhxljb3L",
+          "mode": "list",
+          "cachedResultName": "Base de datos SolutechIa Test",
+          "cachedResultUrl": "https://airtable.com/appT4iQPZEhxljb3L"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblicWRs8PjgUJ95V",
+          "mode": "list",
+          "cachedResultName": "Base de datos",
+          "cachedResultUrl": "https://airtable.com/appT4iQPZEhxljb3L/tblicWRs8PjgUJ95V"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "[REMOVED]",
+            "Briefing": "={{ $json.body.call.call_analysis.custom_analysis_data.Briefing }}",
+            "Campos de interes": "={{ $json.body.call.call_analysis.custom_analysis_data.Campos_interes }}",
+            "Proceso actual": "={{ $json.body.call.call_analysis.custom_analysis_data.Proceso_actual }}",
+            "Observaciones extra": "={{ $json.body.call.call_analysis.custom_analysis_data.Observaciones_extra }}",
+            "Problemas principales": "={{ $json.body.call.call_analysis.custom_analysis_data.Problemas_principales }}",
+            "Info completa": "={{ $json.body.call.call_analysis.custom_analysis_data.info_completa ? 'Si' : 'No' }}",
+            "URL llamada": "={{ $json.body.call.recording_url }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Apellidos",
+              "displayName": "Apellidos",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Telefono",
+              "displayName": "Telefono",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Llamar a cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Briefing",
+              "displayName": "Briefing",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Campos de interes",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Proceso actual",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Observaciones extra",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Problemas principales",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "Info completa",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Si",
+                  "value": "Si"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "URL llamada",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Creada",
+              "displayName": "Creada",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        496,
+        -160
+      ],
+      "id": "c2948941-0651-44f5-8597-0274c2a09c71",
+      "name": "Update record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "[REMOVED]",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "WA-respuesta",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        992,
+        16
+      ],
+      "id": "1a0b277b-2aad-4d75-b573-792bb4587ded",
+      "name": "Webhook",
+      "webhookId": "763206f1-bed2-46e8-bab3-5cc1119fbdd6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.body.data.key.fromMe }}",
+              "rightValue": "false",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.body.event }}",
+              "rightValue": "=messages.upsert",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.body.data.key.remoteJid }}",
+              "rightValue": "34722418242@s.whatsapp.net",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1216,
+        16
+      ],
+      "id": "4529415d-ff13-41de-8165-7bb1c44af86b",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.body.data.message.conversation.toLowerCase() }}",
+              "rightValue": "quiero que me llames",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1440,
+        16
+      ],
+      "id": "cdad76bc-034d-4e35-b0c2-b4fb3f347bc4",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appT4iQPZEhxljb3L",
+          "mode": "list",
+          "cachedResultName": "Base de datos SolutechIa Test",
+          "cachedResultUrl": "https://airtable.com/appT4iQPZEhxljb3L"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblicWRs8PjgUJ95V",
+          "mode": "list",
+          "cachedResultName": "Base de datos",
+          "cachedResultUrl": "https://airtable.com/appT4iQPZEhxljb3L/tblicWRs8PjgUJ95V"
+        },
+        "filterByFormula": "={{`{Telefono} = \"+${$json.body.data.key.remoteJid.replace('@s.whatsapp.net', '')}\"`}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1664,
+        -80
+      ],
+      "id": "82260fd7-6d81-4ab1-aaa7-9b81a94e780d",
+      "name": "Search records",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "[REMOVED]",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Prueba",
+        "remoteJid": "={{ $json.body.data.key.remoteJid }}",
+        "messageText": "=Hola,\n\nEste telefono solo esta activo para solicitar una llamada.\n\nSi, quieres que te llame SOLO respóndeme *quiero que me llames*.\n\nEspero tu mensaje! 😊",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        1664,
+        112
+      ],
+      "id": "f59c4d18-5c06-440b-95a8-7687512e32fe",
+      "name": "Enviar texto2",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Contacto WhatsApp",
+        "height": 464,
+        "width": 1184,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        928,
+        -176
+      ],
+      "typeVersion": 1,
+      "id": "b308d1b3-e061-4d16-a686-5cf698570977",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {
+    "Webhook1": [
+      {
+        "json": {
+          "headers": {
+            "host": "aawebhookaa.vps.rubikmarketing.com.co",
+            "user-agent": "axios/1.11.0",
+            "content-length": "948",
+            "accept": "application/json, text/plain, */*",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "content-type": "application/json",
+            "x-forwarded-for": "100.20.5.228",
+            "x-forwarded-host": "aawebhookaa.vps.rubikmarketing.com.co",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "f75c220e25da",
+            "x-real-ip": "100.20.5.228",
+            "x-retell-signature": "v=1760655286520,d=e0700e51293166c1fc24737326c0b0f322a9d6ad1f51311e39e3a27ee1bd753a"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "event": "call_ended",
+            "call": {
+              "call_id": "call_489285b07968b36cdeb7722eb44",
+              "call_type": "phone_call",
+              "agent_id": "agent_02a127a784b6bc678be5bb24a7",
+              "agent_version": 2,
+              "agent_name": "SolutechIA N8N",
+              "retell_llm_dynamic_variables": {
+                "first_name": "Angel"
+              },
+              "call_status": "not_connected",
+              "start_timestamp": 1760655286510,
+              "end_timestamp": 1760655286510,
+              "duration_ms": 0,
+              "transcript": "",
+              "transcript_object": [],
+              "transcript_with_tool_calls": [],
+              "disconnection_reason": "dial_no_answer",
+              "latency": {},
+              "metadata": {
+                "Nombre": "Angel",
+                "Email": "angel.aparicio92@gmail.com",
+                "Record_id": "rec0izUrApnaUzbj1"
+              },
+              "call_cost": {
+                "product_costs": [],
+                "total_duration_seconds": 0,
+                "total_duration_unit_price": 0,
+                "combined_cost": 0
+              },
+              "opt_out_sensitive_data_storage": false,
+              "data_storage_setting": "everything",
+              "opt_in_signed_url": false,
+              "from_number": "+18559653439",
+              "to_number": "+34722418242",
+              "direction": "outbound",
+              "telephony_identifier": {
+                "twilio_call_sid": "CAb5f7461728b88d6f1b53d127ae83717a"
+              }
+            }
+          },
+          "webhookUrl": "https://aawebhookaa.vps.rubikmarketing.com.co/webhook/recibir-info-retell",
+          "executionMode": "production"
+        }
+      }
+    ],
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "aawebhookaa.vps.rubikmarketing.com.co",
+            "user-agent": "axios/1.12.2",
+            "content-length": "1616",
+            "accept": "application/json, text/plain, */*",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "content-type": "application/json",
+            "x-forwarded-for": "172.18.0.1",
+            "x-forwarded-host": "aawebhookaa.vps.rubikmarketing.com.co",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "f75c220e25da",
+            "x-real-ip": "172.18.0.1"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "event": "messages.upsert",
+            "instance": "Prueba",
+            "data": {
+              "key": {
+                "remoteJid": "34722418242@s.whatsapp.net",
+                "remoteJidAlt": "185804680876152@lid",
+                "fromMe": false,
+                "id": "3B3EC710A027CA7724BF",
+                "participant": "",
+                "addressingMode": "pn"
+              },
+              "pushName": "AA",
+              "status": "DELIVERY_ACK",
+              "message": {
+                "messageContextInfo": {
+                  "deviceListMetadata": {
+                    "senderKeyIndexes": [],
+                    "recipientKeyIndexes": [],
+                    "senderKeyHash": {
+                      "0": 149,
+                      "1": 214,
+                      "2": 178,
+                      "3": 163,
+                      "4": 77,
+                      "5": 202,
+                      "6": 219,
+                      "7": 105,
+                      "8": 15,
+                      "9": 51
+                    },
+                    "senderTimestamp": {
+                      "low": 1760575433,
+                      "high": 0,
+                      "unsigned": true
+                    },
+                    "recipientKeyHash": {
+                      "0": 51,
+                      "1": 175,
+                      "2": 53,
+                      "3": 193,
+                      "4": 218,
+                      "5": 85,
+                      "6": 228,
+                      "7": 153,
+                      "8": 179,
+                      "9": 218
+                    },
+                    "recipientTimestamp": {
+                      "low": 1759428167,
+                      "high": 0,
+                      "unsigned": true
+                    }
+                  },
+                  "deviceListMetadataVersion": 2,
+                  "messageSecret": {
+                    "0": 147,
+                    "1": 10,
+                    "2": 175,
+                    "3": 129,
+                    "4": 20,
+                    "5": 205,
+                    "6": 103,
+                    "7": 183,
+                    "8": 56,
+                    "9": 213,
+                    "10": 203,
+                    "11": 168,
+                    "12": 40,
+                    "13": 159,
+                    "14": 98,
+                    "15": 71,
+                    "16": 43,
+                    "17": 50,
+                    "18": 82,
+                    "19": 20,
+                    "20": 43,
+                    "21": 181,
+                    "22": 68,
+                    "23": 202,
+                    "24": 123,
+                    "25": 51,
+                    "26": 191,
+                    "27": 8,
+                    "28": 25,
+                    "29": 32,
+                    "30": 8,
+                    "31": 72
+                  }
+                },
+                "conversation": "quiero que me llames"
+              },
+              "contextInfo": {
+                "mentionedJid": [],
+                "groupMentions": [],
+                "expiration": 7776000,
+                "ephemeralSettingTimestamp": {
+                  "low": 1760623604,
+                  "high": 0,
+                  "unsigned": false
+                },
+                "disappearingMode": {
+                  "initiator": 0
+                }
+              },
+              "messageType": "conversation",
+              "messageTimestamp": 1760657301,
+              "instanceId": "0e656b40-9922-4ca5-8387-45641679d455",
+              "source": "unknown"
+            },
+            "destination": "https://aawebhookaa.vps.rubikmarketing.com.co/webhook/WA-respuesta",
+            "date_time": "2025-10-16T20:28:21.938Z",
+            "sender": "595992602563@s.whatsapp.net",
+            "server_url": "https://aaevolutionaa.vps.rubikmarketing.com.co",
+            "apikey": "F04C6F68FF89-42FB-90F4-F427B7FD1C8C"
+          },
+          "webhookUrl": "https://aawebhookaa.vps.rubikmarketing.com.co/webhook/WA-respuesta",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Update record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar texto1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar texto": {
+      "main": [
+        []
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Search records",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar texto2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a5d1476d-9089-4fb9-ae45-a4645c3027ec",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "g0DoNDau34R61yaX",
+  "tags": []
+}

@@ -1,0 +1,346 @@
+{
+  "name": "Resumen noticias IA",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "video",
+        "limit": 5,
+        "filters": {
+          "channelId": "=UCqcbQf6yw5KzRoDDcZ_wBSw",
+          "publishedAfter": "={{ $now.minus(24,'hours').toISO() }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        -176
+      ],
+      "id": "7105467d-a455-451c-9307-1c15319db651",
+      "name": "Wes Roth",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "filters": {
+          "channelId": "=UCl5-lvQyfILb-l2abPk4Ntg",
+          "publishedAfter": "={{ $now.minus(24,'hours').toISO() }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        16
+      ],
+      "id": "a38c6aea-f1de-48ae-b4e4-2b8098dcbd35",
+      "name": "JH",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "filters": {
+          "channelId": "=UCp2Zmdh40GJJJ2T5vWsMZDA",
+          "publishedAfter": "={{ $now.minus(24,'hours').toISO() }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        208
+      ],
+      "id": "4be9c271-9387-4504-ae4c-210f57c29e53",
+      "name": "Xavier Mitjana",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        -176,
+        0
+      ],
+      "id": "96eb8b08-84e5-4721-975c-56fcda537f49",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "url": "https://api.apify.com/v2/acts/karamelo~youtube-transcripts/run-sync-get-dataset-items?token=apify_api_tEN0pbf47LQZzhkytt6xgk6dLagKGC4BqHtM",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"channelHandleBoolean\": false,\n    \"channelIDBoolean\": false,\n    \"channelNameBoolean\": false,\n    \"commentsBoolean\": false,\n    \"datePublishedBoolean\": false,\n    \"dateTextBoolean\": false,\n    \"descriptionBoolean\": false,\n    \"keywordsBoolean\": false,\n    \"likesBoolean\": false,\n    \"maxRetries\": 8,\n    \"proxyOptions\": {\n        \"useApifyProxy\": true,\n        \"apifyProxyGroups\": [\n            \"BUYPROXIES94952\"\n        ]\n    },\n    \"relativeDateTextBoolean\": false,\n    \"subscriberCountBoolean\": false,\n    \"thumbnailBoolean\": false,\n    \"uploadDateBoolean\": false,\n    \"urls\": [\n        \"https://www.youtube.com/watch?v={{ $json.id.videoId }}\"\n    ],\n    \"viewCountBoolean\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        48,
+        16
+      ],
+      "id": "18f8c926-1977-4289-ab4e-e1c592c0f288",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "Transcripcion",
+              "value": "={{ $json.captions.toJsonString().removeMarkdown().removeTags().replaceAll('\"',\"\").replaceAll(',',\"\") }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Titulo",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        272,
+        16
+      ],
+      "id": "45658ce2-b613-4052-8806-609988d0e29d",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Titulo del video:\n{{ $json.Titulo }}\n\nTranscripción: \n {{ $json.Transcripcion }}\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Eres un asistente experto en resumir vídeos de YouTube para WhatsApp. Vas a recibir uno o más títulos y sus respectivas transcripciones.\n\nTu tarea es leer cada transcripción, identificar los puntos más importantes y redactar un mini resumen claro, útil y breve en español, listo para enviarse por WhatsApp.\n\nPara **cada vídeo**, sigue esta estructura:\n\n*️⃣ *Título del vídeo*\nBreve descripcion del video\n- Punto clave 1  \n- Punto clave 2  \n- Punto clave 3  \n(...máximo 5 puntos por vídeo)\n\nDespués de un vídeo, continúa directamente con el siguiente en el mismo formato. No añadas explicaciones, introducciones ni separadores. Devuelve únicamente el texto listo para copiar y pegar en WhatsApp.\n"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        496,
+        16
+      ],
+      "id": "424b467c-fa59-4ff2-a62a-6f16dd049a47",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        592,
+        240
+      ],
+      "id": "d74fe0b4-be61-4d5b-b2cd-5f15a8b47c4a",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Prueba",
+        "remoteJid": "34722418242@s.whatsapp.net",
+        "messageText": "=*Resumen Noticas de inteligencia artificial*\n\n{{ $json.text }}\n🔗 https://www.youtube.com/watch?v={{ $('Merge').item.json.id.videoId }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        896,
+        16
+      ],
+      "id": "874dab81-7ed2-4201-876c-7a75f06db290",
+      "name": "Evolution API",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 21,
+              "triggerAtMinute": 5
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -624,
+        16
+      ],
+      "id": "1415c905-a1cd-4dbb-8e8e-711ae93b44f6",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Wes Roth": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JH": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Xavier Mitjana": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Evolution API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Wes Roth",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "JH",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Xavier Mitjana",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "f5fbaf47-c78f-47f2-8e1b-2ba4a37f2e4c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "lmRqaDomSgoeKcdR",
+  "tags": []
+}

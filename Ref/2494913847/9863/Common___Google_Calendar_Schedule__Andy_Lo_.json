@@ -1,0 +1,327 @@
+{
+  "name": "Common - Google Calendar Schedule (Andy Lo)",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $json.calendarId }}",
+          "mode": "id"
+        },
+        "returnAll": true,
+        "options": {
+          "timeMin": "={{ $('Execute Workflow Trigger').item.json.query.fromBookingTime }}",
+          "timeMax": "={{ $('Execute Workflow Trigger').item.json.query.toBookingTime }}",
+          "singleEvents": true
+        }
+      },
+      "name": "Get events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [
+        380,
+        320
+      ],
+      "alwaysOutputData": true,
+      "id": "4fd96c77-b3a4-4fd1-94f4-517e871fc5cd",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Calendar - andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sort",
+        "sortFieldsUi": {
+          "sortField": [
+            {
+              "fieldName": "start"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a10b75e7-24cc-4aa1-a140-a94fd72add38",
+      "name": "Sort",
+      "type": "n8n-nodes-base.itemLists",
+      "position": [
+        780,
+        320
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {},
+      "id": "bd7ebc1d-b501-4de7-b848-99ffaa7bc479",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleCalendarOAuth2Api",
+        "options": {}
+      },
+      "id": "2242b1b8-80f8-46e1-90d8-4b73a2a267c9",
+      "name": "Get All Calendar List",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -20,
+        320
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Calendar - andylo@proxa.cc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const calendars = items[0].json.items;\n\nconst calendarIds = calendars.map(calendar => {\n  return {\n    json: {\n      calendarId: calendar.id,\n      summary: calendar.summary\n    }\n  };\n});\n\nreturn calendarIds;"
+      },
+      "name": "Extract Calendar IDs",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        180,
+        320
+      ],
+      "id": "ee6ba1cb-46bf-434d-abf2-278b90717261"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "start",
+              "value": "={{ DateTime.fromISO($json.start.dateTime).toLocaleString(DateTime.DATE_HUGE) }}, {{ DateTime.fromISO($json.start.dateTime).toLocaleString(DateTime.TIME_24_WITH_SHORT_OFFSET) }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "end",
+              "value": "={{ DateTime.fromISO($json.end.dateTime).toLocaleString(DateTime.DATE_HUGE) }}, {{ DateTime.fromISO($json.end.dateTime).toLocaleString(DateTime.TIME_24_WITH_SHORT_OFFSET) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f302aa55-97d0-4274-81c2-bcf2a99535ac",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        580,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "concatenateItems",
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "response",
+        "include": "allFieldsExcept",
+        "fieldsToExclude": "sort",
+        "options": {}
+      },
+      "id": "0c38b20b-8e4b-407b-b5ed-46235bcd2b15",
+      "name": "Format response",
+      "type": "n8n-nodes-base.itemLists",
+      "position": [
+        980,
+        320
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "response",
+              "value": "={{ JSON.stringify($json.message.content) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "baaec339-f922-44ae-8c8b-71c0d074d3e6",
+      "name": "Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1480,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=<system_prompt>\nYOU ARE THE MOST ADVANCED AND INTELLIGENT CALENDAR MANAGEMENT AGENT, DESIGNED TO ASSIST USERS WITH ALL ASPECTS OF SCHEDULING, TIME MANAGEMENT, AND EVENT PLANNING. YOUR PRIMARY GOAL IS TO PROVIDE ACCURATE, EFFICIENT, AND INTUITIVE SUPPORT IN ORGANIZING EVENTS AND TASKS, RESOLVING CONFLICTS, AND MAXIMIZING THE USER'S PRODUCTIVITY. YOU ALSO UTILIZE THE GOOGLECALENDARSCHEDULECHECKINGTOOL TO IDENTIFY AVAILABLE TIMESLOTS BASED ON USER-DEFINED AVAILABILITY.\n\n### INSTRUCTIONS ###\n\n- The time now is {{ $now }}\n\n- **IDENTIFY OPEN TIMESLOTS**: Use the GoogleCalendarScheduleCheckingTool to analyze the user's calendar, exclude scheduled events, and provide available timeslots based on the user's defined availability.\n\n### ADDITIONAL INSTRUCTIONS FOR TIMESLOT MANAGEMENT ###\n\n1. **COLLECT ALL SCHEDULED EVENTS**:\n   - USE the GoogleCalendarScheduleCheckingTool to RETRIEVE the user's calendar events.\n   - IDENTIFY and RECORD the start and end times of each scheduled event.\n\n2. **DEFINE THE USER'S TOTAL AVAILABLE TIME**:\n   - CONSIDER ONLY weekdays (Exclude Saturday and Sunday) between 8:00 AM and 11:00 PM.\n\n3. **DETERMINE OPEN TIMESLOTS**:\n   - EXCLUDE all time periods occupied by scheduled events.\n   - CALCULATE and LIST the remaining timeslots within the user's defined availability.\n\n4. **PRESENT THE RESULTS CLEARLY**:\n   - PROVIDE a concise and organized list of available timeslots.\n   - FORMAT the output with clear start and end times for each open period.\n\n5. **HANDLE EDGE CASES**:\n   - IF no timeslots are available, STATE this explicitly.\n   - ENSURE all times are within the user's defined availability window (8:00 AM to 11:00 PM on weekdays).\n\n\n### FEW-SHOT EXAMPLES ###\n\n#### Example 1: Finding Available Timeslots\n**User Input**: When am I free this weekend?\n**Agent Output**: \"Based on your schedule, your available timeslots are:\n- Saturday: 8:00 AM - 10:30 AM, 3:00 PM - 6:00 PM, 7:30 PM - 11:00 PM\n- Sunday: 8:00 AM - 12:00 PM, 1:30 PM - 5:00 PM, 6:30 PM - 11:00 PM.\"\n\n\n</system_prompt>\n",
+              "role": "system"
+            },
+            {
+              "content": "=User Instruction : {{ $('Execute Workflow Trigger').item.json.query.userInstruction }}\nPeriod Start : {{ $('Execute Workflow Trigger').item.json.query.fromBookingTime }}\nPeriod End : {{ $('Execute Workflow Trigger').item.json.query.toBookingTime }}"
+            },
+            {
+              "content": "={{ JSON.stringify($json.response) }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "id": "67df961d-b694-4afe-82a6-3ec96287b098",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        1160,
+        320
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi Account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Execute Workflow Trigger": [
+      {
+        "json": {
+          "query": {
+            "userInstruction": "Get the available timeslot this week",
+            "fromBookingTime": "2025-01-09T11:50:24.532+08:00",
+            "toBookingTime": "2025-01-16T11:50:24.532+08:00"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Get events": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort": {
+      "main": [
+        [
+          {
+            "node": "Format response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Calendar List": {
+      "main": [
+        [
+          {
+            "node": "Extract Calendar IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Calendar IDs": {
+      "main": [
+        [
+          {
+            "node": "Get events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Sort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format response": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get All Calendar List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9bc2f558-0de1-41c5-aa99-f18e4bda1a65",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4221cc7208f142ff91856b22776eec81b71c256154ec8030569832c22d0c66d9"
+  },
+  "id": "P23DGDCbrpOVqfOM",
+  "tags": []
+}

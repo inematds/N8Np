@@ -1,0 +1,460 @@
+{
+  "name": "Sistema de Monitoramento e Métricas",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "cron-metricas",
+      "name": "Cron Métricas (15min)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Métricas dos últimos 15 minutos\nSELECT \n  'interacoes_periodo' as metrica,\n  COUNT(*) as valor,\n  NOW() as timestamp\nFROM interacoes \nWHERE created_at >= NOW() - INTERVAL '15 minutes'\n\nUNION ALL\n\nSELECT \n  'hitl_pendentes' as metrica,\n  COUNT(*) as valor,\n  NOW() as timestamp\nFROM interacoes \nWHERE requer_hitl = true \nAND status_hitl = 'pendente'\n\nUNION ALL\n\nSELECT \n  'visitas_hoje' as metrica,\n  COUNT(*) as valor,\n  NOW() as timestamp\nFROM visitas \nWHERE DATE(data_hora) = CURRENT_DATE\nAND status IN ('agendada', 'confirmada')\n\nUNION ALL\n\nSELECT \n  'clientes_ativos' as metrica,\n  COUNT(*) as valor,\n  NOW() as timestamp\nFROM clientes \nWHERE status = 'ativo'\nAND ultima_interacao >= NOW() - INTERVAL '7 days'\n\nUNION ALL\n\nSELECT \n  'imoveis_disponiveis' as metrica,\n  COUNT(*) as valor,\n  NOW() as timestamp\nFROM imoveis \nWHERE status = 'disponivel'\n\nUNION ALL\n\nSELECT \n  'tempo_resposta_medio' as metrica,\n  COALESCE(AVG(tempo_resposta_segundos), 0) as valor,\n  NOW() as timestamp\nFROM interacoes \nWHERE created_at >= NOW() - INTERVAL '1 hour'\nAND tempo_resposta_segundos IS NOT NULL;",
+        "options": {}
+      },
+      "id": "coletar-metricas",
+      "name": "Coletar Métricas",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-imobiliaria",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar métricas e gerar alertas\nconst metricas = $input.all();\nconst alertas = [];\nconst dashboard = {};\n\n// Processar cada métrica\nfor (const item of metricas) {\n  const { metrica, valor, timestamp } = item.json;\n  dashboard[metrica] = valor;\n  \n  // Verificar alertas\n  switch (metrica) {\n    case 'hitl_pendentes':\n      if (valor > 5) {\n        alertas.push({\n          tipo: 'warning',\n          metrica: metrica,\n          valor: valor,\n          limite: 5,\n          mensagem: `${valor} solicitações HITL pendentes (limite: 5)`\n        });\n      }\n      break;\n      \n    case 'tempo_resposta_medio':\n      if (valor > 300) { // 5 minutos\n        alertas.push({\n          tipo: 'warning',\n          metrica: metrica,\n          valor: valor,\n          limite: 300,\n          mensagem: `Tempo médio de resposta: ${Math.round(valor)}s (limite: 300s)`\n        });\n      }\n      break;\n      \n    case 'interacoes_periodo':\n      if (valor > 100) {\n        alertas.push({\n          tipo: 'info',\n          metrica: metrica,\n          valor: valor,\n          limite: 100,\n          mensagem: `Alto volume de interações: ${valor} nos últimos 15min`\n        });\n      }\n      break;\n  }\n}\n\n// Calcular taxa de conversão (exemplo)\nconst visitas = dashboard.visitas_hoje || 0;\nconst interacoes = dashboard.interacoes_periodo || 1;\nconst taxa_conversao = (visitas / interacoes * 100).toFixed(2);\n\ndashboard.taxa_conversao_estimada = taxa_conversao;\ndashboard.timestamp = new Date().toISOString();\ndashboard.alertas = alertas;\n\nreturn {\n  json: {\n    dashboard: dashboard,\n    alertas: alertas,\n    necessita_notificacao: alertas.length > 0\n  }\n};"
+      },
+      "id": "processar-metricas",
+      "name": "Processar Métricas e Alertas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "tem-alertas",
+              "leftValue": "={{ $json.necessita_notificacao }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-alertas",
+      "name": "Tem Alertas?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.N8N_WEBHOOK_BASE_URL }}/webhook/telegram-notification",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tipo",
+              "value": "alerta_sistema"
+            },
+            {
+              "name": "alertas",
+              "value": "={{ JSON.stringify($json.alertas) }}"
+            },
+            {
+              "name": "dashboard",
+              "value": "={{ JSON.stringify($json.dashboard) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notificar-alertas",
+      "name": "Notificar Alertas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "logs_sistema"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nivel": "info",
+            "modulo": "monitoramento",
+            "mensagem": "Métricas coletadas",
+            "detalhes": "={{ JSON.stringify($json.dashboard) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "salvar-metricas",
+      "name": "Salvar Métricas",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1120, 400],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-imobiliaria",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "cron-relatorios",
+      "name": "Cron Relatórios (1h)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 600]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Relatório de performance da última hora\nWITH metricas_hora AS (\n  SELECT \n    COUNT(*) as total_interacoes,\n    COUNT(CASE WHEN requer_hitl = true THEN 1 END) as interacoes_hitl,\n    COUNT(CASE WHEN canal = 'whatsapp' THEN 1 END) as interacoes_whatsapp,\n    COUNT(CASE WHEN canal = 'email' THEN 1 END) as interacoes_email,\n    AVG(CASE WHEN tempo_resposta_segundos IS NOT NULL THEN tempo_resposta_segundos END) as tempo_resposta_medio,\n    COUNT(DISTINCT cliente_id) as clientes_unicos\n  FROM interacoes \n  WHERE created_at >= NOW() - INTERVAL '1 hour'\n),\nvisitas_hora AS (\n  SELECT \n    COUNT(*) as visitas_agendadas,\n    COUNT(CASE WHEN status = 'realizada' THEN 1 END) as visitas_realizadas,\n    COUNT(CASE WHEN status = 'cancelada' THEN 1 END) as visitas_canceladas\n  FROM visitas \n  WHERE created_at >= NOW() - INTERVAL '1 hour'\n),\nimoveis_novos AS (\n  SELECT COUNT(*) as imoveis_cadastrados\n  FROM imoveis \n  WHERE created_at >= NOW() - INTERVAL '1 hour'\n)\nSELECT \n  m.*,\n  v.*,\n  i.*,\n  NOW() as timestamp_relatorio\nFROM metricas_hora m\nCROSS JOIN visitas_hora v\nCROSS JOIN imoveis_novos i;",
+        "options": {}
+      },
+      "id": "gerar-relatorio",
+      "name": "Gerar Relatório Horário",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [460, 600],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-imobiliaria",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gerar relatório formatado\nconst dados = $input.first().json;\n\nconst relatorio = {\n  periodo: 'Última hora',\n  timestamp: dados.timestamp_relatorio,\n  resumo: {\n    total_interacoes: dados.total_interacoes || 0,\n    clientes_unicos: dados.clientes_unicos || 0,\n    tempo_resposta_medio: Math.round(dados.tempo_resposta_medio || 0),\n    taxa_hitl: dados.total_interacoes > 0 ? \n      ((dados.interacoes_hitl / dados.total_interacoes) * 100).toFixed(1) : '0.0'\n  },\n  canais: {\n    whatsapp: dados.interacoes_whatsapp || 0,\n    email: dados.interacoes_email || 0\n  },\n  visitas: {\n    agendadas: dados.visitas_agendadas || 0,\n    realizadas: dados.visitas_realizadas || 0,\n    canceladas: dados.visitas_canceladas || 0,\n    taxa_realizacao: dados.visitas_agendadas > 0 ? \n      ((dados.visitas_realizadas / dados.visitas_agendadas) * 100).toFixed(1) : '0.0'\n  },\n  imoveis: {\n    novos_cadastros: dados.imoveis_cadastrados || 0\n  }\n};\n\n// Verificar se precisa enviar relatório (apenas se houver atividade significativa)\nconst enviar_relatorio = dados.total_interacoes > 10 || \n                        dados.visitas_agendadas > 0 || \n                        dados.imoveis_cadastrados > 0;\n\nreturn {\n  json: {\n    relatorio: relatorio,\n    enviar_relatorio: enviar_relatorio\n  }\n};"
+      },
+      "id": "formatar-relatorio",
+      "name": "Formatar Relatório",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 600]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "enviar-relatorio",
+              "leftValue": "={{ $json.enviar_relatorio }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-envio",
+      "name": "Enviar Relatório?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 600]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.N8N_WEBHOOK_BASE_URL }}/webhook/telegram-notification",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tipo",
+              "value": "relatorio_horario"
+            },
+            {
+              "name": "relatorio",
+              "value": "={{ JSON.stringify($json.relatorio) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "enviar-relatorio-telegram",
+      "name": "Enviar Relatório Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 600]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "cronExpression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-limpeza",
+      "name": "Cron Limpeza Diária (2h)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 900]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Limpeza e manutenção diária\n\n-- 1. Limpar logs antigos\nDELETE FROM logs_sistema \nWHERE created_at < NOW() - INTERVAL '30 days';\n\n-- 2. Limpar rate limiting antigo\nDELETE FROM rate_limiting \nWHERE created_at < NOW() - INTERVAL '7 days';\n\n-- 3. Atualizar scores de clientes ativos\nUPDATE clientes \nSET score_qualificacao = calcular_score_cliente(id)\nWHERE status = 'ativo' \nAND ultima_interacao >= NOW() - INTERVAL '30 days';\n\n-- 4. Marcar clientes inativos\nUPDATE clientes \nSET status = 'inativo'\nWHERE status = 'ativo' \nAND ultima_interacao < NOW() - INTERVAL '90 days';\n\n-- 5. Limpar agenda antiga\nDELETE FROM agenda_disponivel \nWHERE data_hora_inicio < NOW() - INTERVAL '7 days';\n\n-- 6. Gerar estatísticas de limpeza\nSELECT \n  'limpeza_concluida' as operacao,\n  NOW() as timestamp,\n  (\n    SELECT COUNT(*) FROM logs_sistema \n    WHERE created_at >= NOW() - INTERVAL '30 days'\n  ) as logs_mantidos,\n  (\n    SELECT COUNT(*) FROM clientes \n    WHERE status = 'ativo'\n  ) as clientes_ativos,\n  (\n    SELECT COUNT(*) FROM clientes \n    WHERE status = 'inativo'\n  ) as clientes_inativos;",
+        "options": {}
+      },
+      "id": "executar-limpeza",
+      "name": "Executar Limpeza Diária",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [460, 900],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-imobiliaria",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "logs_sistema"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nivel": "info",
+            "modulo": "manutencao",
+            "mensagem": "Limpeza diária executada",\n            "detalhes": "={{ JSON.stringify($json) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-limpeza",
+      "name": "Log Limpeza",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [680, 900],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-imobiliaria",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron Métricas (15min)": {
+      "main": [
+        [
+          {
+            "node": "Coletar Métricas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Coletar Métricas": {
+      "main": [
+        [
+          {
+            "node": "Processar Métricas e Alertas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Métricas e Alertas": {
+      "main": [
+        [
+          {
+            "node": "Tem Alertas?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem Alertas?": {
+      "main": [
+        [
+          {
+            "node": "Notificar Alertas",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Salvar Métricas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Salvar Métricas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron Relatórios (1h)": {
+      "main": [
+        [
+          {
+            "node": "Gerar Relatório Horário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Relatório Horário": {
+      "main": [
+        [
+          {
+            "node": "Formatar Relatório",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Relatório": {
+      "main": [
+        [
+          {
+            "node": "Enviar Relatório?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Relatório?": {
+      "main": [
+        [
+          {
+            "node": "Enviar Relatório Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron Limpeza Diária (2h)": {
+      "main": [
+        [
+          {
+            "node": "Executar Limpeza Diária",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Executar Limpeza Diária": {
+      "main": [
+        [
+          {
+            "node": "Log Limpeza",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "monitoramento",
+      "name": "Monitoramento"
+    }
+  ],
+  "triggerCount": 3,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
+

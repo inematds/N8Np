@@ -1,0 +1,106 @@
+[
+  {
+    "id": 9037,
+    "author": "INEMA",
+    "date": "2025-06-08T15:37:49+00:00",
+    "text": "**Text to Speech**\n**Fine-grained Control**\n\n**Advanced control over speech generation**\n\n[**​**](https://docs.fish.audio/text-to-speech/fine-grained-control#getting-started)\n\n**Getting Started**\n\n**To use fine-grained control, you can use either our SDK, API, or Playground.**\n\n\n**SDK/API: We recommend disabling normalization by setting **`\"normalize\": false`** in the request body. This ensures that the API doesn’t alter the intonation of control tags.**\n\n\n**Playground: You can use V1.6 Control Model, without setting any other options.**\n\n\n**Disabling normalization may reduce the stability of reading numbers, dates, and URLs. You’ll need to handle these cases manually for best results.**\n\n\n[**​**](https://docs.fish.audio/text-to-speech/fine-grained-control#phoneme-control)\n\n**Phoneme Control**\n\n**Phoneme control allows you to specify exact pronunciations for words or characters. Currently, we support:**\n\n\n**CMU Arpabet (for English)**\n\n**Pinyin (for Chinese)**\n\n**To use phoneme control, wrap the desired pronunciation in **`<|phoneme_start|>`** and **`<|phoneme_end|>`** tags. Each tag should contain a single word or character.**\n\n\n[**​**](https://docs.fish.audio/text-to-speech/fine-grained-control#english-example)\n\n**English Example**\n\n**Standard: “I am an engineer.”**\n\n**With phoneme control: “I am an **`<|phoneme_start|>EH N JH AH N IH R<|phoneme_end|>`**.”**\n\n\n[**​**](https://docs.fish.audio/text-to-speech/fine-grained-control#chinese-example)\n\n**Chinese Example**\n\n**Standard: “我是一个工程师。“**\n\n**With phoneme control: “我是一个**`<|phoneme_start|>gong1<|phoneme_end|><|phoneme_start|>cheng2<|phoneme_end|><|phoneme_start|>shi1<|phoneme_end|>`**。“**\n\n\n[**​**](https://docs.fish.audio/text-to-speech/fine-grained-control#paralanguage)\n\n**Paralanguage**\n\n**Paralanguage controls allow you to add natural speech elements and pauses to make the generated speech sound more human-like. There are two main types of controls:**\n\n\n[**​**](https://docs.fish.audio/text-to-speech/fine-grained-control#pause-words)\n\n**Pause Words**\n\n**You can use common pause words like “um”, “uh”, “嗯”, “啊” to control the rhythm of the speech.**\n\n\n[**​**](https://docs.fish.audio/text-to-speech/fine-grained-control#special-effects)\n\n**Special Effects**\n\n**The following special effects can be added using parentheses:**\n\n\n**Effect Description First Available Stage**\n\n`(break) `**Short pause V1.6 Experimental**\n\n`(long-break) `**Extended pause V1.6 Experimental**\n\n`(breath) `**Breathing sound V1.6 Experimental**\n\n`(laugh) `**Laughter sound V1.6 Experimental**\n\n`(cough) `**Coughing sound V1.6 Experimental**\n\n`(lip-smacking) `**Lip smacking sound V1.6 Experimental**\n\n`(sigh) `**Sighing sound V1.6 Experimental**\n\n**The effects **`(laugh)`**, (cough), (lip-smacking), and (sigh) are developing. You may need to repeat them multiple times for better results.**\n\n\nExample: Standard: “I am an engineer.”\n\nWith paralanguage: “I am, um, an (break) engineer.”",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9036,
+    "author": "INEMA",
+    "date": "2025-06-08T15:36:46+00:00",
+    "text": "https://docs.fish.audio/text-to-speech/text-to-speech",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 9035,
+    "author": "INEMA",
+    "date": "2025-06-08T15:35:52+00:00",
+    "text": "Para fazer uma requisição curl para a API do Fish Audio que funcione no n8n, você precisa configurar alguns elementos importantes. Vou te mostrar como estruturar isso:\n\n## Estrutura básica do curl para Fish Audio\n\n```curl -X POST https://api.fish.audio/v1/tts \\\n  -H \"Authorization: Bearer SEU_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"text\": \"Seu texto aqui\",\n    \"voice\": \"nome_da_voz\",\n    \"format\": \"mp3\"\n  }'```\n\n## Configuração no n8n\n\nNo n8n, você usará o nó **HTTP Request** com estas configurações:\n\n### Configurações principais:\n- **Method**: POST\n- **URL**: `https://api.fish.audio/v1/tts`\n\n### Headers:\n```{\n  \"Authorization\": \"Bearer {{$parameter.apiKey}}\",\n  \"Content-Type\": \"application/json\"\n}```\n\n### Body (JSON):\n```{\n  \"text\": \"{{$parameter.text}}\",\n  \"voice\": \"{{$parameter.voice}}\",\n  \"format\": \"mp3\",\n  \"speed\": 1.0,\n  \"volume\": 1.0\n}```\n\n### Parâmetros opcionais que você pode adicionar:\n- `reference_id`: ID de referência para clonagem de voz\n- `normalize`: true/false para normalização\n- `mp3_bitrate`: qualidade do MP3 (128, 192, 320)\n- `opus_bitrate`: para formato OPUS\n\n## Exemplo prático para n8n\n\n1. **Adicione um nó HTTP Request**\n2. **Configure as credenciais** (crie uma credencial do tipo \"Header Auth\" com `Authorization: Bearer SEU_API_KEY`)\n3. **Use esta estrutura**:\n\n```{\n  \"method\": \"POST\",\n  \"url\": \"https://api.fish.audio/v1/tts\",\n  \"headers\": {\n    \"Content-Type\": \"application/json\"\n  },\n  \"body\": {\n    \"text\": \"Olá, este é um teste de síntese de voz\",\n    \"voice\": \"pt-BR-neural\",\n    \"format\": \"mp3\"\n  }\n}```\n\n## Para salvar o áudio resultante\n\nO Fish Audio retorna o áudio em base64 ou como stream. No n8n, você pode:\n\n1. **Salvar como arquivo** usando o nó \"Write Binary File\"\n2. **Processar o base64** se necessário\n3. **Integrar com outros serviços** como Google Drive, Dropbox, etc.\n\nPrecisa de mais detalhes sobre alguma parte específica da integração?",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9034,
+    "author": "INEMA",
+    "date": "2025-06-08T15:33:09+00:00",
+    "text": "https://fish.audio/pt/go-api/api-keys/",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9033,
+    "author": "INEMA",
+    "date": "2025-06-08T15:32:50+00:00",
+    "text": "https://fish.audio/pt/go-api/billing/",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9032,
+    "author": "INEMA",
+    "date": "2025-06-08T15:32:48+00:00",
+    "text": "Conexao FISH.AUDIO",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9031,
+    "author": "INEMA",
+    "date": "2025-06-08T15:32:48+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9030,
+    "author": "INEMA",
+    "date": "2025-06-08T15:32:48+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9029,
+    "author": "INEMA",
+    "date": "2025-06-08T15:32:48+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9028,
+    "author": "INEMA",
+    "date": "2025-06-08T15:32:47+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9027,
+    "author": "INEMA",
+    "date": "2025-06-08T15:32:47+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9026,
+    "author": "INEMA",
+    "date": "2025-06-08T15:32:47+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 9025,
+    "author": "INEMA",
+    "date": "2025-06-08T15:32:43+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

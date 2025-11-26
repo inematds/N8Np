@@ -1,0 +1,690 @@
+{
+  "name": "Agente Orquestrador Central - Imobiliária",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook-entrada-mensagens",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-entrada",
+      "name": "Webhook Entrada Mensagens",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "entrada-mensagens-imobiliaria"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"received\",\n  \"message\": \"Mensagem recebida e processando\",\n  \"timestamp\": \"{{ $now }}\"\n}"
+      },
+      "id": "resposta-webhook",
+      "name": "Resposta Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.canal }}",
+              "rightValue": "whatsapp",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.canal }}",
+              "rightValue": "email",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.canal }}",
+              "rightValue": "telegram",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "identificar-canal",
+      "name": "Identificar Canal",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "clientes"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "telefone",
+              "condition": "equal",
+              "value": "={{ $json.telefone || $json.from }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "buscar-cliente",
+      "name": "Buscar Cliente Existente",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        900,
+        200
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-cliente",
+      "name": "Cliente Existe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Análise de contexto e intenção da mensagem\nconst mensagem = $input.first().json.mensagem || $input.first().json.text || '';\nconst cliente = $input.first().json.cliente || null;\nconst canal = $input.first().json.canal || 'whatsapp';\n\n// Palavras-chave para identificar intenção\nconst intencoes = {\n  atendimento_inicial: [\n    'oi', 'olá', 'bom dia', 'boa tarde', 'boa noite', 'hello', 'hi',\n    'quero', 'preciso', 'busco', 'procuro', 'interesse', 'informação'\n  ],\n  compra: [\n    'comprar', 'compra', 'adquirir', 'financiar', 'financiamento',\n    'casa', 'apartamento', 'imóvel', 'propriedade'\n  ],\n  aluguel: [\n    'alugar', 'aluguel', 'locação', 'locar', 'arrendar'\n  ],\n  venda: [\n    'vender', 'venda', 'anunciar', 'cadastrar', 'proprietário',\n    'tenho um imóvel', 'quero vender'\n  ],\n  agendamento: [\n    'visita', 'visitar', 'agendar', 'agenda', 'horário', 'disponível',\n    'quando', 'que horas', 'marcar'\n  ],\n  informacoes: [\n    'preço', 'valor', 'quanto', 'localização', 'endereço', 'detalhes',\n    'características', 'fotos', 'informações'\n  ],\n  cancelamento: [\n    'cancelar', 'desistir', 'não quero mais', 'parar', 'remover'\n  ],\n  reclamacao: [\n    'reclamação', 'problema', 'insatisfeito', 'ruim', 'péssimo',\n    'não gostei', 'erro', 'falha'\n  ]\n};\n\n// Função para detectar intenção\nfunction detectarIntencao(texto) {\n  const textoLower = texto.toLowerCase();\n  \n  for (const [intencao, palavras] of Object.entries(intencoes)) {\n    for (const palavra of palavras) {\n      if (textoLower.includes(palavra)) {\n        return intencao;\n      }\n    }\n  }\n  \n  return 'geral';\n}\n\n// Função para calcular prioridade\nfunction calcularPrioridade(intencao, cliente) {\n  let prioridade = 1; // Padrão baixa\n  \n  // Prioridade por intenção\n  switch (intencao) {\n    case 'cancelamento':\n    case 'reclamacao':\n      prioridade = 5; // Alta\n      break;\n    case 'agendamento':\n    case 'venda':\n      prioridade = 4; // Média-alta\n      break;\n    case 'compra':\n    case 'aluguel':\n      prioridade = 3; // Média\n      break;\n    default:\n      prioridade = 2; // Baixa-média\n  }\n  \n  // Ajustar por score do cliente\n  if (cliente && cliente.score_qualificacao) {\n    if (cliente.score_qualificacao > 80) prioridade += 1;\n    if (cliente.score_qualificacao < 30) prioridade -= 1;\n  }\n  \n  return Math.max(1, Math.min(5, prioridade));\n}\n\n// Função para determinar agente responsável\nfunction determinarAgente(intencao, cliente) {\n  // Se cliente não existe, sempre vai para atendimento inicial\n  if (!cliente) {\n    return 'Atendimento_Cliente_Entrada';\n  }\n  \n  // Baseado na intenção\n  switch (intencao) {\n    case 'venda':\n      return 'Captacao_Proprietario';\n    case 'agendamento':\n      return 'Agendamento_Visitas';\n    case 'cancelamento':\n    case 'reclamacao':\n      return 'HITL'; // Sempre para humano\n    case 'compra':\n    case 'aluguel':\n      // Se já tem dados básicos, vai para agendamento\n      if (cliente.tipo_interesse && cliente.localizacao_preferida) {\n        return 'Agendamento_Visitas';\n      } else {\n        return 'Atendimento_Cliente_Entrada';\n      }\n    default:\n      return 'Relacao_Clientes_Ativos';\n  }\n}\n\n// Função para verificar se precisa HITL\nfunction precisaHITL(intencao, mensagem, prioridade) {\n  // Sempre HITL para reclamações e cancelamentos\n  if (['cancelamento', 'reclamacao'].includes(intencao)) {\n    return true;\n  }\n  \n  // HITL para prioridade alta\n  if (prioridade >= 4) {\n    return true;\n  }\n  \n  // HITL para valores mencionados acima de 1 milhão\n  const valores = mensagem.match(/\\d{1,3}(?:\\.\\d{3})*(?:,\\d{2})?/g);\n  if (valores) {\n    for (const valor of valores) {\n      const numero = parseFloat(valor.replace(/\\./g, '').replace(',', '.'));\n      if (numero > 1000000) {\n        return true;\n      }\n    }\n  }\n  \n  // HITL para palavras sensíveis\n  const palavrasSensiveis = ['cpf', 'rg', 'documento', 'contrato', 'assinatura'];\n  const mensagemLower = mensagem.toLowerCase();\n  for (const palavra of palavrasSensiveis) {\n    if (mensagemLower.includes(palavra)) {\n      return true;\n    }\n  }\n  \n  return false;\n}\n\n// Processar entrada\nconst intencao = detectarIntencao(mensagem);\nconst prioridade = calcularPrioridade(intencao, cliente);\nconst agente = determinarAgente(intencao, cliente);\nconst requerHITL = precisaHITL(intencao, mensagem, prioridade);\n\n// Preparar contexto\nconst contexto = {\n  mensagem_original: mensagem,\n  canal: canal,\n  intencao_detectada: intencao,\n  prioridade: prioridade,\n  agente_designado: agente,\n  requer_hitl: requerHITL,\n  timestamp: new Date().toISOString(),\n  cliente_existente: !!cliente,\n  historico_resumido: cliente ? {\n    nome: cliente.nome,\n    tipo_interesse: cliente.tipo_interesse,\n    status: cliente.status,\n    score: cliente.score_qualificacao,\n    ultima_interacao: cliente.ultima_interacao\n  } : null\n};\n\nreturn {\n  json: {\n    ...contexto,\n    dados_entrada: $input.first().json\n  }\n};"
+      },
+      "id": "analisar-contexto",
+      "name": "Analisar Contexto e Intenção",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "interacoes"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cliente_id": "={{ $json.dados_entrada.cliente?.id || null }}",
+            "canal": "={{ $json.canal }}",
+            "tipo": "entrada",
+            "mensagem": "={{ $json.mensagem_original }}",
+            "agente_responsavel": "={{ $json.agente_designado }}",
+            "contexto": "={{ JSON.stringify($json) }}",
+            "requer_hitl": "={{ $json.requer_hitl }}",
+            "status_hitl": "={{ $json.requer_hitl ? 'pendente' : null }}",
+            "prioridade": "={{ $json.prioridade }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "registrar-interacao",
+      "name": "Registrar Interação",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.requer_hitl }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-hitl",
+      "name": "Precisa HITL?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.N8N_WEBHOOK_BASE_URL }}/webhook/hitl-notification",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tipo",
+              "value": "nova_solicitacao_hitl"
+            },
+            {
+              "name": "interacao_id",
+              "value": "={{ $('Registrar Interação').first().json.id }}"
+            },
+            {
+              "name": "prioridade",
+              "value": "={{ $json.prioridade }}"
+            },
+            {
+              "name": "contexto",
+              "value": "={{ JSON.stringify($json) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notificar-hitl",
+      "name": "Notificar HITL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2000,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.agente_designado }}",
+              "rightValue": "Atendimento_Cliente_Entrada",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.agente_designado }}",
+              "rightValue": "Agendamento_Visitas",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "captacao",
+              "leftValue": "={{ $json.agente_designado }}",
+              "rightValue": "Captacao_Proprietario",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.agente_designado }}",
+              "rightValue": "Relacao_Clientes_Ativos",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "rotear-agente",
+      "name": "Rotear para Agente",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.N8N_WEBHOOK_BASE_URL }}/webhook/atendimento-inicial",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "contexto",
+              "value": "={{ JSON.stringify($json) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "chamar-atendimento",
+      "name": "Chamar Atendimento Inicial",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.N8N_WEBHOOK_BASE_URL }}/webhook/agendamento-visitas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "contexto",
+              "value": "={{ JSON.stringify($json) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "chamar-agendamento",
+      "name": "Chamar Agendamento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2220,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.N8N_WEBHOOK_BASE_URL }}/webhook/captacao-proprietario",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "contexto",
+              "value": "={{ JSON.stringify($json) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "chamar-captacao",
+      "name": "Chamar Captação",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2220,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.N8N_WEBHOOK_BASE_URL }}/webhook/relacionamento-clientes",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "contexto",
+              "value": "={{ JSON.stringify($json) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "chamar-relacionamento",
+      "name": "Chamar Relacionamento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2220,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "logs_sistema"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nivel": "info",
+            "modulo": "orquestrador",
+            "mensagem": "Mensagem roteada para agente",
+            "detalhes": "={{ JSON.stringify({ agente: $json.agente_designado, intencao: $json.intencao_detectada, prioridade: $json.prioridade }) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-roteamento",
+      "name": "Log Roteamento",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2440,
+        450
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Entrada Mensagens": {
+      "main": [
+        [
+          {
+            "node": "Resposta Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Identificar Canal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identificar Canal": {
+      "main": [
+        [
+          {
+            "node": "Buscar Cliente Existente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Cliente Existente": {
+      "main": [
+        [
+          {
+            "node": "Cliente Existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cliente Existe?": {
+      "main": [
+        [
+          {
+            "node": "Analisar Contexto e Intenção",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Analisar Contexto e Intenção",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisar Contexto e Intenção": {
+      "main": [
+        [
+          {
+            "node": "Registrar Interação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar Interação": {
+      "main": [
+        [
+          {
+            "node": "Precisa HITL?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Precisa HITL?": {
+      "main": [
+        [
+          {
+            "node": "Notificar HITL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rotear para Agente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rotear para Agente": {
+      "main": [
+        [
+          {
+            "node": "Chamar Atendimento Inicial",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chamar Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chamar Captação",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chamar Relacionamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chamar Atendimento Inicial": {
+      "main": [
+        [
+          {
+            "node": "Log Roteamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chamar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "Log Roteamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chamar Captação": {
+      "main": [
+        [
+          {
+            "node": "Log Roteamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chamar Relacionamento": {
+      "main": [
+        [
+          {
+            "node": "Log Roteamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "orquestrador",
+      "name": "Orquestrador"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

@@ -1,0 +1,304 @@
+TOPICO 9845
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-06-15 05:33:33+00:00
+
+Total de mensagens: 15
+Midias baixadas: 4
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-06-15T05:38:21+00:00
+Texto:
+https://www.youtube.com/watch?v=LUBbnJ6qffc
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-06-15T05:38:02+00:00
+Texto:
+Segue o **passo a passo completo** para criar um chatbot de IA multicanal com RAG (Retrieval-Augmented Generation), utilizando **n8n**, **DeepSeek**, **OpenAI** e **Pinecone**, com suporte a **WhatsApp, Slack e Telegram**, sem precisar programar:
+
+---
+
+### 1. **Configurar a base de conhecimento com Pinecone**
+
+#### a. Criar formulário para upload de arquivos:
+
+* Use um nó de formulário no n8n.
+* Campos:
+
+  * `Título` (texto)
+  * `Arquivo` (tipo: arquivo) com múltiplos arquivos habilitados.
+* Ação: acionar o fluxo ao enviar o formulário.
+
+#### b. Extrair texto dos arquivos PDF:
+
+* Adicione um nó `Extract from file` (para extrair texto dos PDFs enviados).
+* Use o campo `knowledge_file` para o arquivo.
+
+#### c. Pré-processar os textos:
+
+* Adicione um nó para dividir o texto em **chunks** (tamanho: 1000, overlap: 100).
+* Resultado: estrutura padrão pronta para embeddings.
+
+#### d. Gerar embeddings e armazenar no Pinecone:
+
+* Configure o nó `Pinecone Vector Store`:
+
+  * Operação: `Insert document`.
+  * Fonte dos embeddings: modelo `text-embedding-3-large` da OpenAI.
+  * Configure as credenciais da Pinecone.
+  * Conecte ao índice Pinecone desejado.
+
+---
+
+### 2. **Integrar com os canais WhatsApp, Slack e Telegram**
+
+#### a. WhatsApp:
+
+* Adicione um nó `WhatsApp Trigger`:
+
+  * Ação: `On Message`.
+  * Campos importantes: `message` e `platform`.
+* Extraia `message` e identifique a `plataforma`.
+
+#### b. Slack:
+
+* Adicione um nó `Slack Trigger`:
+
+  * Evento: `Any Event`.
+  * Configure com sua conta do Slack.
+  * Use nó `IF` para verificar se a mensagem menciona o bot (necessário para funcionar).
+  * Extraia `message` e defina `platform` como `Slack`.
+
+#### c. Telegram:
+
+* Adicione um nó `Telegram Trigger`.
+* Configure com seu bot do Telegram.
+* Extraia `message` e defina `platform` como `Telegram`.
+
+---
+
+### 3. **Processar a pergunta com IA (DeepSeek + OpenAI)**
+
+#### a. Adicione o nó `AI Agent`:
+
+* Defina o modo: `Conversational agent`.
+* Mensagem de entrada: `message` extraído dos canais.
+* Modelo de chat: `deepseek-chat`.
+
+#### b. Configurar DeepSeek:
+
+* Vá em `Credenciais` > `OpenAI`.
+* Crie credencial com chave da DeepSeek AI.
+* Adicione:
+
+  * Modelo: `deepseek-chat`
+  * Base URL: `https://api.deepseek.com`
+
+#### c. Recuperar contexto da base (RAG):
+
+* Adicione o nó `Vector Store Tool`:
+
+  * Operação: `Retrieve documents`.
+  * Fonte: Pinecone com os documentos previamente inseridos.
+  * Embeddings: modelo `text-embedding-3-large` da OpenAI.
+
+---
+
+### 4. **Direcionar a resposta para o canal correto**
+
+#### a. Adicione um nó `Switch`:
+
+* Base: campo `platform`.
+* Regras:
+
+  * Se `platform = WhatsApp`, enviar resposta para WhatsApp.
+  * Se `platform = Slack`, enviar resposta para Slack.
+  * Se `platform = Telegram`, enviar resposta para Telegram.
+
+---
+
+### 5. **Enviar a resposta para cada canal**
+
+#### a. WhatsApp:
+
+* Operação: `Send message`.
+* Use o número de telefone do destinatário.
+* Mensagem: saída gerada pelo AI Agent.
+
+#### b. Slack:
+
+* Operação: `Send message to channel`.
+* Defina o `channel ID` extraído do trigger.
+* Mensagem: resposta do agente.
+
+#### c. Telegram:
+
+* Operação: `Send message`.
+* Defina o `chat ID`.
+* Mensagem: resposta processada.
+
+---
+
+### Exemplo de fluxo:
+
+* Usuário pergunta no WhatsApp: "Qual foi a receita da Coca-Cola no Q3 2024?"
+* IA busca na base vetorial, entende a pergunta e responde automaticamente.
+* A resposta é enviada no mesmo canal.
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-06-15T05:37:54+00:00
+Texto:
+==============
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-06-15T05:37:41+00:00
+Texto:
+Resumo do conteúdo :
+
+Como criar um agente de IA multicanal com base de conhecimento personalizada usando **n8n, DeepSeek, OpenAI e Pinecone**, sem necessidade de programação. Esse agente permite consultas via **WhatsApp, Slack e Telegram**, e responde com dados retirados de documentos como PDFs (ex: relatórios financeiros da Coca-Cola).
+
+### Passos principais do processo:
+
+1. **Configuração da base de conhecimento (Pinecone):**
+
+   * Documentos (como PDFs) são enviados via formulário.
+   * O conteúdo é extraído e transformado em vetores usando OpenAI (embeddings).
+   * Os vetores são armazenados no Pinecone para consultas futuras.
+
+2. **Conexão dos canais (WhatsApp, Slack e Telegram):**
+
+   * Triggers são configurados para capturar mensagens em cada plataforma.
+   * Cada mensagem recebida é identificada com o canal de origem.
+   * Um *switch* direciona a resposta para o canal correspondente.
+
+3. **Processamento da pergunta:**
+
+   * A mensagem é interpretada pelo modelo conversacional da DeepSeek AI.
+   * As informações relevantes são buscadas na base vetorial (Pinecone).
+   * A resposta é gerada e enviada para o canal de origem.
+
+4. **Configuração técnica:**
+
+   * Modelos usados: `DeepSeek Chat` para conversação e `text-embedding-3-large` da OpenAI para embeddings.
+   * O endpoint e a chave de API da DeepSeek devem ser configurados manualmente.
+   * O *switch node* é essencial para que cada canal receba a resposta no lugar correto.
+
+### Exemplos práticos demonstrados:
+
+* Consultas sobre relatório financeiro Q3 da Coca-Cola via WhatsApp, Slack e Telegram com respostas distintas, mas consistentes.
+* Arquitetura modular: dois fluxos principais – um para inserção da base de conhecimento e outro para integração com os canais.
+
+### Benefícios:
+
+* Integração com múltiplos canais sem escrever código.
+* Respostas rápidas, contextuais e com baixo custo (usando DeepSeek).
+* Ideal para empresas que precisam de um atendimento interno automatizado com base em documentos reais.
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-06-15T05:35:44+00:00
+Texto:
+Construa um Chatbot de IA Multicanal com RAG e Base de Conhecimento Personalizada 
+
+Como construir um chatbot de IA com base de conhecimento interna para WhatsApp, Slack e Telegram usando n8n, Deepseek, OpenAI e Pinecone — 
+
+ Esse sistema com inteligência artificial oferece respostas rápidas e precisas, facilitando a gestão do conhecimento da equipe de forma simples.
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-06-15T05:34:50+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Template_12_Build_a_Multichannel_RAG_based_AI_Chatbot_with_Custom.json
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-06-15T05:34:43+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_9853_007.jpg
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-06-15T05:33:46+00:00
+Texto:
+al40 - Multicanal **RAG Chatbot**
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-06-15T05:33:40+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-06-15T05:33:39+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-06-15T05:33:39+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-06-15T05:33:39+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-06-15T05:33:38+00:00
+Texto:
+https://chatgpt.com/c/684e5ae6-0f8c-8009-9fb0-9e0d4f9084a1
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-06-15T05:33:38+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-06-15T05:33:33+00:00
+Texto: [Sem texto]
+
+------------------------------
+

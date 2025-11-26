@@ -1,0 +1,675 @@
+{
+  "name": "Whatsapp grupo amigos copy",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $('If').item.json.Whatsapp_number }}",
+        "messageData": "=Quien: {{ $json.name }}\nMensaje: {{ $('Edit Fields13').item.json.message_content }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        864,
+        224
+      ],
+      "id": "6a0d7f2a-2163-4e9e-9ff3-bdfcbfd670be",
+      "name": "Redis7",
+      "credentials": {
+        "redis": {
+          "id": "[REMOVED]",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "e8f49318-72d8-4f1b-8831-cb8ac3f44e21",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        320
+      ],
+      "id": "eb3a99bb-6916-41e5-9ec7-088637b50795",
+      "name": "Webhook",
+      "webhookId": "e8f49318-72d8-4f1b-8831-cb8ac3f44e21"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.body.event }}",
+              "rightValue": "messages.upsert",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.body.data.key.remoteJid }}",
+              "rightValue": "34628225727-1489938209@g.us",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -32,
+        320
+      ],
+      "id": "a37d8235-3773-41a2-8cfa-470d3e7191ff",
+      "name": "If19"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "Whatsapp_number",
+              "value": "={{ $json.body.data.key.remoteJid }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Whastapp_name",
+              "value": "={{ $json.body.data.pushName }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "message_id",
+              "value": "={{ $json.body.data.key.id }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "message_type",
+              "value": "={{ !!$json.body.data.message.conversation && 'Texto' ||\n   !!$json.body.data.message.audioMessage && 'audio' ||\n   !!$json.body.data.message.imageMessage && 'image' ||\n   !!$json.body.data.message.stickerMessage && 'sticker' }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "message_receivedDate",
+              "value": "={{ DateTime.fromSeconds($json.body.data.messageTimestamp).toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "apikey",
+              "value": "={{ $json.body.apikey }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "instancia",
+              "value": "={{ $json.body.instance }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "message_content",
+              "value": "={{ $('Webhook').item.json.body.data.message.conversation }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "Sender",
+              "value": "={{ $json.body.data.key.participant }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        192,
+        224
+      ],
+      "id": "e906b693-2299-4c0e-b079-be9221884702",
+      "name": "Edit Fields13"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        192,
+        416
+      ],
+      "id": "d62f09ed-6a1d-4ad1-987d-f498f388ba14",
+      "name": "No Operation, do nothing5"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.message_type }}",
+              "rightValue": "Texto",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        224
+      ],
+      "id": "4e66096b-2c7e-4773-97e5-1192a6af16ed",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * NOTA IMPORTANTE:\n * Los números de teléfono y nombres en esta agenda son totalmente inventados\n * y se incluyen solo como ejemplo. Debes reemplazarlos por los reales que quieras usar.\n *\n * INPUT:\n * - $json[\"Sender\"] (ej: \"34123456789@s.whatsapp.net\")\n *\n * OUTPUT:\n * - name: nombre si está en el mapa\n * - phone_e164: número con +\n * - sender_jid: el JID original\n * - display: nombre si se conoce, si no el +número\n */\n\nconst jid = $json[\"Sender\"] || '';\n\nfunction digits(x) {\n  return String(x || '').replace(/\\D/g, '');\n}\n\n// Extrae solo los dígitos antes de \"@\"\nconst phoneDigits = digits(jid.split('@')[0]);\n\n// Agenda: teléfono → nombre (usar solo dígitos, con prefijo país)\nconst agenda = {\n  '34111111111': 'Laura Martínez',\n  '34122222222': 'Carlos Gómez',\n  '34133333333': 'María Fernández',\n  '34144444444': 'Javier López',\n  '34155555555': 'Lucía Torres',\n  '34166666666': 'Pedro Sánchez',\n  '34177777777': 'Ana Morales',\n  '34188888888': 'Sergio Ruiz',\n  '34199999999': 'Elena Castillo',\n  '34123456789': 'David Romero',\n  '34987654321': 'Paula Navarro',\n  '34121212121': 'Andrés Herrera',\n  '34909090909': 'Isabel Cruz',\n};\n\nconst name = agenda[phoneDigits] || null;\n\nreturn [\n  {\n    sender_jid: jid || null,\n    phone_e164: phoneDigits ? `+${phoneDigits}` : null,\n    name,\n    display: name || (phoneDigits ? `+${phoneDigits}` : 'desconocido'),\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        224
+      ],
+      "id": "54f8fbe2-c156-4cdf-9715-ff1f97102c22",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "group-id",
+              "name": "Whatsapp_number",
+              "value": "ID_GRUPO@g.us",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -32,
+        784
+      ],
+      "id": "1ca89701-3a00-4711-9395-7c4ccbeec09a",
+      "name": "Configurar Grupo"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "={{ $json.Whatsapp_number }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        192,
+        784
+      ],
+      "id": "4f02527b-f92a-4b5b-ab46-ed9c82b39653",
+      "name": "Obtener Todos los Mensajes",
+      "credentials": {
+        "redis": {
+          "id": "[REMOVED]",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.propertyName.length>1 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        784
+      ],
+      "id": "6dc55258-d3fb-47f9-be0b-588780e590e3",
+      "name": "¿Hay Mensajes?"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.propertyName.join('\\n\\n') }}",
+        "needsFallback": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Eres un asistente que resume conversaciones de grupos de WhatsApp para enviar un parte diario.\nObjetivo: entregar un resumen breve, claro y accionable, con formato compatible con WhatsApp y tono cercano entre amigos. Puede ser que recibas mensajes en español o en valenciano.\n\n## Reglas de salida (WhatsApp-ready)\n- Idioma: español (España).\n- Extensión:\n  - Modo \"Normal\": 7–12 líneas, ≤ 1.200 caracteres.\n  - Modo \"Corto\": 3–5 líneas, ≤ 500 caracteres.\n  - Modo \"Extendido\": 12–18 líneas, ≤ 1.600 caracteres.\n- Formato:\n  - Primera línea: titular entre **negritas** (en formato WhatsApp: `*Titulo*`).\n  - Usa *cursivas* solo para matices.\n  - Bullets con `•` o `-` (máx. 6 por bloque).\n  - Utiliza emojis con sentido para hacerlo más visual (máx. 4–5 en total).\n  - Sin JSON ni explicaciones; texto listo para WhatsApp.\n- Privacidad y claridad:\n  - Usa los nombres ya mapeados. Si falta, muestra `+34 6XX XX XX` (oculta dígitos).\n  - No incluyas datos sensibles ni enlaces largos.\n  - En audios/imágenes/vídeos, resume la intención (\"foto del plan\", \"audio con idea…\").\n\n## Contenido (en este orden):\n1) *Titulares del día* (máx. 3)\n2) *Temas y conclusiones* (agrupa por tema; 1–2 frases c/u)\n3) *Citas o momentos destacados* (máx. 2, breves, entre comillas)\n4) *Decisiones / pendientes* (checklist con responsables si se infieren)\n5) *Quedadas / horarios* (si aplica: lugar, día, hora)\n6) *Agradecimientos / buen rollo* (opcional, 1 línea)\n7) *Chistes / bromas del día* (memes, frases graciosas, chistes internos)\n8) *Planes futuros o ideas locas* (propuestas sin cerrar)\n9) *Momentos épicos* (anécdotas o acciones destacadas)\n10) *Recordatorios / avisos importantes* (info útil a retener)\n11) *Cumpleaños / celebraciones* (mencionadas en el día)\n12) *Sugerencias y recomendaciones* (libros, música, lugares, etc.)\n13) *Menciones especiales* (agradecimientos o reconocimientos)\n14) *Estado de ánimo general del grupo* (frase que capture el tono del día)\n\n## Estilo:\n- Directo, positivo, cero drama, sin juicios.\n- Siempre cierra con algo que lleve la palabra: *maquinas*, *maquinarias*, *maquinotes* o *machines*.\n\n## Criterios de calidad:\n- Deduplica ideas repetidas; une mensajes encadenados.\n- Agrupa por tema (no estrictamente cronológico).\n- Desambigua chistes internos: \"broma sobre X\" si no hay contexto.\n- Si hay decisiones/tareas/fechas, priorízalas en \"Decisiones / pendientes\".\n- Si no hubo actividad relevante, devuelve un mensaje amable de \"sin novedades\".\n\n## Parámetros:\n- Prioridades: decisiones/planes > acuerdos de quedada > info útil > humor/otros.\n\nGenera un **resumen final de día** listo para pegar en WhatsApp siguiendo estrictamente las reglas.\nEntrega **solo el texto final**, sin explicaciones.\n\n### Ejemplo de salida:\n*Resumen del grupo – Hoy* 📌  \n• *Titulares*: plan para el finde cerrado; debate café descafeinado; broma de los colores primarios.  \n• *Temas*:  \n- *Plan finde*: se propone **sábado 19:30** en **La Terraza**. Raul confirma; Ciro duda por partido.  \n- *Café*: Miguel recomienda \"Amor Perfecto descafeinado\"; traerá muestras.  \n- *Chistes internos*: risas con el test de colores; queda meme pendiente.  \n• *Momentos*: \"Yo llevo el coche si hace falta\" (Dennis).  \n• *Quedada*: Sáb 19:30, La Terraza (centro).  "
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        640,
+        528
+      ],
+      "id": "8d45ece4-fc29-4d08-bee0-05fee61addd5",
+      "name": "Generar Resumen",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "={{ $('Configurar Grupo').item.json.Whatsapp_number }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        992,
+        640
+      ],
+      "id": "34bf14b6-2b64-4e16-b901-5af0dbbc2559",
+      "name": "Limpiar Mensajes",
+      "credentials": {
+        "redis": {
+          "id": "[REMOVED]",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Angel",
+        "remoteJid": "={{ $('Configurar Grupo').item.json.Whatsapp_number }}",
+        "messageText": "={{ $('Generar Resumen').item.json.text }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        640
+      ],
+      "id": "9380206b-dc70-4066-addb-4cc6e8edb48c",
+      "name": "Enviar Resumen",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Angel",
+        "remoteJid": "={{ $('Configurar Grupo').item.json.Whatsapp_number }}",
+        "messageText": "📭 *Sin actividad hoy*\n\nNo hubo mensajes para resumir.\n¡Hasta mañana, máquinas! 🤖",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        704,
+        928
+      ],
+      "id": "7ea50292-6a69-4639-bf4a-476f964cc2c8",
+      "name": "Enviar Sin Mensajes",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        784
+      ],
+      "id": "4fd26e77-faa4-4e88-bb35-a1b661bfee12",
+      "name": "Disparador Diario 15:00"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        592,
+        720
+      ],
+      "id": "82e3fa6e-05df-4c48-b834-e63b554717ef",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        720,
+        720
+      ],
+      "id": "18796f87-d1fd-4dfc-8644-dddffdbd1ecf",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "N8N_servidor"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "aawebhookaa.vps.rubikmarketing.com.co",
+            "user-agent": "axios/1.7.9",
+            "content-length": "755",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "content-type": "application/json",
+            "x-forwarded-for": "172.18.0.1",
+            "x-forwarded-host": "aawebhookaa.vps.rubikmarketing.com.co",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "f75c220e25da",
+            "x-real-ip": "172.18.0.1"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "event": "messages.upsert",
+            "instance": "Angel",
+            "data": {
+              "key": {
+                "remoteJid": "34628225727-1489938209@g.us",
+                "fromMe": true,
+                "id": "3A3EAC1681BC4AFAD176",
+                "participant": "34722418242@s.whatsapp.net"
+              },
+              "pushName": "AA",
+              "status": "SERVER_ACK",
+              "message": {
+                "conversation": "Bon dia amics!",
+                "messageContextInfo": {
+                  "messageSecret": "xcaT6fx0fxhp6rXUrwwtTO/zJRzIqlzSAbXpCUAHauc="
+                }
+              },
+              "messageType": "conversation",
+              "messageTimestamp": 1757079627,
+              "instanceId": "716593b0-6a67-487f-9fb0-8dd86a02a69e",
+              "source": "ios"
+            },
+            "destination": "https://aawebhookaa.vps.rubikmarketing.com.co/webhook/grupo-colegas",
+            "date_time": "2025-09-05T10:40:28.008Z",
+            "sender": "34722418242@s.whatsapp.net",
+            "server_url": "https://aaevolutionaa.vps.rubikmarketing.com.co",
+            "apikey": "19990C596455-4FE2-B696-9E8DFA55CF68"
+          },
+          "webhookUrl": "https://aawebhookaa.vps.rubikmarketing.com.co/webhook/grupo-colegas",
+          "executionMode": "production"
+        }
+      }
+    ],
+    "Disparador Diario 15:00": [
+      {
+        "json": {}
+      }
+    ]
+  },
+  "connections": {
+    "Redis7": {
+      "main": [
+        []
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If19",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If19": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields13",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields13": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Redis7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configurar Grupo": {
+      "main": [
+        [
+          {
+            "node": "Obtener Todos los Mensajes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Todos los Mensajes": {
+      "main": [
+        [
+          {
+            "node": "¿Hay Mensajes?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Hay Mensajes?": {
+      "main": [
+        [
+          {
+            "node": "Generar Resumen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar Sin Mensajes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar Resumen": {
+      "main": [
+        [
+          {
+            "node": "Limpiar Mensajes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpiar Mensajes": {
+      "main": [
+        [
+          {
+            "node": "Enviar Resumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disparador Diario 15:00": {
+      "main": [
+        [
+          {
+            "node": "Configurar Grupo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generar Resumen",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generar Resumen",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c441dc6e-88c7-4b0d-9d4a-6f1289a84239",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "Z5y82ppK58hrgXc8",
+  "tags": []
+}

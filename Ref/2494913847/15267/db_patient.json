@@ -1,0 +1,136 @@
+{
+  "name": "db_patient",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "phone"
+            },
+            {
+              "name": "solicitud_sql_query"
+            }
+          ]
+        }
+      },
+      "id": "631161e7-01a1-45c6-a1f4-800d8fac5b7d",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=phone del cliente: +{{ $json.phone }}\n\nSolicitud para crear el SQL query: {{ $json.solicitud_sql_query }}"
+            },
+            {
+              "content": "=Estructura de las tablas:\n\ncreate table\n  nutri_bot.daily_pantry (\n    id bigserial not null,\n    patient_id bigint not null,\n    for_date date not null,\n    items jsonb not null,\n    created_at timestamp with time zone not null default now(),\n    constraint daily_pantry_pkey primary key (id),\n    constraint daily_pantry_patient_id_for_date_key unique (patient_id, for_date),\n    constraint daily_pantry_patient_id_fkey foreign key (patient_id) references nutri_bot.patients (patient_id) on delete cascade\n  ) tablespace pg_default;\n\ncreate table\n  nutri_bot.dietary_flags (\n    id bigserial not null,\n    patient_id bigint not null,\n    flag text not null,\n    note text null,\n    created_at timestamp with time zone not null default now(),\n    constraint dietary_flags_pkey primary key (id),\n    constraint dietary_flags_patient_id_fkey foreign key (patient_id) references nutri_bot.patients (patient_id) on delete cascade\n  ) tablespace pg_default;\n\ncreate table\n  nutri_bot.food_aliases (\n    id bigserial not null,\n    alias text not null,\n    ingredient_key text not null,\n    locale text null default 'es-CO'::text,\n    constraint food_aliases_pkey primary key (id)\n  ) tablespace pg_default;\n\ncreate index if not exists idx_food_aliases_alias on nutri_bot.food_aliases using btree (alias) tablespace pg_default;\n\ncreate table\n  nutri_bot.goals (\n    id bigserial not null,\n    patient_id bigint not null,\n    goal_type text not null,\n    start_date date not null default current_date,\n    target_metric text not null,\n    target_value numeric(7, 2) not null,\n    deadline date null,\n    status text not null default 'active'::text,\n    created_at timestamp with time zone not null default now(),\n    updated_at timestamp with time zone not null default now(),\n    weekly_rate_kg numeric(4, 2) null,\n    end_date date null,\n    start_weight_kg numeric(6, 2) null,\n    start_waist_cm numeric(6, 1) null,\n    constraint goals_pkey primary key (id),\n    constraint goals_patient_id_fkey foreign key (patient_id) references nutri_bot.patients (patient_id) on delete cascade,\n    constraint goals_start_weight_chk check (\n      (\n        (start_weight_kg is null)\n        or (\n          (start_weight_kg >= (20)::numeric)\n          and (start_weight_kg <= (400)::numeric)\n        )\n      )\n    ),\n    constraint goals_status_chk check (\n      (\n        status = any (\n          array[\n            'active'::text,\n            'completed'::text,\n            'cancelled'::text\n          ]\n        )\n      )\n    ),\n    constraint goals_target_metric_chk check (\n      (\n        target_metric = any (\n          array[\n            'weight_kg'::text,\n            'body_fat_pct'::text,\n            'bmi'::text,\n            'waist_cm'::text\n          ]\n        )\n      )\n    ),\n    constraint goals_start_waist_chk check (\n      (\n        (start_waist_cm is null)\n        or (\n          (start_waist_cm >= (30)::numeric)\n          and (start_waist_cm <= (200)::numeric)\n        )\n      )\n    ),\n    constraint goals_goal_type_chk check (\n      (\n        goal_type = any (\n          array['lose'::text, 'maintain'::text, 'gain'::text]\n        )\n      )\n    )\n  ) tablespace pg_default;\n\ncreate unique index if not exists uq_goals_active_per_patient on nutri_bot.goals using btree (patient_id) tablespace pg_default\nwhere\n  (status = 'active'::text);\n\ncreate index if not exists idx_goals_patient_created_at on nutri_bot.goals using btree (patient_id, created_at desc) tablespace pg_default;\n\ncreate trigger trg_goals_updated_at before\nupdate on nutri_bot.goals for each row\nexecute function nutri_bot.set_updated_at ();\n\ncreate trigger trg_goals_set_start_metrics before insert\nor\nupdate on nutri_bot.goals for each row\nexecute function nutri_bot.set_goal_start_metrics ();\n\ncreate table\n  nutri_bot.intake_assessments (\n    id bigserial not null,\n    patient_id bigint not null,\n    completed_at timestamp with time zone not null default now(),\n    activity_level text null,\n    diet_type text null,\n    allergies text null,\n    medical_notes text null,\n    goal_type text null,\n    goal_details text null,\n    target_weight_kg numeric(5, 2) null,\n    target_deadline date null,\n    constraint intake_assessments_pkey primary key (id),\n    constraint intake_assessments_patient_id_fkey foreign key (patient_id) references nutri_bot.patients (patient_id) on delete cascade\n  ) tablespace pg_default;\n\ncreate table\n  nutri_bot.meal_plans (\n    id bigserial not null,\n    patient_id bigint not null,\n    for_date date not null,\n    meal_type text not null,\n    recipe_title text not null,\n    recipe_instructions text not null,\n    macros jsonb not null default '{}'::jsonb,\n    portions jsonb not null default '{}'::jsonb,\n    created_at timestamp with time zone not null default now(),\n    constraint meal_plans_pkey primary key (id),\n    constraint meal_plans_patient_id_for_date_meal_type_key unique (patient_id, for_date, meal_type),\n    constraint meal_plans_patient_id_fkey foreign key (patient_id) references nutri_bot.patients (patient_id) on delete cascade\n  ) tablespace pg_default;\n\ncreate table\n  nutri_bot.message_log (\n    id bigserial not null,\n    patient_id bigint null,\n    direction text not null,\n    channel_msg_id text null,\n    body text not null,\n    sent_at timestamp with time zone not null,\n    status text null,\n    meta jsonb not null default '{}'::jsonb,\n    constraint message_log_pkey primary key (id),\n    constraint message_log_patient_id_fkey foreign key (patient_id) references nutri_bot.patients (patient_id) on delete set null\n  ) tablespace pg_default;\n\ncreate table\n  nutri_bot.patient_preferences (\n    id bigserial not null,\n    patient_id bigint not null,\n    daily_contact_hour smallint not null,\n    language text null default 'es-CO'::text,\n    portion_style text not null default 'mixed'::text,\n    restrictions jsonb not null default '{}'::jsonb,\n    created_at timestamp with time zone not null default now(),\n    updated_at timestamp with time zone not null default now(),\n    constraint patient_preferences_pkey primary key (id),\n    constraint patient_preferences_patient_id_key unique (patient_id),\n    constraint patient_preferences_patient_id_fkey foreign key (patient_id) references nutri_bot.patients (patient_id) on delete cascade,\n    constraint patient_preferences_daily_contact_hour_check check (\n      (\n        (daily_contact_hour >= 0)\n        and (daily_contact_hour <= 23)\n      )\n    )\n  ) tablespace pg_default;\n\ncreate trigger trg_patient_preferences_updated_at before\nupdate on nutri_bot.patient_preferences for each row\nexecute function nutri_bot.set_updated_at ();\n\ncreate table\n  nutri_bot.patients (\n    patient_id bigserial not null,\n    full_name text not null,\n    phone_e164 text not null,\n    email text null,\n    sex text null,\n    height_cm numeric(5, 2) null,\n    timezone text not null default 'America/Bogota'::text,\n    status text not null default 'active'::text,\n    created_at timestamp with time zone not null default now(),\n    birth_date date null,\n    constraint patients_patient_id_pkey primary key (patient_id),\n    constraint patients_phone_e164_key unique (phone_e164)\n  ) tablespace pg_default;\n\ncreate table\n  nutri_bot.progress_images (\n    id bigserial not null,\n    patient_id bigint not null,\n    week_start_date date not null,\n    chart_url text null,\n    chart_blob bytea null,\n    created_at timestamp with time zone not null default now(),\n    constraint progress_images_pkey primary key (id),\n    constraint progress_images_patient_id_week_start_date_key unique (patient_id, week_start_date),\n    constraint progress_images_patient_id_fkey foreign key (patient_id) references nutri_bot.patients (patient_id) on delete cascade\n  ) tablespace pg_default;\n\ncreate table\n  nutri_bot.scheduled_jobs (\n    id bigserial not null,\n    patient_id bigint null,\n    job_type text not null,\n    next_run_at timestamp with time zone not null,\n    rule text not null,\n    active boolean not null default true,\n    last_run_at timestamp with time zone null,\n    constraint scheduled_jobs_pkey primary key (id),\n    constraint scheduled_jobs_patient_id_fkey foreign key (patient_id) references nutri_bot.patients (patient_id) on delete cascade\n  ) tablespace pg_default;\n\ncreate table\n  nutri_bot.unit_equivalences (\n    id bigserial not null,\n    ingredient_key text not null,\n    grams_per_tbsp numeric(7, 2) null,\n    grams_per_cup numeric(7, 2) null,\n    grams_per_unit numeric(7, 2) null,\n    notes text null,\n    updated_at timestamp with time zone not null default now(),\n    constraint unit_equivalences_pkey primary key (id),\n    constraint unit_equivalences_ingredient_key_key unique (ingredient_key)\n  ) tablespace pg_default;\n\ncreate trigger trg_unit_equivalences_updated_at before\nupdate on nutri_bot.unit_equivalences for each row\nexecute function nutri_bot.set_updated_at ();\n\ncreate view\n  nutri_bot.v_patient_latest_weight as\nselect distinct\n  on (weekly_checkins.patient_id) weekly_checkins.patient_id,\n  weekly_checkins.week_start_date,\n  weekly_checkins.weight_kg,\n  weekly_checkins.created_at\nfrom\n  nutri_bot.weekly_checkins\nwhere\n  weekly_checkins.weight_kg is not null\norder by\n  weekly_checkins.patient_id,\n  weekly_checkins.week_start_date desc;\n\ncreate view\n  nutri_bot.v_weight_time_series as\nselect\n  p.patient_id,\n  p.full_name,\n  w.week_start_date,\n  w.weight_kg\nfrom\n  nutri_bot.patients p\n  join nutri_bot.weekly_checkins w on w.patient_id = p.patient_id\nwhere\n  w.weight_kg is not null\norder by\n  p.patient_id,\n  w.week_start_date;\n\ncreate table\n  nutri_bot.weekly_checkins (\n    id bigserial not null,\n    patient_id bigint not null,\n    week_start_date date not null,\n    weight_kg numeric(5, 2) null,\n    waist_cm numeric(5, 2) null,\n    energy_level smallint null,\n    adherence smallint null,\n    notes text null,\n    created_at timestamp with time zone not null default now(),\n    constraint weekly_checkins_pkey primary key (id),\n    constraint weekly_checkins_patient_id_week_start_date_key unique (patient_id, week_start_date),\n    constraint weekly_checkins_patient_id_fkey foreign key (patient_id) references nutri_bot.patients (patient_id) on delete cascade\n  ) tablespace pg_default;\n\ncreate index if not exists idx_weekly_checkins_patient_date on nutri_bot.weekly_checkins using btree (patient_id, week_start_date desc) tablespace pg_default\n\ncreate table\n  nutri_bot.patient_profile (\n    patient_id bigint not null,\n    activity_level text not null,\n    dietary_pattern text not null default 'omnivorous'::text,\n    allergies text[] null,\n    dislikes text[] null,\n    meals_per_day smallint null,\n    sleep_window text null,\n    equipment jsonb null,\n    created_at timestamp with time zone not null default now(),\n    updated_at timestamp with time zone not null default now(),\n    constraint patient_profile_pkey primary key (patient_id),\n    constraint patient_profile_patient_id_fkey foreign key (patient_id) references nutri_bot.patients (patient_id) on delete cascade,\n    constraint patient_profile_activity_level_check check (\n      (\n        activity_level = any (\n          array[\n            'sedentary'::text,\n            'light'::text,\n            'moderate'::text,\n            'active'::text,\n            'athlete'::text\n          ]\n        )\n      )\n    ),\n    constraint patient_profile_meals_per_day_check check (\n      (\n        (meals_per_day >= 1)\n        and (meals_per_day <= 8)\n      )\n    )\n  ) tablespace pg_default;\n\ncreate trigger trg_patient_profile_updated_at before\nupdate on nutri_bot.patient_profile for each row\nexecute function nutri_bot.set_updated_at ();\n\ncreate view\n  nutri_bot.v_patient_overview as\nwith\n  last_weight as (\n    select\n      w.patient_id,\n      w.weight_kg,\n      w.week_start_date,\n      row_number() over (\n        partition by\n          w.patient_id\n        order by\n          w.week_start_date desc\n      ) as rn\n    from\n      nutri_bot.weekly_checkins w\n    where\n      w.weight_kg is not null\n  )\nselect\n  p.patient_id,\n  p.full_name,\n  p.phone_e164,\n  p.email,\n  p.sex,\n  p.birth_date,\n  p.height_cm,\n  p.timezone,\n  p.status,\n  date_part(\n    'year'::text,\n    age (p.birth_date::timestamp with time zone)\n  )::integer as age_years,\n  pref.daily_contact_hour,\n  pref.portion_style,\n  prof.activity_level,\n  prof.dietary_pattern,\n  prof.allergies,\n  prof.dislikes,\n  prof.meals_per_day,\n  prof.sleep_window,\n  prof.equipment,\n  g.id as goal_id,\n  g.goal_type,\n  g.target_metric,\n  g.target_value,\n  g.weekly_rate_kg,\n  g.deadline,\n  g.status as goal_status,\n  lw.weight_kg as latest_weight_kg,\n  lw.week_start_date as latest_weight_week,\n  case\n    when p.height_cm is not null\n    and p.height_cm > 0::numeric\n    and lw.weight_kg is not null then round(\n      lw.weight_kg / ((p.height_cm / 100.0) ^ 2::numeric),\n      2\n    )\n    else null::numeric\n  end as bmi\nfrom\n  nutri_bot.patients p\n  left join nutri_bot.patient_preferences pref on pref.patient_id = p.patient_id\n  left join nutri_bot.patient_profile prof on prof.patient_id = p.patient_id\n  left join nutri_bot.v_active_goal g on g.patient_id = p.patient_id\n  left join last_weight lw on lw.patient_id = p.patient_id\n  and lw.rn = 1;\n\ncreate view\n  nutri_bot.v_active_goal as\nselect\n  g.id,\n  g.patient_id,\n  g.goal_type,\n  g.start_date,\n  g.target_metric,\n  g.target_value,\n  g.deadline,\n  g.status,\n  g.created_at,\n  g.updated_at,\n  g.weekly_rate_kg,\n  g.end_date\nfrom\n  nutri_bot.goals g\nwhere\n  g.status = 'active'::text;"
+            },
+            {
+              "content": "=Perfecto. Aquí tienes el **System Prompt** para tu subflujo generador de SQL **con literales in-line** (sin parámetros ni notas). Pégalo tal cual.\n\n---\n\n# 🧠 System Prompt — SQL Generator (literals only)\n\n**Rol**\nEres un generador de SQL para PostgreSQL (Supabase). A partir de una instrucción en lenguaje natural y del esquema disponible, debes **producir exactamente una sola sentencia SQL completa**, lista para ejecutar, **con todos los valores incrustados como literales** (sin placeholders ni parámetros).\n\n**Reglas obligatorias**\n\n1. Usa el esquema **`nutri_bot.`** en todas las tablas/vistas/funciones.\n2. La clave del paciente se llama **`patient_id`** (no `id`).\n3. **Una sola sentencia** por respuesta. Si necesitas varios pasos, usa **CTE** (`WITH …`) y termina con un `SELECT` o `RETURNING`.\n4. **No uses** `$1`, `$2`, etc. **Inserta literales**:\n\n   * Textos entre comillas simples con *escape* correcto de `'` → `''`.\n   * Fechas como `DATE 'YYYY-MM-DD'`.\n   * Timestamps como `TIMESTAMPTZ 'YYYY-MM-DD HH:MI:SS±HH'` si aplica.\n   * JSON con `'<json>'::jsonb` (el JSON debe ser válido y con comillas escapadas).\n   * Números sin comillas.\n\n5. No agregues comentarios, explicaciones, metadatos ni “notes”. **La salida debe ser solo el SQL.**\n6. Mantén integridad (respeta UNIQUE/FK) y usa `ON CONFLICT` cuando corresponda.\n7. Si la tarea es de lectura, devuelve un `SELECT` limpio y ordenado; si es escritura, usa `INSERT/UPDATE/DELETE/UPSERT` y retorna con `RETURNING` si es útil.\n8. No inventes tablas/columnas: usa solo las del esquema provisto.\n9. El phone_e64 es '{{ $json.phone }}'. NO LO MODIFIQUES!!!\n\n**Formato de salida**\n\n* Responde **únicamente** con la sentencia SQL dentro de un bloque de código. **Nada más.**\n\n**Ejemplos de estilo (referencia)**\n\n* Upsert de preferencias:\n\n```sql\nINSERT INTO nutri_bot.patient_preferences (patient_id, daily_contact_hour, portion_style)\nVALUES (123, 7, 'mixed')\nON CONFLICT (patient_id) DO UPDATE\nSET daily_contact_hour = EXCLUDED.daily_contact_hour,\n    portion_style     = EXCLUDED.portion_style,\n    updated_at        = now()\nRETURNING patient_id, daily_contact_hour, portion_style;\n```\n\n* Get-or-create por teléfono:\n\n```sql\nWITH found AS (\n  SELECT patient_id FROM nutri_bot.patients WHERE phone_e164 = '573000000000'\n), ins AS (\n  INSERT INTO nutri_bot.patients (full_name, phone_e164, status)\n  SELECT 'Ana Pérez', '573000000000', 'onboarding'\n  WHERE NOT EXISTS (SELECT 1 FROM found)\n  RETURNING patient_id\n)\nSELECT COALESCE((SELECT patient_id FROM found), (SELECT patient_id FROM ins)) AS patient_id;\n```\n\n* RPC con JSON embebido:\n\n```sql\nSELECT * FROM nutri_bot.rpc_upsert_meal_plan_get_portions(\n  123,\n  DATE '2025-10-09',\n  'lunch',\n  'Bowl de pollo, arroz y aguacate',\n  'Cocina el arroz. Dora la pechuga. Sirve con aguacate.',\n  '[{\"ingredient\":\"arroz\",\"grams\":100},{\"ingredient\":\"pechuga\",\"grams\":140},{\"ingredient\":\"aguacate\",\"grams\":100}]'::jsonb,\n  '{\"kcal\":null,\"protein_g\":null,\"fat_g\":null}'::jsonb\n);\n```\n\n**Instrucción final**\nCuando recibas la petición del agente (con los valores concretos), **genera solo la sentencia SQL final con literales in-line**, siguiendo las reglas anteriores.\n",
+              "role": "system"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        208,
+        0
+      ],
+      "id": "40984587-e563-4d50-920a-7db37b58c675",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.message.content.sql }}",
+        "options": {
+          "queryReplacement": ""
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        560,
+        0
+      ],
+      "id": "79f2122a-cf0d-48aa-9555-eb3ee9b99846",
+      "name": "Execute a SQL query",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Servidor_N8N"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "phone": "573005660816",
+          "solicitud_sql_query": "SELECT * FROM nutri_bot.rpc_upsert_meal_plan_get_portions(11, DATE '2025-10-09', 'lunch', 'Propuesta con huevos, cerdo, arroz, tomate, lechuga, yogurt griego, cebolla y condimentos', 'Preparación práctica con lo que tienes: saltea el cerdo con cebolla y condimentos, acompaña con arroz y una ensalada de tomate y lechuga. Puedes agregar huevo duro y un poco de yogurt griego como aderezo.', '[\"huevo\",\"cerdo\",\"arroz\",\"tomate\",\"lechuga\",\"yogurt griego\",\"cebolla\",\"condimentos\"]'::jsonb, '{\"portion_style\":\"household_units\"}'::jsonb );"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8a4e522e-6184-4d02-88ae-753e751fb802",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "PB1N5lqlWGwz0TBM",
+  "tags": []
+}

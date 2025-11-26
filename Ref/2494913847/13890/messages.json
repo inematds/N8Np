@@ -1,0 +1,159 @@
+[
+  {
+    "id": 13909,
+    "author": "INEMA",
+    "date": "2025-09-05T18:13:15+00:00",
+    "text": "Aqui estão alguns hacks práticos retirados do conteúdo e da discussão sobre RAG e automações em n8n:\n\n1. Comece pequeno\n\n* Nunca carregue logo milhares de documentos. Teste com 5–10 arquivos e 20 perguntas-chave.\n* Isso evita gastar tempo e custo com ingestão ruim.\n\n2. Chunking inteligente\n\n* Use separação por markdown em vez de apenas tamanho fixo.\n* Adicione overlap de 10–20% entre chunks.\n* Contextual embeddings: peça ao LLM para gerar uma frase que situe cada chunk no documento.\n\n3. Metadata é ouro\n\n* Guarde título, seção, versão e sumário do documento junto com cada chunk.\n* Isso dá contexto ao agente e reduz alucinação.\n\n4. Deduplicação automática\n\n* Use IDs, hashes ou checksums para evitar inserir o mesmo documento várias vezes no vetor.\n* Exemplo: armazenar doc\\_id + versão no banco relacional (Supabase).\n\n5. Multimodal na prática\n\n* Para PDFs complexos (texto + imagens + tabelas), use OCR avançado (como Mistral).\n* Suba imagens para o storage (Supabase) com anotações automáticas e referencie no markdown.\n\n6. Avalie como software\n\n* Monte planilha com 20–30 perguntas de teste e rode sempre que mudar o fluxo.\n* Marque acertos, parciais e erros → você sabe se está melhorando ou piorando.\n\n7. Estratégia modular\n\n* Para chatbots de suporte: fluxo rápido e simples.\n* Para relatórios longos: raciocínio profundo, várias camadas de recuperação e verificação.\n\n8. Validação pós-resposta\n\n* Sempre que possível, peça ao modelo validar se a resposta realmente veio dos chunks recuperados.\n* Se não houver base, retornar “fonte não encontrada” em vez de inventar.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13908,
+    "author": "INEMA",
+    "date": "2025-09-05T18:12:28+00:00",
+    "text": "=====================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13907,
+    "author": "INEMA",
+    "date": "2025-09-05T18:12:24+00:00",
+    "text": "úteis; escolher embeddings compatíveis com idioma e domínio.\n   Exemplo: embeddings multilíngues se a base tem PT/EN; avaliar MTEB-like benchmarks quando possível.\n\n4. Quão perto do 100% de acurácia dá para chegar?\n   Resposta: nunca 100% em IA; relatos de \\~98% em casos bem controlados. Medir com conjunto fixo de perguntas, iterar e incluir camadas de validação.\n   Exemplo: pós-geração, checar se a resposta cita trechos recuperados; se não, pedir nova busca ou responder “fonte não encontrada”.\n\n5. Supabase ou Pinecone?\n   Resposta: depende. Supabase pela versatilidade (vetor + relacional + storage); Pinecone para escala extrema.\n   Exemplo: multimodal n8n do demo usa Supabase para vetor e storage das imagens.\n\n6. Quadrant vale a pena?\n   Resposta: sim, leve e bom local/cloud; UI menos intuitiva que Supabase/Pinecone; bom para alta escala local.\n   Exemplo: laboratório on-prem com custo otimizado.\n\n7. Como evitar duplicatas no vetor?\n   Resposta: record manager de ingestão com hash/ID, upsert por ID único.\n   Exemplo: tabela de controle com doc\\_id, versão, checksum e status.\n\n8. Onde focar esforço: ingestão ou inferência?\n   Resposta: ingestão. Garbage in, garbage out.\n   Exemplo: OCR com anotações, sumário por documento, metadados ricos e deduplicação melhoram muito as respostas.\n\nExemplos práticos e mini-receitas\n\n1. Contextual embeddings no n8n\n   • Para cada chunk, enviar prompt curto com o documento completo pedindo uma sentença de contexto.\n   • Armazenar essa sentença como metadado do chunk.\n\nPrompt curto para contextualização\n“Você receberá um documento completo e um trecho dele. Escreva 1 frase clara que situe esse trecho no documento, indicando seção e propósito.”\n\n2. Markdown splitter com hierarquia\n   • Converter PDFs para markdown com títulos, listas e tabelas preservadas; usar RecursiveCharacterTextSplitter priorizando quebras em cabeçalhos.\n   • Overlap de 10–20% para manter coesão.\n\n3. Resposta com imagens em linha\n   • Incluir URLs do Supabase Storage e a legenda vinda da anotação OCR na própria string markdown do chunk.\n   Exemplo de trecho armazenado:\n   “Veja o painel frontal: !Painel com erro E21\n   Anotação: ‘Diagrama do painel com luzes A, B, C; erro E21 destacado.’”\n\n4. Verificação pós-geração\n   • Se a resposta não contiver citações ou trechos recuperados, rodar uma etapa de validação: “verifique se todas as afirmações estão ancoradas nos chunks retornados; se não, refaça a consulta”.\n\nChecklist rápido para implementar o blueprint multimodal\n\n1. Fonte e OCR\n   • Google Drive Watch → baixar PDF → Mistral OCR job com annotations.\n\n2. Imagens\n   • Extrair imagens base64 do OCR → converter binário → enviar ao Supabase Storage → obter URLs públicas/assinadas.\n\n3. Texto e metadados\n   • Combinar markdown do OCR com URLs das imagens e suas anotações.\n   • Opcional: gerar sumário por documento e sentença contextual por chunk.\n\n4. Vetorização\n   • Splitter por markdown; overlap moderado; embeddings adequados ao idioma.\n   • Upsert no Supabase Vector com doc\\_id, seção, página, contexto, urls\\_imagem.\n\n5. Agente\n   • Retrieval com filtros por metadado (documento, versão, seção) e re-rank opcional.\n   • System message instruindo a retornar imagens em markdown quando relevantes.\n\n6. Governança\n   • Record manager de ingestão; deduplicação por checksum; logs de versão.\n   • Conjunto de 20–30 perguntas para avaliação contínua.\n\nHacks úteis\n\n• Comece com 10 documentos e 20 perguntas de teste; só depois escale.\n• Use deduplicação desde o dia 1 para não “poluir” seu vetor.\n• Adicione uma frase contextual por chunk quando o corpus for pequeno e precisão for crítica.\n• Some um sumário por documento nos metadados para dar “visão de topo” ao agente.\n• Em bases com imagens e tabelas, OCR com anotação melhora drasticamente a utilidade dos chunks.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13906,
+    "author": "INEMA",
+    "date": "2025-09-05T18:12:24+00:00",
+    "text": "Resumo completo\n\nA sessão apresentou uma visão prática e estratégica sobre RAG (Retrieval Augmented Generation) em n8n, destacando por que RAG continua essencial mesmo com janelas de contexto maiores: velocidade, custo e necessidade de respostas confiáveis ancoradas em dados da empresa. Daniel e Alan, com background de desenvolvimento, mostraram como RAG básico pode piorar a precisão por perda de contexto nos chunks e defenderam “RAG modular”: ajustar arquitetura, ingestão, chunking, embeddings, recuperação, re-rank e geração conforme o caso de uso. O destaque foi um blueprint de RAG multimodal no n8n que usa OCR da Mistral para extrair texto, tabelas e imagens de PDFs, anotar imagens, enviar tudo ao Supabase (vetores + storage) e permitir que o agente responda com texto e imagens em linha. Na parte de Q\\&A, abordaram: chunking inteligente e contextual embeddings, sumarização de documentos, ingestão de dados aninhados (Slack/Notion), escolha de embeddings e vetores, Supabase vs Pinecone, Quadrant, deduplicação, avaliação de qualidade e metas de acurácia. Conclusão: o gargalo está na ingestão; comece pequeno, defina 20–30 perguntas de teste, meça, itere e adicione camadas de verificação quando a precisão exigida for alta.\n\nTópicos principais com exemplos\n\n1. Por que RAG ainda importa\n   • Situações: chatbots de e-commerce precisam responder em 5–10s; pesquisas profundas podem levar horas com raciocínio.\n   • Exemplo: atendimento que precisa citar políticas internas atualizadas; sem RAG, alto risco de alucinação.\n\n2. Problemas do RAG “naive”\n   • Perda de contexto ao chunkear páginas complexas.\n   • Exemplo: pergunta “o que é coberto?” e o sistema usa um chunk da seção de exclusões por não saber o contexto da página.\n\n3. RAG modular\n   • Ajuste por caso de uso: query routing, decomposição de consultas, verificação de resposta, re-rank, grafos, busca estruturada.\n   • Exemplo: para perguntas factuais curtas, uso primário de busca semântica; para relações entre entidades, grafo.\n\n4. Blueprint de RAG multimodal no n8n\n   • Pipeline: Google Drive → OCR Mistral → extração texto/imagens/anotações → upload imagens no Supabase Storage → chunking por markdown → embeddings → Supabase Vector → agente consulta e retorna texto + imagens.\n   • Exemplo: manual de lava-roupas com códigos de erro em imagens; a resposta traz o passo a passo e a figura do painel.\n\n5. Avaliação e confiança\n   • Definir 20–30 perguntas de referência antes de construir; rodar testes a cada mudança.\n   • Exemplo: planilha com perguntas, gabarito humano e nota por resposta; acompanhar evolução versão a versão.\n\n6. Supabase vs Pinecone vs Quadrant\n   • Supabase: vetores + Postgres relacional + storage na mesma stack; ótimo para apps e metadados.\n   • Pinecone: escala extrema e serviço dedicado de vetores.\n   • Quadrant: leve, pode escalar local; curva de aprendizado maior de UI.\n   • Exemplo: POC e médio porte no Supabase; catálogo massivo global em Pinecone.\n\n7. Boas práticas de ingestão\n   • OCR robusto para PDFs complexos; anotação de imagens; chunking por markdown; overlap moderado; deduplicação de registros.\n   • Exemplo: registrar hash/ID de documento para evitar inserir o mesmo PDF 5 vezes.\n\nPerguntas respondidas com exemplos e respostas\n\n1. Como melhorar chunking e contexto?\n   Resposta: usar splitters por markdown, 500–1000 caracteres com overlap; contextual embeddings adicionando uma sentença que situe o chunk no documento.\n   Exemplo de sentença contextual: “Este chunk pertence à seção ‘Exclusões de Cobertura’, listando itens 6–10.”\n\n2. Como lidar com dados aninhados (Slack threads, Notion com child blocks)?\n   Resposta: buscar recursivamente níveis filhos, flatenar preservando hierarquia em markdown (títulos, listas), e armazenar metadados de caminho.\n   Exemplo: Notion → extrair bloco → child blocks → concatenar com cabeçalhos tipo H2/H3 refletindo a estrutura.\n\n3. Qual embedding usar? Posso jogar arquivo direto no vetor?\n   Resposta: sempre precisa de embeddings; não enviar arquivo bruto. Pré-processar para markdown, aplicar splitters e metadados",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13905,
+    "author": "INEMA",
+    "date": "2025-09-05T18:11:18+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13905_005.jpg"
+  },
+  {
+    "id": 13904,
+    "author": "INEMA",
+    "date": "2025-09-05T18:10:24+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13904_006.jpg"
+  },
+  {
+    "id": 13903,
+    "author": "INEMA",
+    "date": "2025-09-05T18:08:18+00:00",
+    "text": "https://www.youtube.com/@TheAIAutomators",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 13902,
+    "author": "INEMA",
+    "date": "2025-09-05T18:06:35+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Multimodal_RAG_Simple_OCR_Ingestion_BLUEPRINT_1_1_1_1.json"
+  },
+  {
+    "id": 13901,
+    "author": "INEMA",
+    "date": "2025-09-05T18:06:35+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Multimodal RAG - TheAIAutomators - 2.0 BLUEPRINT (1) (1).json"
+  },
+  {
+    "id": 13900,
+    "author": "INEMA",
+    "date": "2025-09-05T18:06:30+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Multimodal RAG Instructions (Nate's Community) (1).pdf"
+  },
+  {
+    "id": 13899,
+    "author": "INEMA",
+    "date": "2025-09-05T18:06:14+00:00",
+    "text": "ap60 - Visao Pratica do RAG",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13897,
+    "author": "INEMA",
+    "date": "2025-09-05T18:05:48+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13896,
+    "author": "INEMA",
+    "date": "2025-09-05T18:05:47+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13895,
+    "author": "INEMA",
+    "date": "2025-09-05T18:05:47+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13894,
+    "author": "INEMA",
+    "date": "2025-09-05T18:05:47+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13893,
+    "author": "INEMA",
+    "date": "2025-09-05T18:05:47+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13892,
+    "author": "INEMA",
+    "date": "2025-09-05T18:05:46+00:00",
+    "text": "https://chatgpt.com/c/68bb2633-5f78-8327-b012-270378354a36",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 13891,
+    "author": "INEMA",
+    "date": "2025-09-05T18:05:45+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13890,
+    "author": "INEMA",
+    "date": "2025-09-05T18:05:31+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

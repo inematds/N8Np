@@ -1,0 +1,335 @@
+TOPICO 8939
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-06-08 02:06:47+00:00
+
+Total de mensagens: 17
+Midias baixadas: 5
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-06-08T02:12:55+00:00
+Texto:
+Aqui está o **passo a passo direto** para criar o bot de tarefas com n8n, Telegram, OpenAI (Whisper) e Airtable:
+
+---
+
+### 1. Criar Bot no Telegram
+
+* Vá ao Telegram e busque por `BotFather`.
+* Use o comando `/newbot`.
+* Defina nome e username (tem que terminar com “bot”).
+* Copie o **token de acesso** gerado.
+
+---
+
+### 2. Configurar n8n
+
+#### 2.1 Criar workflow
+
+* Nomeie o fluxo.
+
+#### 2.2 Adicionar gatilho Telegram
+
+* Nó: `Telegram Trigger`.
+* Evento: `On Message`.
+* Adicione uma nova credencial e cole o token do bot.
+
+---
+
+### 3. Lidar com texto e voz
+
+#### 3.1 Criar nó `IF`
+
+* Condição: se a mensagem contém `voice` (áudio).
+
+#### 3.2 Caminho do áudio:
+
+* Baixe o áudio: `Telegram → Get File`.
+* Transcreva: `OpenAI → Whisper → Transcribe Audio`.
+
+#### 3.3 Caminho do texto:
+
+* Capture diretamente: `msg.text`.
+
+---
+
+### 4. Unificar dados
+
+* Adicione dois nós `Set`.
+* Renomeie o campo para `agentInput` tanto para texto quanto transcrição.
+* Resultado: campo padrão para ambos os caminhos.
+
+---
+
+### 5. Configurar IA (Agent Tools)
+
+#### 5.1 Definir modelo
+
+* Modelo: GPT-4o mini (ou outro da OpenAI).
+* Memória: Window buffer.
+* Sessão: use o `chat_id` do Telegram como ID.
+* Prompt: instrua a IA a extrair:
+
+  * `title`, `description`, `due_date`, `priority`.
+
+#### 5.2 Incluir variável de data
+
+* Use `{{now}}` no prompt para permitir frases como “amanhã”.
+
+---
+
+### 6. Conectar Airtable
+
+#### 6.1 Criar token
+
+* Vá em Airtable [https://airtable.com/invite/r/OCq1Acz2](https://airtable.com/invite/r/OCq1Acz2) 
+→ Conta → **Personal Access Token**.
+* Permissões: Read + Write + Read schema.
+* Especifique o **base** (opcional, mas recomendado).
+
+#### 6.2 Adicionar nó Airtable
+
+* Operação: `Create Record`.
+* Base e Tabela: selecione.
+* Mapear campos:
+
+  * `{{fromAI.title}}`
+  * `{{fromAI.description}}`
+  * `{{fromAI.due_date}}`
+  * `{{fromAI.priority}}`
+
+---
+
+### 7. Enviar resposta ao Telegram
+
+* Nó: `Telegram → Send Message`.
+* Use `chat_id` para enviar de volta o resultado.
+* Mensagem: `{{fromAI.output}}` (ou conteúdo formatado manualmente).
+
+---
+
+### 8. Testar e ativar
+
+* Teste com texto e áudio.
+* Ative o workflow.
+* Verifique se os dados estão indo corretamente para o Airtable e retornando no Telegram.
+
+---
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-06-08T02:12:29+00:00
+Texto:
+-=================
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-06-08T02:12:25+00:00
+Texto:
+**Resumo completo do tutorial: Bot de Gerenciamento de Tarefas com n8n e Telegram**
+
+Vamos criar um bot no Telegram integrado ao n8n, capaz de:
+
+### Função principal:
+
+* Receber mensagens de texto ou áudio via Telegram.
+* Extrair tarefas da mensagem (transcrita ou digitada).
+* Adicionar essas tarefas automaticamente a uma tabela do Airtable.
+
+---
+
+### Etapas do processo:
+
+1. **Criação do Bot no Telegram**
+
+   * Usar o BotFather para gerar o token de acesso.
+   * Nomear o bot e copiar o token para usar no n8n.
+
+2. **Configuração do fluxo no n8n**
+
+   * Criar gatilho com `Telegram Trigger` (evento: onMessage).
+   * Capturar texto ou arquivo de voz.
+
+3. **Processamento de áudio (caso de mensagem de voz)**
+
+   * Usar um nó `IF` para separar voz de texto.
+   * Fazer download do áudio.
+   * Transcrever com o modelo Whisper da OpenAI.
+
+4. **Normalização do conteúdo**
+
+   * Unificar o nome do campo de entrada (`agentInput`) vindo do texto ou do áudio.
+   * Garantir que o agente de IA receba um campo padrão, independente do formato de entrada.
+
+5. **Criação do prompt para o agente IA**
+
+   * Instruir a IA para:
+
+     * Extrair **título**, **descrição**, **data de entrega** e **prioridade**.
+     * Garantir compatibilidade com os campos do Airtable (mesmos nomes e valores válidos, como dropdowns).
+     * Usar a variável `{{now}}` para interpretar datas relativas como “amanhã”.
+
+6. **Configuração do modelo de IA**
+
+   * Usar modelo OpenAI (como GPT-4o mini).
+   * Sessão baseada no chat ID do Telegram.
+   * Definir memória e janela de contexto.
+
+7. **Integração com Airtable**
+
+   * Criar token pessoal com permissões de leitura e escrita.
+   * Mapear campos: título, descrição, data e prioridade.
+   * Passar as respostas da IA para preencher os registros no Airtable.
+
+8. **Resposta ao usuário no Telegram**
+
+   * Enviar mensagem de confirmação com as tarefas detectadas e adicionadas.
+
+---
+
+### Resultados da automação:
+
+* O áudio com tarefas foi processado, transcrito, e três tarefas foram adicionadas ao Airtable com sucesso.
+* As tarefas retornaram no Telegram com as datas e prioridades já organizadas.
+
+---
+
+### Possibilidades de expansão:
+
+* Ler tarefas existentes no Airtable e responder ao usuário.
+* Armazenar dados em bancos maiores.
+* Criar sistemas de chat com IA internos à equipe.
+
+---
+
+### Conclusão:
+
+Esse projeto mostra como usar **n8n + Telegram + OpenAI + Airtable** para criar um **organizador pessoal por voz ou texto**, de forma simples e eficiente.
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-06-08T02:11:24+00:00
+Texto:
+=======
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-06-08T02:10:15+00:00
+Texto:
+**Para iniciantes!**
+
+Passo a passo como criar um bot no Telegram usando o n8n, que vai te ajudar a se manter organizado adicionando tarefas ao Airtable. Explico como configurar o bot, incluindo como obter o token de acesso e configurar os gatilhos para diferentes tipos de mensagens. 
+
+Também como usar o modelo Whisper da OpenAI para processar arquivos de áudio.
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-06-08T02:09:39+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Creating an n8n-based Telegram Bot for Task Management (1).pdf
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-06-08T02:09:33+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Task_Management_Demo.json
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-06-08T02:09:29+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_8948_008.jpg
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-06-08T02:06:57+00:00
+Texto:
+mt02 - Gerenciador de Tarefas no Telegram
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-06-08T02:06:56+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-06-08T02:06:55+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-06-08T02:06:55+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-06-08T02:06:55+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-06-08T02:06:55+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-06-08T02:06:54+00:00
+Texto:
+https://chatgpt.com/c/6844f023-0a5c-8009-89a4-856d1d784f32
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 16
+Autor: INEMA
+Data: 2025-06-08T02:06:54+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 17
+Autor: INEMA
+Data: 2025-06-08T02:06:47+00:00
+Texto: [Sem texto]
+
+------------------------------
+

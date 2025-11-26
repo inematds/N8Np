@@ -1,0 +1,769 @@
+TOPICO 14153
+==================================================
+
+Titulo: Sem titulo
+Criado em: 2025-09-11 03:54:51+00:00
+
+Total de mensagens: 39
+Midias baixadas: 16
+
+--------------------------------------------------
+
+MENSAGEM 1
+Autor: INEMA
+Data: 2025-09-14T03:35:53+00:00
+Texto:
+=================
+
+------------------------------
+
+MENSAGEM 2
+Autor: INEMA
+Data: 2025-09-11T04:13:14+00:00
+Texto:
+heurística simples (cor média da camiseta, detecção de logo).
+
+28. Trilha opcional
+    Gere sem áudio por padrão; ofereça “adicionar trilha ambiente?” depois, para economizar.
+
+Segurança e conteúdo
+29\) Filtros básicos
+Bloqueie termos sensíveis; responda: “não posso editar este tipo de conteúdo”. Evita ban do bot.
+
+30. Marcas d’água e direitos
+    Se o usuário enviar marca de terceiros, pergunte se tem permissão. Ofereça alternativa: mockup genérico.
+
+Hacks de setup n8n
+31\) Saída padronizada sempre
+Todos os subagentes devem retornar {texto, url, tipo\_documento}. Falhou? Retorne {texto: “falhou…”, url: null, tipo\_documento: “texto”}.
+
+32. Define required inputs no Execute Workflow
+    Forçar parâmetros evita chamadas incompletas e loops sem fim.
+
+33. Debounce de chat
+    Ignore novas entradas por 1–2 s após receber mídia, para evitar duplicidade.
+
+34. Teste A/B invisível
+    10% das requisições mandam para o segundo provedor. Guarde nota de qualidade; mude o default se o B vencer.
+
+Exemplos prontos de prompts internos
+35\) Combinar logo na camiseta
+“Place the logo on the t-shirt chest area; respect occlusion with microphone and hands; preserve fabric wrinkles; photorealistic; no blur; correct perspective of the print; keep original face intact.”
+
+36. Tatuagem realista
+    “Add a lion tattoo on the right forearm skin; integrate with skin pores and hair; natural shading; do not modify clothing; no glow; keep pose identical.”
+
+37. Troca de cenário
+    “Replace background with modern podcast studio, lilac sofa, soft practical lights, shallow depth of field; keep subject, clothing and mic unchanged; correct shadow contact.”
+
+Mini-FAQ
+Como baratear sem perder tanto?
+Rascunhos em 1024 px e 1 variante; só gerar final em 1536/2048 quando o usuário confirmar.
+
+Quando usar Fal ou Key?
+Se Fal estiver mais barato para i2v no dia, use Fal; se a fila de Fal estiver lenta ou a consistência cair, troque para Key automaticamente.
+
+Como evitar o logo por cima do microfone?
+Inclua “respect occlusion; microphone remains in front of the print” e, se possível, forneça máscara da área da camiseta.
+
+Por que meus uploads do Telegram perdem qualidade?
+Use sempre o last file\_id da lista de photos; o primeiro é a menor resolução.
+
+------------------------------
+
+MENSAGEM 3
+Autor: INEMA
+Data: 2025-09-11T04:13:14+00:00
+Texto:
+Hacks de prompt e consistência visual
+
+1. Inglês para o modelo, português para o usuário
+   Exemplo: usuário pede “camiseta amarela”; o agente gera prompt interno: “same pose, yellow t-shirt, respect occlusion, natural fabric wrinkles, soft studio lighting, 35mm, shallow depth of field”.
+
+2. Forçar oclusão e integridade de cena
+   Inclua sempre: “respect occlusion; preserve objects in front; keep microphone on top of logo; maintain hand geometry”.
+
+3. Separar estilo de conteúdo
+   Use dois campos: content\_prompt e style\_prompt. Exemplo: content\_prompt = “lion tattoo on forearm”; style\_prompt = “photorealistic, soft key light, realistic skin pores”.
+
+4. Seed e variantes rápidas
+   Quando a API permitir, fixe seed para variações controladas. Gere 3 variantes trocando apenas seed e escolha a melhor.
+
+5. Máscara e área de edição
+   Se o provedor aceitar mask, passe recortes simples (retângulo) para evitar alterar a cena toda. Exemplo: “edit only t-shirt area”.
+
+Hacks de velocidade e custo
+6\) Compactar polling
+Comece com 3–5 s de wait e exponencie até 15 s; limite a 6 tentativas. Caiu no limite? responda com link de status.
+
+7. Resolução e duração inteligentes
+   Imagens: 1024 px lado maior para rascunho; só subir para 1536/2048 no pedido “final”. Vídeo: 720p, 5–8 s por padrão.
+
+8. Balancear Fal vs Key
+   Mantenha ambos e crie um nó de seleção: se fila alta ou erro → fallback automático ao outro provedor.
+
+9. Cash de uploads
+   Armazene no IMGBB apenas quando necessário; se o Drive compartilhar URL pública, pule IMGBB para economizar.
+
+10. Reuso de ativos
+    Se detectar mesmo título e mesmo hash do arquivo, não regenere; retorne o último resultado.
+
+Hacks de robustez e falhas
+11\) Idempotência por operação
+Gere operation\_id por chat\_id + timestamp; se repetir a mesma requisição em 60 s, devolva o mesmo output.
+
+12. Validação antes da geração
+    Checar: URL pública válida, tamanho do arquivo, formato aceito. Se falhar, corrija e reenvie automaticamente.
+
+13. Fila simples por usuário
+    Evite corrida de execução: enfileire por chat\_id e processe 1 fluxo por vez para cada usuário.
+
+14. Logs úteis
+    Salve no Postgres: operation\_id, provedor, prompt final, custo estimado, latência, url do resultado. Ajuda no suporte e auditoria.
+
+15. Mensagem de falha legível
+    “Não consegui gerar agora. Tentar com outro provedor?” Botões: Repetir, Trocar provedor, Baixar rascunho.
+
+Hacks de experiência no Telegram
+16\) Sempre mandar mídia + resumo curto
+Enviar a foto/vídeo e, em seguida, um texto curto: “Pronto. Use ‘refinar’ para outra variação. Link no Drive”.
+
+17. Comandos auxiliares
+    /ultimas 5, /renomear Angel\_Studio → Angel\_Studio\_v2, /ajuda, /finalizar 1536px.
+
+18. Confirmações rápidas
+    Antes de ações destrutivas (renomear/substituir), mostrar prévia e pedir ok.
+
+19. Catálogo de nomes
+    Autocomplete simples: quando o usuário começar a digitar o nome, ofereça 3 sugestões de títulos guardados.
+
+Hacks de memória e organização
+20\) Esquema de títulos versionados
+nome\_v1, nome\_v2… Ao refinar, incremente automaticamente. Armazene também um campo tags: \[logo, camiseta, lila].
+
+21. Índice por semântica
+    Guarde mini-descrição no Postgres. Com uma busca de texto, recupere imagens por “tatuagem leão” sem lembrar o nome exato.
+
+22. Thumb otimizada
+    Crie uma miniatura 512 px para respostas rápidas e carregamento instantâneo no Telegram, além do arquivo original.
+
+Qualidade de fotorealismo
+23\) Pipeline de realce
+Se o provedor suportar, rode um upscaler ou face enhancement apenas na versão final, não nos rascunhos.
+
+24. Pele e tecido
+    Inclua “realistic skin texture, subsurface scattering” e “natural fabric folds; correct perspective of print”.
+
+25. Cor e luz coerentes
+    Adicione “match color temperature to scene; single key light; soft shadows; no haloing”.
+
+Hacks para vídeo
+26\) Movimento simples e claro
+Prompts curtos e determinísticos: “walk in from left, 2s; pause 2s; gently hug, 2s; hold 1s”.
+
+27. Loop de estabilidade
+    Se o provedor oscilar o rosto/roupa, gere 2 takes e escolha o de menor variação via
+
+------------------------------
+
+MENSAGEM 4
+Autor: INEMA
+Data: 2025-09-11T04:12:25+00:00
+Texto:
+===========================
+
+------------------------------
+
+MENSAGEM 5
+Autor: INEMA
+Data: 2025-09-11T04:12:22+00:00
+Texto:
+uração do vídeo, resolução e número de re-tries.
+– Como logar tudo? Ative Execution log e armazene respostas brutas em uma tabela auxiliar.
+
+Guia relâmpago de nós mínimos por subagente
+– Entradas: Set/Execute Workflow inputs
+– Drive: Read/Upload/Update
+– IMGBB: HTTP POST multipart
+– LLM curto: OpenRouter/OpenAI Chat
+– Provedor visual: HTTP Request submit + get results
+– Wait: 3–5 s entre polls
+– Build response: Set {texto, url, tipo\_documento}
+
+------------------------------
+
+MENSAGEM 6
+Autor: INEMA
+Data: 2025-09-11T04:12:22+00:00
+Texto:
+Segue um passo a passo direto para recriar o “Photoshop IA no Telegram” no n8n, com exemplos práticos e mini-FAQs ao final de cada bloco.
+
+Passo 0. Pré-requisitos
+
+1. Contas e chaves
+   – Telegram Bot (BotFather) com token
+   – Google Drive API conectada no n8n
+   – IMGBB API key para gerar URLs públicas
+   – Fal.ai e/ou Key.ai com APIs ativas
+   – OpenRouter ou OpenAI para GPT-4.1
+   – Postgres acessível ao n8n (ou Memória Simples do n8n)
+
+2. Pastas e tabelas
+   – Pasta do Drive: /prontas/photoshop-ia (ou a sua)
+   – Tabela Postgres para memória: public.n8n\_chat\_history (n8n cria se não existir)
+
+Exemplos
+– Nome de pasta: /prontas/photoshop-ia
+– Variáveis de ambiente no n8n: FAL\_API\_KEY, KEY\_API\_KEY, IMGBB\_API\_KEY, OPENROUTER\_API\_KEY
+
+Perguntas rápidas
+– Precisa Postgres? Não, mas recomendado para lembrar ids e nomes.
+– Posso usar só Key ou só Fal? Sim, troque apenas o nó de geração.
+
+Passo 1. Fluxo principal no n8n
+
+1. Telegram Trigger
+   – Recebe mensagens.
+   – Saída contém text e photo (lista de tamanhos). Sempre pegue o último file\_id para HQ.
+
+2. Switch entrada
+   – Se houver photo → ramo imagem
+   – Se houver text → ramo texto
+
+3. Ramo imagem
+   – Telegram: Download file usando last(file\_id)
+   – Google Drive: Upload do binário na pasta alvo
+   – Pergunte o nome desejado via Telegram Send Message e renomeie com Drive Update File Name
+   – Salve na memória: chat\_id, file\_id\_drive, nome amigável
+
+4. Ramo texto
+   – Encaminhe message\_text, chat\_id e contexto recente para o Agente Principal
+
+5. Agente Principal (LLM)
+   – Modelo: GPT-4.1
+   – Memória: Postgres, key = chat\_id (ou from.id para sessões individuais)
+   – Output Parser: sempre retorne json com campos texto, url, tipo\_documento
+
+Exemplo de formato de saída
+{ "texto": "Imagem combinada pronta.", "url": "[https://drive.google](https://drive.google/)...", "tipo\_documento": "foto" }
+
+Perguntas rápidas
+– Como garantir HQ no Telegram? Usar last(file\_id).
+– Onde guardo o nome amigável? Em Postgres e também no Drive.
+
+Passo 2. Padronizar ferramentas do Agente Principal
+Crie funções acessíveis pelo agente via Sub-workflows (Execute Workflow):
+– criar\_imagem
+– editar\_imagem
+– combinar\_imagens
+– criar\_video
+– drive\_buscar
+– drive\_renomear
+– drive\_listar\_geradas
+
+Sempre force parâmetros esperados no sub-workflow:
+– criar\_imagem: title, prompt
+– editar\_imagem: image\_id, title, prompt
+– combinar\_imagens: image\_id\_1, image\_id\_2, title, prompt
+– criar\_video: image\_id, title, prompt
+
+Exemplos de instrução ao LLM
+– “combine o logo Logo\_YAMasters na camiseta de JoseLias\_Podcast”
+– “editar: mesma pose, camiseta amarela, tatuagem de leão, fotorrealista”
+
+Perguntas rápidas
+– Por que forçar parâmetros? Para o agente não esquecer nada crítico.
+– E se faltar imagem? O agente deve responder pedindo o arquivo faltante.
+
+Passo 3. Subagente combinar\_imagens
+
+1. Entrada
+   – image\_id\_1, image\_id\_2, title, prompt
+
+2. Preparação
+   – Drive: obter arquivos pelos ids
+   – Upload temporário ao IMGBB para URLs públicas
+   – LLM curto para lapidar prompt em inglês
+
+3. Geração com Fal ou Key
+   – Fal example: endpoint de image-to-image/compose (submit request)
+   – Loop: esperar 5 s → get results até state=success
+
+4. Saída
+   – HTTP GET para baixar imagem gerada
+   – Upload ao Google Drive com title
+   – Retornar ao Agente Principal: texto, url\_do\_drive, tipo\_documento=foto
+
+Exemplo de prompt ao modelo
+“Place logo on t-shirt, natural fabric shading, preserve wrinkles, consistent lighting, frontal shot.”
+
+Perguntas rápidas
+– Preciso IMGBB? Sim, se o provedor exigir URL pública.
+– PNG ou JPG? Use PNG quando precisar de transparência; senão JPG.
+
+Passo 4. Subagente editar\_imagem
+
+1. Entrada
+   – image\_id, title, prompt
+
+2. Fluxo
+   – Drive → baixa binário → IMGBB → URL pública
+   – LLM curto otimiza prompt para inpainting/edição em inglês
+   – Key.ai ou Fal.ai: cria task de edição
+   – Loop de polling até success
+   – Baixa resultado → Drive Upload → retorna texto, url, tipo\_documento=foto
+
+Exemplos
+– “same pose, yellow t-shirt, lion tattoo on
+
+------------------------------
+
+MENSAGEM 7
+Autor: INEMA
+Data: 2025-09-11T04:11:50+00:00
+Texto:
+=====================
+
+------------------------------
+
+MENSAGEM 8
+Autor: INEMA
+Data: 2025-09-11T04:11:26+00:00
+Texto:
+automaticamente o envio correto.
+
+– Exemplos de comando úteis
+“coloque este logo nesta camiseta”
+“edite esta imagem: mesma pose, camiseta amarela, tatuagem de leão”
+“crie vídeo com esta imagem: camaleão entra pela esquerda e me abraça”
+“troque o fundo por um estúdio moderno com sofá lilás”
+“busque a imagem JoseLias\_Podcast e combine com Angel\_Studio”
+
+------------------------------
+
+MENSAGEM 9
+Autor: INEMA
+Data: 2025-09-11T04:11:25+00:00
+Texto:
+Resumo direto
+
+Mostra a criação de um “agente Photoshop IA” que roda totalmente dentro do Telegram. Ele recebe texto e/ou imagens, decide o que fazer e aciona subagentes para combinar, editar ou criar imagens, além de gerar vídeos a partir de uma imagem. Tudo é salvo e organizado no Google Drive, com recuperação posterior pelo nome. Há memória em Postgres (ou simples) para lembrar arquivos anteriores. Os modelos usados incluem GPT-4.1 para interpretar instruções e Fal/Key para geração e edição visual. No Telegram, o bot envia a saída já como mídia (foto ou vídeo) acompanhada de um texto explicativo. O autor demonstra casos reais: aplicar logo em camiseta, refinar realismo, adicionar tatuagem, trocar cenário por um estúdio moderno com sofá lilás, combinar imagens e, por fim, gerar um vídeo de um camaleão entrando e abraçando o apresentador. O fluxo é modular: um agente principal roteia pedidos para quatro subagentes e padroniza a saída com campos texto, url e tipo\_de\_documento, o que simplifica o envio correto pelo Telegram.
+
+Tópicos principais com exemplos
+
+1. Entrada e armazenamento
+   – O bot detecta se a mensagem é texto ou imagem.
+   – Se imagem: baixa a versão de maior qualidade usando o last file ID e salva no Google Drive com nome definido pelo usuário.
+   Exemplo: enviar “jose\_lias.jpg” e nomear “JoseLias\_Podcast”.
+
+2. Agente principal e memória
+   – Interpreta instruções com GPT-4.1 e decide qual subagente acionar.
+   – Usa Postgres para lembrar id e nome de imagens já usadas, permitindo pedir “use a imagem JoseLias\_Podcast”.
+   Exemplo: “combina o logo da comunidade com JoseLias\_Podcast”.
+
+3. Subagente combinar imagens
+   – Baixa duas imagens, publica temporariamente via IMGBB para ter URLs públicas e envia ao modelo (Fal ou Key) com prompt otimizado em inglês.
+   Exemplo: “coloque o logo na camiseta do José Lias”.
+
+4. Subagente editar imagem
+   – Recebe 1 imagem + prompt; envia para Key ou Fal para alterar elementos, cores, textura, etc.
+   Exemplo: “mesma pose, camiseta amarela e tatuagem de leão”.
+
+5. Subagente criar imagem do zero
+   – Gera imagem apenas a partir de texto.
+   Exemplo: “camaleão hiper-realista em tom lilás”.
+
+6. Subagente criar vídeo
+   – Usa uma imagem e um prompt para gerar vídeo curto (ex.: Fal Veo 3 Fast ou Key).
+   Exemplo: “camaleão entra pela esquerda, senta ao lado e me abraça”.
+
+7. Padronização da saída
+   – Sempre retorna estrutura com texto, url e tipo\_de\_documento = foto ou vídeo.
+   – O agente principal envia pelo Telegram a mídia correta e um texto explicativo.
+
+8. Organização no Drive e recuperação
+   – Renomear, buscar, listar arquivos gerados e os enviados pelo usuário.
+   Exemplo: “procure a imagem com nome Angel\_Studio”.
+
+9. Dicas práticas
+   – Trabalhar prompts visuais em inglês melhora o resultado em Fal/Key.
+   – Separar agente principal e subagentes facilita escala e depuração.
+   – Usar IMGBB ou compartilhar pelo Drive para obter URLs públicas.
+
+10. Custos e decisões de modelo
+    – Fal e Key têm preços diferentes; autor nota queda de preço do Veo 3 Fast no Fal, mas compara com Key para escolher conforme custo/resultado.
+    Exemplo: optar por Fal quando o preço por segundo de vídeo estiver mais baixo.
+
+Perguntas rápidas com respostas
+
+– Posso rodar tudo só no Telegram sem abrir software de design?
+Sim. O Telegram é a interface; n8n orquestra e Fal/Key geram/ editam imagens e vídeos.
+
+– Como manter qualidade das imagens enviadas pelo Telegram?
+Sempre baixe usando o last file ID para pegar a versão em alta resolução.
+
+– Dá para reutilizar imagens antigas sem reenviar?
+Sim. A memória em Postgres guarda id e nome; peça pelo nome que o agente recupera.
+
+– O bot envia links ou arquivos?
+Ambos. Ele baixa do Drive e manda como foto/vídeo no Telegram, mais o texto explicativo e a url.
+
+– Preciso usar Fal e Key ao mesmo tempo?
+Não. O fluxo é modular; troque o nó de geração/edição pelo provedor preferido.
+
+– Como garantir saídas consistentes no Telegram?
+Padronize a resposta dos subagentes com texto, url e tipo\_de\_documento; o agente principal escolhe
+
+------------------------------
+
+MENSAGEM 10
+Autor: INEMA
+Data: 2025-09-11T04:10:45+00:00
+Texto:
+================
+
+------------------------------
+
+MENSAGEM 11
+Autor: INEMA
+Data: 2025-09-11T04:10:42+00:00
+Texto:
+e45. Crie seu Photoshop IA no Telegram
+
+🌟 Objetivo da aula
+Nesta aula você vai aprender a construir um superagente de "Photoshop IA" que trabalha a partir do Telegram e permite automatizar tarefas de edição, combinação, criação e geração de vídeos a partir de imagens. Tudo isso sem precisar abrir nenhum software de design e combinando IA generativa, memória contextual e armazenamento inteligente. Uma ferramenta incrível para criar conteúdos visuais, fazer testes rápidos com clientes ou até montar fluxos de conteúdo automatizado para redes sociais.
+
+🛠️ O que conseguimos com esta automação?
+
+* Receber e gerenciar imagens do Telegram com nome personalizado.
+* Combinar duas imagens (ex: colocar um logo em uma camiseta).
+* Editar uma imagem já gerada (ex: mudar cores ou elementos).
+* Criar novas imagens a partir de texto sem referência.
+* Gerar vídeos a partir de uma imagem e prompt.
+* Salvar tudo no Google Drive com nomes personalizados.
+* Recuperar facilmente imagens anteriores.
+* Interface 100% via Telegram com respostas visuais.
+
+🧩 Estrutura do fluxo automatizado
+Entrada pelo Telegram: O bot detecta se você envia texto ou imagem.
+
+Processamento inicial:
+
+* Se for imagem: é baixada e salva no Google Drive.
+* Se for texto: é enviado ao agente principal com contexto.
+
+Agente Principal (Photoshop IA):
+
+* Direciona o fluxo e decide qual subagente executar.
+* Usa memória Postgres para lembrar imagens anteriores e seus nomes.
+
+Subagentes:
+
+* Criar imagem: A partir de um prompt, sem imagem base.
+* Editar imagem: A partir de uma imagem enviada e um prompt.
+* Combinar imagens: Sobrepor duas imagens com contexto.
+* Criar vídeo: Gera um vídeo a partir de uma imagem e descrição.
+* Gerenciamento de arquivos: Buscar, renomear e organizar conteúdo no Drive.
+
+Saída pelo Telegram:
+
+* Se o resultado for imagem, é baixado e enviado como imagem.
+* Se for vídeo, é baixado e enviado como vídeo.
+* Sempre acompanhado de uma mensagem explicativa.
+
+🛠️ Ferramentas utilizadas
+
+* N8N (motor de automação)
+* Telegram (interface de interação)
+* Google Drive (armazenamento de arquivos)
+* IMGBB (hospedagem temporária de imagens públicas)
+* GPT-4.1 (OpenRouter + fallback em OpenAI)
+* Key e Fal.ai (para geração e edição de imagens e vídeos)
+* Postgres (como memória contextual)
+
+🧠 Dicas principais que aprendemos
+
+* Sempre usar o "last file ID" ao baixar imagens do Telegram para obter a versão em alta qualidade.
+* Manter uma estrutura de saída padrão (texto + URL + tipo de documento) para facilitar respostas automáticas.
+* Trabalhar em inglês melhora bastante a qualidade visual dos modelos generativos (especialmente no Fal e Key).
+* Separar o agente principal dos subagentes melhora a escalabilidade e a depuração.
+* Adicionar memória (Postgres ou simples) permite trabalhar com arquivos anteriores sem precisar reenviá-los.
+* O uso de IMGBB ou compartilhamento via Google Drive permite obter URLs públicas necessárias para trabalhar com as APIs de imagem e vídeo.
+* Este fluxo pode ser adaptado para usar qualquer outro modelo (Midjourney, Leonardo, Runway...) simplesmente trocando o nó de geração.
+
+Resources
+
+* Agente Photoshop
+* Criar imagens
+* Editar imagens
+* Combinar imagens
+* Criar vídeo
+* Fal.ia Nano-Banana
+* Fal.AI Veo 3 Fast
+* Kie.AI Nano Banana
+* Kie.AI Veo 3 Fast
+
+------------------------------
+
+MENSAGEM 12
+Autor: INEMA
+Data: 2025-09-11T04:10:13+00:00
+Texto:
+==================
+
+------------------------------
+
+MENSAGEM 13
+Autor: INEMA
+Data: 2025-09-11T04:10:09+00:00
+Texto:
+Crie um Photoshop com IA direto do Telegram
+
+E se eu dissesse que agora vocês podem editar, combinar, gerar imagens e até criar vídeos realistas apenas escrevendo no Telegram?
+
+🔥 Eu trago uma automação insana:
+Um agente de “Photoshop IA” que funciona como seu editor visual pessoal, 24/7, no celular, sem precisar abrir Canva, Figma ou Photoshop.
+
+📦 O que esse “bicho” faz?
+✅ Você envia uma imagem pelo Telegram e ela é salva com nome no seu Drive
+✅ Você diz “coloque este logo nesta camiseta” → ele faz
+✅ Você pede “troque o fundo por um sofá lilás” → ele faz
+✅ Você diz “crie um vídeo onde entra um camaleão e me abraça” → ele faz 😱
+✅ E tudo fica salvo, organizado e acessível para reutilizar quando quiser
+
+💡 Não é só um modelo. É um sistema completo com:
+
+* N8N como núcleo de automação
+* GPT-4.1 para interpretar instruções
+* Fal e Key como motores visuais
+* Google Drive + IMGBB como memória visual
+* E Postgres para lembrar das suas imagens anteriores!
+
+Uma brutalidade para criadores, agências, SaaS, consultores visuais ou qualquer pessoa que queira escalar a geração de conteúdo visual sem limites.
+
+🧠 Literalmente você pode escrever:
+“Edite esta imagem. Quero a mesma pose mas com camiseta amarela e tatuagem de leão.”
+E em segundos, você tem isso no seu celular.
+
+E não apenas imagens…
+🎥 Também gera VÍDEOS realistas a partir de imagens + texto.
+Isso é outro nível.
+
+------------------------------
+
+MENSAGEM 14
+Autor: INEMA
+Data: 2025-09-11T04:08:30+00:00
+Texto:
+=================
+
+------------------------------
+
+MENSAGEM 15
+Autor: INEMA
+Data: 2025-09-11T04:08:26+00:00
+Texto:
+https://kie.ai/playground/veo3
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 16
+Autor: INEMA
+Data: 2025-09-11T04:08:14+00:00
+Texto:
+https://kie.ai/nano-banana?model=google%2Fnano-banana-edit
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 17
+Autor: INEMA
+Data: 2025-09-11T04:08:12+00:00
+Texto:
+=======
+
+------------------------------
+
+MENSAGEM 18
+Autor: INEMA
+Data: 2025-09-11T04:07:50+00:00
+Texto:
+https://fal.ai/models/fal-ai/veo3/fast/image-to-video
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 19
+Autor: INEMA
+Data: 2025-09-11T04:07:33+00:00
+Texto:
+https://fal.ai/models/fal-ai/nano-banana/edit
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 20
+Autor: INEMA
+Data: 2025-09-11T04:06:38+00:00
+Texto:
+Cria Videos
+Midia: MessageMediaPhoto -> photo_14172_020.jpg
+
+------------------------------
+
+MENSAGEM 21
+Autor: INEMA
+Data: 2025-09-11T04:05:35+00:00
+Texto:
+Combina Imagens
+Midia: MessageMediaPhoto -> photo_14171_021.jpg
+
+------------------------------
+
+MENSAGEM 22
+Autor: INEMA
+Data: 2025-09-11T04:04:21+00:00
+Texto:
+edita Imagem
+Midia: MessageMediaPhoto -> photo_14170_022.jpg
+
+------------------------------
+
+MENSAGEM 23
+Autor: INEMA
+Data: 2025-09-11T04:02:44+00:00
+Texto:
+cria imagem
+Midia: MessageMediaPhoto -> photo_14169_023.jpg
+
+------------------------------
+
+MENSAGEM 24
+Autor: INEMA
+Data: 2025-09-11T04:01:36+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14168_024.jpg
+
+------------------------------
+
+MENSAGEM 25
+Autor: INEMA
+Data: 2025-09-11T04:00:26+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> Photoshop.json
+
+------------------------------
+
+MENSAGEM 26
+Autor: INEMA
+Data: 2025-09-11T04:00:26+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> crear_imagenes.json
+
+------------------------------
+
+MENSAGEM 27
+Autor: INEMA
+Data: 2025-09-11T04:00:26+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> edicion_imagenes.json
+
+------------------------------
+
+MENSAGEM 28
+Autor: INEMA
+Data: 2025-09-11T04:00:26+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> combina_imagenes.json
+
+------------------------------
+
+MENSAGEM 29
+Autor: INEMA
+Data: 2025-09-11T04:00:26+00:00
+Texto: [Sem texto]
+Midia: MessageMediaDocument -> creador_videos.json
+
+------------------------------
+
+MENSAGEM 30
+Autor: INEMA
+Data: 2025-09-11T03:55:29+00:00
+Texto: [Sem texto]
+Midia: MessageMediaPhoto -> photo_14162_030.jpg
+
+------------------------------
+
+MENSAGEM 31
+Autor: INEMA
+Data: 2025-09-11T03:54:59+00:00
+Texto:
+.e45 - Photoshop IA no Telegram
+
+------------------------------
+
+MENSAGEM 32
+Autor: INEMA
+Data: 2025-09-11T03:54:57+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 33
+Autor: INEMA
+Data: 2025-09-11T03:54:57+00:00
+Texto:
+..
+
+------------------------------
+
+MENSAGEM 34
+Autor: INEMA
+Data: 2025-09-11T03:54:57+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 35
+Autor: INEMA
+Data: 2025-09-11T03:54:56+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 36
+Autor: INEMA
+Data: 2025-09-11T03:54:56+00:00
+Texto:
+.
+
+------------------------------
+
+MENSAGEM 37
+Autor: INEMA
+Data: 2025-09-11T03:54:56+00:00
+Texto:
+https://chatgpt.com/c/68c2475b-5320-832f-820d-b40d8c03544e
+Midia: MessageMediaWebPage
+
+------------------------------
+
+MENSAGEM 38
+Autor: INEMA
+Data: 2025-09-11T03:54:55+00:00
+Texto:
+1
+
+------------------------------
+
+MENSAGEM 39
+Autor: INEMA
+Data: 2025-09-11T03:54:51+00:00
+Texto: [Sem texto]
+
+------------------------------
+

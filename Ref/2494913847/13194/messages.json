@@ -1,0 +1,261 @@
+[
+  {
+    "id": 13226,
+    "author": "INEMA",
+    "date": "2025-08-25T01:23:45+00:00",
+    "text": "---\n\n## 1. Prompt de ANÁLISE DE IMAGEM (OpenAI Vision)\n\nEle usa um prompt fixo no módulo de análise, algo assim:\n\n* “Analise a imagem fornecida e devolva exclusivamente em formato Markdown:\n\n  * Marca detectada (ou N/A)\n  * Paleta de cores em código HEX com nome e posição\n  * Fonte/estilo tipográfico\n  * Elementos visuais principais\n  * Focar apenas no produto principal\n  * Não incluir explicações extras, apenas o bloco Markdown”\n\nEsse é o prompt que gera a base visual do produto.\n\n---\n\n## 2. Prompt do AGENTE (GPT-4.1) para gerar JSON\n\nAqui ele usa dois blocos: **User Prompt** e **System Prompt**.\n\n### User Prompt\n\nPede para criar **N cenas** com essa estrutura:\n\n* prompt\\_imagem\n* prompt\\_video\n* aspect\\_ratio\\_imagem (2:3 ou 16:9)\n* aspect\\_ratio\\_video (9:16 ou 16:9)\n* modelo\\_video (Veo3 Fast)\n\nInclui variáveis:\n\n* Número de vídeos (do formulário)\n* Descrição visual da análise (saída do Vision)\n* Diálogo fornecido no formulário\n* Aspect ratio preferido (vertical ou horizontal)\n* Modelo de vídeo escolhido\n* Solicitações especiais (ex.: idade do ator, cenário, restrições)\n\n### System Prompt\n\nDefine o estilo:\n\n* Estilo UGC → natural, espontâneo, realista\n* Foto/vídeo com aparência amadora, tipo celular/iPhone\n* Imperfeições leves de enquadramento e luz natural\n* Fidelidade ao produto (marca, cores, logotipo)\n* Se não houver diálogo, inventar um de até 200 caracteres\n* Saída sempre em JSON válido\n\n---\n\n## 3. Prompt para KIE AI (imagem)\n\nEle não escreve o prompt na mão, apenas envia o campo `\"prompt_imagem\"` gerado pelo agente.\nEsse prompt descreve a cena fotorrealista:\n\n* onde a pessoa está,\n* como segura o produto,\n* iluminação,\n* composição (close, fundo desfocado, etc.).\n\n---\n\n## 4. Prompt para KIE AI (vídeo – Veo3 Fast)\n\nMesma lógica: envia o `\"prompt_video\"` gerado pelo agente.\nEsse prompt inclui:\n\n* ambiente,\n* ator (faixa etária, estilo),\n* ação simples,\n* fala/diálogo,\n* tom realista de selfie.\n\n---\n\n## 5. Estrutura Final de Saída (exemplo que ele mostra)\n\n```{\n  \"cenas\": [\n    {\n      \"prompt_imagem\": \"Foto amadora em uma sala iluminada pela janela, pessoa segura o produto com logo visível...\",\n      \"prompt_video\": \"Vídeo selfie 9:16, ator de 30 anos mostra o produto e diz: 'Essa é a melhor compra que já fiz...'\",\n      \"aspect_ratio_imagem\": \"2:3\",\n      \"aspect_ratio_video\": \"9:16\",\n      \"modelo_video\": \"veo-3-fast\"\n    },\n    ...\n  ]\n}```\n\n---\n\n## Resumindo\n\nOs prompts que ele cita são 3 tipos:\n\n1. P**rompt de análise de imagem (Vision) **→ extrai marca, cores, fonte, elementos.\n2. P**rompt do agente (GPT-4.1) **→ gera JSON com prompts de imagem e vídeo.\n3. P**rompts de imagem e vídeo (campo JSON) **→ enviados para KIE AI (Veo3 Fast).",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13225,
+    "author": "INEMA",
+    "date": "2025-08-25T01:23:29+00:00",
+    "text": "================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13223,
+    "author": "INEMA",
+    "date": "2025-08-25T00:53:20+00:00",
+    "text": "\"cenas\": [\n    {\n      \"prompt_imagem\": \"...\",\n      \"prompt_video\": \"...\",\n      \"aspect_ratio_imagem\": \"16:9\",\n      \"aspect_ratio_video\": \"16:9\",\n      \"modelo_video\": \"veo-3-fast\",\n      \"duracao_video_seg\": 8\n    }\n  ]\n}\nRestrições:\n- Não distorcer o design original.\n- Mostrar o logo real quando visível.\n- Sem textos sobrepostos.\nEntregue somente o JSON.\n```\nExemplo rápido\n```\nquantidade: 4\naspecto: 16:9\n```\n\n```\n\n# 6) Dúvidas comuns e respostas curtas\n\nComo garanto 16:9 sempre?\nInclua “aspect\\_ratio\\_imagem/video: 16:9” em todos os prompts e no mapeamento do node de geração.\n\nQuero vertical para Reels/TikTok.\nTroque para 9:16 no prompt e nos parâmetros do node de vídeo.\n\nComo impedir que invente variações do produto?\nFixe as regras de fidelidade (forma/logo/tipografia/cores HEX) no Sistema e nas Restrições do Usuário.\n\nPosso usar o mesmo ator nas 4 cenas?\nSim. Diga explicitamente “o mesmo ator nas 4 cenas”; no curto prazo aumenta realismo de “história contínua”.\n\nComo reduzir custo/tempo?\nUse Veo3 Fast, 2 cenas em vez de 4, fotos iniciais bem iluminadas, e processe cenas em paralelo (Split Out).",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13222,
+    "author": "INEMA",
+    "date": "2025-08-25T00:53:20+00:00",
+    "text": "3) Prompt para VÍDEO LONGO SEQUENCIAL (mesmo ator, 4 cenas de \\~8s → 30+ s)\n\nGera 4 cenas coerentes com o mesmo ator e ambiente, para juntar depois.\n\nSistema\n\n```Você cria um roteiro de 4 cenas UGC (cada 7–9s), com o mesmo ator e coerência visual.\nRegras:\n1) Estilo selfie/handheld, luz natural, variações sutis de enquadramento entre cenas.\n2) Produto intacto: manter forma, logotipo, tipografia e cores HEX.\n3) Em cada cena: micro-objetivo (gancho, benefício, prova prática, CTA).\n4) Entregar JSON válido com campos por cena, sem comentários fora do JSON.```\n\nUsuário\n\nG```ere um JSON com 4 cenas para um vídeo UGC total ~32s (4 x 8s), em português do Brasil.\nParâmetros:\n- Produto: {{nome_do_produto}}\n- Análise visual: {{analise_markdown_vision}}\n- Ambiente geral: {{ambiente}}\n- Ator: {{faixa_etaria_estilo}}, o mesmo nas 4 cenas\n- Aspect ratio: 16:9 (ou 9:16 se vertical)\nEstrutura JSON:\n{\n  \"cenas\": [\n    { \"prompt_video\": \"...\", \"duracao_seg\": 8 },\n    { \"prompt_video\": \"...\", \"duracao_seg\": 8 },\n    { \"prompt_video\": \"...\", \"duracao_seg\": 8 },\n    { \"prompt_video\": \"...\", \"duracao_seg\": 8 }\n  ]\n}\nCada prompt_video deve:\n- indicar ação/gestos simples,\n- mencionar 1 benefício diferente,\n- manter consistência do produto,\n- sugerir enquadramentos levemente variados,\n- finalizar a cena 4 com CTA leve.\nEntregue somente o JSON.\n```\nExemplo curto de saída\n\n{\n```  \"cenas\": [\n    { \"prompt_video\": \"Cena 1: selfie na sala, luz da janela; mostra o produto...\", \"duracao_seg\": 8 },\n    { \"prompt_video\": \"Cena 2: close nas mãos abrindo a embalagem...\", \"duracao_seg\": 8 },\n    { \"prompt_video\": \"Cena 3: demonstração rápida/benefício 2...\", \"duracao_seg\": 8 },\n    { \"prompt_video\": \"Cena 4: conclusão com CTA leve...\", \"duracao_seg\": 8 }\n  ]\n}\n\n```Respostas rápidas\n\n* Como unir as 4 cenas? Baixe os 4 MP4 e una no seu fluxo (ffmpeg, serviço externo ou upload e join).\n* E se quiser atores diferentes? Altere para “atores diferentes a cada cena”.\n\n# 4) Prompt para MOCKUP PUBLICITÁRIO (estático para anúncios e vitrines)\n\nMais barato e rápido; ótimo para thumbnails, carrosséis e capas.\n\nSistema\n\nVoc```ê gera prompts de mockups publicitários fotorrealistas do produto.\nRegras:\n1) Fidelidade absoluta ao produto (forma/logo/tipografia/cores HEX).\n2) Cenários limpos, com foco no objeto; superfícies realistas (madeira, mármore, tecido).\n3) Iluminação suave; sombras coerentes; sem textos ou stickers.\n4) Saída somente no prompt final, sem comentários.\n\nU```suário\n\nCrie``` um prompt de mockup publicitário fotorrealista, em português do Brasil:\n- Produto: {{nome_do_produto}}\n- Análise visual (marca/HEX/tipografia): {{analise_markdown_vision}}\n- Superfície: {{madeira_clara | marmore_branco | tecido_neutro}}\n- Composição: produto central com logo visível; pequena xícara/planta como apoio opcional.\n- Aspect ratio: 16:9 (para capa e YouTube) ou 2:3 (carrossel)\n- Sem textos sobrepostos, sem distorções.\nEntregue somente o prompt final.\n\nEx```emplo rápido\n\nProdu```to: Garrafa térmica Inema 500\nSuperfície: mármore branco\nComposição: produto central, logo legível, xícara desfocada ao fundo\n\nSaí```da esperada (resumo):\nMockup 16:9, mármore branco, garrafa Inema 500 fiel (logo e cores HEX), luz suave, sombras realistas, sem textos.\n\n# 5) Prompt-Agente para SAÍDA ÚNICA EM JSON (imagem+vídeo por cena)\n\nUse quando você quer que um único agente gere tudo estruturado para o n8n.\n\nSistema\n\nVocê é``` um gerador de JSON para produção UGC. Produza cenas com prompts de imagem e vídeo sincronizados. Regras:\n1) Estilo amador realista; fidelidade total ao produto (forma, logo, tipografia, cores HEX).\n2) Se vertical: 9:16; se horizontal: 16:9.\n3) Entregue JSON válido, sem comentários fora do JSON.\n\nUsuá```rio\n\n```\n\n```\nCrie {{quantidade}} cenas UGC para o produto abaixo, retornando JSON:\n- Produto: {{nome_do_produto}}\n- Diálogo base: {{dialogo_base_ou_vazio}}\n- Análise visual (marca/HEX/tipografia): {{analise_markdown_vision}}\n- Ambiente preferido: {{ambiente}}\n- Pessoa/estilo: {{faixa_etaria_estilo}}\n- Aspecto: {{16:9_ou_9:16}}\n- Modelo de vídeo: veo-3-fast\n\nJSON alvo:\n{",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13221,
+    "author": "INEMA",
+    "date": "2025-08-25T00:53:20+00:00",
+    "text": "Aqui está o pack de prompts prontos para copiar e colar. Organizei por tópicos e, ao final de cada tópico, incluí exemplos e respostas rápidas às dúvidas mais comuns. Tudo já adaptado para 16:9 por padrão (e com notas para 9:16 quando você quiser vertical).\n\n# 1) Prompt para IMAGEM REALISTA (UGC estático)\n\nUse no seu agente de prompts (ou direto na KIE AI como texto de edição de imagem). Mantém o produto fiel e gera foto estilo “amador premium”.\n\nSistema\n\n```Você é um gerador de prompts para criar imagens UGC realistas, com aparência de foto feita por pessoas comuns. Regras:\n1) Estilo amador, luz natural, micro imperfeições de enquadramento; evitar aparência de IA.\n2) Preservar forma do produto, logotipo, tipografia e cores HEX detectadas na análise (não inventar variações).\n3) Foco humano e cotidiano: mãos, mesas, ambientes simples, interiores com luz de janela ou exteriores com luz suave.\n4) Composição: planos próximos e médios; profundidade de campo sutil; nada de text overlays.\n5) Saída somente em texto do prompt final, sem comentários.```\n\nUsuário\n\nC```rie um prompt de imagem UGC única, em português do Brasil, seguindo:\n- Produto: {{nome_do_produto}}\n- Análise visual: {{analise_markdown_da_vision_com_marca_cores_hex_tipografia_elementos}}\n- Objetivo: foto realista do produto em uso ou exibição, sem distorcer forma original.\n- Ambiente: {{ambiente_sugerido_ex: sala_luz_de_janela | cafeteria | escritório | carro_estacionado}}\n- Pessoas: {{faixa_etaria_e_estilo_ex: 25-40_casual}}, tom espontâneo, expressão natural.\n- Restrições: não alterar formato, não cobrir logotipo, não adicionar textos na imagem.\n- Aspect ratio preferido: 16:9\n- Alternativa se vertical: 9:16\n\nEntregue somente o prompt final da imagem.\n```\nExemplo rápido\n\nPr```oduto: Garrafa térmica Inema 500\nAnálise visual: Marca “Inema”, HEX #101820 (preto) e #FFD200 (âmbar), tipografia sans moderna, logotipo centrado.\nAmbiente: mesa de madeira perto de janela\nPessoas: 25-40 casual\n\n```Saída esperada (resumo):\nFoto horizontal 16:9, luz natural de janela, mão segurando Garrafa térmica Inema 500 intacta (logo visível, cores HEX #101820 e #FFD200 preservadas), mesa de madeira, fundo desfocado suave, estética amadora, sem textos.\n\nRespostas rápidas\n\n* Como forçar 16:9? Já está no prompt (aspect ratio preferido: 16:9).\n* E se eu quiser vertical? Troque para 9:16 no mesmo campo.\n* Como evitar que a IA mude o produto? Regras 2 e “Restrições” garantem isso.\n\n# 2) Prompt para VÍDEO UGC CURTO (1 cena, 8–12s)\n\nUse no agente para gerar o prompt que será enviado ao modelo de vídeo (ex.: Veo3 Fast).\n\nSistema\n\nVoc```ê cria prompts de vídeo UGC curto, naturais e persuasivos, para 8–12 segundos.\nRegras:\n1) Estética selfie/handheld, luz natural, áudio ambiente implícito, micro tremores aceitáveis.\n2) Respeitar fielmente forma do produto, logotipo, tipografia e cores HEX; sem adicionar textos na tela.\n3) Linguagem coloquial brasileira, tom confidencial, 1 benefício-chave + 1 call-to-action leve.\n4) Entregar somente o prompt final do vídeo, sem comentários.\n\nU```suário\n\nGere``` um prompt de vídeo UGC curto (8–12s), em português do Brasil:\n- Produto: {{nome_do_produto}}\n- Diálogo base (se houver): {{dialogo}}\n- Análise visual (marca/HEX/tipografia): {{analise_markdown_vision}}\n- Ambiente: {{ambiente}}\n- Pessoa: {{faixa_etaria_estilo}}\n- Ação: mostrar o produto em mãos/mesa, close curto; sem distorcer forma.\n- Aspect ratio: 16:9 (ou 9:16 se vertical)\n- Call-to-action: suave, ex: “vale a pena testar”\nEntregue somente o prompt final do vídeo.\n\nEx```emplo rápido\n\nProdu```to: Manteiga de Amendoim Artesanal Aurora\nDiálogo base: “É a melhor que já provei, textura cremosa e sem aditivos.”\nAmbiente: cozinha iluminada de manhã\nPessoa: 25–35 casual\n\nSaí```da esperada (resumo):\nVídeo 16:9, selfie na cozinha, pessoa mostra pote real da marca (logo e cores idênticos), fala 1 benefício e CTA leve, close nas mãos e textura, luz de janela, sem textos.\n\nRespostas rápidas\n\n* Duração fixa? Indique 8–12s no seu node de geração.\n* Vertical para Reels/TikTok? Troque aspect ratio para 9:16.\n\n#",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13220,
+    "author": "INEMA",
+    "date": "2025-08-25T00:51:23+00:00",
+    "text": "=================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13219,
+    "author": "INEMA",
+    "date": "2025-08-25T00:51:19+00:00",
+    "text": "Aqui estão os **hacks práticos** para você turbinar essa automação UGC no n8n com KIE AI, GPT-4o e Evolution API:\n\n---\n\n## Hacks de custo\n\n* Sempre use **Veo3 Fast**: custa \\~0,40€ por 8s de vídeo (4 vídeos + 4 imagens por menos de 2€).\n* Use imagens base **bem enquadradas e iluminadas** → quanto mais clara a foto inicial, menos tokens e retries você gasta.\n* Se quiser só **variações de cenário**, não gere 4 atores diferentes; gere 4 cenas do **mesmo ator** → economiza porque você pode concatenar depois e publicar como vídeo longo.\n\n---\n\n## Hacks de prompts\n\n* No **prompt do agente**, peça **“estilo selfie com celular, luz natural, imperfeições leves”** → fica 10x mais realista que “foto profissional”.\n* Adicione no system prompt:\n  “Não altere a forma do produto. Preserve logo, cores HEX e tipografia originais.”\n* Para consistência: inclua “o mesmo ator aparece em todas as cenas” ou “atores diferentes a cada cena” dependendo da sua estratégia de marketing.\n* Se for vender no **Instagram/TikTok**, force `aspect_ratio_video: \"9:16\"` (vertical). Para YouTube ou Ads horizontais, `16:9`.\n\n---\n\n## Hacks de automação n8n\n\n* Use **Split Out** para processar várias cenas em paralelo → reduz tempo de espera de 20min para 5min.\n* Coloque um **Wait dinâmico** (5s para imagens, 10s para vídeos) e um **loop IF success\\_flag==0**. Isso evita travar ou quebrar a execução.\n* Adicione um **limite de tentativas (ex: 80 loops)** para não cair em loop infinito caso a API falhe.\n* No **Webhook inicial**, já trate o número de WhatsApp removendo o `+` → evita erro no Evolution API.\n\n---\n\n## Hacks de entrega\n\n* Em vez de enviar o vídeo inteiro pelo WhatsApp (que às vezes falha), envie o **link MP4 do Drive** → abre direto e não corrompe.\n* Se quiser “impacto social”, adicione uma legenda automática curta tipo “🔥 Testei esse produto e fiquei de cara!” no envio do vídeo.\n* Use **Evolution API → Send Text** junto com o link para simular “storytelling” (imagem primeiro, depois link de vídeo).\n\n---\n\n## Hacks criativos\n\n* Combine **4 cenas em sequência** do mesmo ator → vira um vídeo de 30+ segundos sem parecer gerado em partes.\n* Crie **variações de cenário** (casa, carro, rua, café) e publique como se fossem diferentes clientes.\n* Aproveite o **campo solicitações especiais** para micro-detalhes (idade, luz, local, humor). Isso deixa cada vídeo único.\n* Gere **extras baratos**: imagens estáticas estilo mockup para anúncios → custam só 0,06€ cada.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13218,
+    "author": "INEMA",
+    "date": "2025-08-25T00:50:32+00:00",
+    "text": "=====================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13217,
+    "author": "INEMA",
+    "date": "2025-08-25T00:50:28+00:00",
+    "text": "das com respostas\n\nComo forçar horizontal 16:9?\n→ No agente, defina aspect\\_ratio\\_video: \"16:9\" e aspect\\_ratio\\_imagem: \"16:9\" quando desejar fotos horizontais.\n\nPosso usar Typeform em vez de Google Forms?\n→ Sim. Basta mapear os campos no Webhook do n8n do mesmo jeito.\n\nDá para reduzir custo ainda mais?\n→ Use Veo3 Fast, limite para 2 cenas, diminua duração e imagens em baixa variação.\n\nComo garantir consistência de marca?\n→ Traga foto bem iluminada, close do rótulo, peça no prompt: preservar logo, cores HEX e tipografia detectadas.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13216,
+    "author": "INEMA",
+    "date": "2025-08-25T00:50:28+00:00",
+    "text": "usar 16:9; para vertical, 9:16.\n\nExemplo de saída esperada\n{\n\"cenas\":\\[\n{\n\"prompt\\_imagem\":\"Foto amadora, luz de janela, pessoa segurando o produto…\",\n\"prompt\\_video\":\"Vídeo curto estilo selfie; diálogo: '{{dialogo}}' …\",\n\"aspect\\_ratio\\_imagem\":\"2:3\",\n\"aspect\\_ratio\\_video\":\"9:16\",\n\"modelo\\_video\":\"veo-3-fast\"\n},\n...\n]\n}\n\n# KIE AI – criação e polling\n\nObservação: os endpoints/nome de campos podem variar. Use a documentação atual da KIE AI. Abaixo um esqueleto genérico.\n\nCriar imagem (HTTP Request)\nPOST [https://api.kie.ai/v1/image/edit](https://api.kie.ai/v1/image/edit)\nBody JSON:\n{\n\"image\\_url\": \"{{image\\_url\\_publica}}\",\n\"prompt\": \"{{ \\$json.prompt\\_imagem }}\",\n\"aspect\\_ratio\": \"{{ \\$json.aspect\\_ratio\\_imagem }}\",\n\"num\\_variants\": 1\n}\nHeaders: Authorization: Bearer {{KIE\\_API\\_KEY}}\n\nConsultar status da imagem\nGET [https://api.kie.ai/v1/image/tasks/{{task\\_id}}](https://api.kie.ai/v1/image/tasks/{{task_id}})\nResposta inclui success\\_flag e result\\_url\n\nCriar vídeo Veo3 Fast\nPOST [https://api.kie.ai/v1/video/generate](https://api.kie.ai/v1/video/generate)\nBody JSON:\n{\n\"model\": \"{{ \\$json.modelo\\_video }}\",\n\"prompt\": \"{{ \\$json.prompt\\_video }}\",\n\"aspect\\_ratio\": \"{{ \\$json.aspect\\_ratio\\_video }}\",\n\"image\\_url\": \"{{result\\_url\\_da\\_imagem}}\"\n}\n\nConsultar status do vídeo\nGET [https://api.kie.ai/v1/video/tasks/{{task\\_id}}](https://api.kie.ai/v1/video/tasks/{{task_id}})\nResposta inclui success\\_flag e video\\_url (.mp4)\n\n# Evolution API – envio no WhatsApp\n\nEnviar imagem\nPOST https\\://{{host}}/message/image\n{\n\"number\": \"{{whatsapp\\_sem\\_+}}\",\n\"image\": \"{{result\\_url\\_da\\_imagem}}\",\n\"caption\": \"Prévia UGC\"\n}\n\nEnviar texto com link do vídeo\nPOST https\\://{{host}}/message/text\n{\n\"number\": \"{{whatsapp\\_sem\\_+}}\",\n\"text\": \"Seu vídeo UGC: {{video\\_url}}\"\n}\n\nDica: se quiser enviar o arquivo diretamente e sua instância suportar bem vídeo, use o endpoint de vídeo; caso contrário, enviar o link é mais confiável.\n\n# Duplicando cenas em paralelo (Split Out)\n\nNo n8n, após a saída JSON do agente:\n\n* Use Split Out em \\$.cenas\n* Cada ramo recebe uma cena completa para processar imagem e vídeo separadamente\n* Faça o laço de polling com Wait + HTTP status + IF success\\_flag\n\n# Versões de aspecto\n\nVertical: 9:16\nHorizontal: 16:9 (atende sua preferência)\nFotos para e-commerce: 2:3 também é bom para carrosséis\n\n# Exemplo de solicitacoes\\_especiais\n\nfaixa etária 25–40; roupa casual; cenários: sala com luz de janela; mesa de café com notebook; rua movimentada à luz do dia; carro estacionado; proibir colocar o produto na cabeça; mostrar embalagem com logo visível; manter cores HEX da análise; plano próximo da mão.\n\n# Custos práticos\n\nRegra do vídeo: 1 imagem + 1 vídeo ≈ €0,46 com Veo3 Fast\nCom €2: 4 imagens + 4 vídeos\n\n# Variação opcional: 1 ator, 4 cenas, vídeo único \\~32s\n\nEm vez de 4 atores/cenas independentes:\n\n* No agente, peça 4 cenas sequenciais com o mesmo ator e coerência de ambiente\n* Gere 4 clipes de 8s e una em 1 vídeo\n* União: se seu n8n permitir Execute Command com ffmpeg local, concatene; senão, suba os 4 clipes a um serviço de join ou peça à KIE AI um job longo (se disponível)\n\n# Erros comuns e como evitar\n\nProduto alterado na cena\n→ Especifique claramente: não alterar forma/uso; exibir apenas em mão/mesa; reforçar cores HEX e logotipo.\n\nLink do Drive inacessível\n→ Garanta Share File como Anyone/Reader e use o padrão uc?export=download\\&id=FILE\\_ID.\n\nVídeo não chega no WhatsApp\n→ Prefira enviar o link do MP4 hospedado ou primeiro subir ao Drive e mandar o link.\n\nLoop infinito no polling\n→ Use IF success\\_flag==1, com limite de tentativas e backoff (ex.: Wait 10s e máximo de 80 ciclos).\n\n# Checklist final\n\nWebhook recebendo todos os campos\nUpload + Share no Drive funcionando\nimage\\_url pública montada\nVision retornando Markdown com marca/HEX/fonte/decisões\nAgente JSON entregando 4 cenas válidas\nSplit Out ativo\nKIE AI imagem: criar → poll → success\\_flag → result\\_url\nEnviar imagem no WhatsApp\nKIE AI vídeo: criar → poll → success\\_flag → video\\_url\nEnviar link do vídeo no WhatsApp\nLogs limpos e variáveis nomeadas\n\n# Perguntas rápi",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 13215,
+    "author": "INEMA",
+    "date": "2025-08-25T00:50:28+00:00",
+    "text": "Segue um passo a passo prático para você replicar a automação UGC no n8n, com prompts prontos, estrutura de nós, exemplos e checklist final.\n\n# Visão geral rápida Passo a Passo\n\nEntrada: formulário com dados + 1 foto do produto\nProcesso: extrai info visual da foto → gera prompts de imagem e vídeo → cria imagens e vídeos → envia no WhatsApp\nSaída: 4 imagens + 4 vídeos UGC realistas prontos para postar\n\n# Pré-requisitos\n\n1. n8n (self-hosted ou cloud)\n2. Conta OpenAI com acesso ao GPT-4o (Vision) e GPT-4.1\n3. Conta KIE AI com créditos (crie API key)\n4. Google Drive com credenciais no n8n\n5. Evolution API (instância ativa) para WhatsApp\n6. Formulário (Google Forms ou Typeform) apontando para um Webhook do n8n\n\n# Estrutura do workflow no n8n (visão de alto nível)\n\n1. Webhook Trigger → recebe dados do formulário e arquivo/imagem\n2. Google Drive: Upload File → pega o fileId\n3. Google Drive: Share File (Anyone with link, Reader) → torna público\n4. Set/Function → monta a image\\_url pública do Drive\n5. OpenAI: Vision Analyze → extrai marca, paleta HEX, fonte e elementos\n6. OpenAI: Agent JSON (GPT-4.1) → gera JSON com 4 cenas (prompts de imagem e vídeo)\n7. Split Out → separa cenas em paralelo (1, 2, 3, 4)\n8. Para cada cena:\n   8.1) HTTP Req KIE AI: Create Image (edit com image\\_url + prompt)\n   8.2) Wait 5s → HTTP Req KIE AI: Get Image Details → IF success\\_flag==1 senão loop\n   8.3) Evolution API: Send Image (WhatsApp)\n   8.4) HTTP Req KIE AI: Create Video Veo3 Fast (prompt de vídeo + image\\_url)\n   8.5) Wait 10s → HTTP Req KIE AI: Get Video Details → IF success\\_flag==1 senão loop\n   8.6) (Opcional) HTTP GET binário do MP4 → Google Drive: Upload File\n   8.7) Evolution API: Send Text (link do vídeo) ou Send Video\n9. Done\n\n# Campos do formulário sugeridos\n\nnumero\\_videos: 4\ndialogo: texto curto e natural do ator\nmodelo\\_video: Veo3 Fast ou Veo3\nformato\\_video: vertical 9:16 ou horizontal 16:9\nsolicitacoes\\_especiais: lista livre de cenas/locações, faixa etária, estilo, restrições\nimagem\\_produto: upload de arquivo\nwhatsapp: número com DDI (ex: +55DDDNUMERO)\n\n# Montando a URL pública da imagem (Drive)\n\nApós Upload File e Share File, construa:\n[https://drive.google.com/uc?export=download\\&id=FILE\\_ID](https://drive.google.com/uc?export=download&id=FILE_ID)\n\n# Prompt para análise de imagem (OpenAI Vision – mensagem do usuário)\n\nAnalise a imagem fornecida e retorne exclusivamente um bloco Markdown com:\nMarca: \\<texto ou N/A>\nPaleta HEX: \\[ {hex: #FFFFFF, nome: branco-neutro, onde: embalagem/rotulo…}, … ]\nFonte/estilo tipográfico: \\<texto ou N/A>\nDecisões visuais: lista curta dos elementos-chave visíveis\nFoque apenas no produto principal, ignore o restante. Não inclua comentários fora do bloco Markdown.\n\nEntrada de mídia: image\\_url pública do Drive\n\n# Agente para gerar prompts JSON (OpenAI GPT-4.1)\n\nMensagem do sistema\nVocê é um gerador de prompts UGC realistas. Regras:\n\n1. Estilo amador, luz natural, micro imperfeições de enquadramento.\n2. Evite parecer IA. Tentar variação de atores/cenas cotidianas.\n3. Se faltar diálogo, crie um de até 200 caracteres, natural e coloquial.\n4. Respeite fielmente a marca, cores (HEX), tipografia e elementos detectados.\n5. Se o produto não deve ser usado no corpo, diga claramente para só exibir na mão/mesa/ambiente.\n6. Saída estritamente em JSON válido.\n\nMensagem do usuário (template)\nGere N cenas independentes com esta estrutura:\n{\n\"cenas\": \\[\n{\n\"prompt\\_imagem\": \"...\",\n\"prompt\\_video\": \"...\",\n\"aspect\\_ratio\\_imagem\": \"2:3 ou 16:9\",\n\"aspect\\_ratio\\_video\": \"9:16 ou 16:9\",\n\"modelo\\_video\": \"veo-3-fast\"\n}\n]\n}\nParâmetros:\n\n* N = {{numero\\_videos}}\n* Dialogo base: {{dialogo}}\n* Formato desejado: {{formato\\_video}}\n* Modelo vídeo: {{modelo\\_video}}\n* Restrições/pedidos: {{solicitacoes\\_especiais}}\n* Análise Visual Markdown da imagem: {{saida\\_vision}}\n  Instruções adicionais:\n* Manter produto idêntico ao da foto (cores/rotulagem/forma).\n* Se for faixa/cinta: não colocar na cabeça; apenas segurar/mostrar.\n* Em cada cena, variar local/ator/detalhes de fundo mantendo coerência de marca.\n* Para horizontal,",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13214,
+    "author": "INEMA",
+    "date": "2025-08-25T00:49:19+00:00",
+    "text": "=======================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13213,
+    "author": "INEMA",
+    "date": "2025-08-25T00:48:15+00:00",
+    "text": "## Resumo geral\n\nO vídeo ensina como criar automaticamente atores virtuais com inteligência artificial para gerar conteúdo UGC (User Generated Content). O sistema utiliza formulários, análise de imagens, prompts de IA e ferramentas de automação para produzir imagens e vídeos realistas de produtos sendo apresentados por atores virtuais, entregues diretamente pelo WhatsApp.\n\n---\n\n## Principais etapas do processo\n\n1. **Entrada de dados via formulário**\n\n   * Número de vídeos desejados.\n   * Texto do diálogo (o que o ator deve dizer).\n   * Modelo de IA (Veo3 ou Veo3 Fast).\n   * Formato do vídeo (vertical ou horizontal).\n   * Solicitações especiais (ex: cenário, idade dos atores).\n   * Imagem do produto.\n   * Número de WhatsApp para envio.\n\n2. **Upload da imagem do produto**\n\n   * Envio ao Google Drive.\n   * Tornar o arquivo público para que a IA consiga acessar via URL.\n\n3. **Análise da imagem com GPT-4 Vision**\n\n   * Identificação da marca, paleta de cores (códigos hex), fonte e elementos visuais.\n   * O foco é apenas no produto principal.\n\n4. **Geração de prompts com agente de IA (GPT-4.1)**\n\n   * Criação de prompts separados para imagem e vídeo.\n   * Definição de aspecto (ex: 9:16).\n   * Inserção de diálogos, estilos e detalhes realistas.\n   * Estrutura de saída em JSON para facilitar automação.\n\n5. **Divisão em cenas**\n\n   * O prompt gera múltiplas cenas.\n   * O fluxo divide cada cena para processamento paralelo.\n\n6. **Criação de imagens (****kie.ai****)**\n\n   * Geração de imagens realistas com base no produto e prompt.\n   * Loop de espera com “success flag” até a imagem ser concluída.\n   * Retorno com URL final da imagem.\n\n7. **Envio de imagens pelo WhatsApp (Evolution API)**\n\n   * Envio automático das imagens geradas ao número indicado.\n\n8. **Criação de vídeos (****kie.ai**** + Veo3 Fast)**\n\n   * Uso do prompt de vídeo, imagem gerada e parâmetros (modelo e aspecto).\n   * Loop de espera até a conclusão do vídeo.\n   * Download do vídeo em MP4.\n\n9. **Envio de vídeos pelo WhatsApp**\n\n   * Envio do link ou arquivo de vídeo finalizado diretamente ao usuário.\n\n---\n\n## Exemplos mostrados\n\n* Produtos reais (garrafas térmicas, manteiga de amendoim, faixa Muse2 para meditação).\n* Imagens geradas colocando o produto em diferentes contextos.\n* Vídeos curtos (8 segundos) com falas realistas dos atores virtuais.\n\n---\n\n## Custos aproximados\n\n* Cada ciclo de **1 imagem + 1 vídeo** ≈ 0,46 € (usando Veo3 Fast).\n* Com 2 € é possível gerar **4 vídeos + 4 imagens**.\n\n---\n\n## Dicas e melhorias\n\n* Especificar no prompt para não alterar a função do produto (ex: não colocar a faixa na cabeça quando não é necessário).\n* Usar diálogos naturais, curtos e espontâneos.\n* Criar vídeos longos combinando várias cenas do mesmo ator (em vez de quatro vídeos diferentes).\n* Manter estilo “amador” para reforçar autenticidade do UGC.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13212,
+    "author": "INEMA",
+    "date": "2025-08-25T00:47:59+00:00",
+    "text": "=======================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13211,
+    "author": "INEMA",
+    "date": "2025-08-25T00:46:50+00:00",
+    "text": "e40. Gera UGC automático com IA\n\n🌟 RESUMO ESTRUTURADO DA AULA\n\n🌟 Objetivo da aula\nAprender a gerar conteúdo estilo UGC (User Generated Content) de forma totalmente automatizada utilizando IA. Nesta aula criamos um sistema que, a partir de um formulário, gera imagens e vídeos realistas de atores promovendo um produto, usando apenas uma foto simples e algumas instruções.\n\n💪 O que conseguimos com esta automação?\n\n* Criar atores virtuais que promovem seu produto ou serviço.\n* Gerar vídeos estilo UGC com diferentes cenas e pessoas.\n* Automatizar tudo a partir de um formulário: imagem, roteiro e cena.\n* Receber as imagens e vídeos diretamente pelo WhatsApp.\n* Reduzir ao mínimo os custos de produção de conteúdo publicitário.\n\n🧩 Estrutura do fluxo automatizado\n\n1. Recebimento do formulário\n\n   * Coleta de dados como: número de vídeos, diálogo, modelo de IA, formato, pedidos especiais, imagem do produto e WhatsApp.\n\n2. Upload e compartilhamento da imagem no Google Drive\n\n   * O arquivo é carregado, tornado público e o link acessível é obtido para a IA.\n\n3. Análise da imagem com GPT-4 Vision\n\n   * Extração de informações visuais principais: marca, cores, fonte e elementos.\n\n4. Geração do prompt com agente IA (GPT-4.1)\n\n   * Estruturação de prompts detalhados para criar:\n\n     * Prompt de imagem\n     * Prompt de vídeo\n     * Relação de aspecto\n     * Modelo de geração (Veo3 Fast)\n\n5. Divisão em cenas individuais\n\n   * Separação das saídas para trabalhar em paralelo.\n\n6. Criação de imagens com kie.ai\n\n   * Cada imagem é gerada a partir do prompt e da imagem original.\n   * Aguardando até que a geração seja concluída.\n   * Obtenção da URL final da imagem.\n\n7. Envio de imagens pelo WhatsApp (Evolution API)\n\n   * As imagens são enviadas automaticamente via WhatsApp Web automatizado.\n\n8. Geração de vídeos com Veo3 Fast (kie.ai)\n\n   * O vídeo é gerado usando prompt, imagem e modelo selecionado.\n   * Loop até a confirmação de finalização.\n   * Download do vídeo.\n\n9. Envio de vídeos pelo WhatsApp\n\n   * O link do vídeo gerado é enviado diretamente ao usuário.\n\n🧰 Ferramentas utilizadas\n\n* N8N\n* OpenAI GPT-4o e Vision\n* kie.ai (Veo3, Imagem e Vídeo)\n* Google Drive\n* Google Forms (ou Typeform)\n* Evolution API (WhatsApp Web)\n\n🧠 Conselhos-chave que aprendemos\n\n* Use prompts realistas: estilo amador, luz natural, espontaneidade.\n* Garanta o compartilhamento correto das URLs da imagem para acesso da IA.\n* Dividir as saídas do agente facilita o trabalho em paralelo.\n* Automatize o loop de espera com \"success flag\" para não travar o processo.\n* É possível combinar várias cenas com o mesmo ator e criar um vídeo longo.\n* Com apenas 2 euros é possível criar 4 vídeos + 4 imagens.\n* Ideal para marcas que desejam escalar UGC sem gravações reais.\n\nResources\n\n* Blueprint UGC\n* KIE AI\n* KIE AI API",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13210,
+    "author": "INEMA",
+    "date": "2025-08-25T00:46:38+00:00",
+    "text": "---------------------=========================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13209,
+    "author": "INEMA",
+    "date": "2025-08-25T00:46:05+00:00",
+    "text": "Gere vídeos UGC automáticos com IA 🔥🔥🔥 ISSO É TOP!!\n\nIsso vai explodir sua mente 🚀\n\nDeixo exemplos de vídeos e imagens anexados 😎\n\nNesta aula montamos uma automação que, a partir de uma foto e um formulário, gera imagens e vídeos estilo UGC com atores de IA que promovem o seu produto.\n\n🤝 Tudo 100% realista, natural e sem gravar nada.\n\nIsso é o que faz:\n✅ Extrai informações visuais do seu produto (marca, cores, design).\n✅ Gera prompts para criar cenas fotorrealistas.\n✅ Cria vídeos automáticos com atores virtuais.\n✅ Envia tudo pelo WhatsApp pronto para publicar.\n\nUsamos o melhor do GPT-4 Vision, Kie.ai, N8N e Evolution API.\nÉ baratíssimo de executar e permite escalar conteúdo sem produção.\n\nVocê pode aplicar isso se for uma marca de produto, ecommerce, agência ou se vende pelas redes.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13208,
+    "author": "INEMA",
+    "date": "2025-08-25T00:43:36+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13208_018.jpg"
+  },
+  {
+    "id": 13207,
+    "author": "INEMA",
+    "date": "2025-08-25T00:43:11+00:00",
+    "text": "https://docs.kie.ai/",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 13206,
+    "author": "INEMA",
+    "date": "2025-08-25T00:43:00+00:00",
+    "text": "https://kie.ai/dashboard",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 13205,
+    "author": "INEMA",
+    "date": "2025-08-25T00:42:56+00:00",
+    "text": "https://kie.ai",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 13204,
+    "author": "INEMA",
+    "date": "2025-08-25T00:42:04+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "UGC producto.json"
+  },
+  {
+    "id": 13203,
+    "author": "INEMA",
+    "date": "2025-08-25T00:42:00+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_13203_023.jpg"
+  },
+  {
+    "id": 13202,
+    "author": "INEMA",
+    "date": "2025-08-25T00:40:25+00:00",
+    "text": "e40 - UGC Videos Automaticos",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13201,
+    "author": "INEMA",
+    "date": "2025-08-25T00:40:10+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13200,
+    "author": "INEMA",
+    "date": "2025-08-25T00:40:09+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13199,
+    "author": "INEMA",
+    "date": "2025-08-25T00:40:09+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13198,
+    "author": "INEMA",
+    "date": "2025-08-25T00:40:08+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13197,
+    "author": "INEMA",
+    "date": "2025-08-25T00:40:07+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13196,
+    "author": "INEMA",
+    "date": "2025-08-25T00:40:07+00:00",
+    "text": "https://chatgpt.com/c/68abb0af-cdb4-832f-a3b3-356b3cc33998",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 13195,
+    "author": "INEMA",
+    "date": "2025-08-25T00:40:06+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 13194,
+    "author": "INEMA",
+    "date": "2025-08-25T00:39:06+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

@@ -1,0 +1,542 @@
+{
+  "name": "1.1 Asistente calendario",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Merge').all() }}",
+        "options": {
+          "systemMessage": "=Eres un asistente de gestión de calendarios responsable de programar, recuperar, actualizar y eliminar eventos en el calendario del usuario.\n\n**Herramientas de Gestión de Calendario**\n\n- **Crear Evento con Asistente** – Úsalo cuando un evento incluya a un participante.\n- **Crear Evento** – Úsalo para eventos individuales. Si hay un participante/asistente, no crees un evento individual, sino únicamente el evento con asistente.\n- **Obtener Eventos** – Recupera los horarios del calendario cuando se solicite.\n- **Eliminar Evento** – Elimina un evento. Primero, usa \"Obtener Eventos\" para obtener el ID del evento.\n- **Actualizar Evento** – Modifica un evento. Primero, usa \"Obtener Eventos\" para obtener el ID del evento.\n\n**Proceso para Crear un Evento**\n\nAntes de crear un evento, verifica si existen eventos en el horario propuesto. Si se detecta un conflicto (eventos ya programados en ese rango), informa al usuario para que pueda ajustar la fecha u hora.\n\n**Notas Finales**  \nFecha/Hora actual: `{{ $now }}`  \nDía actual: `{{ $now.format('cccc') }}`\n\nSi no se especifica una duración, asume que el evento dura una hora."
+        }
+      },
+      "id": "1c62f23b-80ce-4bca-b803-b58c8d963d95",
+      "name": "Calendar Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        440,
+        140
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "fields": [
+          "names",
+          "emailAddresses"
+        ],
+        "useQuery": true,
+        "query": "={{ $json.name }}"
+      },
+      "type": "n8n-nodes-base.googleContacts",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -40
+      ],
+      "id": "a8ce8bc3-7f1a-4248-ae32-4df61b44f473",
+      "name": "Google Contacts1",
+      "credentials": {
+        "googleContactsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Contacts account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        340,
+        380
+      ],
+      "id": "5abf9a4b-9d5f-49ee-8fec-91f531aa0cee",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -280,
+        -20
+      ],
+      "id": "33c8613f-7816-40da-8614-855b7e55c92b",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -480,
+        140
+      ],
+      "id": "febf02e2-153c-48db-99bf-6e632c4b6a20",
+      "name": "Workflow Input Trigger"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "angel.aparicio92@gmail.com",
+          "mode": "list",
+          "cachedResultName": "angel.aparicio92@gmail.com"
+        },
+        "start": "={{ $fromAI('start_time','hora a la que empieza el evento') }}",
+        "end": "={{ $fromAI('end_time','hora a la que finaliza el evento') }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ $fromAI('participante','persona que va a asistir a la reunion') }}"
+          ],
+          "summary": "={{ $fromAI('descripcion','Descripcion del evento') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.2,
+      "position": [
+        1060,
+        400
+      ],
+      "id": "a18e3a74-805a-4ec2-8204-13cac1e434db",
+      "name": "Con asistente",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "angel.aparicio92@gmail.com",
+          "mode": "list",
+          "cachedResultName": "angel.aparicio92@gmail.com"
+        },
+        "start": "={{ $fromAI('start_time','hora a la que empieza el evento') }}",
+        "end": "={{ $fromAI('end_time','hora a la que finaliza el evento') }}",
+        "additionalFields": {
+          "attendees": [],
+          "summary": "={{ $fromAI('descripcion','Descripcion del evento') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.2,
+      "position": [
+        920,
+        400
+      ],
+      "id": "31b82679-6743-4b98-afd2-6c6d16c01c9c",
+      "name": "Sin asistente",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "angel.aparicio92@gmail.com",
+          "mode": "list",
+          "cachedResultName": "angel.aparicio92@gmail.com"
+        },
+        "limit": 20,
+        "options": {
+          "timeMin": "={{ $fromAI(\"startDateTime\", \"Fecha de inicio para la consulta de eventos en Google Calendar\") }}",
+          "timeMax": "={{ $fromAI(\"endDateTime\", \"Fecha de finalización para la consulta de eventos en Google Calendar\") }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.2,
+      "position": [
+        760,
+        400
+      ],
+      "id": "87c493d0-287d-4de2-900e-19f791a3c31c",
+      "name": "Consultar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "angel.aparicio92@gmail.com",
+          "mode": "list",
+          "cachedResultName": "angel.aparicio92@gmail.com"
+        },
+        "eventId": "={{ $fromAI('event_id','ID del evento') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.2,
+      "position": [
+        600,
+        400
+      ],
+      "id": "de16c347-2673-4675-9032-6da44d0d52ba",
+      "name": "Borrar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "angel.aparicio92@gmail.com",
+          "mode": "list",
+          "cachedResultName": "angel.aparicio92@gmail.com"
+        },
+        "eventId": "={{ $fromAI('event_id','ID del evento') }}",
+        "updateFields": {
+          "attendeesUi": {
+            "values": {
+              "attendees": [
+                "={{ $fromAI(\"Participante\", \"Persona a añadir al evento\") }}"
+              ]
+            }
+          },
+          "end": "={{ $fromAI('nueva_hora_cierre','Esta es la nueva hora y fecha de fin del evento') }}",
+          "start": "={{ $fromAI('nueva_hora','Esta es la nueva hora y fecha de inicio') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        400
+      ],
+      "id": "67514d44-d532-4f14-a910-a7d3c1a301b8",
+      "name": "Actualizar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "=response",
+              "value": "={{$json.output}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "211fbc9c-bd57-4ea5-9f87-e48e5c168a88",
+      "name": "Realizado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "response",
+              "value": "No se pudo realizar la tarea. Por favor, inténtalo de nuevo.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0a4cbd8d-91ca-4465-8aef-46ab2f11bc43",
+      "name": "Intentar de nuevo",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        200
+      ]
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        180,
+        120
+      ],
+      "id": "ceb01233-e74a-4565-974b-b366ab8c8b06",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "content": "Agente de calendario",
+        "height": 780,
+        "width": 1760,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        -160
+      ],
+      "id": "992fe518-d065-41c3-8995-c3a84a4577ea",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        360
+      ],
+      "id": "b571b7cd-e21b-47e6-8cd8-492629ce156c",
+      "name": "Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Calendar account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Workflow Input Trigger": [
+      {
+        "json": {
+          "query": {
+            "name": "Silvia Carvajal",
+            "query": "Modificar evento de cita médica el 11 de marzo de 2025 a las 7:30 a 8:30 de la mañana para añadir a Silvia Carvajal."
+          },
+          "name": "Silvia Carvajal",
+          "message": "Modificar evento de cita médica el 11 de marzo de 2025 a las 7:30 a 8:30 de la mañana para añadir a Silvia Carvajal."
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Calendar Agent": {
+      "main": [
+        [
+          {
+            "node": "Realizado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Intentar de nuevo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Contacts1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Google Contacts1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Con asistente": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sin asistente": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Borrar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "74428ec0-8fee-436f-a99b-104a4da15c42",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e0e4b720cb3656009f5ca7014be06f1fbe69abfc54f93aa2cc3ca2098ff666d6"
+  },
+  "id": "2qMo9AaPjoQWtTkl",
+  "tags": []
+}

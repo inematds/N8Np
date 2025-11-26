@@ -1,0 +1,229 @@
+[
+  {
+    "id": 8727,
+    "author": "Felipe",
+    "date": "2025-06-05T06:11:29+00:00",
+    "text": "bom seria converter esses fluxos com fish no lugar da elevenlabs pq minha maior dificuldade é gerar legenda e fazer o ffm´peg tratar o video",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5445,
+    "author": "Rodiney",
+    "date": "2025-04-11T17:48:00+00:00",
+    "text": "Esse cara  do vídeo não ensina, só passa por cima dos assuntos. Para quem não entende, fica muito difícil acompanhar. Se alguém do grupo pudesse mostrar o passo a passo, seria de grande valor. Sei que esse não é exatamente o objetivo da comunidade, mas que ajudaria, com certeza ajudaria",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5295,
+    "author": "Kaio",
+    "date": "2025-04-10T21:56:32+00:00",
+    "text": "O passo a passo tá aqui irmão: https://www.youtube.com/watch?v=4K_xtccRESM",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 5288,
+    "author": "Luiz",
+    "date": "2025-04-10T20:17:20+00:00",
+    "text": "Quero fazer essa automação",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5287,
+    "author": "Luiz",
+    "date": "2025-04-10T20:16:46+00:00",
+    "text": "Vai ter algum vídeo de passo a passo?",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5266,
+    "author": "tripexplorer",
+    "date": "2025-04-10T15:03:14+00:00",
+    "text": "Serve também para tiktok?",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5056,
+    "author": "INEMA",
+    "date": "2025-04-09T05:14:47+00:00",
+    "text": "https://www.youtube.com/watch?v=4K_xtccRESM",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 5055,
+    "author": "INEMA",
+    "date": "2025-04-09T05:14:30+00:00",
+    "text": "### **🧠 Fluxo Completo do Agente de IA 2.0 para Vídeos Anônimos Animados**\n\n---\n\n### **1. Entrada: Definir o tema do vídeo**\n- Criar um campo no Google Sheets com:\n  - Título\n  - Categoria do vídeo (ex: “história de um pato na selva”)\n  - Status de postagem (YouTube, Instagram, TikTok)\n  - URL do vídeo\n  - Captions\n  - Horário de postagem\n\n---\n\n### **2. Geração do Roteiro com DeepSeek AI**\n- Criar um nó HTTP Request:\n  - Método: POST\n  - Modelo: `deepseek-coder`\n  - Prompt: “Você é um roteirista de vídeos curtos no YouTube. Crie uma micro-história cativante de 15 segundos sobre [tema].”\n- Retorna um pequeno texto (roteiro narrativo curto)\n\n---\n\n### **3. Narração com ElevenLabs**\n- Criar um novo nó:\n  - Método: POST\n  - URL: `https://api.elevenlabs.io/v1/text-to-speech/[VOICE_ID]`\n  - Enviar o texto gerado pelo DeepSeek AI\n  - Retorna arquivo de áudio `.mp3`\n- Salvar o áudio no Google Cloud Storage\n  - Nomear com ID único (para evitar cache)\n\n---\n\n### **4. Transcrição com OpenAI Whisper**\n- Fazer um POST para `https://api.openai.com/v1/audio/transcriptions`\n  - Enviar o `.mp3` gerado\n  - Retorna o texto do áudio (transcrição)\n- Esse texto será usado para gerar imagens\n\n---\n\n### **5. Geração de Prompts de Imagem com Together AI**\n- Quebrar o texto em trechos (ex: 3 frases)\n- Para cada trecho:\n  - Criar prompt com o seguinte comando:\n    - “Você é um designer de prompts para IA de imagem. Converta esse trecho em um prompt detalhado de imagem no estilo [fantasia, realista, Pixar etc.].”\n- Retorna prompts de imagem\n\n---\n\n### **6. Geração de Imagens com modelo Flux**\n- Enviar cada prompt para a API Together AI (modelo Flux)\n  - Recebe imagens em `base64`\n  - Converter `base64` em imagem `.jpg`\n  - Salvar no Google Cloud\n\n---\n\n### **7. Criar Animação com Hailuo AI**\n- Enviar a primeira imagem para a API da Hailuo (Minimax)\n  - Parâmetros:\n    - `first_frame_image`: URL da imagem no Google Cloud\n    - `prompt`: texto do roteiro\n  - Monitorar status (loop de 30s)\n  - Quando pronto: fazer download do `.mp4`\n  - Salvar no Google Cloud\n\n---\n\n### **8. Montagem do Vídeo com AnyNoCode**\n- Combinar:\n  - Áudio (.mp3)\n  - Animação (.mp4)\n  - Música de fundo (opcional)\n  - Legenda (transcrição)\n- Chamada via API do AnyNoCode:\n  - Criação de vídeo final\n  - Esperar processamento (loop de 30s)\n  - Obter link final do vídeo renderizado\n\n---\n\n### **9. Atualizar Google Sheets**\n- Preencher:\n  - Título do vídeo\n  - URL final do vídeo\n  - Status: “Pendente” para cada rede\n  - Caption gerada via prompt:  \n    - “Crie um título cativante e uma legenda de até 500 caracteres, com emojis e CTA.”\n\n---\n\n### **10. Publicação automática nas plataformas**\n\n#### **YouTube**\n- Agendador (Trigger diário)\n- Se status = \"Pendente\"\n  - Posta usando API do YouTube\n  - Atualiza status = \"Postado\"\n\n#### **Instagram Reels**\n- Usar token da Meta (Gerado no Graph API Explorer)\n- Posta usando API `instagram_graph_api`\n- Espera 1 minuto para confirmar\n- Atualiza status no Google Sheets\n\n#### **TikTok (conta privada)**\n- Criar app em `https://developers.tiktok.com`\n- Obter:\n  - `client_key`, `client_secret`, `scope`, `redirect_url`\n- Fazer upload com chunk:\n  - Etapas:\n    1. Gerar URL de upload\n    2. Enviar vídeo em partes\n    3. Finalizar o upload\n- Marcar como conteúdo AIGC (gerado por IA)\n- Atualiza status no Google Sheets\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5054,
+    "author": "INEMA",
+    "date": "2025-04-09T05:10:55+00:00",
+    "text": "===============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5053,
+    "author": "INEMA",
+    "date": "2025-04-09T05:10:40+00:00",
+    "text": "**Resumo direto do tutorial [V2.0 – Agente de IA para Vídeos Anônimos Animados]**\n\n**Objetivo:**  \nCriar vídeos anônimos curtos e animados com IA e publicar automaticamente no YouTube, Instagram e TikTok.\n\n---\n\n**Ferramentas utilizadas:**\n- DeepSeek AI – roteiro curto\n- ElevenLabs – narração\n- OpenAI Whisper – transcrição\n- Together AI (modelo Flux) – imagens\n- Hailuo AI – animação\n- Google Cloud – armazenamento\n- AnyNoCode – renderização\n- Google Sheets – controle\n- APIs do YouTube, Instagram, TikTok\n\n---\n\n**Fluxo dividido em 4 etapas principais:**\n\n1. **Geração de roteiro e áudio**\n   - DeepSeek AI cria texto (ex: “história de um pato na selva”)\n   - ElevenLabs transforma em voz\n   - Salva o áudio no Google Cloud\n\n2. **Imagens e prompts**\n   - Transcreve o áudio com Whisper\n   - Cria prompts com Together AI\n   - Gera imagens com modelo Flux\n   - Salva imagens no Google Cloud\n\n3. **Animação**\n   - Usa primeira imagem e cria animação com Hailuo AI\n   - Acompanha status até completar\n\n4. **Renderização do vídeo**\n   - Junta voz, imagens e música\n   - Gera o vídeo final com AnyNoCode\n   - Salva no Google Cloud\n\n---\n\n**Publicação automática:**\n\n- **YouTube:** via API Google (requisição + upload)\n- **Instagram:** via API Meta (Reels)\n- **TikTok:** apenas para contas privadas (API + upload em blocos)\n\n---\n\n**Extras:**\n- Todos os dados são organizados no Google Sheets\n- Templates prontos disponíveis na comunidade AnyNoCode\n- Suporte técnico e chamadas mensais incluídas (plano pago)\n\n---",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5052,
+    "author": "INEMA",
+    "date": "2025-04-09T05:07:36+00:00",
+    "text": "[Tutorial + Modelo] V2.0: O Agente de IA Definitivo para Vídeos Anônimos Animados no YouTube – 95% de Redução de Custos com o DeepSeek AI! (Sem Código)\n\n\nEsse fluxo de trabalho combina DeepSeek AI, ElevenLabs, OpenAI, Flux, Hailuo AI e Google Cloud para gerar roteiros, narrações, visuais e vídeos — totalmente no piloto automático.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5051,
+    "author": "INEMA",
+    "date": "2025-04-09T05:06:54+00:00",
+    "text": "al2",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Video Post.xlsx"
+  },
+  {
+    "id": 5050,
+    "author": "INEMA",
+    "date": "2025-04-09T05:06:38+00:00",
+    "text": "al2",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Tutorial_11_3___Hailuoai_Faceless_Video (1).json"
+  },
+  {
+    "id": 5049,
+    "author": "INEMA",
+    "date": "2025-04-09T05:06:21+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_5049_014.jpg"
+  },
+  {
+    "id": 5048,
+    "author": "INEMA",
+    "date": "2025-04-09T05:06:16+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5047,
+    "author": "INEMA",
+    "date": "2025-04-09T05:06:15+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5046,
+    "author": "INEMA",
+    "date": "2025-04-09T05:01:59+00:00",
+    "text": "al2 - Videos Deepseek Elevenlabs flux",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5045,
+    "author": "INEMA",
+    "date": "2025-04-09T05:01:58+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5044,
+    "author": "INEMA",
+    "date": "2025-04-09T05:01:57+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5043,
+    "author": "INEMA",
+    "date": "2025-04-09T05:01:57+00:00",
+    "text": "...",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5042,
+    "author": "INEMA",
+    "date": "2025-04-09T05:01:57+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5041,
+    "author": "INEMA",
+    "date": "2025-04-09T05:01:56+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5040,
+    "author": "INEMA",
+    "date": "2025-04-09T05:01:56+00:00",
+    "text": "...",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5039,
+    "author": "INEMA",
+    "date": "2025-04-09T05:01:56+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5038,
+    "author": "INEMA",
+    "date": "2025-04-09T05:01:56+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5037,
+    "author": "INEMA",
+    "date": "2025-04-09T05:01:56+00:00",
+    "text": "https://chatgpt.com/c/67f5ff73-6b40-8009-9588-10a416c658a9",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 5036,
+    "author": "INEMA",
+    "date": "2025-04-09T05:01:55+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 5035,
+    "author": "INEMA",
+    "date": "2025-04-09T05:01:50+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

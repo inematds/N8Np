@@ -1,0 +1,1035 @@
+{
+  "name": "nm55 - Youtube Atualiza Manus",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c831100d-1b87-470b-b206-74066900d711",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1780,
+        -820
+      ],
+      "webhookId": "97cfbb56-e087-4a3b-8079-5fde53ecc5ad"
+    },
+    {
+      "parameters": {
+        "url": "https://youtube-transcript3.p.rapidapi.com/api/transcript",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "videoId",
+              "value": "={{ $('Split Out').item.json.id.videoId }}"
+            },
+            {
+              "name": "lang",
+              "value": "pt"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "youtube-transcript3.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "3f3fb2af1emsh188b4d2e66e0cfep102b6e1161c3df6a0"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "29ec9cce-9cd8-4f5a-bce6-4e5e6e343010",
+      "name": "Get Transcript",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        140,
+        -1020
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar dados para o prompt do Claude\nconst videoInfo = $node[\"Get Video Info\"].json.items[0];\nconst transcriptRaw = $node[\"Get Transcript\"].json.transcript;\n\n// Extrair informações do vídeo\nconst title = videoInfo.snippet.title;\nconst description = videoInfo.snippet.description;\nconst channelTitle = videoInfo.snippet.channelTitle;\nconst publishedAt = videoInfo.snippet.publishedAt;\nconst viewCount = videoInfo.statistics.viewCount;\n\n// Processar transcrição\nlet transcript = '';\nif (Array.isArray(transcriptRaw)) {\n  transcript = transcriptRaw.map(item => item.text || item).join(' ');\n} else if (typeof transcriptRaw === 'string') {\n  transcript = transcriptRaw;\n}\n\n// Limpar transcrição\ntranscript = transcript\n  .replace(/\\[.*?\\]/g, '') // Remove timestamps\n  .replace(/\\s+/g, ' ')    // Normaliza espaços\n  .trim();\n\nif (!transcript || transcript.length < 50) {\n  throw new Error('Transcrição muito curta ou não encontrada');\n}\n\n// Criar prompt para Claude\nconst claudePrompt = `Você é um especialista em resumos claros e informativos para YouTube. Analise a transcrição abaixo e produza um resumo estruturado.\n\nINFORMAÇÕES DO VÍDEO:\n- Título: ${title}\n- Canal: ${channelTitle}\n- Visualizações: ${viewCount}\n- Publicado em: ${publishedAt}\n\nTRANSCRIÇÃO:\n${transcript}\n\nTAREFAS:\n1. Crie um resumo por tópicos com frases curtas e impactantes\n2. Destaque os aprendizados principais se for conteúdo educativo\n3. Inclua frases de impacto se for conteúdo motivacional\n4. Adicione uma chamada para ação no final\n5. Use bullet points e subtítulos quando apropriado\n6. Mantenha o tom do canal original\n\nFORMATO DE RESPOSTA:\n{\n  \"summary\": \"Resumo completo estruturado\",\n  \"key_points\": [\"Ponto 1\", \"Ponto 2\", \"Ponto 3\"],\n  \"call_to_action\": \"Chamada para ação\",\n  \"thumbnail_description\": \"Descrição visual para thumbnail baseada no conteúdo\"\n}`;\n\n// Criar prompt para thumbnail\n//const thumbnailPrompt = `Crie uma thumbnail cativante para YouTube sobre: ${transcript}. Estilo: moderno, cores vibrantes, composição profissional, proporção 16:9, alta qualidade, sem texto sobreposto.`;\n\nreturn {\n  video_title: title,\n  channel_title: channelTitle,\n  transcript: transcript,\n  transcript_length: transcript.length,\n  claude_prompt: claudePrompt,\n  //thumbnail_prompt: thumbnailPrompt,\n  video_stats: {\n    views: viewCount,\n    published: publishedAt\n  }\n};\n"
+      },
+      "id": "63dc0019-1067-4de6-ba36-3d6ebfbed69e",
+      "name": "Prepare AI Prompts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        580,
+        -1060
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrair dados dos nós anteriores\n//const summaryData = $node[\"Generate Summary (Claude)\"].json;\nconst summaryData = $node[\"AI Agent\"].json;\nconst videoData = $node[\"Get Video Info\"].json.items[0];\nconst videoId = $json.video_id;\n\n// Descrição original do vídeo\nconst originalDescription = videoData.snippet.description;\n\n// Garantir que key_points seja um array\nconst keyPoints = Array.isArray(summaryData.key_points) ? summaryData.key_points : ['Nenhum ponto principal encontrado'];\n\n// Montar nova descrição\nconst newDescription = `${summaryData.summary}\n\nPONTOS PRINCIPAIS:\n${keyPoints.map(point => `- ${point}`).join('\\n')}\n\n${summaryData.call_to_action}\n\n---\n\n${originalDescription}`;\n\n// Retornar objeto final\nreturn {\n  video_id: videoId,\n  new_description: newDescription,\n  thumbnail_url: $json.thumbnail_url,\n  summary_data: summaryData,\n  video_title: videoData.snippet.title,\n  channel_title: videoData.snippet.channelTitle,\n  processed_at: new Date().toISOString()\n};\n"
+      },
+      "id": "07659700-0183-41d5-b60b-9e17f731a510",
+      "name": "Process AI Responses",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        -1060
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "update",
+        "videoId": "={{ $('Get Video Info').item.json.items[0].id }}",
+        "title": "={{ $json.summary_data.output.Titulo }}",
+        "regionCode": "BR",
+        "categoryId": "27",
+        "updateFields": {
+          "description": "={{ $json.summary_data.output.Tema }}\n\n{{ $json.summary_data.output.Resumo }}\n\n{{ $json.summary_data.output.Sumario }}\n==========\n{{ $json.summary_data.output[\"Pontos Chaves\"] }}\n==============\n{{ $json.summary_data.output.CTA }}\nHttp://inema.vip"
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        -1060
+      ],
+      "id": "b1497db9-19ba-4887-b859-9215d0d0cd0a",
+      "name": "YouTube",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.claude_prompt }}\n\nIMPORTANTE\n- O Titulo não pode ter mais de 90 caracteres\n- Nei Maldaner é o Fundador da SISNEMA e INEMA\n\n",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        800,
+        -1160
+      ],
+      "id": "a56cd1f7-1271-4379-8712-d8f96af45ad5",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-20250514",
+          "cachedResultName": "Claude 4 Sonnet"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        740,
+        -940
+      ],
+      "id": "1de2b372-3b28-4ba8-b8f5-ab61c7162e8e",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "[REMOVED]",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"Sumario\": \"\",\n  \"Pontos Chaves\": \"\",\n  \"CTA\": \"\",\n  \"PromptThumbnail\": \"\",\n  \"Titulo\": \"\",\n  \"Resumo\": \"\",\n  \"Tema\":\"\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        980,
+        -960
+      ],
+      "id": "efb7bd04-045a-4785-9fd8-b035ead28e6a",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "url": "=https://youtube.googleapis.com/youtube/v3/search",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "channelId",
+              "value": "=UC2QbQDyPKuHko5iq3Sw"
+            },
+            {
+              "name": "order",
+              "value": "date"
+            },
+            {
+              "name": "type",
+              "value": "video"
+            },
+            {
+              "name": "part",
+              "value": "snippet"
+            },
+            {
+              "name": "maxResults",
+              "value": "50"
+            },
+            {
+              "name": "pageToken",
+              "value": "={{ $json?.nextPageToken || '' }}"
+            },
+            {
+              "name": "eventType",
+              "value": "completed"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "96ed6a4c-99c8-40e0-b13a-c20ab362b2a7",
+      "name": "Fetch Videos Page2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1480,
+        -880
+      ],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "[REMOVED]",
+          "name": "Query Auth yt API TDS"
+        },
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $('Fetch Videos Page2').item.json.nextPageToken }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1140,
+        -360
+      ],
+      "id": "225a521a-5a70-44c0-accd-7624e09f4f9b",
+      "name": "Has Next Page?1"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -540,
+        -400
+      ],
+      "id": "a7073673-3bc3-4600-94b4-44c5d1ec09d8",
+      "name": "Wait Rate Limit1",
+      "webhookId": "ac118130-9e8a-45ea-b403-80f8f92516c1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega o nextPageToken da primeira execução do Fetch Videos Page\nconst pageData = $('Fetch Videos Page2').first().json;\nreturn {\n  nextPageToken: pageData.nextPageToken || ''\n};"
+      },
+      "id": "f1121ef5-dcaa-4e3f-a677-be1c25fa13ee",
+      "name": "Prepare Next Page1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -180,
+        -200
+      ]
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -740,
+        -300
+      ],
+      "id": "aed31944-99bc-47bb-8368-4bb769532484",
+      "name": "End - All Videos Processed1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1FGA_yyynHNb1MNYK4HWkQGFzQ3X_SY6UPlW2i0EDW_0",
+          "mode": "list",
+          "cachedResultName": "workflows",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FGA_yyynHNb1MNYK4HWkQGFzQ3X_SY6UPlW2i0EDW_0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 98504439,
+          "mode": "list",
+          "cachedResultName": "youtube",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FGA_yyynHNb1MNYK4HWkQGFzQ3X_SY6UPlW2i0EDW_0/edit#gid=98504439"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "[REMOVED]",
+            "titulo": "={{ $json.snippet.title }}",
+            "data": "={{ new Date().toISOString() }}",
+            "etag": "={{ $json.etag }}",
+            "Link": "=https://www.youtube.com/watch?v={{ $json.id }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "etag",
+              "displayName": "etag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Link",
+              "displayName": "Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1600,
+        -680
+      ],
+      "id": "a750abd8-cc4a-4e55-8b73-60a8cbbbe902",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account INEMATDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/videos",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $('Split Out').item.json.id.videoId }}"
+            },
+            {
+              "name": "part",
+              "value": "snippet,statistics"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "9399629d-c74a-4367-9bf9-8d2f2953069e",
+      "name": "Get Video Info",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -80,
+        -1000
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "YouTube account TDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1FGA_yyynHNb1MNYK4HWkQGFzQ3X_SY6UPlW2i0EDW_0",
+          "mode": "list",
+          "cachedResultName": "workflows",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FGA_yyynHNb1MNYK4HWkQGFzQ3X_SY6UPlW2i0EDW_0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 98504439,
+          "mode": "list",
+          "cachedResultName": "youtube",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FGA_yyynHNb1MNYK4HWkQGFzQ3X_SY6UPlW2i0EDW_0/edit#gid=98504439"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "=",
+            "titulo": "={{ $json.snippet.title }}",
+            "data": "={{ new Date().toISOString() }}",
+            "etag": "=erro",
+            "Link": "=https://www.youtube.com/watch?v={{ $json.id }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "etag",
+              "displayName": "etag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Link",
+              "displayName": "Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        580,
+        -760
+      ],
+      "id": "3a80b59c-ea90-4db0-b002-6ca905f6fcfb",
+      "name": "Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account INEMATDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1FGA_yyynHNb1MNYK4HWkQGFzQ3X_SY6UPlW2i0EDW_0",
+          "mode": "list",
+          "cachedResultName": "workflows",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FGA_yyynHNb1MNYK4HWkQGFzQ3X_SY6UPlW2i0EDW_0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 98504439,
+          "mode": "list",
+          "cachedResultName": "youtube",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FGA_yyynHNb1MNYK4HWkQGFzQ3X_SY6UPlW2i0EDW_0/edit#gid=98504439"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "id",
+              "lookupValue": "={{ $('Split Out').item.json.id.videoId }}"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": false
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -640,
+        -960
+      ],
+      "id": "f48b23cc-55c6-4666-8a7f-201b73bfe015",
+      "name": "Google Sheets2",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Sheets account INEMATDS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        360,
+        -1040
+      ],
+      "id": "dc9505ac-95d8-4364-b41b-5ebc7f2023c7",
+      "name": "Erro da Transcricao"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -360,
+        -980
+      ],
+      "id": "39a4886e-94fe-4371-b6d9-064854504923",
+      "name": "Existe?",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -100,
+        -800
+      ],
+      "id": "38c2ae54-a245-4830-873b-6e61f434182a",
+      "name": "Wait Rate Limit",
+      "webhookId": "9af68d6d-d38c-4fe9-aa43-ca16b8370b0e"
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        878,
+        -760
+      ],
+      "id": "8b13b17f-9df9-435b-9bbf-642a57475381",
+      "name": "Wait Rate Limit2",
+      "webhookId": "b02051c0-7360-4c51-92dd-bb23f8bb81f4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "videoid",
+              "value": "={{ $json.id.videoId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -820,
+        -940
+      ],
+      "id": "a153c1df-281b-4d3d-8315-8f5138a3a694",
+      "name": "video",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "items",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -1240,
+        -940
+      ],
+      "id": "f973c638-203c-4f8b-b64f-79e7db110671",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1020,
+        -920
+      ],
+      "id": "1104a2bf-8f6c-40bc-9a90-e04daf04c629",
+      "name": "Loop Over Items"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Videos Page2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Transcript": {
+      "main": [
+        [
+          {
+            "node": "Erro da Transcricao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare AI Prompts": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process AI Responses": {
+      "main": [
+        [
+          {
+            "node": "YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Process AI Responses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Videos Page2": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Next Page?1": {
+      "main": [
+        [
+          {
+            "node": "Wait Rate Limit1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "End - All Videos Processed1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Rate Limit1": {
+      "main": [
+        [
+          {
+            "node": "Prepare Next Page1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Next Page1": {
+      "main": [
+        [
+          {
+            "node": "Fetch Videos Page2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video Info": {
+      "main": [
+        [
+          {
+            "node": "Get Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets1": {
+      "main": [
+        [
+          {
+            "node": "Wait Rate Limit2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets2": {
+      "main": [
+        [
+          {
+            "node": "Existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Erro da Transcricao": {
+      "main": [
+        [
+          {
+            "node": "Prepare AI Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existe?": {
+      "main": [
+        [
+          {
+            "node": "Wait Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Video Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Rate Limit2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "video": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Has Next Page?1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "08f6a158-cbce-4f13-b84a-bcd0dcc3fb72",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "eI6rYRfqOZPhzjH3",
+  "tags": []
+}

@@ -1,0 +1,646 @@
+{
+  "name": "Subir automatizacion de Drive a N8N",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        60,
+        2340
+      ],
+      "id": "21170e17-e4d1-4273-b615-54259395a87d",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        500,
+        2340
+      ],
+      "id": "e2baffe4-0072-47f9-8094-cd371073cb5d",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1f41O_2QwVQNGl29Zf9Yjcz2BMIGLLy7t",
+            "mode": "list",
+            "cachedResultName": "workflows",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1f41O_2QwVQNGl29Zf9Yjcz2BMIGLLy7t"
+          },
+          "whatToSearch": "files"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        280,
+        2340
+      ],
+      "id": "3daeb2ae-cd65-4da4-921e-64feb9a7531a",
+      "name": "Search files and folders",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        960,
+        2340
+      ],
+      "id": "f2cf75f7-bc04-4082-b577-7aff77e76218",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        740,
+        2340
+      ],
+      "id": "3eb132ee-941d-40f7-9718-4007d4a3132c",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "workflowObject": "={{ $('Code1').item.json.toJsonString() }}",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        2320,
+        2180
+      ],
+      "id": "05b5eccd-48da-41ce-a41d-15eba90f3c1b",
+      "name": "Create a workflow",
+      "credentials": {
+        "n8nApi": {
+          "id": "[REMOVED]",
+          "name": "n8n account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// --------------------------------------------------------\n// 0) Coger el item y la complejidad\n// --------------------------------------------------------\nconst item = $input.item;\nconst complejidad = item.json.Complejidad || '';\n\n// --------------------------------------------------------\n// 1) Leer el JSON original desde el binario de “Download file”\n// --------------------------------------------------------\nconst downloadItem = $items(\"Download file\")[0];\nif (!downloadItem || !downloadItem.binary) {\n  throw new Error('No se ha encontrado el nodo “Download file” o no tiene datos binarios');\n}\nconst binKey = Object.keys(downloadItem.binary)[0];\nconst b64    = downloadItem.binary[binKey].data;\nconst buff   = Buffer.from(b64, 'base64');\nconst rawWF  = JSON.parse(buff.toString('utf8'));\n\n// --------------------------------------------------------\n// 2) Clonar el workflow\n// --------------------------------------------------------\nconst workflow = JSON.parse(JSON.stringify(rawWF));\n\n// --------------------------------------------------------\n// 3) Crear el nuevo título\n// --------------------------------------------------------\nconst nameFromDownload = downloadItem.json.name || '';\nconst nuevoTitulo      = `${complejidad} ${nameFromDownload}`.trim();\n\n// --------------------------------------------------------\n// 4) Asignar el título al nombre del workflow\n// --------------------------------------------------------\nworkflow.name = nuevoTitulo;\n\n// --------------------------------------------------------\n// 5) (Opcional) Si quieres seguir modificando también el primer nodo,\n//     podrías hacerlo así:\n// workflow.nodes[0].name = nuevoTitulo;\n// --------------------------------------------------------\n\n// --------------------------------------------------------\n// 6) Devolver TODO el workflow modificado\n// --------------------------------------------------------\nreturn [\n  {\n    json: workflow,\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1840,
+        2180
+      ],
+      "id": "22d3add5-96f7-4e2a-bbb1-c2b930960033",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.data.toJsonString() }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "Compleja",
+              "description": "=Si la automatizacion de N8N tiene 20 nodos o mas. Las notas no cuentan, solo el flujo de automatización."
+            },
+            {
+              "category": "Avanzada",
+              "description": "=Si la automatización de N8N tiene de 15 a 20 nodos o mas. Las notas no cuentan, solo el flujo de automatización."
+            },
+            {
+              "category": "Media",
+              "description": "=Si la automatización de N8N tiene de 10 a 15 nodos o mas. Las notas no cuentan, solo el flujo de automatización."
+            },
+            {
+              "category": "=Facil",
+              "description": "=Si la automatización de N8N tiene menos de 10 nodos o mas. Las notas no cuentan, solo el flujo de automatización."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1.1,
+      "position": [
+        1180,
+        2340
+      ],
+      "id": "3bcc3b04-8ac3-4826-b37a-877241899aca",
+      "name": "Text Classifier"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        2560
+      ],
+      "id": "1e3e9bdf-4cfb-4ada-9af3-d1c0e65d8a3f",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REMOVED]",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "Complejidad",
+              "value": "🟣",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1620,
+        2060
+      ],
+      "id": "80af2b6c-32f8-4395-9e08-b97856c63852",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "Complejidad",
+              "value": "🔴",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1616,
+        2400
+      ],
+      "id": "d533494b-fbca-43aa-83c7-9cbf439db0c5",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "Complejidad",
+              "value": "🟠",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1616,
+        2600
+      ],
+      "id": "211caa05-79a9-48c9-abff-819d7a09cde9",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "Complejidad",
+              "value": "🟢",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1620,
+        2800
+      ],
+      "id": "4d1f1c26-f01f-4066-bc92-a780315ce568",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Download file').item.json.id }}",
+          "mode": "id"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "15-A4bB-omH2zUb-aJyqYGqvfFwVaZAnZ",
+          "mode": "list",
+          "cachedResultName": "🟣 Complejo",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/15-A4bB-omH2zUb-aJyqYGqvfFwVaZAnZ"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1836,
+        2000
+      ],
+      "id": "55292f14-4ac6-4222-8ddf-ff06669ef1d5",
+      "name": "Move file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Download file').item.json.id }}",
+          "mode": "id"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1TWYKavLAtaoHoGubhCvNi4CnPh9WkA63",
+          "mode": "list",
+          "cachedResultName": "🔴 Avanzado",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1TWYKavLAtaoHoGubhCvNi4CnPh9WkA63"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1840,
+        2400
+      ],
+      "id": "0e208790-106a-45d0-b78a-23ab4cb1aafc",
+      "name": "Move file1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Download file').item.json.id }}",
+          "mode": "id"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1P4rux-6BdzJb7-vWTEPz78cE_8LP_m9O",
+          "mode": "list",
+          "cachedResultName": "🟠 Media",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1P4rux-6BdzJb7-vWTEPz78cE_8LP_m9O"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1840,
+        2600
+      ],
+      "id": "bf65779b-c093-4649-bb7d-fe68a6cf634c",
+      "name": "Move file2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Download file').item.json.id }}",
+          "mode": "id"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1ys7hn42wUEBgbFGxVRZx9PPpIr92vpKC",
+          "mode": "list",
+          "cachedResultName": "🟢 Facil",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1ys7hn42wUEBgbFGxVRZx9PPpIr92vpKC"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1840,
+        2800
+      ],
+      "id": "4410fd66-1806-490c-8716-ffdf1bf5573d",
+      "name": "Move file3",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a workflow": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Create a workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Move file",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Move file1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Move file2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Move file3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move file": {
+      "main": [
+        []
+      ]
+    },
+    "Move file1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move file2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move file3": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6c401cc3-615f-4d5e-8638-493c40a8bb9b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "Zqo3Qc6zOURysDTI",
+  "tags": []
+}

@@ -1,0 +1,184 @@
+[
+  {
+    "id": 11372,
+    "author": "INEMA",
+    "date": "2025-07-13T06:05:05+00:00",
+    "text": "dublado",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11371,
+    "author": "INEMA",
+    "date": "2025-07-13T06:04:54+00:00",
+    "text": "https://www.youtube.com/watch?v=RUr5_GqYzCg",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11369,
+    "author": "INEMA",
+    "date": "2025-07-13T05:26:35+00:00",
+    "text": "## 🚀 Hacks para a Primeira Automação (Testar Modelos)\n\n### 1️⃣ **Evite gastar créditos com modelos repetidos**\n\n* Antes de enviar o prompt para um modelo, verifique se já existe uma resposta para aquele modelo e prompt na planilha:\n\n  * **Node: Google Sheets - Lookup Rows**\n  * Condição:\n\n    * Prompt = atual\n    * Modelo = atual\n  * Se já existir → **Pule o modelo no loop** usando um **If Node**.\n\n---\n\n### 2️⃣ **Execute só nos modelos relevantes**\n\n* No Node que lista os modelos (GET `/models`), adicione filtro direto no n8n com Regex:\n\n  ```  {{$json[\"name\"].match(/gpt-|claude|gemini/i)}}\n  ```\n* Isso evita rodar em modelos irrelevantes ou experimentais.\n\n---\n\n### 3️⃣ **Use paralelismo no loop**\n\n* Configure o Loop com **“Execute Concurrently”** para rodar em vários modelos ao mesmo tempo.\n* Coloque um limite (ex: 3 ou 5) para não sobrecarregar a API.\n\n---\n\n### 4️⃣ **Controle o uso de tokens**\n\n* Muitos modelos têm limites de tokens.\n* Adicione um Node **Set** antes de enviar o prompt para truncar textos longos:\n\n  ```  {{$json[\"Prompt\"].slice(0, 4000)}}\n  ```\n\n---\n\n### 5️⃣ **Crie uma aba “Logs”**\n\n* Salve:\n\n  * Nome do modelo\n  * Tempo de execução\n  * Status da API (200, 429, etc)\n  * Erros\n* Assim você identifica quais modelos estão lentos ou dando erro.\n\n---\n\n---\n\n## 🚀 Hacks para a Segunda Automação (Juiz)\n\n### 6️⃣ **Personalize o Juiz**\n\n* No System Prompt do “Juiz” você pode ajustar o estilo da análise:\n  Exemplo:\n\n  > “Você é um especialista técnico e imparcial. Priorize modelos com respostas concisas e aplicáveis para negócios. Não valorize floreios criativos.”\n\n* Para avaliação criativa:\n\n  > “Escolha os modelos com respostas mais inovadoras, engraçadas ou surpreendentes.”\n\n---\n\n### 7️⃣ **Divida em categorias**\n\n* Peça ao Juiz para dar os **top 3 por categoria**:\n\n  * Concisão\n  * Criatividade\n  * Custo-benefício\n* Exemplo de System Prompt:\n\n  > “Avalie respostas em 3 categorias: Clareza, Criatividade e Preço. Para cada uma, dê o top 3 modelos com justificativas.”\n\n---\n\n### 8️⃣ **Comparação por métrica**\n\n* No n8n, calcule a média de palavras, emojis, ou tokens das respostas para ajudar o Juiz.\n\n  * Use um Node **Function** para analisar o texto.\n\n---\n\n---\n\n## 💡 Hacks Gerais\n\n### 9️⃣ **Automação contínua**\n\n* Configure o gatilho da primeira automação para rodar quando **um novo prompt for adicionado** à planilha.\n* Node: Google Sheets - Trigger → On New Row.\n\n---\n\n### 🔟 **Notificações no Telegram**\n\n* Após o “Juiz” escolher os melhores, envie resumo no Telegram com:\n\n  * Prompt\n  * Top 3 modelos\n  * Justificativa\n* Use o módulo **Telegram - Send Message**.\n\n---\n\n### 🔥 Extra: Custos em tempo real\n\n* Na aba `Results`, adicione cálculo:\n  `=Preço por 1k tokens * Nº tokens usados`\n* Assim você já sabe o custo de cada modelo.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11368,
+    "author": "INEMA",
+    "date": "2025-07-13T05:25:48+00:00",
+    "text": "=================",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11367,
+    "author": "INEMA",
+    "date": "2025-07-13T05:25:43+00:00",
+    "text": "O **passo a passo completo** para você criar as **duas automações no n8n**:\n\n✅ A primeira que testa todos os modelos do **OpenRouter** com um prompt.\n✅ A segunda que atua como **“Juiz”** para escolher os melhores modelos com base nos resultados.\n✅ Tudo integrado com **Google Sheets**.\n\n---\n\n### 🌟 Visão geral do fluxo\n\n1. **Primeira automação**:\n\n   * Pega prompts da planilha.\n   * Roda o prompt em todos os modelos via OpenRouter API.\n   * Salva os resultados no Google Sheets.\n\n2. **Segunda automação (Juiz)**:\n\n   * Analisa os resultados da primeira.\n   * Escolhe os top 3 modelos com explicação.\n   * Salva na aba “Judge” do Google Sheets.\n\n---\n\n## 🚀 Passo a passo: Primeira automação (Testar modelos)\n\n### 1️⃣ Preparar o ambiente\n\n* Crie uma planilha no Google Sheets com:\n\n  * Aba `Prompts`\n\n    * Coluna A: `Prompt`\n  * Aba `Results`\n\n    * Aqui o n8n vai preencher com os resultados.\n\n* Gere uma **API Key** no OpenRouter:\n\n  * [https://openrouter.ai/](https://openrouter.ai/) → Configurações → API Keys.\n\n* Gere credenciais do **Google Sheets API**:\n\n  * Ative a API no Google Cloud.\n  * Gere credenciais OAuth2 ou Service Account.\n  * Pegue o JSON de credenciais.\n\n---\n\n### 2️⃣ Configurar no n8n\n\n**Crie um novo workflow chamado `Test Models OpenRouter`.**\n\n---\n\n#### 🔹 Node 1: Google Sheets - Read Rows\n\n* Ação: **Read Rows**\n* Credencial: Sua conta Google Sheets configurada.\n* Planilha: `Prompts`\n* Limite: 1 (pega o último prompt).\n\n---\n\n#### 🔹 Node 2: HTTP Request - Listar modelos OpenRouter\n\n* Método: `GET`\n* URL: `https://openrouter.ai/api/v1/models`\n* Cabeçalho:\n\n  * `Authorization`: `Bearer SUA_API_KEY`\n* Saída: JSON com lista de modelos disponíveis.\n\n---\n\n#### 🔹 Node 3: Set - Filtrar modelos\n\n* Escolha apenas modelos desejados (ex.: OpenAI, Anthropic, Gemini).\n* Configure filtro no campo `Name`:\n\n  ```  {{$json[\"name\"].match(/openai|anthropic|gemini/i)}}\n  ```\n\n---\n\n#### 🔹 Node 4: Loop - Executar Prompt em cada modelo\n\n* Configure um **Loop Over Items** para cada modelo filtrado.\n* Dentro do loop:\n\n  * **HTTP Request - Enviar Prompt**\n\n    * Método: `POST`\n    * URL: `https://openrouter.ai/api/v1/chat/completions`\n    * Cabeçalho:\n\n      * `Authorization`: `Bearer SUA_API_KEY`\n      * `Content-Type`: `application/json`\n    * Corpo:\n\n      ```      {\n        \"model\": \"{{$json[\"id\"]}}\",\n        \"messages\": [\n          {\n            \"role\": \"user\",\n            \"content\": \"{{$node[\"Google Sheets - Read Rows\"].json[\"Prompt\"]}}\"\n          }\n        ]\n      }\n      ```\n  * Salve resposta, modelo, data e versão.\n\n---\n\n#### 🔹 Node 5: Google Sheets - Append Row\n\n* Planilha: `Results`\n* Colunas:\n\n  * Prompt\n  * Modelo\n  * Resposta\n  * Data\n  * Contexto\n  * Preço\n\n---\n\n---\n\n## 🚀 Passo a passo: Segunda automação (Juiz)\n\n### 1️⃣ Crie um novo workflow chamado `Judge Best Models`.\n\n---\n\n#### 🔹 Node 1: Google Sheets - Read Rows\n\n* Aba: `Results`\n* Leia todas as linhas para análise.\n\n---\n\n#### 🔹 Node 2: HTTP Request - Analisar com “Juiz”\n\n* Método: `POST`\n* URL: `https://openrouter.ai/api/v1/chat/completions`\n* Cabeçalho:\n\n  * `Authorization`: `Bearer SUA_API_KEY`\n  * `Content-Type`: `application/json`\n* Corpo:\n\n  ```  {\n    \"model\": \"gpt-4\", \n    \"messages\": [\n      {\n        \"role\": \"system\",\n        \"content\": \"Você é um juiz imparcial avaliando respostas de modelos de linguagem. Escolha os 3 melhores com base em clareza, criatividade e relevância.\"\n      },\n      {\n        \"role\": \"user\",\n        \"content\": \"Aqui estão as respostas dos modelos para o prompt: {{list of responses}}\"\n      }\n    ]\n  }\n  ```\n* Substitua `{{list of responses}}` por uma concatenação das respostas dos modelos.\n\n---\n\n#### 🔹 Node 3: Google Sheets - Append Row\n\n* Aba: `Judge`\n* Colunas:\n\n  * Prompt\n  * Top 3 Modelos\n  * Justificativa\n\n---\n\n---\n\n## 🎁 Resultado final\n\n* Aba `Results`: lista de todos os modelos testados com suas respostas.\n* Aba `Judge`: resumo com os 3 melhores modelos e o porquê.",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11366,
+    "author": "INEMA",
+    "date": "2025-07-13T05:24:02+00:00",
+    "text": "============",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11365,
+    "author": "INEMA",
+    "date": "2025-07-13T05:23:58+00:00",
+    "text": "O vídeo mostra como criar uma automação no **n8n** usando o **OpenRouter** para testar e comparar rapidamente diferentes modelos de IA (como GPT-4, Claude, Gemini, LLaMA, etc.) com o mesmo prompt, ajudando a escolher o melhor modelo para um projeto específico.\n\nAqui está o resumo com os pontos principais:\n\n1. **Problema identificado**\n\n   * Há muitos modelos novos de IA surgindo semanalmente.\n   * Testar e comparar manualmente cada modelo é caótico e demorado.\n\n2. **Solução criada**\n\n   * Uma automação no n8n que:\n\n     * Executa um prompt em todos os modelos disponíveis no OpenRouter.\n     * Registra os resultados em uma planilha do Google Sheets.\n     * Permite filtrar quais modelos testar (ex: OpenAI, Anthropic, Google ou apenas modelos open-source).\n\n3. **Funcionalidade extra: “Juiz”**\n\n   * Uma segunda automação atua como “juiz” e avalia as respostas.\n   * Define os 3 melhores modelos com base em critérios ajustáveis (ex.: concisão, criatividade).\n   * Escreve o ranking em uma aba separada na planilha.\n\n4. **Fluxo da automação**\n\n   * Pega os prompts da planilha.\n   * Lista todos os modelos disponíveis no OpenRouter via API.\n   * Filtra para evitar modelos desnecessários.\n   * Executa os prompts em cada modelo selecionado.\n   * Salva os resultados na planilha com detalhes do modelo, contexto, preço e parâmetros.\n   * Evita repetir testes para o mesmo prompt e modelo.\n\n5. **Benefícios**\n\n   * Elimina o trabalho manual de copiar/colar resultados.\n   * Permite comparar outputs de todos os modelos rapidamente.\n   * Reduz o consumo de créditos do OpenRouter ao evitar execuções repetidas.\n   * Suporta tanto modelos proprietários quanto open-source.\n\n6. **Detalhes técnicos**\n\n   * Usa gatilho agendado ou execução manual no n8n.\n   * Integra Google Sheets e OpenRouter com API keys.\n   * Pode ser configurado para rodar em novos prompts automaticamente.\n\n7. **Extras oferecidos**\n\n   * Workflow da automação está disponível nos links do vídeo.\n   * Acesso ao segundo workflow com hacks está na comunidade paga do autor.",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11364,
+    "author": "INEMA",
+    "date": "2025-07-13T05:21:34+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Models' Output Analyzer (2).xlsx"
+  },
+  {
+    "id": 11363,
+    "author": "INEMA",
+    "date": "2025-07-13T05:21:34+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Models' Output Analyzer (3).xlsx"
+  },
+  {
+    "id": 11362,
+    "author": "INEMA",
+    "date": "2025-07-13T05:21:09+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Model Output Analyzer (1).json"
+  },
+  {
+    "id": 11361,
+    "author": "INEMA",
+    "date": "2025-07-13T05:21:09+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaDocument",
+    "media_file": "Model Output Judge (1).json"
+  },
+  {
+    "id": 11360,
+    "author": "INEMA",
+    "date": "2025-07-13T05:21:01+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11360_012.jpg"
+  },
+  {
+    "id": 11359,
+    "author": "INEMA",
+    "date": "2025-07-13T05:19:37+00:00",
+    "text": "",
+    "has_media": true,
+    "media_type": "MessageMediaPhoto",
+    "media_file": "photo_11359_013.jpg"
+  },
+  {
+    "id": 11356,
+    "author": "INEMA",
+    "date": "2025-07-13T05:15:47+00:00",
+    "text": "m22 - **Comparador modelos AI n8n + OpenRouter**",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11355,
+    "author": "INEMA",
+    "date": "2025-07-13T05:15:44+00:00",
+    "text": "..",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11354,
+    "author": "INEMA",
+    "date": "2025-07-13T05:15:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11353,
+    "author": "INEMA",
+    "date": "2025-07-13T05:15:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11352,
+    "author": "INEMA",
+    "date": "2025-07-13T05:15:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11351,
+    "author": "INEMA",
+    "date": "2025-07-13T05:15:43+00:00",
+    "text": ".",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11350,
+    "author": "INEMA",
+    "date": "2025-07-13T05:15:43+00:00",
+    "text": "https://chatgpt.com/c/6873429d-3c14-8009-908d-2e5b3b1c86e8",
+    "has_media": true,
+    "media_type": "MessageMediaWebPage"
+  },
+  {
+    "id": 11349,
+    "author": "INEMA",
+    "date": "2025-07-13T05:15:42+00:00",
+    "text": "1",
+    "has_media": false,
+    "media_type": null
+  },
+  {
+    "id": 11348,
+    "author": "INEMA",
+    "date": "2025-07-13T05:15:36+00:00",
+    "text": "",
+    "has_media": false,
+    "media_type": null
+  }
+]

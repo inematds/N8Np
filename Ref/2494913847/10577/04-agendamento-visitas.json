@@ -1,0 +1,427 @@
+{
+  "name": "Agente Agendamento de Visitas",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agendamento-visitas",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-agendamento",
+      "name": "Webhook Agendamento",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "agendamento-visitas-imobiliaria"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"processing\",\n  \"agent\": \"Agendamento_Visitas\"\n}"
+      },
+      "id": "resposta-webhook",
+      "name": "Resposta Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar imóveis compatíveis com o perfil do cliente\nSELECT \n  i.*,\n  u.nome as corretor_nome,\n  u.whatsapp as corretor_whatsapp\nFROM imoveis i\nLEFT JOIN usuarios_sistema u ON i.corretor_responsavel = u.id\nWHERE i.status = 'disponivel'\n  AND (\n    CASE \n      WHEN '{{ $json.contexto.dados_entrada.cliente.tipo_interesse }}' = 'compra' THEN true\n      WHEN '{{ $json.contexto.dados_entrada.cliente.tipo_interesse }}' = 'aluguel' THEN true\n      ELSE true\n    END\n  )\n  AND (\n    CASE \n      WHEN '{{ $json.contexto.dados_entrada.cliente.localizacao_preferida }}' IS NOT NULL \n      THEN LOWER(i.bairro) LIKE LOWER('%{{ $json.contexto.dados_entrada.cliente.localizacao_preferida }}%')\n      ELSE true\n    END\n  )\n  AND (\n    CASE \n      WHEN {{ $json.contexto.dados_entrada.cliente.valor_maximo }} IS NOT NULL \n      THEN i.valor <= {{ $json.contexto.dados_entrada.cliente.valor_maximo }}\n      ELSE true\n    END\n  )\nORDER BY \n  CASE WHEN i.valor <= COALESCE({{ $json.contexto.dados_entrada.cliente.valor_maximo }}, 999999999) THEN 0 ELSE 1 END,\n  i.valor ASC\nLIMIT 5;",
+        "options": {}
+      },
+      "id": "buscar-imoveis",
+      "name": "Buscar Imóveis Compatíveis",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Analisar mensagem e determinar intenção\nconst contexto = JSON.parse($json.contexto);\nconst mensagem = contexto.mensagem_original.toLowerCase();\nconst imoveis = $input.all().slice(1); // Pular o primeiro item que é o contexto\n\n// Detectar intenções relacionadas a agendamento\nconst intencoes = {\n  agendar: ['agendar', 'visita', 'visitar', 'conhecer', 'ver', 'marcar'],\n  horario: ['horário', 'hora', 'quando', 'disponível', 'livre'],\n  hoje: ['hoje', 'agora', 'já'],\n  amanha: ['amanhã', 'tomorrow'],\n  semana: ['semana', 'próxima semana'],\n  manha: ['manhã', 'morning', '9h', '10h', '11h'],\n  tarde: ['tarde', 'afternoon', '14h', '15h', '16h', '17h'],\n  noite: ['noite', 'evening', '18h', '19h', '20h'],\n  fim_semana: ['sábado', 'domingo', 'fim de semana', 'weekend']\n};\n\n// Detectar intenção principal\nlet intencao_principal = 'listar_imoveis';\nfor (const [intencao, palavras] of Object.entries(intencoes)) {\n  if (palavras.some(palavra => mensagem.includes(palavra))) {\n    if (intencao === 'agendar') {\n      intencao_principal = 'agendar_visita';\n      break;\n    }\n  }\n}\n\n// Detectar preferências de horário\nconst preferencias_horario = {\n  periodo: null,\n  dia_preferencia: null,\n  urgencia: 'normal'\n};\n\nif (intencoes.hoje.some(palavra => mensagem.includes(palavra))) {\n  preferencias_horario.urgencia = 'alta';\n  preferencias_horario.dia_preferencia = 'hoje';\n}\n\nif (intencoes.manha.some(palavra => mensagem.includes(palavra))) {\n  preferencias_horario.periodo = 'manha';\n} else if (intencoes.tarde.some(palavra => mensagem.includes(palavra))) {\n  preferencias_horario.periodo = 'tarde';\n} else if (intencoes.noite.some(palavra => mensagem.includes(palavra))) {\n  preferencias_horario.periodo = 'noite';\n}\n\n// Processar lista de imóveis\nconst imoveis_formatados = imoveis.map((item, index) => {\n  const imovel = item.json;\n  return {\n    id: imovel.id,\n    codigo: imovel.codigo_interno,\n    tipo: imovel.tipo,\n    endereco: `${imovel.endereco}, ${imovel.bairro}`,\n    valor: imovel.valor,\n    quartos: imovel.quartos,\n    banheiros: imovel.banheiros,\n    area: imovel.area_construida,\n    corretor: imovel.corretor_nome,\n    posicao: index + 1\n  };\n});\n\nreturn {\n  json: {\n    contexto_original: contexto,\n    intencao_principal: intencao_principal,\n    preferencias_horario: preferencias_horario,\n    imoveis_disponiveis: imoveis_formatados,\n    total_imoveis: imoveis_formatados.length\n  }\n};"
+      },
+      "id": "analisar-intencao",
+      "name": "Analisar Intenção e Processar Imóveis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.intencao_principal }}",
+              "rightValue": "agendar_visita",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-intencao",
+      "name": "Quer Agendar Visita?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar horários disponíveis nos próximos 7 dias\nSELECT \n  a.data_hora_inicio,\n  a.data_hora_fim,\n  u.nome as corretor_nome,\n  u.id as corretor_id\nFROM agenda_disponivel a\nJOIN usuarios_sistema u ON a.corretor_id = u.id\nWHERE a.disponivel = true\n  AND a.data_hora_inicio >= NOW()\n  AND a.data_hora_inicio <= NOW() + INTERVAL '7 days'\n  AND NOT EXISTS (\n    SELECT 1 FROM visitas v\n    WHERE v.corretor_id = a.corretor_id\n    AND v.status IN ('agendada', 'confirmada')\n    AND v.data_hora BETWEEN a.data_hora_inicio AND a.data_hora_fim\n  )\nORDER BY a.data_hora_inicio\nLIMIT 10;",
+        "options": {}
+      },
+      "id": "buscar-horarios",
+      "name": "Buscar Horários Disponíveis",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        200
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gerar resposta baseada na intenção\nconst dados = $json;\nconst intencao = dados.intencao_principal;\nconst imoveis = dados.imoveis_disponiveis;\nconst canal = dados.contexto_original.canal;\n\nlet resposta = '';\n\nif (intencao === 'agendar_visita') {\n  // Buscar horários do segundo input\n  const horariosInput = $input.all()[1]; // Segundo input são os horários\n  const horarios = horariosInput ? [horariosInput.json] : [];\n  \n  if (horarios.length > 0) {\n    const horariosFormatados = horarios.slice(0, 5).map((h, index) => {\n      const data = new Date(h.data_hora_inicio);\n      const dataFormatada = data.toLocaleDateString('pt-BR', {\n        weekday: 'long',\n        day: '2-digit',\n        month: '2-digit'\n      });\n      const horaFormatada = data.toLocaleTimeString('pt-BR', {\n        hour: '2-digit',\n        minute: '2-digit'\n      });\n      \n      return `${index + 1}. ${dataFormatada} às ${horaFormatada} (${h.corretor_nome})`;\n    }).join('\\n');\n    \n    if (canal === 'whatsapp') {\n      resposta = `Perfeito! 🗓️ Vou agendar sua visita!\n\nTenho estes horários disponíveis:\n\n${horariosFormatados}\n\nQual horário funciona melhor para você? É só me falar o número da opção! 😊`;\n    } else {\n      resposta = `Ótimo! Tenho os seguintes horários disponíveis para visita:\n\n${horariosFormatados}\n\nPor favor, me informe qual horário é melhor para você.`;\n    }\n  } else {\n    if (canal === 'whatsapp') {\n      resposta = `Que pena! 😔 No momento não temos horários disponíveis nos próximos dias.\n\nMas não se preocupe! Vou anotar seu interesse e assim que surgir uma agenda, te aviso imediatamente!\n\nEnquanto isso, posso te enviar mais detalhes dos imóveis por aqui mesmo. O que acha? 📱`;\n    } else {\n      resposta = `Infelizmente não temos horários disponíveis nos próximos dias.\n\nVou registrar seu interesse e entrar em contato assim que houver disponibilidade.\n\nEnquanto isso, posso enviar mais informações sobre os imóveis disponíveis.`;\n    }\n  }\n} else {\n  // Listar imóveis disponíveis\n  if (imoveis.length > 0) {\n    const imoveisFormatados = imoveis.map(imovel => {\n      const valorFormatado = new Intl.NumberFormat('pt-BR', {\n        style: 'currency',\n        currency: 'BRL'\n      }).format(imovel.valor);\n      \n      if (canal === 'whatsapp') {\n        return `🏠 *${imovel.codigo}* - ${imovel.tipo.toUpperCase()}\n📍 ${imovel.endereco}\n💰 ${valorFormatado}\n🛏️ ${imovel.quartos || 0} quartos | 🚿 ${imovel.banheiros || 0} banheiros\n📐 ${imovel.area || 0}m²`;\n      } else {\n        return `${imovel.codigo} - ${imovel.tipo.toUpperCase()}\nEndereço: ${imovel.endereco}\nValor: ${valorFormatado}\nQuartos: ${imovel.quartos || 0} | Banheiros: ${imovel.banheiros || 0}\nÁrea: ${imovel.area || 0}m²`;\n      }\n    }).join('\\n\\n');\n    \n    if (canal === 'whatsapp') {\n      resposta = `Encontrei ${imoveis.length} imóveis perfeitos para você! 🎉\n\n${imoveisFormatados}\n\n✨ Gostou de algum? Me fala qual te interessou mais e vamos agendar uma visita! \n\nOu se preferir, posso enviar mais detalhes e fotos de qualquer um deles! 📸`;\n    } else {\n      resposta = `Encontrei ${imoveis.length} imóveis que atendem seu perfil:\n\n${imoveisFormatados}\n\nGostaria de agendar uma visita para algum deles ou receber mais informações?`;\n    }\n  } else {\n    if (canal === 'whatsapp') {\n      resposta = `Ops! 😅 No momento não temos imóveis disponíveis que atendam exatamente seu perfil.\n\nMas calma! Recebemos novos imóveis toda semana! 🏠\n\nVou cadastrar seu interesse e te avisar assim que chegar algo perfeito para você!\n\nEnquanto isso, que tal ampliarmos um pouco os critérios? Posso buscar em bairros próximos ou com valores um pouco diferentes. O que acha? 🤔`;\n    } else {\n      resposta = `No momento não temos imóveis disponíveis que atendam exatamente seus critérios.\n\nVou registrar seu interesse e entrar em contato assim que recebermos novos imóveis.\n\nGostaria que eu amplie a busca para bairros próximos ou faixas de valor similares?`;\n    }\n  }\n}\n\nreturn {\n  json: {\n    resposta: resposta,\n    intencao_processada: intencao,\n    imoveis_apresentados: imoveis,\n    proxima_acao: intencao === 'agendar_visita' ? 'aguardar_escolha_horario' : 'aguardar_interesse_imovel',\n    dados_contexto: dados\n  }\n};"
+      },
+      "id": "gerar-resposta-agendamento",
+      "name": "Gerar Resposta de Agendamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gerar resposta para listagem de imóveis\nconst dados = $json;\nconst imoveis = dados.imoveis_disponiveis;\nconst canal = dados.contexto_original.canal;\nconst cliente = dados.contexto_original.dados_entrada.cliente;\n\nlet resposta = '';\n\nif (imoveis.length > 0) {\n  const imoveisFormatados = imoveis.map(imovel => {\n    const valorFormatado = new Intl.NumberFormat('pt-BR', {\n      style: 'currency',\n      currency: 'BRL'\n    }).format(imovel.valor);\n    \n    if (canal === 'whatsapp') {\n      return `🏠 *${imovel.codigo}* - ${imovel.tipo.toUpperCase()}\n📍 ${imovel.endereco}\n💰 ${valorFormatado}\n🛏️ ${imovel.quartos || 0} quartos | 🚿 ${imovel.banheiros || 0} banheiros\n📐 ${imovel.area || 0}m²`;\n    } else {\n      return `${imovel.codigo} - ${imovel.tipo.toUpperCase()}\nEndereço: ${imovel.endereco}\nValor: ${valorFormatado}\nQuartos: ${imovel.quartos || 0} | Banheiros: ${imovel.banheiros || 0}\nÁrea: ${imovel.area || 0}m²`;\n    }\n  }).join('\\n\\n');\n  \n  const nomeCliente = cliente?.nome?.split(' ')[0] || 'Cliente';\n  \n  if (canal === 'whatsapp') {\n    resposta = `Oi ${nomeCliente}! 😊\n\nEncontrei ${imoveis.length} imóveis incríveis que combinam com o que você está procurando! 🎯\n\n${imoveisFormatados}\n\n✨ *Gostou de algum?*\n\nPosso te enviar:\n📸 Mais fotos\n📋 Detalhes completos  \n🗓️ Agendar uma visita\n\nÉ só me falar qual te interessou mais! 👆`;\n  } else {\n    resposta = `Olá ${nomeCliente}!\n\nEncontrei ${imoveis.length} imóveis que atendem seu perfil:\n\n${imoveisFormatados}\n\nGostaria de:\n- Receber mais informações sobre algum imóvel específico\n- Agendar uma visita\n- Ver fotos adicionais\n\nPor favor, me informe como posso ajudar.`;\n  }\n} else {\n  if (canal === 'whatsapp') {\n    resposta = `Oi! 😅\n\nPesquisei aqui e no momento não temos imóveis disponíveis que atendam exatamente seu perfil.\n\n*Mas tenho uma boa notícia!* 📢\nRecebemos novos imóveis toda semana!\n\nVou:\n✅ Cadastrar seu interesse\n✅ Te avisar assim que chegar algo perfeito\n✅ Buscar opções similares\n\nEnquanto isso, que tal ampliarmos um pouco a busca? Posso procurar:\n📍 Bairros próximos\n💰 Faixas de valor similares\n🏠 Tipos de imóvel parecidos\n\nO que acha? 🤔`;\n  } else {\n    resposta = `Olá!\n\nNo momento não temos imóveis disponíveis que atendam exatamente seus critérios de busca.\n\nVou registrar seu interesse em nosso sistema e entrar em contato assim que recebermos novos imóveis que correspondam ao seu perfil.\n\nGostaria que eu amplie a busca considerando:\n- Bairros próximos à sua região de interesse\n- Faixas de valor similares\n- Tipos de imóvel relacionados\n\nPor favor, me informe se deseja que eu faça essa busca ampliada.`;\n  }\n}\n\nreturn {\n  json: {\n    resposta: resposta,\n    imoveis_apresentados: imoveis,\n    proxima_acao: 'aguardar_interesse_imovel',\n    dados_contexto: dados\n  }\n};"
+      },
+      "id": "gerar-resposta-listagem",
+      "name": "Gerar Resposta de Listagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.dados_contexto.contexto_original.canal }}",
+              "rightValue": "whatsapp",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "verificar-canal",
+      "name": "Canal WhatsApp?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.WHATSAPP_API_URL }}/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $vars.WHATSAPP_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $json.dados_contexto.contexto_original.dados_entrada.from }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.resposta }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "enviar-whatsapp",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2000,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "{{ $vars.SMTP_FROM_EMAIL }}",
+        "toEmail": "={{ $json.dados_contexto.contexto_original.dados_entrada.email }}",
+        "subject": "Imóveis selecionados para você",
+        "emailType": "text",
+        "message": "={{ $json.resposta }}",
+        "options": {}
+      },
+      "id": "enviar-email",
+      "name": "Enviar Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        400
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "[REMOVED]",
+          "name": "SMTP Imobiliária"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "interacoes"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cliente_id": "={{ $json.dados_contexto.contexto_original.dados_entrada.cliente.id }}",
+            "canal": "={{ $json.dados_contexto.contexto_original.canal }}",
+            "tipo": "saida",
+            "mensagem": "={{ $json.resposta }}",
+            "agente_responsavel": "Agendamento_Visitas",
+            "contexto": "={{ JSON.stringify({ intencao: $json.intencao_processada, imoveis_apresentados: $json.imoveis_apresentados, proxima_acao: $json.proxima_acao }) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "registrar-interacao",
+      "name": "Registrar Interação",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2220,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "[REMOVED]",
+          "name": "Supabase Imobiliária"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Agendamento": {
+      "main": [
+        [
+          {
+            "node": "Resposta Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Buscar Imóveis Compatíveis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Imóveis Compatíveis": {
+      "main": [
+        [
+          {
+            "node": "Analisar Intenção e Processar Imóveis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisar Intenção e Processar Imóveis": {
+      "main": [
+        [
+          {
+            "node": "Quer Agendar Visita?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quer Agendar Visita?": {
+      "main": [
+        [
+          {
+            "node": "Buscar Horários Disponíveis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gerar Resposta de Listagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Horários Disponíveis": {
+      "main": [
+        [
+          {
+            "node": "Gerar Resposta de Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Resposta de Agendamento": {
+      "main": [
+        [
+          {
+            "node": "Canal WhatsApp?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Resposta de Listagem": {
+      "main": [
+        [
+          {
+            "node": "Canal WhatsApp?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Canal WhatsApp?": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Registrar Interação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Email": {
+      "main": [
+        [
+          {
+            "node": "Registrar Interação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "agendamento",
+      "name": "Agendamento"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

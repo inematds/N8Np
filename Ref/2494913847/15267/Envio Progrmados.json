@@ -1,0 +1,1067 @@
+{
+  "name": "Envio Progrmados",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  p.patient_id,\n  p.full_name,\n  p.phone_e164,\n  p.email,\n  p.timezone,\n  p.status AS patient_status,\n  pref.daily_contact_hour,\n  pref.portion_style\nFROM nutri_bot.patients p\nLEFT JOIN nutri_bot.patient_preferences pref\n       ON pref.patient_id = p.patient_id\nWHERE\n  p.status = 'active'\n  AND p.phone_e164 IS NOT NULL\nORDER BY\n  p.timezone,\n  COALESCE(pref.daily_contact_hour, 0),\n  p.patient_id;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -672,
+        80
+      ],
+      "id": "3f4b4ad7-a1a7-47a0-adfa-0b9a67851189",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Servidor_N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.daily_contact_hour }}",
+              "rightValue": "={{ $now.format('HH').toNumber() }}",
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -448,
+        80
+      ],
+      "id": "6dcafc84-35e2-4cb1-bcc2-22b28d2c0542",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -224,
+        80
+      ],
+      "id": "5e5a80fa-4971-4c22-8a13-7cbbcd8849f3",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH params AS (\n  SELECT {{ $json.patient_id }}::bigint AS patient_id\n),\ntarget AS (\n  SELECT params.patient_id FROM params\n),\ngoal_pick AS (\n  SELECT DISTINCT ON (g.patient_id) g.*\n  FROM   nutri_bot.goals g, target t\n  WHERE  g.patient_id = t.patient_id\n  ORDER  BY g.patient_id, (g.status = 'active') DESC, g.created_at DESC\n),\nlast_weight AS (\n  SELECT w.weight_kg, w.week_start_date\n  FROM   nutri_bot.weekly_checkins w, target t\n  WHERE  w.patient_id = t.patient_id\n  ORDER  BY w.week_start_date DESC\n  LIMIT  1\n),\nbaseline_weight AS (\n  SELECT w.weight_kg, w.week_start_date\n  FROM   nutri_bot.weekly_checkins w, target t\n  WHERE  w.patient_id = t.patient_id\n    AND  w.is_baseline = TRUE\n  ORDER  BY w.week_start_date ASC\n  LIMIT  1\n),\npantry_latest AS (\n  /* Lee HOY si existe; si no, el más reciente.\n     pantry_items intenta varias claves posibles usando to_jsonb(d) */\n  SELECT DISTINCT ON (d.patient_id)\n         d.patient_id,\n         d.for_date,\n         COALESCE(\n           to_jsonb(d)->>'items_text',\n           to_jsonb(d)->>'items',\n           (to_jsonb(d)->'items_jsonb')::text,\n           (to_jsonb(d)->'items')::text\n         ) AS pantry_items\n  FROM   nutri_bot.daily_pantry d, target t\n  WHERE  d.patient_id = t.patient_id\n  ORDER  BY d.patient_id,\n           (d.for_date = CURRENT_DATE) DESC,\n           d.for_date DESC\n)\nSELECT\n  p.patient_id,\n  p.full_name,\n  p.phone_e164,\n  p.email,\n  p.status                                    AS patient_status,\n  p.timezone,\n  p.birth_date,\n  p.sex,\n  p.height_cm,\n  date_part('year', age(p.birth_date))::int   AS age_years,\n\n  lw.weight_kg                                AS latest_weight_kg,\n  lw.week_start_date                          AS latest_weight_week,\n  bw.weight_kg                                AS baseline_weight_kg,\n  bw.week_start_date                          AS baseline_weight_week,\n\n  CASE\n    WHEN p.height_cm IS NOT NULL AND p.height_cm > 0\n     AND lw.weight_kg IS NOT NULL\n    THEN round(lw.weight_kg / ((p.height_cm/100.0)^2), 2)\n    ELSE NULL\n  END                                         AS bmi,\n\n  pref.daily_contact_hour,\n  pref.portion_style,\n\n  prof.activity_level,\n  prof.dietary_pattern,\n  prof.allergies,\n  prof.dislikes,\n  prof.meals_per_day,\n  prof.sleep_window,\n  prof.equipment,\n\n  g.id                                        AS goal_id,\n  g.goal_type,\n  g.target_metric,\n  g.target_value,\n  g.weekly_rate_kg,\n  g.deadline,\n  g.status                                    AS goal_status,\n\n  dp.for_date                                 AS pantry_for_date,\n  dp.pantry_items                             AS pantry_items,\n\n  p.created_at                                AS patient_created_at,\n  now()                                       AS snapshot_at\nFROM               target t\nJOIN               nutri_bot.patients p              ON p.patient_id = t.patient_id\nLEFT JOIN          nutri_bot.patient_preferences pref ON pref.patient_id = p.patient_id\nLEFT JOIN          nutri_bot.patient_profile prof     ON prof.patient_id = p.patient_id\nLEFT JOIN          goal_pick g                         ON g.patient_id = p.patient_id\nLEFT JOIN          last_weight lw                      ON TRUE\nLEFT JOIN          baseline_weight bw                  ON TRUE\nLEFT JOIN          pantry_latest dp                    ON dp.patient_id = p.patient_id;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b727867e-c8bf-4cd4-a772-35e52b54dd76",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Servidor_N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{\n`Variables:\nfull_name: ${$json.full_name ?? ''}\ngoal_type: ${$json.goal_type ?? ''}\nlatest_weight_kg: ${$json.latest_weight_kg ?? ''}\nbaseline_weight_kg: ${$json.baseline_weight_kg ?? ''}\nbmi: ${$json.bmi ?? ''}\nactivity_level: ${$json.activity_level ?? ''}\ndietary_pattern: ${$json.dietary_pattern ?? ''}\nallergies: ${$json.allergies ?? ''}\ndislikes: ${$json.dislikes ?? ''}\nmeals_per_day: ${$json.meals_per_day ?? ''}\nsleep_window: ${$json.sleep_window ?? ''}\nequipment: ${$json.equipment ?? ''}\nportion_style: ${$json.portion_style ?? ''}\npantry_items: ${$json.pantry_items ?? ''}\ntimezone: ${$json.timezone ?? ''}\npatient_status: ${$json.patient_status ?? ''}\ntoday: ${new Date().toLocaleDateString('es-CO', { weekday: 'long' })}\n`\n}}\n"
+            },
+            {
+              "content": "=\n# System (pega tal cual, **sin** fx)\n\nEres un coach nutricional cálido (español de Colombia) que escribe por WhatsApp. Tu misión: enviar un **mensaje de arranque diario** personalizado, emocional y útil, y **confirmar/actualizar los ingredientes** disponibles antes de proponer recetas.\n\n**Estilo**\n\n* Cercano, natural, tutea, neutral.\n* 3–6 líneas, respiro visual; **máx. 3 emojis**.\n* Cero tecnicismos, nada de “base de datos”, “porciones” o “sistemas”.\n\n**Personalización obligatoria (usa solo si hay datos, no inventes):**\n\n* Nombre.\n* **Meta** (lose/maintain/gain); si hay objetivo numérico (p. ej. 83 kg), menciónalo una vez.\n* `meals_per_day` (organiza el día: “con **X** comidas”).\n* `activity_level` (sedentary/light/moderate/active/athlete) → adapta enfoque (saciedad/energía/proteína/recuperación).\n* `sleep_window` si existe (celebra o enmarca ritmo).\n* `dietary_pattern`, `allergies`, `dislikes` (reconócelas sin pedirlas de nuevo).\n* **Despensa**: si existe `pantry_items` (de hoy o reciente), menciona **2–4** ítems en una línea.\n\n**Objetivo del mensaje**\n\n1. Motivar alineando el día con la meta.\n2. **Confirmar/actualizar despensa**: preguntar si aún tiene esos ingredientes o si quiere agregar/cambiar algo.\n3. Terminar con **UNA sola pregunta clara** que pida **3–5 ítems** (si no hay despensa) o confirme/ajuste (si sí hay despensa).\n4. No des recetas todavía; espera respuesta.\n\n**Reglas**\n\n* Nada de listas largas ni múltiples preguntas.\n* Si faltan datos clave (p. ej., sin despensa), pide solo lo necesario para empezar (3–5 ingredientes).\n* Usa tono positivo, realista y amable; cero regaños.\n* Máx. 3 emojis; evita repetirlos.\n\n**Salida**\nUn único texto breve de WhatsApp (3–6 líneas, máx. 3 emojis) que cierre con **una pregunta** para confirmar/actualizar los ingredientes. SIEMPRE usa emojis para mejorar la lecturabilidad!!!\n",
+              "role": "system"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        224,
+        0
+      ],
+      "id": "40a2f3e0-a6f7-41f0-a5e5-79df5f19190b",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Angel",
+        "remoteJid": "={{ $('Loop Over Items').first().json.phone_e164.replace('+','') }}@s.whatsapp.net",
+        "messageText": "={{ $json.message.content }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        576,
+        0
+      ],
+      "id": "8ac206d8-7e03-43fd-9ce9-17e921896ac4",
+      "name": "Enviar texto",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nINSERT INTO nutri_bot.historial_conversaciones (session_id, message)\nVALUES (\n  $1,\n  jsonb_build_object(\n    'type','ai',\n    'content',\n      (\n        -- construimos JSON con el builder y lo convertimos a STRING\n        jsonb_build_object(\n          'output',\n          jsonb_build_object(\n            'mensaje_respuesta', '{{ $('Message a model').item.json.message.content }}',\n            'cliente_nombre',    $2\n          )\n        )::text\n      ),\n    'tool_calls',         '[]'::jsonb,\n    'additional_kwargs',  '{}'::jsonb,\n    'response_metadata',  '{}'::jsonb,\n    'invalid_tool_calls', '[]'::jsonb\n  )\n);\n",
+        "options": {
+          "queryReplacement": "={{ $('Loop Over Items').item.json.phone_e164.replace('+','') }},{{ $('Loop Over Items').item.json.full_name }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1024,
+        80
+      ],
+      "id": "7fdfc006-5557-4ffd-9da2-47ae37e71ae2",
+      "name": "Execute a SQL query2",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Servidor_N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- $1 = session_id (text)                      ej: '573005660816'\n-- $2 = mensaje_del_cliente (text)             ej: 'dale….'\n-- $3 = telefono_del_cliente (text)            ej: '+573005660816'\n-- $4 = key_Postgres_Chat_Memory (text)        ej: '573005660816'\n\nINSERT INTO nutri_bot.historial_conversaciones (session_id, message)\nVALUES (\n  $1,\n  jsonb_build_object(\n    'type', 'human',\n    'content',\n      concat(\n        'status: active',                       E'\\n',\n        'mensaje_del_cliente: Buenos dias... ya estoy listo para mis recetas',           E'\\n',\n        'telefono_del_cliente: ', $2,           E'\\n',\n        'key_Postgres_Chat_Memory: ', $1\n      ),\n    'additional_kwargs', '{}'::jsonb,\n    'response_metadata', '{}'::jsonb\n  )\n);\n",
+        "options": {
+          "queryReplacement": "={{ $('Loop Over Items').item.json.phone_e164.replace('+','') }},{{ $('Loop Over Items').item.json.phone_e164 }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        800,
+        0
+      ],
+      "id": "09366573-0af8-4e99-a628-6355a81ad54d",
+      "name": "Execute a SQL query3",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Servidor_N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  p.patient_id,\n  p.full_name,\n  p.phone_e164,\n  p.email,\n  p.timezone,\n  p.status AS patient_status,\n  pref.daily_contact_hour,\n  pref.portion_style\nFROM nutri_bot.patients p\nLEFT JOIN nutri_bot.patient_preferences pref\n       ON pref.patient_id = p.patient_id\nWHERE\n  p.status = 'active'\n  AND p.phone_e164 IS NOT NULL\nORDER BY\n  p.timezone,\n  COALESCE(pref.daily_contact_hour, 0),\n  p.patient_id;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -672,
+        368
+      ],
+      "id": "3dff0bc7-edab-4966-8652-1bfdb2c70d7d",
+      "name": "Execute a SQL query4",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Servidor_N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -448,
+        368
+      ],
+      "id": "c45420bf-4874-4ff4-8e6c-40e22f9c557e",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH params AS (\n  SELECT {{ $json.patient_id }}::bigint AS patient_id\n),\ntarget AS (\n  SELECT params.patient_id FROM params\n),\ngoal_pick AS (\n  SELECT DISTINCT ON (g.patient_id) g.*\n  FROM   nutri_bot.goals g, target t\n  WHERE  g.patient_id = t.patient_id\n  ORDER  BY g.patient_id, (g.status = 'active') DESC, g.created_at DESC\n),\nlast_weight AS (\n  SELECT w.weight_kg, w.week_start_date\n  FROM   nutri_bot.weekly_checkins w, target t\n  WHERE  w.patient_id = t.patient_id\n  ORDER  BY w.week_start_date DESC\n  LIMIT  1\n),\nbaseline_weight AS (\n  SELECT w.weight_kg, w.week_start_date\n  FROM   nutri_bot.weekly_checkins w, target t\n  WHERE  w.patient_id = t.patient_id\n    AND  w.is_baseline = TRUE\n  ORDER  BY w.week_start_date ASC\n  LIMIT  1\n),\npantry_latest AS (\n  /* Lee HOY si existe; si no, el más reciente.\n     pantry_items intenta varias claves posibles usando to_jsonb(d) */\n  SELECT DISTINCT ON (d.patient_id)\n         d.patient_id,\n         d.for_date,\n         COALESCE(\n           to_jsonb(d)->>'items_text',\n           to_jsonb(d)->>'items',\n           (to_jsonb(d)->'items_jsonb')::text,\n           (to_jsonb(d)->'items')::text\n         ) AS pantry_items\n  FROM   nutri_bot.daily_pantry d, target t\n  WHERE  d.patient_id = t.patient_id\n  ORDER  BY d.patient_id,\n           (d.for_date = CURRENT_DATE) DESC,\n           d.for_date DESC\n)\nSELECT\n  p.patient_id,\n  p.full_name,\n  p.phone_e164,\n  p.email,\n  p.status                                    AS patient_status,\n  p.timezone,\n  p.birth_date,\n  p.sex,\n  p.height_cm,\n  date_part('year', age(p.birth_date))::int   AS age_years,\n\n  lw.weight_kg                                AS latest_weight_kg,\n  lw.week_start_date                          AS latest_weight_week,\n  bw.weight_kg                                AS baseline_weight_kg,\n  bw.week_start_date                          AS baseline_weight_week,\n\n  CASE\n    WHEN p.height_cm IS NOT NULL AND p.height_cm > 0\n     AND lw.weight_kg IS NOT NULL\n    THEN round(lw.weight_kg / ((p.height_cm/100.0)^2), 2)\n    ELSE NULL\n  END                                         AS bmi,\n\n  pref.daily_contact_hour,\n  pref.portion_style,\n\n  prof.activity_level,\n  prof.dietary_pattern,\n  prof.allergies,\n  prof.dislikes,\n  prof.meals_per_day,\n  prof.sleep_window,\n  prof.equipment,\n\n  g.id                                        AS goal_id,\n  g.goal_type,\n  g.target_metric,\n  g.target_value,\n  g.weekly_rate_kg,\n  g.deadline,\n  g.status                                    AS goal_status,\n\n  dp.for_date                                 AS pantry_for_date,\n  dp.pantry_items                             AS pantry_items,\n\n  p.created_at                                AS patient_created_at,\n  now()                                       AS snapshot_at\nFROM               target t\nJOIN               nutri_bot.patients p              ON p.patient_id = t.patient_id\nLEFT JOIN          nutri_bot.patient_preferences pref ON pref.patient_id = p.patient_id\nLEFT JOIN          nutri_bot.patient_profile prof     ON prof.patient_id = p.patient_id\nLEFT JOIN          goal_pick g                         ON g.patient_id = p.patient_id\nLEFT JOIN          last_weight lw                      ON TRUE\nLEFT JOIN          baseline_weight bw                  ON TRUE\nLEFT JOIN          pantry_latest dp                    ON dp.patient_id = p.patient_id;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -224,
+        304
+      ],
+      "id": "7876bad8-de96-4c13-a5da-c2908963eb32",
+      "name": "Execute a SQL query5",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Servidor_N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{\n`Variables:\nfull_name: ${$json.full_name ?? ''}\ngoal_type: ${$json.goal_type ?? ''}\nlatest_weight_kg: ${$json.latest_weight_kg ?? ''}\nbaseline_weight_kg: ${$json.baseline_weight_kg ?? ''}\nbmi: ${$json.bmi ?? ''}\nactivity_level: ${$json.activity_level ?? ''}\ndietary_pattern: ${$json.dietary_pattern ?? ''}\nallergies: ${$json.allergies ?? ''}\ndislikes: ${$json.dislikes ?? ''}\nmeals_per_day: ${$json.meals_per_day ?? ''}\nsleep_window: ${$json.sleep_window ?? ''}\nequipment: ${$json.equipment ?? ''}\nportion_style: ${$json.portion_style ?? ''}\npantry_items: ${$json.pantry_items ?? ''}\ntimezone: ${$json.timezone ?? ''}\npatient_status: ${$json.patient_status ?? ''}\ntoday: ${new Date().toLocaleDateString('es-CO', { weekday: 'long' })}\n`\n}}\n"
+            },
+            {
+              "content": "System (semanal · sin fx · salida en JSON)\n\nEres un coach nutricional cálido (español de Colombia) que escribe por WhatsApp. Tu misión hoy es abrir el check-in semanal de forma emocional, cercana y útil, pidiendo los datos clave para ajustar el plan.\n\nEstilo\n\t•\tCercano, natural, tutea, neutral.\n\t•\t3–6 líneas con respiro visual; máx. 3 emojis.\n\t•\tNada de tecnicismos (no digas “base de datos”, “tablas”, etc.).\n\nPersonalización obligatoria (usa solo si hay datos, no inventes)\nIncluye de forma natural: nombre, meta (lose/maintain/gain; si hay objetivo numérico como “83 kg”, menciónalo una vez), posible tendencia (último peso vs. peso base, sin regaños), actividad y meals_per_day para contextualizar. Reconoce que respetas dietary_pattern, alergias y dislikes (sin volver a pedirlos). Si hubo alguna victoria (más energía/sueño), refuérzala.\n\nQué pedir en el check-in (en este orden, en una sola pregunta final):\n\t1.\tPeso actual (kg), 2) Cintura (cm) (opcional si la suele enviar), 3) Energía 1–5, 4) Adherencia (aprox. % o cómo le fue con las comidas), 5) Comentarios (antojos, hambre, entrenos, sueño).\nSi dice que no tiene báscula, responde empático y sugiere medidas/ropa/energía como referencia; no presiones.\n\nReglas de redacción\n\t•\tUna sola intención: abrir el check-in de la semana.\n\t•\tUNA pregunta final clara que invite a mandar todo junto.\n\t•\tPositivo y realista; cero regaños.\n\t•\tMáximo 3 emojis y evita repetirlos.\n\n⸻\n\n🚧 Formato de SALIDA OBLIGATORIO (JSON)\n\nResponde únicamente con un JSON válido con este shape (sin texto extra, sin bloques de código, sin comas finales).\n\t•\tUsa comillas dobles en todas las claves/valores.\n\t•\tColoca el mensaje completo en message.content.text.\n\t•\tSi usas saltos de línea, escríbelos como \\n.\n\t•\tMantén refusal: null, annotations: [], logprobs: null, finish_reason: \"stop\".\n\nDebes devolver exactamente algo como:\n\n[\n  {\n    \"index\": 0,\n    \"message\": {\n      \"role\": \"assistant\",\n      \"content\": {\n        \"text\": \"TU_MENSAJE_AQUI_EN_3_A_6_LINEAS_CON_MAX_3_EMOJIS_Y_CERRANDO_CON_UNA_PREGUNTA_UNICA\"\n      },\n      \"refusal\": null,\n      \"annotations\": []\n    },\n    \"logprobs\": null,\n    \"finish_reason\": \"stop\"\n  }\n]\n\nReemplaza solo el valor de \"text\" por el mensaje personalizado (3–6 líneas, máx. 3 emojis), cerrando con una pregunta que pida: peso (kg), cintura (cm, si tiene), energía 1–5, adherencia (%) y comentarios. No agregues ninguna otra clave ni texto fuera del JSON.",
+              "role": "system"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        0,
+        304
+      ],
+      "id": "fdd41c08-fafa-4a01-acd2-f4bd9f1f9720",
+      "name": "Message a model1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Angel",
+        "remoteJid": "={{ $('Loop Over Items1').item.json.phone_e164.replace('+','') }}@s.whatsapp.net",
+        "messageText": "={{ $json.message.content.message.content.text }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        352,
+        304
+      ],
+      "id": "2a287fbf-4c9b-42ee-901a-62bcb9bcf650",
+      "name": "Enviar texto1",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nINSERT INTO nutri_bot.historial_conversaciones (session_id, message)\nVALUES (\n  $1,\n  jsonb_build_object(\n    'type','ai',\n    'content',\n      (\n        -- construimos JSON con el builder y lo convertimos a STRING\n        jsonb_build_object(\n          'output',\n          jsonb_build_object(\n            'mensaje_respuesta', '{{ $('Message a model1').item.json.message.content.message.content.text }}',\n            'cliente_nombre',    $2\n          )\n        )::text\n      ),\n    'tool_calls',         '[]'::jsonb,\n    'additional_kwargs',  '{}'::jsonb,\n    'response_metadata',  '{}'::jsonb,\n    'invalid_tool_calls', '[]'::jsonb\n  )\n);\n",
+        "options": {
+          "queryReplacement": "={{ $('Loop Over Items1').item.json.phone_e164.replace('+','') }},{{ $('Loop Over Items1').item.json.full_name }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        800,
+        368
+      ],
+      "id": "51836dbd-16f4-4c8c-8967-66f3a6819cdf",
+      "name": "Execute a SQL query6",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Servidor_N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- $1 = session_id (text)                      ej: '573005660816'\n-- $2 = mensaje_del_cliente (text)             ej: 'dale….'\n-- $3 = telefono_del_cliente (text)            ej: '+573005660816'\n-- $4 = key_Postgres_Chat_Memory (text)        ej: '573005660816'\n\nINSERT INTO nutri_bot.historial_conversaciones (session_id, message)\nVALUES (\n  $1,\n  jsonb_build_object(\n    'type', 'human',\n    'content',\n      concat(\n        'status: active',                       E'\\n',\n        'mensaje_del_cliente: Buenos dias... quiero actualizar mis medidas y como me he sentido esta semana',           E'\\n',\n        'telefono_del_cliente: ', $2,           E'\\n',\n        'key_Postgres_Chat_Memory: ', $1\n      ),\n    'additional_kwargs', '{}'::jsonb,\n    'response_metadata', '{}'::jsonb\n  )\n);\n",
+        "options": {
+          "queryReplacement": "={{ $('Loop Over Items1').item.json.phone_e164.replace('+','') }},{{ $('Loop Over Items1').item.json.phone_e164 }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        576,
+        304
+      ],
+      "id": "87fd043d-3447-4310-bcf5-327ed413d40f",
+      "name": "Execute a SQL query7",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Servidor_N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- >>> REEMPLAZA: paciente y mes base\nWITH\nparams AS (\n  SELECT\n    14::bigint               AS patient_id,             -- <<< tu paciente\n    DATE '2025-10-01'        AS month_start             -- <<< primer día del mes\n),\nbounds AS (\n  SELECT\n    p.patient_id,\n    p.month_start,\n    (p.month_start + INTERVAL '1 month - 1 day')::date AS month_end\n  FROM params p\n),\n\npx AS (\n  SELECT\n    pat.patient_id, pat.full_name, pat.height_cm,\n    prof.activity_level, prof.dietary_pattern,\n    g.id AS goal_id, g.goal_type, g.start_date,\n    g.start_weight_kg, g.start_waist_cm,\n    g.target_metric, g.target_value, g.weekly_rate_kg, g.deadline, g.status AS goal_status\n  FROM nutri_bot.patients pat\n  LEFT JOIN nutri_bot.patient_profile   prof ON prof.patient_id = pat.patient_id\n  LEFT JOIN nutri_bot.v_active_goal     g    ON g.patient_id    = pat.patient_id\n  JOIN bounds b ON b.patient_id = pat.patient_id\n  WHERE pat.patient_id = (SELECT patient_id FROM params)\n),\n\nw_in_month AS (\n  SELECT w.*\n  FROM nutri_bot.weekly_checkins w\n  JOIN bounds b ON b.patient_id = w.patient_id\n  WHERE w.patient_id = (SELECT patient_id FROM params)\n    AND w.week_start_date BETWEEN b.month_start AND b.month_end\n),\nw_start AS (   -- último check-in en/antes de inicio de mes\n  SELECT w.*\n  FROM nutri_bot.weekly_checkins w\n  JOIN bounds b ON b.patient_id = w.patient_id\n  WHERE w.patient_id = (SELECT patient_id FROM params)\n    AND w.week_start_date <= b.month_start\n  ORDER BY w.week_start_date DESC\n  LIMIT 1\n),\nw_end AS (     -- último check-in en/antes de fin de mes\n  SELECT w.*\n  FROM nutri_bot.weekly_checkins w\n  JOIN bounds b ON b.patient_id = w.patient_id\n  WHERE w.patient_id = (SELECT patient_id FROM params)\n    AND w.week_start_date <= b.month_end\n  ORDER BY w.week_start_date DESC\n  LIMIT 1\n),\nagg_checks AS (\n  SELECT\n    COUNT(*)                                           AS weeks_with_checkin,\n    AVG(NULLIF(adherence,0))::numeric(4,2)            AS adherence_avg,\n    AVG(NULLIF(energy_level,0))::numeric(4,2)         AS energy_avg\n  FROM w_in_month\n),\npantry AS (\n  SELECT\n    COUNT(DISTINCT dp.for_date) AS pantry_days,\n    COUNT(DISTINCT NULLIF(TRIM(BOTH '\"' FROM COALESCE(elt.elem->>'ingredient', elt.elem::text)), '')) AS ingredients_distinct\n  FROM nutri_bot.daily_pantry dp\n  JOIN bounds b ON b.patient_id = dp.patient_id\n  LEFT JOIN LATERAL jsonb_array_elements(dp.items) AS elt(elem) ON TRUE\n  WHERE dp.patient_id = (SELECT patient_id FROM params)\n    AND dp.for_date BETWEEN b.month_start AND b.month_end\n),\nplans AS (\n  SELECT COUNT(DISTINCT mp.for_date) AS plan_days\n  FROM nutri_bot.meal_plans mp\n  JOIN bounds b ON b.patient_id = mp.patient_id\n  WHERE mp.patient_id = (SELECT patient_id FROM params)\n    AND mp.for_date BETWEEN b.month_start AND b.month_end\n),\nmsgs AS (\n  SELECT\n    SUM(CASE WHEN ml.direction='in'  THEN 1 ELSE 0 END) AS msgs_in,\n    SUM(CASE WHEN ml.direction='out' THEN 1 ELSE 0 END) AS msgs_out\n  FROM nutri_bot.message_log ml\n  JOIN bounds b ON b.patient_id = ml.patient_id\n  WHERE ml.patient_id = (SELECT patient_id FROM params)\n    AND ml.sent_at::date BETWEEN b.month_start AND b.month_end\n),\n\nprogress AS (\n  SELECT\n    px.patient_id, px.full_name, px.height_cm,\n    px.activity_level, px.dietary_pattern,\n    px.goal_id, px.goal_type, px.start_date,\n    px.start_weight_kg, px.start_waist_cm,\n    px.target_metric, px.target_value, px.weekly_rate_kg, px.deadline, px.goal_status,\n    (SELECT month_start FROM bounds) AS month_start,\n    (SELECT month_end   FROM bounds) AS month_end,\n\n    ws.weight_kg AS weight_start,\n    we.weight_kg AS weight_end,\n    (we.weight_kg - ws.weight_kg)                            AS weight_delta,\n    CASE WHEN ws.weight_kg IS NOT NULL AND ws.weight_kg > 0\n         THEN ROUND((we.weight_kg - ws.weight_kg)/ws.weight_kg*100.0, 2)\n         ELSE NULL END                                       AS weight_delta_pct,\n\n    ws.waist_cm  AS waist_start,\n    we.waist_cm  AS waist_end,\n    (we.waist_cm - ws.waist_cm)                              AS waist_delta,\n\n    CASE WHEN px.height_cm > 0 AND ws.weight_kg IS NOT NULL\n         THEN ROUND(ws.weight_kg / POWER(px.height_cm/100.0, 2), 2) END AS bmi_start,\n    CASE WHEN px.height_cm > 0 AND we.weight_kg IS NOT NULL\n         THEN ROUND(we.weight_kg / POWER(px.height_cm/100.0, 2), 2) END AS bmi_end,\n    CASE WHEN px.height_cm > 0 AND ws.weight_kg IS NOT NULL AND we.weight_kg IS NOT NULL\n         THEN ROUND( (we.weight_kg - ws.weight_kg) / POWER(px.height_cm/100.0, 2), 2) END AS bmi_delta\n  FROM px\n  LEFT JOIN w_start ws ON TRUE\n  LEFT JOIN w_end   we ON TRUE\n),\nexpected AS (\n  SELECT\n    pr.*,\n    4.0::numeric                                 AS approx_weeks,              -- aprox 4 semanas\n    CASE\n      WHEN goal_type IN ('lose','gain') AND weekly_rate_kg IS NOT NULL\n        THEN ROUND(weekly_rate_kg * 4.0, 2)\n      ELSE NULL\n    END AS expected_delta_kg,\n    CASE\n      WHEN target_metric='weight_kg' AND target_value IS NOT NULL AND weight_end IS NOT NULL\n        THEN ROUND( (pr.start_weight_kg - weight_end) / NULLIF(pr.start_weight_kg - target_value, 0) * 100, 1)\n      ELSE NULL\n    END AS pct_to_target\n  FROM progress pr\n)\n\nSELECT\n  e.*,\n  a.weeks_with_checkin, a.adherence_avg, a.energy_avg,\n  p.pantry_days, p.ingredients_distinct,\n  pl.plan_days,\n  m.msgs_in, m.msgs_out\nFROM expected e\nLEFT JOIN agg_checks a ON TRUE\nLEFT JOIN pantry     p ON TRUE\nLEFT JOIN plans     pl ON TRUE\nLEFT JOIN msgs       m ON TRUE;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -224,
+        688
+      ],
+      "id": "14bf445c-49a5-456c-bec6-b8e9698793e9",
+      "name": "Execute a SQL query8",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Servidor_N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  p.patient_id,\n  p.full_name,\n  p.phone_e164,\n  p.email,\n  p.timezone,\n  p.status AS patient_status,\n  pref.daily_contact_hour,\n  pref.portion_style\nFROM nutri_bot.patients p\nLEFT JOIN nutri_bot.patient_preferences pref\n       ON pref.patient_id = p.patient_id\nWHERE\n  p.status = 'active'\n  AND p.phone_e164 IS NOT NULL\nORDER BY\n  p.timezone,\n  COALESCE(pref.daily_contact_hour, 0),\n  p.patient_id;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -672,
+        768
+      ],
+      "id": "9d3d072d-929e-4eb1-98f3-1cdc7dba5d6a",
+      "name": "Execute a SQL query9",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Servidor_N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -448,
+        768
+      ],
+      "id": "1d4ef193-0fa0-418a-ad75-0cf639485da3",
+      "name": "Loop Over Items2"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{\n`Variables: patient_id: ${$json.patient_id ?? ''} full_name: ${$json.full_name ?? ''} height_cm: ${$json.height_cm ?? ''} activity_level: ${$json.activity_level ?? ''} dietary_pattern: ${$json.dietary_pattern ?? ''} goal_id: ${$json.goal_id ?? ''} goal_type: ${$json.goal_type ?? ''} start_date: ${$json.start_date ?? ''} start_weight_kg: ${$json.start_weight_kg ?? ''} start_waist_cm: ${$json.start_waist_cm ?? ''} target_metric: ${$json.target_metric ?? ''} target_value: ${$json.target_value ?? ''} weekly_rate_kg: ${$json.weekly_rate_kg ?? ''} deadline: ${$json.deadline ?? ''} goal_status: ${$json.goal_status ?? ''} month_start: ${$json.month_start ?? ''} month_end: ${$json.month_end ?? ''} weight_start: ${$json.weight_start ?? ''} weight_end: ${$json.weight_end ?? ''} weight_delta: ${$json.weight_delta ?? ''} weight_delta_pct: ${$json.weight_delta_pct ?? ''} waist_start: ${$json.waist_start ?? ''} waist_end: ${$json.waist_end ?? ''} waist_delta: ${$json.waist_delta ?? ''} bmi_start: ${$json.bmi_start ?? ''} bmi_end: ${$json.bmi_end ?? ''} bmi_delta: ${$json.bmi_delta ?? ''} approx_weeks: ${$json.approx_weeks ?? ''} expected_delta_kg: ${$json.expected_delta_kg ?? ''} pct_to_target: ${$json.pct_to_target ?? ''} weeks_with_checkin: ${$json.weeks_with_checkin ?? ''} adherence_avg: ${$json.adherence_avg ?? ''} energy_avg: ${$json.energy_avg ?? ''} pantry_days: ${$json.pantry_days ?? ''} ingredients_distinct: ${$json.ingredients_distinct ?? ''} plan_days: ${$json.plan_days ?? ''} msgs_in: ${$json.msgs_in ?? ''} msgs_out: ${$json.msgs_out ?? ''} \n`}}\n"
+            },
+            {
+              "content": "=🧠 System — Informe Mensual Nutricional (v1.1)\n\nEres un analista nutricional (español de Colombia) que prepara un informe mensual personalizado por paciente a partir de un JSON con métricas ya calculadas (no inventes ni estimes valores que no están). Escribe con calidez, simple y accionable.\n\nEstilo\n\t•\tCercano, profesional y positivo; tutea.\n\t•\t4–7 líneas; buen respiro visual; máx. 3 emojis.\n\t•\tSin tecnicismos innecesarios; nada de “base de datos”.\n\t•\tFormatos numéricos: peso 0,1 kg, cintura entero (cm), IMC 1 decimal, porcentajes 0–1 decimal. Unidades: kg, cm.\n\nDatos de entrada\n\nRecibirás una fila JSON con algunos o todos estos campos (usa solo los presentes; si algo falta o es null, no lo inventes):\n\t•\tIdentidad: patient_id, full_name, age_years, sex, height_cm.\n\t•\tMeta activa: goal_type (lose|maintain|gain), target_metric, target_value, weekly_rate_kg, deadline, goal_status.\n\t•\tLínea base del goal: start_weight_kg, start_waist_cm.\n\t•\tFin de mes / progreso: weight_start, weight_end, weight_delta, weight_delta_pct, waist_start, waist_end, waist_delta, bmi_start, bmi_end, bmi_delta, pct_to_target, expected_delta_kg, approx_weeks.\n\t•\tHábitos/seguimiento: weeks_with_checkin, adherence_avg, energy_avg, pantry_days, ingredients_distinct, plan_days, msgs_in, msgs_out.\n\t•\tContexto: activity_level, dietary_pattern, month_start, month_end.\n\nSi un dato está ausente o null, muéstralo como NA en KPIs y no lo menciones en el texto.\n\nInterpretación\n\t•\tRitmo esperado vs. real: si hay weekly_rate_kg y weight_delta, compáralos (≈ 4 semanas/mes).\n\t•\tProgreso hacia objetivo: si hay start_weight_kg, target_value y weight_end, comenta avance en kg y %.\n\t•\tAdherencia/Energía: interpreta simple (≥4 “muy bien”, 3 “ok”, ≤2 “a revisar”).\n\n⚠️ Cierre obligatorio\n\t•\tEl mensaje de WhatsApp debe terminar SIEMPRE con esta línea exacta (incluye el emoji):\n\t•\t📄 Te acabo de enviar tu informe detallado en un archivo.\n\nSalida (JSON estricto)\n\nDevuelve exclusivamente un JSON válido que cumpla exactamente con el siguiente JSON Schema.\n- No incluyas texto fuera del JSON.\n- No cambies nombres de claves.\n- Mantén la clave \"0\" como string.\n- Respeta los tipos y longitudes indicadas.\n- index debe ser 0.\n- logprobs siempre null.\n- finish_reason siempre \"stop\".\nCualquier contenido dinámico debe colocarse en los campos de texto indicados sin alterar la estructura.\n\n[\n  {\n            \"content\": {\n              \"whatsapp_text\": \"Hola Alejandro 😊, veo que comenzaste el mes con un peso de 92,0 kg y mantienes ese valor hasta ahora. Aunque no hay pérdida de peso aún, sigamos enfocados en tu meta de llegar a 83,0 kg. Tu IMC actual es de 27,5, que es un buen punto de partida para perder peso poco a poco. Con una adherencia satisfactoria y energía en buen nivel, ¡estás en camino! Avancemos con pequeños ajustes para mejorar esta semana. 📄 Te acabo de enviar tu informe detallado en un archivo.\",\n              \"report\": {\n                \"title\": \"Informe mensual — Alejandro Romero (2025-10)\",\n                \"period\": \"2025-10\",\n                \"kpis\": [\n                  { \"label\": \"Peso inicial (meta)\", \"value\": \"92,0\" },\n                  { \"label\": \"Peso actual\", \"value\": \"92,0\", \"trend\": \"flat\", \"delta\": \"±0,0\" },\n                  { \"label\": \"Cintura actual\", \"value\": \"NA\", \"delta\": \"NA\" },\n                  { \"label\": \"IMC\", \"value\": \"27,5\", \"delta\": \"NA\" },\n                  { \"label\": \"Avance vs. objetivo\", \"value\": \"0,0%\" },\n                  { \"label\": \"Ritmo esperado vs. real\", \"value\": \"NA\" },\n                  { \"label\": \"Adherencia promedio\", \"value\": \"NA\" },\n                  { \"label\": \"Energía promedio\", \"value\": \"4,0\" },\n                  { \"label\": \"Días con despensa\", \"value\": \"1\" },\n                  { \"label\": \"Ingredientes distintos\", \"value\": \"10\" },\n                  { \"label\": \"Días con plan guardado\", \"value\": \"1\" }\n                ],\n                \"wins\": [\n                  \"Has mantenido tu peso inicial sin aumento.\",\n                  \"Tu energía promedio de 4/5 indica buena vitalidad para avanzar.\",\n                  \"Estás utilizando variedad en tus ingredientes, lo que ayuda a la alimentación balanceada.\"\n                ],\n                \"opportunities\": [\n                  \"Incrementar la frecuencia de chequeos para mejorar el seguimiento.\",\n                  \"Considerar aumentar actividad física, aunque sea poco a poco, para apoyar la meta.\",\n                  \"Planificar más días con menú guardado para facilitar la adherencia diaria.\"\n                ],\n                \"next_week_plan\": [\n                  \"Registra tu peso y cintura al menos dos veces más esta semana.\",\n                  \"Incluye una caminata diaria de 15 minutos para mejorar actividad física.\",\n                  \"Prepara un nuevo plato saludable con al menos 3 ingredientes distintos.\"\n                ],\n                \"cta\": \"Por favor, envíame tu próximo peso y medida de cintura el próximo miércoles para actualizar tu plan.\",\n                \"disclaimer\": \"Este informe es educativo y no reemplaza la valoración médica.\"\n              }\n            },\n            \n  }\n]\n\nReglas de validación:\n\t•\tNo agregues texto fuera del JSON.\n\t•\tRespeta la última línea exacta del cierre obligatorio en whatsapp_text.\n\t•\tMáximo 3 emojis en todo el whatsapp_text (el del cierre cuenta).",
+              "role": "system"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        0,
+        688
+      ],
+      "id": "f38c35ea-09b4-42f8-9c05-e4e5642c377b",
+      "name": "Message a model2",
+      "alwaysOutputData": true,
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Angel",
+        "remoteJid": "={{ $('Loop Over Items2').item.json.phone_e164.replace('+','') }}@s.whatsapp.net",
+        "messageText": "={{ $json.message.content['0'].content.whatsapp_text }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        800,
+        608
+      ],
+      "id": "90b99cdb-c7b1-4de6-ac56-1249a80bfe5e",
+      "name": "Enviar texto2",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nINSERT INTO nutri_bot.historial_conversaciones (session_id, message)\nVALUES (\n  $1,\n  jsonb_build_object(\n    'type','ai',\n    'content',\n      (\n        -- construimos JSON con el builder y lo convertimos a STRING\n        jsonb_build_object(\n          'output',\n          jsonb_build_object(\n            'mensaje_respuesta', '{{ $('Message a model2').item.json.message.content['0'].content.whatsapp_text }}',\n            'cliente_nombre',    $2\n          )\n        )::text\n      ),\n    'tool_calls',         '[]'::jsonb,\n    'additional_kwargs',  '{}'::jsonb,\n    'response_metadata',  '{}'::jsonb,\n    'invalid_tool_calls', '[]'::jsonb\n  )\n);\n",
+        "options": {
+          "queryReplacement": "={{ $('Loop Over Items2').item.json.phone_e164.replace('+','') }},{{ $('Loop Over Items2').item.json.full_name }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2112,
+        768
+      ],
+      "id": "785b3bed-880b-45fc-8532-03aec032b815",
+      "name": "Execute a SQL query11",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Servidor_N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- $1 = session_id (text)                      ej: '573005660816'\n-- $2 = mensaje_del_cliente (text)             ej: 'dale….'\n-- $3 = telefono_del_cliente (text)            ej: '+573005660816'\n-- $4 = key_Postgres_Chat_Memory (text)        ej: '573005660816'\n\nINSERT INTO public.n8n_chat_histories_nutricionista (session_id, message)\nVALUES (\n  $1,\n  jsonb_build_object(\n    'type', 'human',\n    'content',\n      concat(\n        'status: active',                       E'\\n',\n        'mensaje_del_cliente: Buenos dias... quiero mi informe mensual',           E'\\n',\n        'telefono_del_cliente: ', $2,           E'\\n',\n        'key_Postgres_Chat_Memory: ', $1\n      ),\n    'additional_kwargs', '{}'::jsonb,\n    'response_metadata', '{}'::jsonb\n  )\n);\n",
+        "options": {
+          "queryReplacement": "={{ $('Loop Over Items2').item.json.phone_e164.replace('+','') }},{{ $('Loop Over Items2').item.json.phone_e164 }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1888,
+        688
+      ],
+      "id": "9d70f35b-6a62-4d42-96e4-86172b970c70",
+      "name": "Execute a SQL query12",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Servidor_N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "html": "<!doctype html>\n<html lang=\"es\">\n<head>\n  <meta charset=\"utf-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n  <title>{{ $json.message.content[\"0\"].content.report.title }}</title>\n  <style>\n    :root{\n      --bg:#ffffff;\n      --text:#111827;\n      --muted:#6b7280;\n      --brand:#0ea5e9;\n      --ok:#16a34a;\n      --warn:#f59e0b;\n      --danger:#ef4444;\n      --card:#ffffff;\n      --line:#e5e7eb;\n      --shadow: 0 8px 24px rgba(0,0,0,.08);\n      --radius:16px;\n    }\n    *{box-sizing:border-box}\n    body{margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,\"Noto Sans\",sans-serif}\n    .page{max-width:960px; margin:36px auto; padding:0 20px}\n    .header{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:20px}\n    .title{display:flex; gap:10px; align-items:center; flex-wrap:wrap}\n    .title h1{margin:0; font-size:22px}\n    .period{margin-left:auto; color:var(--muted); font-weight:600}\n    .chip{display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); background:#f8fafc; padding:6px 10px; border-radius:999px; color:#0f172a}\n    .hr{height:1px; background:var(--line); margin:16px 0}\n    .callout{background:#f1f5f9; border:1px solid var(--line); border-radius:12px; padding:14px; color:#0f172a}\n    .grid{display:grid; gap:14px}\n    .kpis{grid-template-columns:repeat(4,minmax(0,1fr))}\n    @media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}\n    @media (max-width:560px){.kpis{grid-template-columns:1fr}}\n    .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px}\n    .kpi .label{color:var(--muted); font-size:12px; letter-spacing:.2px}\n    .kpi .value{margin-top:8px; font-size:22px; font-weight:700}\n    .kpi .sub{margin-top:6px; font-size:12px; color:var(--muted)}\n    .section{margin-top:18px}\n    .section h2{margin:0 0 10px; font-size:16px}\n    .list{display:grid; gap:10px}\n    .pill{display:flex; gap:10px; border:1px solid var(--line); background:#f8fafc; border-radius:12px; padding:12px}\n    .idx{min-width:22px; height:22px; border-radius:6px; display:grid; place-items:center; font-size:12px; font-weight:700; color:#0284c7; background:#e0f2fe; border:1px solid #bae6fd}\n    .cta{background:#ecfeff; border:1px solid #a5f3fc; color:#064e3b; border-radius:12px; padding:14px}\n    .disc{margin-top:8px; color:var(--muted); font-size:12px}\n  </style>\n</head>\n<body>\n  <div class=\"page\">\n\n    <div class=\"header\">\n      <div class=\"title\">\n        <h1>{{ $json.message.content[0].content.report.title }}</h1>\n        <span class=\"period\">{{ $json.message.content[0].content.report.period }}</span>\n      </div>\n\n      <div class=\"hr\"></div>\n\n      <div class=\"callout\">\n        {{ $json.message.content[0].content.whatsapp_text }}\n      </div>\n\n      <div class=\"hr\"></div>\n\n      <div class=\"grid kpis\">\n        <!-- KPI 0 -->\n        <div class=\"card kpi\">\n          <div class=\"label\">{{ $json.message.content[0].content.report.kpis[0].label }}</div>\n          <div class=\"value\">{{ $json.message.content[0].content.report.kpis[0].value }}</div>\n          <div class=\"sub\">\n            {{ $json.message.content[0].content.report.kpis[0].trend }} {{ $json.message.content[0].content.report.kpis[0].delta }}\n          </div>\n        </div>\n        <!-- KPI 1 -->\n        <div class=\"card kpi\">\n          <div class=\"label\">{{ $json.message.content[0].content.report.kpis[1].label }}</div>\n          <div class=\"value\">{{ $json.message.content[0].content.report.kpis[1].value }}</div>\n          <div class=\"sub\">\n            {{ $json.message.content[0].content.report.kpis[1].trend }} {{ $json.message.content[0].content.report.kpis[1].delta }}\n          </div>\n        </div>\n        <!-- KPI 2 -->\n        <div class=\"card kpi\">\n          <div class=\"label\">{{ $json.message.content[0].content.report.kpis[2].label }}</div>\n          <div class=\"value\">{{ $json.message.content[0].content.report.kpis[2].value }}</div>\n          <div class=\"sub\">\n            {{ $json.message.content[0].content.report.kpis[2].trend }} {{ $json.content[0].message.content.report.kpis[2].delta }}\n          </div>\n        </div>\n        <!-- KPI 3 -->\n        <div class=\"card kpi\">\n          <div class=\"label\">{{ $json.message.content[0].content.report.kpis[3].label }}</div>\n          <div class=\"value\">{{ $json.message.content[0].content.report.kpis[3].value }}</div>\n          <div class=\"sub\">\n            {{ $json.message.content[0].content.report.kpis[3].trend }} {{ $json.message.content[0].content.report.kpis[3].delta }}\n          </div>\n        </div>\n        <!-- KPI 4 -->\n        <div class=\"card kpi\">\n          <div class=\"label\">{{ $json.message.content[0].content.report.kpis[4].label }}</div>\n          <div class=\"value\">{{ $json.message.content[0].content.report.kpis[4].value }}</div>\n          <div class=\"sub\">\n            {{ $json.message.content[0].content.report.kpis[4].trend }} {{ $json.message.content[0].content.report.kpis[4].delta }}\n          </div>\n        </div>\n        <!-- KPI 5 -->\n        <div class=\"card kpi\">\n          <div class=\"label\">{{ $json.message.content[0].content.report.kpis[5].label }}</div>\n          <div class=\"value\">{{ $json.message.content[0].content.report.kpis[5].value }}</div>\n          <div class=\"sub\">\n            {{ $json.message.content[0].content.report.kpis[5].trend }} {{ $json.message.content[0].content.report.kpis[5].delta }}\n          </div>\n        </div>\n        <!-- KPI 6 -->\n        <div class=\"card kpi\">\n          <div class=\"label\">{{ $json.message.content[0].content.report.kpis[6].label }}</div>\n          <div class=\"value\">{{ $json.message.content[0].content.report.kpis[6].value }}</div>\n          <div class=\"sub\">\n            {{ $json.message.content[0].content.report.kpis[6].trend }} {{ $json.message.content[0].content.report.kpis[6].delta }}\n          </div>\n        </div>\n        <!-- KPI 7 -->\n        <div class=\"card kpi\">\n          <div class=\"label\">{{ $json.message.content[0].content.report.kpis[7].label }}</div>\n          <div class=\"value\">{{ $json.message.content[0].content.report.kpis[7].value }}</div>\n          <div class=\"sub\">\n            {{ $json.message.content[0].content.report.kpis[7].trend }} {{ $json.message.content[0].content.report.kpis[7].delta }}\n          </div>\n        </div>\n        <!-- KPI 8 -->\n        <div class=\"card kpi\">\n          <div class=\"label\">{{ $json.message.content[0].content.report.kpis[8].label }}</div>\n          <div class=\"value\">{{ $json.message.content[0].content.report.kpis[8].value }}</div>\n          <div class=\"sub\">\n            {{ $json.message.content[0].content.report.kpis[8].trend }} {{ $json.message.content[0].content.report.kpis[8].delta }}\n          </div>\n        </div>\n        <!-- KPI 9 -->\n        <div class=\"card kpi\">\n          <div class=\"label\">{{ $json.message.content[0].content.report.kpis[9].label }}</div>\n          <div class=\"value\">{{ $json.message.content[0].content.report.kpis[9].value }}</div>\n          <div class=\"sub\">\n            {{ $json.message.content[0].content.report.kpis[9].trend }} {{ $json.message.content[0].content.report.kpis[9].delta }}\n          </div>\n        </div>\n        <!-- KPI 10 -->\n        <div class=\"card kpi\">\n          <div class=\"label\">{{ $json.message.content[0].content.report.kpis[10].label }}</div>\n          <div class=\"value\">{{ $json.message.content[0].content.report.kpis[10].value }}</div>\n          <div class=\"sub\">\n            {{ $json.message.content[0].content.report.kpis[10].trend }} {{ $json.message.content[0].content.report.kpis[10].delta }}\n          </div>\n        </div>\n      </div>\n    </div>\n\n    <div class=\"section\">\n      <h2>🎯 Logros del mes</h2>\n      <div class=\"list\">\n        <div class=\"pill\"><div class=\"idx\">1</div><div>{{ $json.message.content[0].content.report.wins[0] }}</div></div>\n        <div class=\"pill\"><div class=\"idx\">2</div><div>{{ $json.message.content[0].content.report.wins[1] }}</div></div>\n        <div class=\"pill\"><div class=\"idx\">3</div><div>{{ $json.message.content[0].content.report.wins[2] }}</div></div>\n      </div>\n    </div>\n\n    <div class=\"section\">\n      <h2>🔍 Oportunidades</h2>\n      <div class=\"list\">\n        <div class=\"pill\"><div class=\"idx\">1</div><div>{{ $json.message.content[0].content.report.opportunities[0] }}</div></div>\n        <div class=\"pill\"><div class=\"idx\">2</div><div>{{ $json.message.content[0].content.report.opportunities[1] }}</div></div>\n        <div class=\"pill\"><div class=\"idx\">3</div><div>{{ $json.message.content[0].content.report.opportunities[2] }}</div></div>\n      </div>\n    </div>\n\n    <div class=\"section\">\n      <h2>🗓️ Plan de la próxima semana</h2>\n      <div class=\"list\">\n        <div class=\"pill\"><div class=\"idx\">1</div><div>{{ $json.message.content[0].content.report.next_week_plan[0] }}</div></div>\n        <div class=\"pill\"><div class=\"idx\">2</div><div>{{ $json.message.content[0].content.report.next_week_plan[1] }}</div></div>\n        <div class=\"pill\"><div class=\"idx\">3</div><div>{{ $json.message.content[0].content.report.next_week_plan[2] }}</div></div>\n      </div>\n    </div>\n\n    <div class=\"section\">\n      <div class=\"cta\">{{ $json.message.content[0].content.report.cta }}</div>\n      <div class=\"disc\">{{ $json.message.content[0].content.report.disclaimer }}</div>\n    </div>\n\n  </div>\n</body>\n</html>\n"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        352,
+        784
+      ],
+      "id": "3d48a745-9252-4818-98fa-f22b88321099",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "operation": "send-document",
+        "instanceName": "Angel",
+        "remoteJid": "={{ $('Loop Over Items2').item.json.phone_e164.replace('+','') }}@s.whatsapp.net",
+        "media": "={{ $json.url }}",
+        "caption": "=",
+        "fileName": "={{ $('Message a model2').item.json.message.content['0'].content.report.title }}.pdf",
+        "options_message": {
+          "delay": 3000
+        }
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        784
+      ],
+      "id": "8ed6a521-c616-4462-b4af-dcc5f60d332f",
+      "name": "Enviar documento",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1664,
+        688
+      ],
+      "id": "7c94d841-7405-45a9-bb90-298c5d6680f2",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "URL/HTML to PDF",
+        "convertType": "htmlToPDF",
+        "html": "={{ $json.html }}",
+        "advancedOptions": {}
+      },
+      "type": "n8n-nodes-pdfco.PDFco Api",
+      "typeVersion": 1,
+      "position": [
+        784,
+        784
+      ],
+      "id": "99d6c00e-c9e0-41be-9dcb-28b3240d1812",
+      "name": "PDFco Api",
+      "credentials": {
+        "pdfcoApi": {
+          "id": "[REMOVED]",
+          "name": "Angel SolutechIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1,
+                2,
+                3,
+                4,
+                5
+              ],
+              "triggerAtHour": 7
+            },
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1,
+                2,
+                3,
+                4,
+                5
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -896,
+        80
+      ],
+      "id": "1dbc05ff-fda8-4e77-9954-8a670d8a481b",
+      "name": "Diario"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                6
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -896,
+        368
+      ],
+      "id": "a701b37b-012b-49ec-aff2-84ca4db31c34",
+      "name": "Semanal"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "triggerAtDayOfMonth": 28,
+              "triggerAtHour": 11
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -896,
+        768
+      ],
+      "id": "0e5c2ac6-0399-4558-864a-3fb4cc6c1ded",
+      "name": "Mensual"
+    }
+  ],
+  "pinData": {
+    "Execute a SQL query": [
+      {
+        "json": {
+          "patient_id": "26",
+          "full_name": "Angel Aparicio Peraire",
+          "phone_e164": "+34722324719",
+          "email": null,
+          "timezone": "America/Bogota",
+          "patient_status": "active",
+          "daily_contact_hour": 16,
+          "portion_style": "mixto"
+        }
+      }
+    ],
+    "Diario": [
+      {
+        "json": {
+          "timestamp": "2025-10-23T16:28:06.307-05:00",
+          "Readable date": "October 23rd 2025, 4:28:06 pm",
+          "Readable time": "4:28:06 pm",
+          "Day of week": "Thursday",
+          "Year": "2025",
+          "Month": "October",
+          "Day of month": "23",
+          "Hour": "16",
+          "Minute": "28",
+          "Second": "06",
+          "Timezone": "America/Bogota (UTC-05:00)"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Enviar texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar texto": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query3": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query4": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Execute a SQL query5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query5": {
+      "main": [
+        [
+          {
+            "node": "Message a model1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Enviar texto1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar texto1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query6": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query7": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query8": {
+      "main": [
+        [
+          {
+            "node": "Message a model2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query9": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items2": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Execute a SQL query8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model2": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Enviar texto2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar texto2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query11": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query12": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query11",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "PDFco Api",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar documento": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query12",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDFco Api": {
+      "main": [
+        [
+          {
+            "node": "Enviar documento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Diario": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Semanal": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensual": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5410c949-64ef-4a0c-9209-5e700eadb398",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "HdqNhLlLGL9MVvDY",
+  "tags": []
+}

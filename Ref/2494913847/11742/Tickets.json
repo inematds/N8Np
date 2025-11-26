@@ -1,0 +1,1401 @@
+{
+  "name": "Tickets",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Clasifica la solicitud de soporte a continuación:\nMensaje: {{ $json.mensaje }}\n\nDevuelve la salida con columnas 'categoría' y 'sentimiento' y 'urgencia' del ARCHIVO JSON:\n\n{\n  \"categoria\": uno de [\"Facturación\", \"Informe de Error\", \"Solicitud de Función\", \"Cómo se hace\", \"Queja\"],\n  \"sentimiento\": uno de [\"Positivo\", \"Neutral\", \"Negativo\"],\n  \"urgencia\": uno de [“Alta”, “Media”, “Baja”]\n}\n",
+        "hasOutputParser": true
+      },
+      "id": "1ce74022-7519-4cd9-ad91-fc9189aff373",
+      "name": "AI Categorization",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        -80,
+        224
+      ],
+      "typeVersion": 1.5
+    },
+    {
+      "parameters": {
+        "content": "🟨 Notifica al responsable según la categoría asignada.\nSe envía el ticket al email correspondiente definido en la lógica del flujo.",
+        "height": 120,
+        "width": 230
+      },
+      "id": "35b430dc-0fed-4ce2-975b-371eeff73ba6",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1136,
+        16
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "formTitle": "Centro de Ayuda – Crear Nuevo Ticket",
+        "formDescription": "Por favor, completa este formulario para enviarnos tu solicitud. Nuestro equipo de soporte la revisará y te responderá lo antes posible.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "nombre",
+              "placeholder": "¿Cuál es tu nombre?",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "email",
+              "placeholder": "Tu correo de contacto",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "mensaje",
+              "placeholder": "Cuéntanos en detalle qué sucede",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -256,
+        224
+      ],
+      "id": "25134ce4-aaa5-41b7-a437-dc79079c49a5",
+      "name": "On form submission",
+      "webhookId": "8790ec07-e2d4-47db-9824-4dc7fdab9827"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1"
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -128,
+        432
+      ],
+      "id": "c5e3c004-c259-46a5-b3c2-ee03b3aacc99",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tickets_soporte",
+          "mode": "list",
+          "cachedResultName": "tickets_soporte"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre": "={{ $('On form submission').item.json.nombre }}",
+            "email": "={{ $('On form submission').item.json.email }}",
+            "mensaje": "={{ $('On form submission').item.json.mensaje }}",
+            "sentimiento": "={{ $json.output.sentimiento }}",
+            "urgencia": "={{ $json.output.urgencia }}",
+            "categoria": "={{ $json.output.categoria }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mensaje",
+              "displayName": "mensaje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "sentimiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "urgencia",
+              "displayName": "urgencia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria",
+              "displayName": "categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "resuelto",
+              "displayName": "resuelto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        368,
+        224
+      ],
+      "id": "b3ee7377-7b1b-476b-9b9e-7c3ba1c9543e",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH \ncategorias_fijas AS (\n    SELECT 'Facturación' AS nombre UNION\n    SELECT 'Informe de Error' UNION\n    SELECT 'Solicitud de Función' UNION\n    SELECT 'Cómo Hacer' UNION\n    SELECT 'Queja'\n),\nurgencias_fijas AS (\n    SELECT 'Alta' AS nombre UNION\n    SELECT 'Media' UNION\n    SELECT 'Baja'\n),\nconteo_categoria AS (\n    SELECT categoria AS nombre, COUNT(*) AS total\n    FROM public.tickets_soporte\n    WHERE resuelto IS NOT TRUE\n    GROUP BY categoria\n),\nconteo_urgencia AS (\n    SELECT urgencia AS nombre, COUNT(*) AS total\n    FROM public.tickets_soporte\n    WHERE resuelto IS NOT TRUE\n    GROUP BY urgencia\n),\ncategorias_resultado AS (\n    SELECT \n        c.nombre AS nombre_categoria,\n        COALESCE(cc.total, 0) AS total_categoria\n    FROM categorias_fijas c\n    LEFT JOIN conteo_categoria cc ON cc.nombre = c.nombre\n),\nurgencias_resultado AS (\n    SELECT \n        u.nombre AS nombre_urgencia,\n        COALESCE(cu.total, 0) AS total_urgencia\n    FROM urgencias_fijas u\n    LEFT JOIN conteo_urgencia cu ON cu.nombre = u.nombre\n)\n\nSELECT json_build_object(\n    'categorias', (\n        SELECT json_agg(json_build_object('nombre', nombre_categoria, 'total', total_categoria) ORDER BY nombre_categoria)\n        FROM categorias_resultado\n    ),\n    'urgencias', (\n        SELECT json_agg(json_build_object('nombre', nombre_urgencia, 'total', total_urgencia) ORDER BY nombre_urgencia)\n        FROM urgencias_resultado\n    )\n) AS resumen;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        544,
+        224
+      ],
+      "id": "5c0599f8-e1cb-46ca-8130-a63c489875ad",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email_destino }}",
+        "subject": "=Nuevo ticket asignado – Categoría {{ $('AI Categorization').item.json.output.categoria }}",
+        "message": "=<html>\n  <body style=\"font-family: Arial, sans-serif; color: #333;\">\n    <p>Hola,</p>\n\n    <p>Se ha generado un nuevo ticket en la categoría <strong>{{ $('AI Categorization').item.json.output.categoria }}</strong>, asignado a tu equipo.</p>\n\n    <p><strong>Detalles del ticket:</strong></p>\n    <ul>\n      <li><strong>Cliente:</strong> {{ $('On form submission').item.json.nombre }}</li>\n      <li><strong>Correo:</strong> {{ $('On form submission').item.json.email }}</li>\n      <li><strong>Urgencia:</strong> {{ $('AI Categorization').item.json.output.urgencia }}</li>\n      <li><strong>Mensaje:</strong> {{ $('On form submission').item.json.mensaje }}</li>\n    </ul>\n\n    <p>Te agradecemos revisar este caso y tomar las acciones correspondientes.</p>\n\n    <p>Por favor, actualiza el estado del ticket una vez resuelto para mantener informados a los demás equipos.</p>\n\n    <div style=\"margin: 30px 0;\">\n      <a href=\"https://aawebhookaa.vps.rubikmarketing.com.co/webhook/2d23a8aa-0e8d-4900-8733-434380a60046?id={{ $('Insert rows in a table').item.json.id }}\"\n         style=\"display: inline-block; padding: 10px 20px; background-color: #2ecc71; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n        ✅ Marcar como completado\n      </a>\n    </div>\n\n    <p>Gracias por tu gestión,<br>Soporte Técnico</p>\n\n    <hr style=\"margin-top: 40px;\">\n    <small>Este mensaje fue enviado automáticamente por el sistema de soporte.</small>\n  </body>\n</html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        912,
+        32
+      ],
+      "id": "e4fd64e7-8d8f-4828-90b8-5a27c3af8d33",
+      "name": "Envio email a categoria",
+      "webhookId": "26df1dd2-6e8c-4415-84da-c2ee24613568",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('On form submission').item.json.email }}",
+        "subject": "Hemos recibido tu solicitud de soporte – Ticket",
+        "emailType": "text",
+        "message": "=Gracias por contactarnos. \n\nHemos recibido tu solicitud y ya ha sido registrada.\n\nNuestro equipo de soporte está revisando tu caso y te daremos una respuesta lo antes posible. \n\nResumen de tu solicitud: \nCategoría: {{ $('AI Categorization').item.json.output.categoria }}\nUrgencia:  {{ $('AI Categorization').item.json.output.urgencia }}\nMensaje:   {{ $('On form submission').item.json.mensaje }}\n\nTe mantendremos informado sobre cualquier actualización. \n\nSi tienes información adicional que quieras compartir, simplemente responde a este correo.  \n\n¡Gracias por tu confianza!  \n\nSaludos, \n\nEquipo de Soporte",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        912,
+        208
+      ],
+      "id": "79c407a6-80d2-4429-82a3-cfaf4e9ca3e6",
+      "name": "Envio email a cliente",
+      "webhookId": "26df1dd2-6e8c-4415-84da-c2ee24613568",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "gerencia@tuempresa.com",
+        "subject": "Informe diario – Tickets abiertos sin resolver",
+        "emailType": "text",
+        "message": "=Hola equipo de gerencia,  \n\nA continuación se presenta el resumen de los tickets abiertos (no resueltos) hasta la fecha:  \n\n📊 Tickets por Categoría: \n- Facturación: {{ $json.resumen.categorias[1].total }}  \n- Informe de Error: {{ $json.resumen.categorias[2].total }}  \n- Solicitud de Función: {{ $json.resumen.categorias[4].total }}  \n- Cómo Hacer: {{ $json.resumen.categorias[0].total }}  \n- Queja: {{ $json.resumen.categorias[3].total }}  \n\n🔥 Tickets por Urgencia: \n- Alta: {{ $json.resumen.urgencias[0].total }}  \n- Media: {{ $json.resumen.urgencias[2].total }}  \n- Baja: {{ $json.resumen.urgencias[1].total }}  \n\nTotal general: {{ $json.resumen.urgencias[0].total + $json.resumen.urgencias[1].total +  $json.resumen.urgencias[2].total}}  \n\nEste reporte se genera automáticamente para mantener visibilidad sobre el estado actual de soporte. \n\nCualquier categoría con cero tickets igualmente aparece listada para facilitar el seguimiento constante. \n\nSaludos,\n\nÁrea de Soporte",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        912,
+        368
+      ],
+      "id": "03337123-ca8f-49d7-a17d-ebafef0bea97",
+      "name": "Envio email a Gerencia",
+      "webhookId": "26df1dd2-6e8c-4415-84da-c2ee24613568",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "email_destino",
+              "value": "={{\n  $node[\"AI Categorization\"].json.output.categoria == 'Facturación' && 'soporte.facturacion@tuempresa.com' ||\n  $node[\"AI Categorization\"].json.output.categoria == 'Informe de Error' && 'bugs@tuempresa.com' ||\n  $node[\"AI Categorization\"].json.output.categoria == 'Solicitud de Función' && 'features@tuempresa.com' ||\n  $node[\"AI Categorization\"].json.output.categoria == 'Cómo Hacer' && 'ayuda@tuempresa.com' ||\n  $node[\"AI Categorization\"].json.output.categoria == 'Queja' && 'calidad@tuempresa.com' ||\n  'soporte@tuempresa.com'\n}}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        736,
+        32
+      ],
+      "id": "7beaf349-6b04-4125-962f-419dcac93604",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "content": "🟨 Reporte automático a gerencia con resumen general.\nIncluye totales por categoría y urgencia generados en el paso anterior.",
+        "height": 120,
+        "width": 230
+      },
+      "id": "4216e99e-9b8f-495e-b5f1-bfa005cce728",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1136,
+        384
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "🟨 Confirmación automática al cliente.\nCorreo de confirmación con resumen de la solicitud y número de ticket.",
+        "height": 120,
+        "width": 230
+      },
+      "id": "0aed3d65-7d96-483d-9915-03f31de9bfd7",
+      "name": "Sticky Note8",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1136,
+        208
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -256,
+        768
+      ],
+      "id": "0c78b271-22b4-44a4-8331-24a4532ca769",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Tickets sin resolver:\n{{ $json.content }}\n\nHoy es: {{ $now.format('yyyy-MM-dd') }}",
+        "options": {
+          "systemMessage": "=## 🎯 Prompt del Agente Autónomo – Revisión y Escalamiento de Tickets\n\nActúas como un agente autónomo encargado de revisar los tickets abiertos en una mesa de soporte técnico.\n\nRecibirás una lista de tickets con los siguientes campos:\n\n- ID  \n- Nombre del cliente  \n- Email del cliente  \n- Categoría (`Facturación`, `Informe de Error`, `Solicitud de Función`, `Cómo Hacer`, `Queja`)  \n- Urgencia actual (`Baja`, `Media`, `Alta`)  \n- Timestamp de creación  \n- Estado (`resuelto: true/false`)  \n- Mensaje original  \n\n---\n\n### 🟢 1. Actualizar urgencia automáticamente (Postgres Tool)\n\n- Si un ticket tiene urgencia **Media** y han pasado **más de 48 horas sin resolverse**, cambia su urgencia a **Alta**.  \n- Si un ticket tiene urgencia **Baja** y han pasado **más de 72 horas sin resolverse**, cambia su urgencia a **Media**.  \n\nUsa esta estructura con la herramienta postgres.update():\n\npostgres.update({  \n&nbsp;&nbsp;&nbsp;&nbsp;id: valor_id_del_ticket,  \n&nbsp;&nbsp;&nbsp;&nbsp;urgencia: \"nueva_urgencia\"  \n})\n\nEjemplo:\n\npostgres.update({  \n&nbsp;&nbsp;&nbsp;&nbsp;id: 1542,  \n&nbsp;&nbsp;&nbsp;&nbsp;urgencia: \"Alta\"  \n})\n\n---\n\n### 🟠 2. Enviar correo HTML a gerencia (Gmail Tool)\n\nSi un ticket tiene urgencia **Alta** y lleva **más de 24 horas sin resolverse**, envía un correo a gerencia usando gmail.send():\n\n- to: gerencia@tuempresa.com  \n- subject: [Alerta] Ticket urgente sin resolver – ID {{id}}  \n- html_body:\n\n<html>\n  <body style=\"font-family: Arial, sans-serif; color: #333;\">\n    <h2 style=\"color: #c0392b;\">⚠️ Alerta: Ticket urgente sin resolver</h2>\n    <p><strong>ID del ticket:</strong> {{id}}</p>\n    <p><strong>Cliente:</strong> {{nombre}}</p>\n    <p><strong>Correo:</strong> {{email}}</p>\n    <p><strong>Categoría:</strong> {{categoria}}</p>\n    <p><strong>Urgencia:</strong> {{urgencia}}</p>\n    <p><strong>Fecha de creación:</strong> {{timestamp}}</p>\n    <p><strong>Tiempo sin resolver:</strong> más de 24 horas</p>\n    <p><strong>Mensaje del cliente:</strong></p>\n    <blockquote style=\"border-left: 3px solid #ccc; margin: 10px 0; padding-left: 10px; color: #555;\">\n      {{mensaje}}\n    </blockquote>\n    <p style=\"margin-top: 20px;\">Por favor, tomar acción inmediata.</p>\n  </body>\n</html>\n\n---\n\n### 🔵 3. Enviar alerta HTML al responsable de categoría (Gmail Tool)\n\nPara **cada ticket sin resolver**, envía un correo de **alerta** al responsable de la categoría correspondiente.  \nEl correo debe incluir un botón que dispare un `POST` al webhook con el ID del ticket:\n\nhttps://aawebhookaa.vps.rubikmarketing.com.co/webhook/2d23a8aa-0e8d-4900-8733-434380a60046\n\n#### 🔧 Instrucciones para asignar correos por categoría:\n\nUtiliza esta asignación para saber a qué dirección enviar el correo según la categoría del ticket:\n\n- `'Facturación'` → `soporte.facturacion@tuempresa.com`  \n- `'Informe de Error'` → `bugs@tuempresa.com`  \n- `'Solicitud de Función'` → `features@tuempresa.com`  \n- `'Cómo Hacer'` → `ayuda@tuempresa.com`  \n- `'Queja'` → `calidad@tuempresa.com`\n\nCuando debas notificar a un responsable, asegúrate de usar esa lógica para definir el campo `to:` en el correo.\n\n\n**Parámetros del envío:**\n\n- to: correo correspondiente a la categoría  \n- subject: [Alerta] Ticket sin resolver – ID {{id}}  \n- html_body:\n\n<html>\n  <body style=\"font-family: Arial, sans-serif; color: #333;\">\n    <h2 style=\"color: #e67e22;\">🔔 Alerta: Ticket sin resolver</h2>\n    <p><strong>ID del ticket:</strong> {{id}}</p>\n    <p><strong>Cliente:</strong> {{nombre}}</p>\n    <p><strong>Correo:</strong> {{email}}</p>\n    <p><strong>Categoría:</strong> {{categoria}}</p>\n    <p><strong>Urgencia:</strong> {{urgencia}}</p>\n    <p><strong>Fecha de creación:</strong> {{timestamp}}</p>\n    <p><strong>Mensaje:</strong></p>\n    <blockquote style=\"border-left: 3px solid #ccc; margin: 10px 0; padding-left: 10px; color: #555;\">\n      {{mensaje}}\n    </blockquote>\n    <p style=\"margin-top: 20px;\">\n      <a href=\"https://aawebhookaa.vps.rubikmarketing.com.co/webhook/2d23a8aa-0e8d-4900-8733-434380a60046?id={{id}}\" target=\"_blank\" style=\"padding: 10px 20px; background-color: #27ae60; color: white; text-decoration: none; border-radius: 5px; display: inline-block;\">\n        ✅ Marcar como completado\n      </a>\n    </p>\n  </body>\n</html>\n---\n\n### 🚫 No hagas lo siguiente:\n\n- No generes reportes ni devuelvas ningún JSON  \n- No imprimas resultados ni confirmaciones  \n- Si no hay tickets que cumplan condiciones, **no hagas nada**  \n\nTu única función es:  \n- Actualizar urgencias cuando corresponde  \n- Enviar alertas a gerencia si aplica  \n- Enviar alertas a responsables de categoría con botón para marcar como completado\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        640,
+        768
+      ],
+      "id": "94fcfa17-c184-4055-af3d-2e713795a9af",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tickets_soporte",
+          "mode": "list",
+          "cachedResultName": "tickets_soporte"
+        },
+        "returnAll": true,
+        "where": {
+          "values": [
+            {
+              "column": "resuelto",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -48,
+        768
+      ],
+      "id": "4cedf5bf-f004-40f7-99b2-b5726c36a718",
+      "name": "Select rows from a table",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        192,
+        768
+      ],
+      "id": "8d4ac365-a069-4fb9-ac62-034aeb8bd181",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1024,
+        992
+      ],
+      "id": "d4985792-d4ce-4e36-98f5-ed4ec8d1bb12",
+      "name": "Send a message in Gmail",
+      "webhookId": "b1deaad4-aca9-4f85-8d25-a91ae52e03fa",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tickets_soporte",
+          "mode": "list",
+          "cachedResultName": "tickets_soporte"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "[REMOVED]",
+            "urgencia": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('urgencia', `Solo puede ser \"Alta\", \"Media\" o \"Baja\"`, 'string') }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "mensaje",
+              "displayName": "mensaje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "sentimiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "urgencia",
+              "displayName": "urgencia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria",
+              "displayName": "categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "resuelto",
+              "displayName": "resuelto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        768,
+        992
+      ],
+      "id": "17b55ce5-1859-4c62-b672-1a2ce6a896d0",
+      "name": "Update rows in a table in Postgres",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "content",
+              "value": "={{ \n  $json.data.map(t => \n    `ID: ${t.id}\\nCliente: ${t.nombre}\\nCorreo: ${t.email}\\nCategoría: ${t.categoria}\\nUrgencia: ${t.urgencia}\\nFecha: ${t.timestamp}\\nMensaje: ${t.mensaje}\\nResuelto: ${t.resuelto ? 'Sí' : 'No'}\\n---`\n  ).join('\\n\\n')\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        768
+      ],
+      "id": "20835405-0ed6-40c0-ab7b-6375d3492c10",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        544,
+        992
+      ],
+      "id": "50ecd7e5-1720-46cc-9a88-68d42f786c5a",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "2d23a8aa-0e8d-4900-8733-434380a60046",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        1312
+      ],
+      "id": "96cc1ef3-abab-4475-84a0-054bfe291d16",
+      "name": "Webhook",
+      "webhookId": "2d23a8aa-0e8d-4900-8733-434380a60046"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tickets_soporte",
+          "mode": "list",
+          "cachedResultName": "tickets_soporte"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "resuelto": true,
+            "id": "[REMOVED]"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "mensaje",
+              "displayName": "mensaje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "[REMOVED]",
+              "displayName": "sentimiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "urgencia",
+              "displayName": "urgencia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "categoria",
+              "displayName": "categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "resuelto",
+              "displayName": "resuelto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -48,
+        1312
+      ],
+      "id": "fa0c8d83-6d94-4f00-9ad9-7aba11d45afd",
+      "name": "Update rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "=Tu solicitud ha sido resuelta – Ticket #{{ $json.id }}",
+        "emailType": "text",
+        "message": "=Hola {{ $json.nombre }},\n\nQueremos informarte que hemos atendido y resuelto tu solicitud registrada bajo el ticket #{{ $json.id }}.\n\nCategoría: {{ $json.categoria }}\n\nFecha de creación: {{ $json.timestamp }}\n\nMensaje: {{ $json.mensaje }}\n\nSi consideras que el problema no ha sido solucionado completamente o tienes dudas adicionales, no dudes en responder a este correo y con gusto te ayudaremos.\n\nGracias por confiar en nosotros.\n\n— Equipo de Soporte\n\nEste mensaje fue enviado automáticamente por nuestra mesa de ayuda.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        192,
+        1312
+      ],
+      "id": "829b2f10-95a2-4b9d-a70a-a16ef3f5eaca",
+      "name": "Envio email a cliente1",
+      "webhookId": "26df1dd2-6e8c-4415-84da-c2ee24613568",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -256,
+        1648
+      ],
+      "id": "948a3baa-f810-42b4-8fb8-e08677262cbe",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM tickets_soporte\nWHERE timestamp >= NOW() - INTERVAL '1 month';\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -16,
+        1648
+      ],
+      "id": "ee381454-67fb-4550-98ef-ab1e963b7ce6",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "postgres": {
+          "id": "[REMOVED]",
+          "name": "Postgres Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "mensaje"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        208,
+        1648
+      ],
+      "id": "b7318d0d-9b6c-42af-ad20-7f8f13c98bf8",
+      "name": "Aggregate1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Mensajes de los clientes: {{ $json.mensaje }}"
+            },
+            {
+              "content": "=## 🎯 Análisis detallado de mensajes de soporte\n\nActúas como un analista experto en atención al cliente. A continuación, recibirás un listado de mensajes enviados por usuarios a través de tickets de soporte.\n\nTu tarea es analizar el conjunto de mensajes y entregar un informe que incluya:\n\n1. **Temas comunes o repetidos** detectados.\n2. **Sentimiento general** (positivo, neutro, negativo) y por qué.\n3. **Posibles causas o patrones** detrás de los mensajes.\n4. **Sugerencias para el equipo de soporte** para mejorar atención o anticiparse a los problemas.\n5. Si aplica, identificar **casos críticos o urgentes** por su lenguaje o contenido.\n\n---\n\n### 📨 Mensajes:\n\n- Tengo problemas con mi cuenta de correo  \n- Estoy muy molesto porque me cobraron de más  \n- Tengo problemas con mi cuenta de correo  \n\n---\n\n### 🧠 Recomendaciones:\nHaz el análisis como si se tratara de un informe ejecutivo. Usa viñetas si es necesario para claridad.\n\nNo devuelvas JSON ni estructura técnica. Solo el análisis bien redactado.",
+              "role": "system"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        384,
+        1648
+      ],
+      "id": "64bc074e-67ba-47e3-9f25-f525b8573c13",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "[REMOVED]",
+          "name": "N8N Servidor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "gerencia@tuempresa.com",
+        "subject": "=Informe de análisis de tickets de soporte – {{ $now.format('LLLL/yyyy') }}",
+        "message": "=<html>\n  <body style=\"font-family: Arial, sans-serif; color: #333;\">\n    <h2 style=\"color: #2c3e50;\">📊 Informe de Análisis de Tickets de Soporte</h2>\n\n    <p>Estimado equipo de gerencia,</p>\n\n    <p>Compartimos a continuación un análisis detallado de los mensajes recibidos recientemente a través de la mesa de soporte:</p>\n\n    <div>\n      {{ $json.data }}\n    </div>\n\n    <p style=\"margin-top: 40px;\">\n      Saludos cordiales,<br>\n      <strong>Equipo de Soporte Técnico</strong><br>\n      <span style=\"color: #7f8c8d;\">TuEmpresa S.A.S</span><br>\n      <a href=\"mailto:soporte@tuempresa.com\" style=\"color: #3498db; text-decoration: none;\">soporte@tuempresa.com</a>\n    </p>\n  </body>\n</html>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        992,
+        1648
+      ],
+      "id": "57c7a794-8f2c-47ad-bef8-06078d056be0",
+      "name": "Envio email a Gerencia1",
+      "webhookId": "26df1dd2-6e8c-4415-84da-c2ee24613568",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REMOVED]",
+          "name": "Gmail Make-Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.message.content }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        768,
+        1648
+      ],
+      "id": "0031613b-260d-44b9-a259-762110a22161",
+      "name": "Markdown"
+    },
+    {
+      "parameters": {
+        "content": "# Gestionar Ticket Cliente",
+        "height": 576,
+        "width": 1712
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        -16
+      ],
+      "id": "06cf8202-fded-43ad-bfea-f7fe3b6eab0c",
+      "name": "Sticky Note23"
+    },
+    {
+      "parameters": {
+        "content": "# Gestionar Prioridad de manera automática y recordatorio",
+        "height": 576,
+        "width": 1488,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        576
+      ],
+      "id": "ffbbe8c4-fb94-4704-9fc7-293e0eb681ce",
+      "name": "Sticky Note24"
+    },
+    {
+      "parameters": {
+        "content": "# Gestionar ticket resuelto",
+        "height": 320,
+        "width": 720,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        1184
+      ],
+      "id": "f7ff4780-3cd9-4817-93ea-c626c5042f1b",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# Resumen mensual gerencia",
+        "height": 320,
+        "width": 1488,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        1536
+      ],
+      "id": "cc8af93d-0df2-4b36-9348-b088b1284540",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\"categoria\": \"Facturación\",\n\"sentimiento\": \"Negativo\",\n\"urgencia\": \"Alta\"\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        112,
+        352
+      ],
+      "id": "cd3e71c6-6538-4f13-84b4-9a5d732124cf",
+      "name": "Structured Output Parser"
+    }
+  ],
+  "pinData": {
+    "On form submission": [
+      {
+        "json": {
+          "nombre": "Antonio Garcia",
+          "email": "angel.aparicio92@gmail.com",
+          "mensaje": "Hola estoy teniendo problemas con el pago de los servicios ya que la plataforma me esta dando error. Me podeis ayudar por favor?",
+          "submittedAt": "2025-07-17T17:35:10.781-05:00",
+          "formMode": "production"
+        }
+      }
+    ],
+    "Schedule Trigger": [
+      {
+        "json": {
+          "timestamp": "2025-07-17T17:37:56.569-05:00",
+          "Readable date": "July 17th 2025, 5:37:56 pm",
+          "Readable time": "5:37:56 pm",
+          "Day of week": "Thursday",
+          "Year": "2025",
+          "Month": "July",
+          "Day of month": "17",
+          "Hour": "17",
+          "Minute": "37",
+          "Second": "56",
+          "Timezone": "America/Bogota (UTC-05:00)"
+        }
+      }
+    ],
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "aawebhookaa.vps.rubikmarketing.com.co",
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "accept-language": "es-ES,es;q=0.9,ca-ES;q=0.8,ca;q=0.7,en-US;q=0.6,en;q=0.5",
+            "cookie": "rl_page_init_referrer=RudderEncrypt%3AU2FsdGVkX19ZsPDeu3%2Fex8YrXbbnAxSkmtPunt1%2FYXs%3D; rl_page_init_referring_domain=RudderEncrypt%3AU2FsdGVkX19eqhjJocMqnop8ww0uSHXGGlBex9h%2F960%3D; ajs_anonymous_id=%22bf67d6ca-0991-49b1-8d59-2c72fb7aa499%22; rl_anonymous_id=RudderEncrypt%3AU2FsdGVkX1%2FHVK1XYA7LF5UIg57vrjiH2VQ2vbADv49JrGNhwFVNj7FXtTw6SihNzUqPgc2QTTrJV1B%2BateEgg%3D%3D; rl_user_id=RudderEncrypt%3AU2FsdGVkX19vEt%2F6uerxjf9oDT7hYHLObR7yXI%2FyfB4gO6nm52z%2BZJq6YtJH2KoaUla5xUmUDH3cryVWgv9Fe%2FY0ZtLMx7us4NRmDduTpzjwgXhT3gJK3FKVK09wwIX9nto37amd7V3DelFweD67mK6HBE3R6Gqp6QG2QNdheto%3D; rl_trait=RudderEncrypt%3AU2FsdGVkX1%2Bd%2FrfkqlQTgSuCi%2FPjoQNQ2E4L0CZ35nmGF2dLgOzuC75u90hfHmwnovJKFsUpO4vRulYxio14EgtrB%2BOz1iQVFvRe0oE3LyCdc3zX5v4Qt1qVSOmVuNJpjceDBZZrujSQpF5bhhcLPw%3D%3D; ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog=%7B%22distinct_id%22%3A%228fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00%23d7bfe089-5be8-4c9e-8dc2-abbc636f86b1%22%2C%22%24sesid%22%3A%5B1752791721595%2C%2201981a7a-84be-7f97-92ce-bfeb76d14401%22%2C1752790893756%5D%2C%22%24epp%22%3Atrue%2C%22%24initial_person_info%22%3A%7B%22r%22%3A%22%24direct%22%2C%22u%22%3A%22https%3A%2F%2Faan8naa.vps.rubikmarketing.com.co%2Fsignin%3Fredirect%3D%25252F%22%7D%7D; rl_session=RudderEncrypt%3AU2FsdGVkX1%2BQmHIAkuIdPz0sSb9ZHK8ZxDkywejPP8PBoEETHQFWitxrYO3cwMzfd0yUgLufljYYZVTCbCF0KwDwyyYoWaj0x97frJMFg6LDBl5%2BG7qL9RPCgMtUMXNLZFHbUwqfto5MSrzFFE0vnw%3D%3D",
+            "priority": "u=0, i",
+            "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Google Chrome\";v=\"138\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"macOS\"",
+            "sec-fetch-dest": "document",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-site": "cross-site",
+            "sec-fetch-user": "?1",
+            "upgrade-insecure-requests": "1",
+            "x-browser-channel": "stable",
+            "x-browser-copyright": "Copyright 2025 Google LLC. All rights reserved.",
+            "x-browser-validation": "qvLgIVtG4U8GgiRPSI9IJ22mUlI=",
+            "x-browser-year": "2025",
+            "x-forwarded-for": "186.180.48.34",
+            "x-forwarded-host": "aawebhookaa.vps.rubikmarketing.com.co",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "f75c220e25da",
+            "x-real-ip": "186.180.48.34"
+          },
+          "params": {},
+          "query": {
+            "id": "9"
+          },
+          "body": {},
+          "webhookUrl": "https://aawebhookaa.vps.rubikmarketing.com.co/webhook/2d23a8aa-0e8d-4900-8733-434380a60046",
+          "executionMode": "production"
+        }
+      }
+    ],
+    "Schedule Trigger1": [
+      {
+        "json": {
+          "timestamp": "2025-07-17T17:40:41.941-05:00",
+          "Readable date": "July 17th 2025, 5:40:41 pm",
+          "Readable time": "5:40:41 pm",
+          "Day of week": "Thursday",
+          "Year": "2025",
+          "Month": "July",
+          "Day of month": "17",
+          "Hour": "17",
+          "Minute": "40",
+          "Second": "41",
+          "Timezone": "America/Bogota (UTC-05:00)"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "AI Categorization": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "AI Categorization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Categorization",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Envio email a cliente",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Envio email a Gerencia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Envio email a categoria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Select rows from a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update rows in a table in Postgres": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Update rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Envio email a cliente1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown": {
+      "main": [
+        [
+          {
+            "node": "Envio email a Gerencia1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Categorization",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "28c3fc8d-8d11-48bb-8795-076545c7cb5e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "QgYvwVGjxeFKU2IV",
+  "tags": []
+}

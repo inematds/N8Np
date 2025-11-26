@@ -1,0 +1,1269 @@
+{
+  "name": "nm63 - ONG Pets - Vibe Code Manus",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-webhook",
+        "options": {}
+      },
+      "id": "9badfac7-43f1-4ffb-8392-728897fc2d96",
+      "name": "WhatsApp Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1552,
+        512
+      ],
+      "webhookId": "whatsapp-evolution-api-001"
+    },
+    {
+      "parameters": {
+        "options": {
+          "forceReconnect": false
+        }
+      },
+      "id": "3abf3e9d-858d-4823-82d9-56e0150cdc93",
+      "name": "Email IMAP Trigger",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2.1,
+      "position": [
+        -1552,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "input_text",
+              "value": "={{ $json.body?.message?.text || $json.text || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "user_id",
+              "value": "={{ $json.body?.message?.from || $json.from?.value?.[0]?.address || 'unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "channel",
+              "value": "={{ $json.body ? 'whatsapp' : 'email' }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "timestamp",
+              "value": "={{ $now }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e420c02d-77ec-4383-b3ed-86a80061e8b6",
+      "name": "Set Initial Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1328,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.channel }}",
+                    "rightValue": "whatsapp",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "WhatsApp"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.channel }}",
+                    "rightValue": "email",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Email"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "09b277f6-9324-4a98-9aba-8193942a64fe",
+      "name": "Switch Channel",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -1104,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.input_text }}",
+        "options": {
+          "systemMessage": "# Orquestrador ONG Castração Central\n\nVocê é o agente orquestrador principal de uma ONG de castração de animais. Sua função é analisar a mensagem do usuário e identificar a intenção para direcioná-la ao agente especializado correto.\n\n## Agentes Especializados Disponíveis:\n- **AgenteCastracao**: Para agendamento de castrações\n- **AgenteAdocaoDoacao**: Para pedidos de adoção ou doação de animais\n- **AgenteAnimaisPerdidos**: Para relatos de animais perdidos ou encontrados\n- **AgenteDicas**: Para dúvidas frequentes e informações gerais\n\n## Instruções:\n1. Analise cuidadosamente a mensagem do usuário\n2. Identifique a intenção principal (castração, adoção, doação, animal perdido, dúvida)\n3. Chame o agente especializado apropriado\n4. Se a intenção não for clara, use o AgenteDicas para orientar o usuário\n\n## Contexto Atual:\n- Data/Hora: {{ $now }}\n- Canal: {{ $json.channel }}\n- Usuário: {{ $json.user_id }}",
+          "returnIntermediateSteps": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        -880,
+        608
+      ],
+      "id": "51675951-3459-48b1-809a-fbc95a08b422",
+      "name": "OrquestradorONG",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "castração",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "Castracao"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "adoção",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  },
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "doação",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "AdocaoDoacao"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "perdido",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  },
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "encontrado",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "AnimaisPerdidos"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "dúvida",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  },
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "informação",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "Dicas"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "bec5c7e6-f244-4c7f-a2fb-2befd13a78e6",
+      "name": "Switch Intenção",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -480,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.input_text }}",
+        "options": {
+          "systemMessage": "# Agente de Castração - ONG Castração Central\n\nVocê é o agente especializado em agendamento de castrações. Sua função é:\n\n## Responsabilidades:\n1. Coletar dados necessários para castração (nome do tutor, animal, contato, data preferida)\n2. Agendar no Google Calendar\n3. Salvar informações no Supabase\n4. Confirmar agendamento com o usuário\n\n## Dados Necessários:\n- Nome completo do tutor\n- Tipo de animal (cão/gato)\n- Nome do animal\n- Idade aproximada\n- Contato (telefone/email)\n- Data preferida\n- Endereço\n\n## Instruções:\n1. Seja cordial e profissional\n2. Colete todas as informações necessárias\n3. Confirme os dados antes de agendar\n4. Informe sobre preparação pré-cirúrgica\n5. Forneça contato para dúvidas\n\n## Contexto:\n- Usuário: {{ $json.user_id }}\n- Canal: {{ $json.channel }}\n- Data/Hora: {{ $now }}",
+          "returnIntermediateSteps": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        -256,
+        128
+      ],
+      "id": "c8215ae9-e8aa-493b-8e9c-f2f35c9f9587",
+      "name": "AgenteCastracao",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "nome_tutor",
+              "value": "={{ $fromAI('nome_tutor', 'Nome completo do tutor') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "tipo_animal",
+              "value": "={{ $fromAI('tipo_animal', 'Tipo do animal: cão ou gato') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "nome_animal",
+              "value": "={{ $fromAI('nome_animal', 'Nome do animal') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "idade_animal",
+              "value": "={{ $fromAI('idade_animal', 'Idade aproximada do animal') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "contato",
+              "value": "={{ $fromAI('contato', 'Contato do tutor') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "data_preferida",
+              "value": "={{ $fromAI('data_preferida', 'Data preferida para castração') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "endereco",
+              "value": "={{ $fromAI('endereco', 'Endereço do tutor') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b3fc8458-0efc-4d98-9fa5-ba9dbce19775",
+      "name": "Set Dados Castração",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        232,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $vars.SUPABASE_URL }}/rest/v1/castracoes",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"nome_tutor\": \"{{ $json.nome_tutor }}\",\n  \"tipo_animal\": \"{{ $json.tipo_animal }}\",\n  \"nome_animal\": \"{{ $json.nome_animal }}\",\n  \"idade_animal\": \"{{ $json.idade_animal }}\",\n  \"contato\": \"{{ $json.contato }}\",\n  \"data_preferida\": \"{{ $json.data_preferida }}\",\n  \"endereco\": \"{{ $json.endereco }}\",\n  \"usuario_id\": \"{{ $('Set Initial Data').item.json.user_id }}\",\n  \"canal\": \"{{ $('Set Initial Data').item.json.channel }}\",\n  \"status\": \"agendado\",\n  \"created_at\": \"{{ $now }}\"\n}",
+        "options": {}
+      },
+      "id": "03026968-dc7e-4994-97da-45ca2b841361",
+      "name": "Salvar no Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        544,
+        128
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "53b9733f-c4ff-444e-8994-5f23025b0f77",
+      "name": "Criar Evento Google Calendar",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        192
+      ],
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.input_text }}",
+        "options": {
+          "systemMessage": "# Agente de Adoção e Doação - ONG Castração Central\n\nVocê é o agente especializado em processos de adoção e doação de animais. Sua função é:\n\n## Responsabilidades:\n1. Identificar se é pedido de adoção ou doação\n2. Coletar informações necessárias\n3. Orientar sobre processo e requisitos\n4. Registrar no sistema Supabase\n5. Conectar doadores com adotantes quando possível\n\n## Para Doação:\n- Dados do animal (tipo, idade, sexo, castrado, vacinado)\n- Motivo da doação\n- Fotos do animal\n- Contato do doador\n- Localização\n\n## Para Adoção:\n- Preferências do adotante (tipo, idade, sexo)\n- Experiência com animais\n- Tipo de moradia\n- Contato\n- Localização\n\n## Instruções:\n1. Seja empático e compreensivo\n2. Oriente sobre responsabilidades\n3. Colete informações completas\n4. Explique próximos passos\n5. Forneça contato para acompanhamento\n\n## Contexto:\n- Usuário: {{ $json.user_id }}\n- Canal: {{ $json.channel }}\n- Data/Hora: {{ $now }}",
+          "returnIntermediateSteps": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        144,
+        320
+      ],
+      "id": "efac420d-39ed-4b67-973c-10f262a405e6",
+      "name": "AgenteAdocaoDoacao",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "tipo_solicitacao",
+              "value": "={{ $fromAI('tipo_solicitacao', 'Tipo: adoção ou doação') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "nome_solicitante",
+              "value": "={{ $fromAI('nome_solicitante', 'Nome do solicitante') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "contato_solicitante",
+              "value": "={{ $fromAI('contato_solicitante', 'Contato do solicitante') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "localizacao",
+              "value": "={{ $fromAI('localizacao', 'Localização/cidade') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "detalhes_animal",
+              "value": "={{ $fromAI('detalhes_animal', 'Detalhes do animal ou preferências') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "observacoes",
+              "value": "={{ $fromAI('observacoes', 'Observações adicionais') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "baf2ce65-36dd-499f-b77b-244febd5ce76",
+      "name": "Set Dados Adoção/Doação",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $vars.SUPABASE_URL }}/rest/v1/adocoes_doacoes",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"tipo_solicitacao\": \"{{ $json.tipo_solicitacao }}\",\n  \"nome_solicitante\": \"{{ $json.nome_solicitante }}\",\n  \"contato_solicitante\": \"{{ $json.contato_solicitante }}\",\n  \"localizacao\": \"{{ $json.localizacao }}\",\n  \"detalhes_animal\": \"{{ $json.detalhes_animal }}\",\n  \"observacoes\": \"{{ $json.observacoes }}\",\n  \"usuario_id\": \"{{ $('Set Initial Data').item.json.user_id }}\",\n  \"canal\": \"{{ $('Set Initial Data').item.json.channel }}\",\n  \"status\": \"pendente\",\n  \"created_at\": \"{{ $now }}\"\n}",
+        "options": {}
+      },
+      "id": "b156308e-b418-4228-9a41-c26434ab4592",
+      "name": "Salvar Adoção/Doação",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        856,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.input_text }}",
+        "options": {
+          "systemMessage": "# Agente de Animais Perdidos - ONG Castração Central\n\nVocê é o agente especializado em casos de animais perdidos e encontrados. Sua função é:\n\n## Responsabilidades:\n1. Identificar se é animal perdido ou encontrado\n2. Coletar informações detalhadas\n3. Orientar sobre procedimentos\n4. Registrar no sistema com geolocalização\n5. Conectar casos compatíveis\n\n## Para Animal Perdido:\n- Nome e características do animal\n- Local e data do desaparecimento\n- Fotos recentes\n- Contato do tutor\n- Recompensa (se houver)\n\n## Para Animal Encontrado:\n- Características do animal\n- Local e data que foi encontrado\n- Estado de saúde\n- Fotos atuais\n- Contato de quem encontrou\n\n## Instruções:\n1. Seja sensível à situação emocional\n2. Colete informações precisas\n3. Oriente sobre divulgação\n4. Sugira locais para procurar\n5. Explique procedimentos legais\n6. Forneça contatos úteis (veterinários, abrigos)\n\n## Contexto:\n- Usuário: {{ $json.user_id }}\n- Canal: {{ $json.channel }}\n- Data/Hora: {{ $now }}",
+          "returnIntermediateSteps": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        144,
+        512
+      ],
+      "id": "9a6aeffb-e589-4abf-a827-865a79547e59",
+      "name": "AgenteAnimaisPerdidos",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "tipo_caso",
+              "value": "={{ $fromAI('tipo_caso', 'Tipo: perdido ou encontrado') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "nome_animal",
+              "value": "={{ $fromAI('nome_animal', 'Nome do animal (se conhecido)') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "caracteristicas",
+              "value": "={{ $fromAI('caracteristicas', 'Características físicas detalhadas') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "local_ocorrencia",
+              "value": "={{ $fromAI('local_ocorrencia', 'Local onde foi perdido/encontrado') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "data_ocorrencia",
+              "value": "={{ $fromAI('data_ocorrencia', 'Data da ocorrência') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "contato_responsavel",
+              "value": "={{ $fromAI('contato_responsavel', 'Contato do responsável') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "observacoes_especiais",
+              "value": "={{ $fromAI('observacoes_especiais', 'Observações especiais') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5713069d-dae2-41c2-9dc5-6657b3751151",
+      "name": "Set Dados Animais Perdidos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $vars.SUPABASE_URL }}/rest/v1/animais_perdidos",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"tipo_caso\": \"{{ $json.tipo_caso }}\",\n  \"nome_animal\": \"{{ $json.nome_animal }}\",\n  \"caracteristicas\": \"{{ $json.caracteristicas }}\",\n  \"local_ocorrencia\": \"{{ $json.local_ocorrencia }}\",\n  \"data_ocorrencia\": \"{{ $json.data_ocorrencia }}\",\n  \"contato_responsavel\": \"{{ $json.contato_responsavel }}\",\n  \"observacoes_especiais\": \"{{ $json.observacoes_especiais }}\",\n  \"usuario_id\": \"{{ $('Set Initial Data').item.json.user_id }}\",\n  \"canal\": \"{{ $('Set Initial Data').item.json.channel }}\",\n  \"status\": \"ativo\",\n  \"created_at\": \"{{ $now }}\"\n}",
+        "options": {}
+      },
+      "id": "27a45b18-8023-44b3-a1f5-c8044739ec9f",
+      "name": "Salvar Animais Perdidos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        856,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.input_text }}",
+        "options": {
+          "systemMessage": "# Agente de Dicas e Informações - ONG Castração Central\n\nVocê é o agente especializado em responder dúvidas frequentes e fornecer informações gerais sobre:\n\n## Tópicos de Expertise:\n1. Castração (benefícios, cuidados, recuperação)\n2. Cuidados com animais\n3. Vacinação e vermifugação\n4. Primeiros socorros\n5. Comportamento animal\n6. Legislação sobre animais\n7. Serviços da ONG\n\n## Instruções:\n1. Use a base de conhecimento para respostas precisas\n2. Seja educativo e informativo\n3. Forneça dicas práticas\n4. Oriente quando procurar veterinário\n5. Sugira recursos adicionais\n6. Mantenha tom amigável e acessível\n\n## Contexto:\n- Usuário: {{ $json.user_id }}\n- Canal: {{ $json.channel }}\n- Data/Hora: {{ $now }}\n\nSe não souber a resposta, seja honesto e oriente a procurar um profissional.",
+          "returnIntermediateSteps": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        -256,
+        704
+      ],
+      "id": "49c1d80f-0795-48a0-be89-cab359534066",
+      "name": "AgenteDicas",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $vars.SUPABASE_URL }}/rpc/search_knowledge_base",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query_text\": \"{{ $json.input_text }}\",\n  \"match_threshold\": 0.7,\n  \"match_count\": 5\n}",
+        "options": {}
+      },
+      "id": "c6731b52-4115-460c-9888-b10bc7ca91eb",
+      "name": "Buscar Base Conhecimento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        232,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "contexto_conhecimento",
+              "value": "={{ $json.map(item => item.content).join('\\n\\n') }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "pergunta_usuario",
+              "value": "={{ $('Set Initial Data').item.json.input_text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1dce5931-75f8-49a9-8b7c-a1f7a621e8ad",
+      "name": "Set Contexto RAG",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Pergunta do usuário: {{ $json.pergunta_usuario }}\n\nContexto da base de conhecimento:\n{{ $json.contexto_conhecimento }}",
+        "options": {
+          "systemMessage": "Com base no contexto fornecido da base de conhecimento, responda à pergunta do usuário de forma clara, educativa e prática. Se o contexto não contiver informações suficientes, seja honesto sobre isso e oriente a procurar um veterinário ou profissional qualificado.",
+          "returnIntermediateSteps": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        768,
+        704
+      ],
+      "id": "e9121ff2-8803-4028-8f45-355e9119fc38",
+      "name": "Gerar Resposta RAG",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $vars.SUPABASE_URL }}/rest/v1/logs_sistema",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"usuario_id\": \"{{ $('Set Initial Data').item.json.user_id }}\",\n  \"canal\": \"{{ $('Set Initial Data').item.json.channel }}\",\n  \"agente_usado\": \"{{ $node.name }}\",\n  \"input_texto\": \"{{ $('Set Initial Data').item.json.input_text }}\",\n  \"output_texto\": \"{{ $json.output || $json.text || 'Processado com sucesso' }}\",\n  \"status\": \"sucesso\",\n  \"timestamp\": \"{{ $now }}\",\n  \"tokens_usados\": \"{{ $json.usage?.total_tokens || 0 }}\"\n}",
+        "options": {}
+      },
+      "id": "d42d60c4-49c4-428a-9de0-e3c2b84722fe",
+      "name": "Log Sistema",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1168,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "resposta_formatada",
+              "value": "={{ $json.output || $json.text || 'Sua solicitação foi processada com sucesso!' }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "canal_resposta",
+              "value": "={{ $('Set Initial Data').item.json.channel }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "user_id_resposta",
+              "value": "={{ $('Set Initial Data').item.json.user_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "80b2eff8-ac8a-4daa-95ee-1e8f1fa2dea0",
+      "name": "Preparar Resposta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1392,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.canal_resposta }}",
+                    "rightValue": "whatsapp",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "RespostaWhatsApp"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.canal_resposta }}",
+                    "rightValue": "email",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "RespostaEmail"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b2dc5177-be41-4bf2-ab1b-d5ac8361d4d5",
+      "name": "Switch Resposta",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1616,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $vars.EVOLUTION_API_URL }}/message/sendText/{{ $vars.EVOLUTION_INSTANCE }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.user_id_resposta }}\",\n  \"text\": \"{{ $json.resposta_formatada }}\"\n}",
+        "options": {}
+      },
+      "id": "4be10034-18ce-42f9-a2fc-3f55b7395952",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1840,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "{{ $vars.EMAIL_ONG }}",
+        "toEmail": "={{ $json.user_id_resposta }}",
+        "subject": "Resposta - ONG Castração Central",
+        "options": {}
+      },
+      "id": "bd48485d-f008-4418-9961-c66647d4d072",
+      "name": "Enviar Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1840,
+        800
+      ],
+      "webhookId": "610eea84-0f4d-4ce0-9b48-0a397d4ee30d"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "erro_mensagem",
+              "value": "Desculpe, ocorreu um erro ao processar sua solicitação. Nossa equipe foi notificada e entraremos em contato em breve. Para urgências, ligue para (11) 99999-9999.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5e9fe33d-656e-4272-886d-5b984a2be87f",
+      "name": "Mensagem de Erro",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -80,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $vars.SUPABASE_URL }}/rest/v1/logs_sistema",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"usuario_id\": \"{{ $('Set Initial Data').item.json.user_id }}\",\n  \"canal\": \"{{ $('Set Initial Data').item.json.channel }}\",\n  \"agente_usado\": \"{{ $node.name }}\",\n  \"input_texto\": \"{{ $('Set Initial Data').item.json.input_text }}\",\n  \"output_texto\": \"{{ $json.error?.message || 'Erro não especificado' }}\",\n  \"status\": \"erro\",\n  \"timestamp\": \"{{ $now }}\",\n  \"detalhes_erro\": \"{{ JSON.stringify($json.error) }}\"\n}",
+        "options": {}
+      },
+      "id": "0d0cde92-b4be-44c4-ac60-8967cae22d7a",
+      "name": "Log Erro",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1168,
+        896
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set Initial Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email IMAP Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Initial Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Initial Data": {
+      "main": [
+        [
+          {
+            "node": "Switch Channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Channel": {
+      "main": [
+        [
+          {
+            "node": "OrquestradorONG",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "OrquestradorONG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OrquestradorONG": {
+      "main": [
+        [
+          {
+            "node": "Switch Intenção",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensagem de Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Intenção": {
+      "main": [
+        [
+          {
+            "node": "AgenteCastracao",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AgenteAdocaoDoacao",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AgenteAnimaisPerdidos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AgenteDicas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AgenteDicas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AgenteCastracao": {
+      "main": [
+        [
+          {
+            "node": "Set Dados Castração",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Dados Castração": {
+      "main": [
+        [
+          {
+            "node": "Salvar no Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AgenteAdocaoDoacao": {
+      "main": [
+        [
+          {
+            "node": "Set Dados Adoção/Doação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Dados Adoção/Doação": {
+      "main": [
+        [
+          {
+            "node": "Salvar Adoção/Doação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar Adoção/Doação": {
+      "main": [
+        [
+          {
+            "node": "Log Sistema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AgenteAnimaisPerdidos": {
+      "main": [
+        [
+          {
+            "node": "Set Dados Animais Perdidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Dados Animais Perdidos": {
+      "main": [
+        [
+          {
+            "node": "Salvar Animais Perdidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar Animais Perdidos": {
+      "main": [
+        [
+          {
+            "node": "Log Sistema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AgenteDicas": {
+      "main": [
+        [
+          {
+            "node": "Buscar Base Conhecimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Base Conhecimento": {
+      "main": [
+        [
+          {
+            "node": "Set Contexto RAG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Contexto RAG": {
+      "main": [
+        [
+          {
+            "node": "Gerar Resposta RAG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Resposta RAG": {
+      "main": [
+        [
+          {
+            "node": "Log Sistema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Sistema": {
+      "main": [
+        [
+          {
+            "node": "Preparar Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Resposta": {
+      "main": [
+        [
+          {
+            "node": "Switch Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Resposta": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem de Erro": {
+      "main": [
+        [
+          {
+            "node": "Log Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Erro": {
+      "main": [
+        [
+          {
+            "node": "Preparar Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "73c8c64f-d7c1-4d6c-b320-9f86638cce3e",
+  "meta": {
+    "instanceId": "099f1e1befc36cb37426544d3db2ed3a697cbeabeec5e3f29e2e2beeccc011e0"
+  },
+  "id": "ea1vREiapUES1HEy",
+  "tags": []
+}

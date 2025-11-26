@@ -1,0 +1,562 @@
+{
+  "name": "search_imagenes",
+  "nodes": [
+    {
+      "parameters": {
+        "model": "openai/gpt-4.1-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        560
+      ],
+      "id": "02ee6bfe-88fd-43db-a5f4-8c58195ef0b5",
+      "name": "GPT 4.1 mini",
+      "credentials": {
+        "openRouterApi": {
+          "id": "[REMOVED]",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "intencion"
+            },
+            {
+              "name": "imagen"
+            },
+            {
+              "name": "chatID"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -880,
+        300
+      ],
+      "id": "68203b1a-555f-49a4-8df6-f3a6df5e7233",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "response",
+              "value": "No se pudo encontrar esa imagen",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        40,
+        40
+      ],
+      "id": "356dd979-ee58-46c8-82c2-6034cec352c2",
+      "name": "Not Found"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $('When Executed by Another Workflow').item.json.intencion }}",
+              "rightValue": "get",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        100,
+        300
+      ],
+      "id": "4d4f22b7-8521-421c-9956-220812d65366",
+      "name": "Get?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "[REMOVED]",
+              "leftValue": "={{ $json.output.status }}",
+              "rightValue": "not_found",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -200,
+        300
+      ],
+      "id": "14c6b737-107f-4bd5-994f-304235bbf700",
+      "name": "Not Found?"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.output.imagen_id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        360,
+        300
+      ],
+      "id": "e525c17b-c209-4127-a8e1-575ae352875c",
+      "name": "Download File",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "[REMOVED]",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Trigger\n",
+        "height": 260,
+        "width": 260,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        220
+      ],
+      "id": "64d0798c-3ac6-4151-bfff-36cd7addd163",
+      "name": "Sticky Note5",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "# Busqueda Imagen",
+        "height": 260,
+        "width": 380,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -680,
+        220
+      ],
+      "id": "6215c86a-39c1-4812-8759-424759272e01",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"nombre_imagen\":\"string | null\",\n  \"imagen_id\": \"string | null\",\n  \"imagen_link\": \"string | null\",\n  \"status\": \"found | not_found\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -380,
+        560
+      ],
+      "id": "66ddf617-7094-4d7f-839c-610a360e1a56",
+      "name": "Name, ID, & Link"
+    },
+    {
+      "parameters": {
+        "content": "# No Encontrada?",
+        "height": 260,
+        "width": 300,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        220
+      ],
+      "id": "963d70df-d361-4c67-b07c-905d3fdc28ed",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 200,
+        "width": 180,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c6e36880-058d-4731-811c-2a285beaff42",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# Get?",
+        "height": 260,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        40,
+        220
+      ],
+      "id": "bda633fa-c680-4345-aad7-980462af989c",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "[REMOVED]",
+              "name": "nombre_imagen",
+              "value": "={{ $json.output.nombre_imagen }}",
+              "type": "string"
+            },
+            {
+              "id": "[REMOVED]",
+              "name": "imagen_ID",
+              "value": "={{ $json.output.imagen_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        300,
+        540
+      ],
+      "id": "c080c056-bcf5-431a-806d-f262f6bc3927",
+      "name": "Edit"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 200,
+        "width": 180,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        260,
+        500
+      ],
+      "id": "f0984085-45e9-49d3-9505-1006ce8ba80f",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "# Respuesta",
+        "height": 260,
+        "width": 460,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        540,
+        220
+      ],
+      "id": "fe90990e-f47f-41dd-8303-bb8448e119e5",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "# Descargar\n",
+        "height": 260,
+        "width": 220,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        300,
+        220
+      ],
+      "id": "902c2b3d-13bd-40d7-ae2b-a25ab83808cd",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "operation": "send-image",
+        "instanceName": "Prueba",
+        "remoteJid": "={{ $('When Executed by Another Workflow').item.json.chatID }}",
+        "media": "={{ $json.data }}",
+        "caption": "Esta es la imagen que solicitaste!",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        780,
+        300
+      ],
+      "id": "7dcb0df6-0d45-4ab5-b101-97effc18ed3c",
+      "name": "Evolution API",
+      "credentials": {
+        "evolutionApi": {
+          "id": "[REMOVED]",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Busca imágenes en la base de datos de Supabase. Usa esta herramienta cuando el usuario quiera encontrar una imagen previa, editarla, o cuando mencione \"esa imagen\", \"la anterior\" o describa una imagen específica.",
+        "workflowId": {
+          "__rl": true,
+          "value": "5wqb4Zj38HRxjKNG",
+          "mode": "list",
+          "cachedResultName": "busqueda_tabla"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sql_search": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('sql_search', `Genera una consulta SQL para buscar registros en la base de datos. \n\nESTRUCTURA DE LA TABLA \"marketing_team_log\":\n- id (integer, primary key)\n- titulo (text) - título o nombre del registro\n- tipo (text) - tipo de contenido (image, edit, text, etc.)\n- requerimiento (text) - descripción o prompt original\n- file_id (character varying(255)) - identificador del archivo\n- link (text) - enlace al archivo generado\n- post (text) - contenido del post\n- created_at (timestamp with time zone) - fecha de creación\n\nINSTRUCCIONES:\n1. Busca en las columnas \"titulo\" y \"requerimiento\" usando ILIKE (insensible a mayúsculas)\n2. Devuelve las columnas: id, titulo, file_id, link\n3. NO filtres por el campo \"tipo\" - incluye todos los tipos\n4. Ordena por created_at descendente\n5. Limita a 1 resultado (el más reciente)\n6. Usa el parámetro de entrada \"query\" para las palabras clave\n\nEJEMPLO DE CONSULTA ESPERADA:\nSELECT titulo, file_id, link FROM marketing_team_log \nWHERE (titulo ILIKE '%{query}%' OR requerimiento ILIKE '%{query}%') \nORDER BY created_at DESC LIMIT 1`, 'string') }}"
+          },
+          "matchingColumns": [
+            "sql_search"
+          ],
+          "schema": [
+            {
+              "id": "sql_search",
+              "displayName": "sql_search",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -560,
+        560
+      ],
+      "id": "5f83bf27-2af3-4daa-a1e5-3322a98071e0",
+      "name": "Busqueda tabla"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        580,
+        300
+      ],
+      "id": "8fc84fbe-4978-470c-9617-e58851ee4bd7",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Imagen: {{ $json.imagen }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=# Descripción General\nEres un Agente de Recuperación de Imágenes. Tu tarea es buscar en la base de datos de Supabase (tabla \"marketing_team_log\") usando las palabras clave de la consulta del usuario para encontrar la imagen más relevante.\n\n## Instrucciones de Búsqueda\n1. **Busca por título**: Compara las palabras clave con la columna \"titulo\"\n2. **Busca por contenido**: También revisa la columna \"requerimiento\" (prompt original)\n3. **Filtra por usuario**: Usa el chat_id para mostrar solo las imágenes del usuario actual\n4. **Prioriza recientes**: Si hay múltiples coincidencias, selecciona la más reciente (created_at DESC)\n\n## Criterios de Coincidencia\n- **Coincidencia exacta**: Si el título contiene exactamente las palabras buscadas\n- **Coincidencia parcial**: Si el título o requerimiento contiene algunas palabras clave\n- **Última imagen**: Si el usuario dice \"la última\", \"la anterior\" o \"esa imagen\", busca la más reciente\n\n## Estructura de Salida\nCuando encuentres una imagen, devuelve:\n\n{\n  \"nonbre\": \"título de la imagen\",\n  \"id\": \"El file_id del registro en Supabase\",\n  \"link\": \"enlace del archivo\",\n  \"status\": \"found\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        -600,
+        300
+      ],
+      "id": "86202c52-ade6-4db7-ad41-2910a632a0e4",
+      "name": "Agente de busqueda"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "GPT 4.1 mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente de busqueda",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Agente de busqueda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Not Found?": {
+      "main": [
+        [
+          {
+            "node": "Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get?": {
+      "main": [
+        [
+          {
+            "node": "Download File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download File": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Name, ID, & Link": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Agente de busqueda",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busqueda tabla": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente de busqueda",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Evolution API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente de busqueda": {
+      "main": [
+        [
+          {
+            "node": "Not Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "01f2d567-e882-4c6d-978b-d9bd113f0485",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8fd110a1507f4b81c2521b680117b018e5cfcd7ec8e54b2134772014dccd9f00"
+  },
+  "id": "W0L7c0AxO7Q07XEe",
+  "tags": []
+}
