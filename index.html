@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N8Np - Biblioteca de Workflows n8n</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+
+        /* Header */
+        .header { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 2rem; text-align: center; border-bottom: 1px solid #334155; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: #94a3b8; font-size: 1.1rem; }
+        .stats { display: flex; justify-content: center; gap: 2rem; margin-top: 1rem; flex-wrap: wrap; }
+        .stat { background: #1e293b; padding: 0.75rem 1.5rem; border-radius: 8px; border: 1px solid #334155; }
+        .stat-value { font-size: 1.5rem; font-weight: bold; color: #38bdf8; }
+        .stat-label { font-size: 0.875rem; color: #94a3b8; }
+
+        /* Search */
+        .search-container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        .search-box { display: flex; gap: 0.5rem; }
+        .search-input { flex: 1; padding: 1rem 1.5rem; font-size: 1.1rem; border: 2px solid #334155; border-radius: 12px; background: #1e293b; color: #e2e8f0; outline: none; transition: border-color 0.2s; }
+        .search-input:focus { border-color: #38bdf8; }
+        .search-input::placeholder { color: #64748b; }
+
+        /* Layout */
+        .container { display: flex; max-width: 1400px; margin: 0 auto; padding: 1rem; gap: 1.5rem; }
+
+        /* Sidebar */
+        .sidebar { width: 280px; flex-shrink: 0; }
+        .sidebar-section { background: #1e293b; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; border: 1px solid #334155; }
+        .sidebar-title { font-size: 0.875rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.75rem; }
+        .category-list { list-style: none; }
+        .category-item { padding: 0.5rem 0.75rem; margin: 0.25rem 0; border-radius: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
+        .category-item:hover { background: #334155; }
+        .category-item.active { background: #38bdf8; color: #0f172a; }
+        .category-item.active .category-count { background: #0f172a; color: #38bdf8; }
+        .category-count { background: #334155; padding: 0.125rem 0.5rem; border-radius: 999px; font-size: 0.75rem; }
+
+        /* Modules */
+        .module-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .module-tag { background: #334155; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
+        .module-tag:hover { border-color: #38bdf8; }
+        .module-tag.active { background: #38bdf8; color: #0f172a; }
+
+        /* Main Content */
+        .main { flex: 1; min-width: 0; }
+        .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0 0.5rem; }
+        .results-count { color: #94a3b8; }
+        .sort-select { background: #1e293b; border: 1px solid #334155; color: #e2e8f0; padding: 0.5rem 1rem; border-radius: 8px; }
+
+        /* Workflow Grid */
+        .workflow-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+        .workflow-card { background: #1e293b; border-radius: 12px; padding: 1.25rem; border: 1px solid #334155; transition: all 0.2s; cursor: pointer; }
+        .workflow-card:hover { border-color: #38bdf8; transform: translateY(-2px); box-shadow: 0 4px 20px rgba(56, 189, 248, 0.1); }
+        .workflow-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: #f1f5f9; }
+        .workflow-meta { display: flex; gap: 1rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #64748b; }
+        .workflow-categories { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-bottom: 0.75rem; }
+        .workflow-category { background: #334155; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; }
+        .workflow-nodes { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+        .workflow-node { background: #0f172a; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.7rem; color: #94a3b8; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; padding: 2rem; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: #1e293b; border-radius: 16px; max-width: 800px; width: 100%; max-height: 90vh; overflow: hidden; border: 1px solid #334155; }
+        .modal-header { padding: 1.5rem; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 1.5rem; font-weight: 600; }
+        .modal-close { background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; padding: 0.5rem; }
+        .modal-close:hover { color: #e2e8f0; }
+        .modal-body { padding: 1.5rem; overflow-y: auto; max-height: calc(90vh - 200px); }
+        .modal-section { margin-bottom: 1.5rem; }
+        .modal-section-title { font-size: 0.875rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.5rem; }
+        .modal-footer { padding: 1.5rem; border-top: 1px solid #334155; display: flex; gap: 1rem; justify-content: flex-end; }
+        .btn { padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.2s; border: none; }
+        .btn-primary { background: #38bdf8; color: #0f172a; }
+        .btn-primary:hover { background: #0ea5e9; }
+        .btn-secondary { background: #334155; color: #e2e8f0; }
+        .btn-secondary:hover { background: #475569; }
+
+        /* JSON Preview */
+        .json-preview { background: #0f172a; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.8rem; max-height: 300px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+
+        /* Loading */
+        .loading { text-align: center; padding: 4rem; color: #64748b; }
+        .loading-spinner { width: 40px; height: 40px; border: 3px solid #334155; border-top-color: #38bdf8; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { flex-direction: column; }
+            .sidebar { width: 100%; }
+            .workflow-grid { grid-template-columns: 1fr; }
+            .stats { gap: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>N8Np</h1>
+        <p>Biblioteca de Workflows n8n & AI Agents</p>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="total-workflows">-</div>
+                <div class="stat-label">Workflows</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="total-categories">-</div>
+                <div class="stat-label">Categorias</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="total-modules">-</div>
+                <div class="stat-label">Modulos</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <div class="search-box">
+            <input type="text" class="search-input" id="search-input" placeholder="Buscar workflows... (ex: whatsapp, rag, email, agent)">
+        </div>
+    </div>
+
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Categorias</div>
+                <ul class="category-list" id="category-list"></ul>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Modulos Populares</div>
+                <div class="module-tags" id="module-tags"></div>
+            </div>
+        </aside>
+
+        <main class="main">
+            <div class="results-header">
+                <span class="results-count" id="results-count">Carregando...</span>
+                <select class="sort-select" id="sort-select">
+                    <option value="name">Nome A-Z</option>
+                    <option value="name-desc">Nome Z-A</option>
+                    <option value="nodes">Mais Nodes</option>
+                    <option value="nodes-asc">Menos Nodes</option>
+                </select>
+            </div>
+            <div class="workflow-grid" id="workflow-grid">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Carregando workflows...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-title">Workflow</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Fechar</button>
+                <button class="btn btn-primary" id="btn-download">Download JSON</button>
+                <button class="btn btn-primary" id="btn-copy">Copiar JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allWorkflows = [];
+        let filteredWorkflows = [];
+        let categories = {};
+        let topNodes = {};
+        let activeCategory = null;
+        let activeModules = new Set();
+        let currentWorkflow = null;
+
+        // Load data
+        async function loadData() {
+            try {
+                const response = await fetch('workflow_inventory.json');
+                const data = await response.json();
+
+                allWorkflows = data.workflows.filter(w => w.node_count > 0);
+                categories = data.categories;
+                topNodes = data.top_nodes;
+
+                // Update stats
+                document.getElementById('total-workflows').textContent = allWorkflows.length;
+                document.getElementById('total-categories').textContent = Object.keys(categories).length;
+                document.getElementById('total-modules').textContent = Object.keys(topNodes).length;
+
+                renderCategories();
+                renderModules();
+                filterAndRender();
+            } catch (error) {
+                document.getElementById('workflow-grid').innerHTML = `
+                    <div class="loading">
+                        <p>Erro ao carregar dados. Certifique-se de que workflow_inventory.json existe.</p>
+                        <p style="font-size: 0.875rem; margin-top: 0.5rem;">Execute: python3 inventory_workflows.py</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Render categories
+        function renderCategories() {
+            const list = document.getElementById('category-list');
+            list.innerHTML = `
+                <li class="category-item ${!activeCategory ? 'active' : ''}" onclick="selectCategory(null)">
+                    <span>Todos</span>
+                    <span class="category-count">${allWorkflows.length}</span>
+                </li>
+            `;
+
+            Object.entries(categories)
+                .sort((a, b) => b[1] - a[1])
+                .forEach(([cat, count]) => {
+                    const li = document.createElement('li');
+                    li.className = `category-item ${activeCategory === cat ? 'active' : ''}`;
+                    li.onclick = () => selectCategory(cat);
+                    li.innerHTML = `
+                        <span>${cat}</span>
+                        <span class="category-count">${count}</span>
+                    `;
+                    list.appendChild(li);
+                });
+        }
+
+        // Render modules
+        function renderModules() {
+            const container = document.getElementById('module-tags');
+            container.innerHTML = '';
+
+            Object.entries(topNodes)
+                .slice(0, 15)
+                .forEach(([node, count]) => {
+                    const shortName = node.split('.').pop();
+                    const tag = document.createElement('span');
+                    tag.className = `module-tag ${activeModules.has(node) ? 'active' : ''}`;
+                    tag.textContent = shortName;
+                    tag.title = `${node} (${count} workflows)`;
+                    tag.onclick = () => toggleModule(node);
+                    container.appendChild(tag);
+                });
+        }
+
+        // Select category
+        function selectCategory(cat) {
+            activeCategory = cat;
+            renderCategories();
+            filterAndRender();
+        }
+
+        // Toggle module filter
+        function toggleModule(node) {
+            if (activeModules.has(node)) {
+                activeModules.delete(node);
+            } else {
+                activeModules.add(node);
+            }
+            renderModules();
+            filterAndRender();
+        }
+
+        // Filter and render workflows
+        function filterAndRender() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const sortBy = document.getElementById('sort-select').value;
+
+            filteredWorkflows = allWorkflows.filter(w => {
+                // Search filter
+                if (searchTerm) {
+                    const searchText = [
+                        w.name,
+                        ...w.node_names,
+                        ...w.tags,
+                        ...w.categories
+                    ].join(' ').toLowerCase();
+                    if (!searchText.includes(searchTerm)) return false;
+                }
+
+                // Category filter
+                if (activeCategory && !w.categories.includes(activeCategory)) {
+                    return false;
+                }
+
+                // Module filter
+                if (activeModules.size > 0) {
+                    const hasModule = [...activeModules].some(m => w.node_types.includes(m));
+                    if (!hasModule) return false;
+                }
+
+                return true;
+            });
+
+            // Sort
+            filteredWorkflows.sort((a, b) => {
+                switch (sortBy) {
+                    case 'name': return a.name.localeCompare(b.name);
+                    case 'name-desc': return b.name.localeCompare(a.name);
+                    case 'nodes': return b.node_count - a.node_count;
+                    case 'nodes-asc': return a.node_count - b.node_count;
+                    default: return 0;
+                }
+            });
+
+            renderWorkflows();
+        }
+
+        // Render workflow cards
+        function renderWorkflows() {
+            const grid = document.getElementById('workflow-grid');
+            document.getElementById('results-count').textContent = `${filteredWorkflows.length} workflows encontrados`;
+
+            if (filteredWorkflows.length === 0) {
+                grid.innerHTML = `
+                    <div class="loading">
+                        <p>Nenhum workflow encontrado.</p>
+                        <p style="font-size: 0.875rem; margin-top: 0.5rem;">Tente ajustar os filtros.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filteredWorkflows.map(w => `
+                <div class="workflow-card" onclick="openWorkflow('${w.path.replace(/'/g, "\\'")}')">
+                    <div class="workflow-name">${escapeHtml(w.name)}</div>
+                    <div class="workflow-meta">
+                        <span>${w.node_count} nodes</span>
+                        <span>${w.folder}</span>
+                    </div>
+                    <div class="workflow-categories">
+                        ${w.categories.slice(0, 3).map(c => `<span class="workflow-category">${c}</span>`).join('')}
+                    </div>
+                    <div class="workflow-nodes">
+                        ${w.node_types.slice(0, 5).map(n => `<span class="workflow-node">${n.split('.').pop()}</span>`).join('')}
+                        ${w.node_types.length > 5 ? `<span class="workflow-node">+${w.node_types.length - 5}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Open workflow modal
+        async function openWorkflow(path) {
+            try {
+                const workflow = allWorkflows.find(w => w.path === path);
+                if (!workflow) return;
+
+                currentWorkflow = workflow;
+                document.getElementById('modal-title').textContent = workflow.name;
+
+                // Try to load JSON content
+                let jsonContent = null;
+                try {
+                    const relativePath = path.replace('/home/nmaldaner/projetos/N8Np/', '');
+                    const response = await fetch(relativePath);
+                    if (response.ok) {
+                        jsonContent = await response.json();
+                    }
+                } catch (e) {
+                    console.log('Could not load JSON:', e);
+                }
+
+                document.getElementById('modal-body').innerHTML = `
+                    <div class="modal-section">
+                        <div class="modal-section-title">Informacoes</div>
+                        <p><strong>Pasta:</strong> ${workflow.folder}</p>
+                        <p><strong>Arquivo:</strong> ${workflow.file}</p>
+                        <p><strong>Total de Nodes:</strong> ${workflow.node_count}</p>
+                    </div>
+
+                    <div class="modal-section">
+                        <div class="modal-section-title">Categorias</div>
+                        <div class="workflow-categories">
+                            ${workflow.categories.map(c => `<span class="workflow-category">${c}</span>`).join('')}
+                        </div>
+                    </div>
+
+                    <div class="modal-section">
+                        <div class="modal-section-title">Nodes Utilizados</div>
+                        <div class="workflow-nodes" style="gap: 0.5rem;">
+                            ${workflow.node_types.map(n => `<span class="workflow-node" style="font-size: 0.8rem;">${n}</span>`).join('')}
+                        </div>
+                    </div>
+
+                    ${workflow.tags.length > 0 ? `
+                        <div class="modal-section">
+                            <div class="modal-section-title">Tags</div>
+                            <div class="module-tags">
+                                ${workflow.tags.map(t => `<span class="module-tag">${t}</span>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${jsonContent ? `
+                        <div class="modal-section">
+                            <div class="modal-section-title">Preview JSON</div>
+                            <div class="json-preview">${escapeHtml(JSON.stringify(jsonContent, null, 2).substring(0, 2000))}${JSON.stringify(jsonContent).length > 2000 ? '\n...' : ''}</div>
+                        </div>
+                    ` : `
+                        <div class="modal-section">
+                            <div class="modal-section-title">Caminho do Arquivo</div>
+                            <code style="background: #0f172a; padding: 0.5rem 1rem; border-radius: 4px; display: block; word-break: break-all;">${workflow.path}</code>
+                        </div>
+                    `}
+                `;
+
+                // Setup buttons
+                document.getElementById('btn-download').onclick = () => downloadWorkflow(workflow, jsonContent);
+                document.getElementById('btn-copy').onclick = () => copyWorkflow(jsonContent);
+
+                document.getElementById('modal-overlay').classList.add('active');
+            } catch (error) {
+                console.error('Error opening workflow:', error);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('active');
+            currentWorkflow = null;
+        }
+
+        async function downloadWorkflow(workflow, jsonContent) {
+            if (!jsonContent) {
+                alert('JSON nao disponivel para download direto. Use o caminho do arquivo.');
+                return;
+            }
+
+            const blob = new Blob([JSON.stringify(jsonContent, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = workflow.file;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function copyWorkflow(jsonContent) {
+            if (!jsonContent) {
+                alert('JSON nao disponivel para copia.');
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(JSON.stringify(jsonContent, null, 2));
+                alert('JSON copiado para a area de transferencia!');
+            } catch (e) {
+                console.error('Failed to copy:', e);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Event listeners
+        document.getElementById('search-input').addEventListener('input', filterAndRender);
+        document.getElementById('sort-select').addEventListener('change', filterAndRender);
+        document.getElementById('modal-overlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>
