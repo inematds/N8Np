@@ -52,8 +52,11 @@
 
         /* Workflow Grid */
         .workflow-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
-        .workflow-card { background: #1e293b; border-radius: 12px; padding: 1.25rem; border: 1px solid #334155; transition: all 0.2s; cursor: pointer; }
+        .workflow-card { background: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155; transition: all 0.2s; cursor: pointer; }
         .workflow-card:hover { border-color: #38bdf8; transform: translateY(-2px); box-shadow: 0 4px 20px rgba(56, 189, 248, 0.1); }
+        .workflow-thumbnail { width: 100%; height: 180px; object-fit: cover; background: #0f172a; }
+        .workflow-thumbnail-placeholder { width: 100%; height: 180px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); display: flex; align-items: center; justify-content: center; color: #475569; font-size: 3rem; }
+        .workflow-content { padding: 1.25rem; }
         .workflow-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: #f1f5f9; }
         .workflow-meta { display: flex; gap: 1rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #64748b; }
         .workflow-categories { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-bottom: 0.75rem; }
@@ -81,6 +84,15 @@
 
         /* JSON Preview */
         .json-preview { background: #0f172a; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.8rem; max-height: 300px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+
+        /* Image Gallery */
+        .image-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; }
+        .gallery-image { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer; transition: transform 0.2s; border: 2px solid transparent; }
+        .gallery-image:hover { transform: scale(1.05); border-color: #38bdf8; }
+        .image-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; justify-content: center; align-items: center; padding: 2rem; }
+        .image-modal.active { display: flex; }
+        .image-modal img { max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 8px; }
+        .image-modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: white; font-size: 2rem; cursor: pointer; }
 
         /* Loading */
         .loading { text-align: center; padding: 4rem; color: #64748b; }
@@ -168,6 +180,12 @@
                 <button class="btn btn-primary" id="btn-copy">Copiar JSON</button>
             </div>
         </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="image-modal" id="image-modal" onclick="closeImageModal()">
+        <button class="image-modal-close" onclick="closeImageModal()">&times;</button>
+        <img id="image-modal-img" src="" alt="Full size image" onclick="event.stopPropagation()">
     </div>
 
     <script>
@@ -329,17 +347,24 @@
 
             grid.innerHTML = filteredWorkflows.map(w => `
                 <div class="workflow-card" onclick="openWorkflow('${w.path.replace(/'/g, "\\'")}')">
-                    <div class="workflow-name">${escapeHtml(w.name)}</div>
-                    <div class="workflow-meta">
-                        <span>${w.node_count} nodes</span>
-                        <span>${w.folder}</span>
-                    </div>
-                    <div class="workflow-categories">
-                        ${w.categories.slice(0, 3).map(c => `<span class="workflow-category">${c}</span>`).join('')}
-                    </div>
-                    <div class="workflow-nodes">
-                        ${w.node_types.slice(0, 5).map(n => `<span class="workflow-node">${n.split('.').pop()}</span>`).join('')}
-                        ${w.node_types.length > 5 ? `<span class="workflow-node">+${w.node_types.length - 5}</span>` : ''}
+                    ${w.thumbnail
+                        ? `<img class="workflow-thumbnail" src="${w.thumbnail}" alt="${escapeHtml(w.name)}" loading="lazy" onerror="this.style.display='none'">`
+                        : `<div class="workflow-thumbnail-placeholder">n8n</div>`
+                    }
+                    <div class="workflow-content">
+                        <div class="workflow-name">${escapeHtml(w.name)}</div>
+                        <div class="workflow-meta">
+                            <span>${w.node_count} nodes</span>
+                            <span>${w.folder}</span>
+                            ${w.images && w.images.length > 0 ? `<span>${w.images.length} img</span>` : ''}
+                        </div>
+                        <div class="workflow-categories">
+                            ${w.categories.slice(0, 3).map(c => `<span class="workflow-category">${c}</span>`).join('')}
+                        </div>
+                        <div class="workflow-nodes">
+                            ${w.node_types.slice(0, 5).map(n => `<span class="workflow-node">${n.split('.').pop()}</span>`).join('')}
+                            ${w.node_types.length > 5 ? `<span class="workflow-node">+${w.node_types.length - 5}</span>` : ''}
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -367,6 +392,15 @@
                 }
 
                 document.getElementById('modal-body').innerHTML = `
+                    ${workflow.images && workflow.images.length > 0 ? `
+                        <div class="modal-section">
+                            <div class="modal-section-title">Imagens (${workflow.images.length})</div>
+                            <div class="image-gallery">
+                                ${workflow.images.map(img => `<img class="gallery-image" src="${img}" alt="Screenshot" loading="lazy" onclick="openImage('${img}')" onerror="this.style.display='none'">`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
                     <div class="modal-section">
                         <div class="modal-section-title">Informacoes</div>
                         <p><strong>Pasta:</strong> ${workflow.folder}</p>
@@ -425,6 +459,18 @@
             currentWorkflow = null;
         }
 
+        // Image modal functions
+        function openImage(src) {
+            event.stopPropagation();
+            document.getElementById('image-modal-img').src = src;
+            document.getElementById('image-modal').classList.add('active');
+        }
+
+        function closeImageModal() {
+            document.getElementById('image-modal').classList.remove('active');
+            document.getElementById('image-modal-img').src = '';
+        }
+
         async function downloadWorkflow(workflow, jsonContent) {
             if (!jsonContent) {
                 alert('JSON nao disponivel para download direto. Use o caminho do arquivo.');
@@ -467,7 +513,13 @@
             if (e.target === e.currentTarget) closeModal();
         });
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeModal();
+            if (e.key === 'Escape') {
+                if (document.getElementById('image-modal').classList.contains('active')) {
+                    closeImageModal();
+                } else {
+                    closeModal();
+                }
+            }
         });
 
         // Initialize

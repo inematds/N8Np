@@ -90,6 +90,21 @@ def extract_workflow_info(json_path):
         if isinstance(tags, list):
             tags = [t.get('name', t) if isinstance(t, dict) else t for t in tags]
 
+        # Buscar imagens na mesma pasta
+        images = []
+        folder = json_path.parent
+        for img in folder.glob("*.jpg"):
+            # Caminho relativo para GitHub Pages
+            rel_path = str(img).replace("/home/nmaldaner/projetos/N8Np/", "")
+            images.append(rel_path)
+        for img in folder.glob("*.png"):
+            rel_path = str(img).replace("/home/nmaldaner/projetos/N8Np/", "")
+            images.append(rel_path)
+
+        # Ordenar e pegar a primeira imagem como thumbnail
+        images.sort()
+        thumbnail = images[0] if images else None
+
         return {
             'name': name,
             'file': json_path.name,
@@ -99,7 +114,9 @@ def extract_workflow_info(json_path):
             'node_names': node_names,
             'node_count': len(nodes),
             'description': description,
-            'tags': tags
+            'tags': tags,
+            'images': images,
+            'thumbnail': thumbnail
         }
     except Exception as e:
         return {
