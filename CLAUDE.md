@@ -10,7 +10,7 @@ This is a reference repository containing n8n workflow examples, documentation, 
 
 ```
 N8Np/
-└── Ref/
+└── doc/
     └── 2494913847/
         ├── [topic_id]/
         │   ├── content.txt          # Telegram conversation export
@@ -156,13 +156,13 @@ Content is primarily in **Portuguese (Brazilian)**, with some English technical 
 Use topic numbers or workflow names to locate specific examples:
 ```bash
 # Find workflows by name pattern
-find Ref/ -name "*RAG*.json"
+find doc/ -name "*RAG*.json"
 
 # Find specific topic
-ls Ref/2494913847/8187/
+ls doc/2494913847/8187/
 
 # Search conversation content
-grep -r "specific topic" Ref/*/content.txt
+grep -r "specific topic" doc/*/content.txt
 ```
 
 ### Extracting Workflow Information
@@ -173,9 +173,9 @@ To understand a workflow's purpose:
 4. Examine the JSON structure for node types and connections
 
 ### Common Operations
-- **Listing all workflows in a topic**: `ls Ref/2494913847/[topic_id]/*.json`
-- **Reading conversation context**: `cat Ref/2494913847/[topic_id]/content.txt`
-- **Checking metadata**: `cat Ref/2494913847/[topic_id]/metadata.json`
+- **Listing all workflows in a topic**: `ls doc/2494913847/[topic_id]/*.json`
+- **Reading conversation context**: `cat doc/2494913847/[topic_id]/content.txt`
+- **Checking metadata**: `cat doc/2494913847/[topic_id]/metadata.json`
 
 ## Notes
 
